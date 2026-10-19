@@ -181,6 +181,10 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
                                                          weight:NSFontWeightRegular];
 }
 
+- (NSColor *)inputTextColor {
+    return [NSColor controlTextColor];
+}
+
 - (void)collectSelectionRunsFrom:(NSAttributedString *)text
                           ranges:(NSMutableArray<NSValue *> *)ranges
                           values:(NSMutableArray<GAGlyphSelection *> *)values {
@@ -196,9 +200,10 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
     }];
 }
 
-/// Returns only the attributes this app understands: the default font and
-/// selection runs. Everything else (colors, backgrounds, paragraph styles,
-/// links, attachments) is discarded.
+/// Returns only the attributes this app understands: the default font,
+/// the app-owned foreground color, and selection runs. Everything else
+/// (pasted colors, backgrounds, paragraph styles, links, attachments) is
+/// discarded.
 - (NSAttributedString *)plainCopyOfAttributedText:(NSAttributedString *)text {
     if (text == nil) {
         return [[NSAttributedString alloc] init];
@@ -209,7 +214,10 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
 
     NSMutableAttributedString *plain = [[NSMutableAttributedString alloc]
         initWithString:text.string
-            attributes:@{NSFontAttributeName: [self inputFont]}];
+            attributes:@{
+                NSFontAttributeName: [self inputFont],
+                NSForegroundColorAttributeName: [self inputTextColor],
+            }];
     for (NSUInteger index = 0; index < runRanges.count; index++) {
         [plain addAttribute:GAGlyphSelectionAttributeName
                       value:runValues[index]
@@ -229,7 +237,10 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
     self.suppressTextChangeCallback = YES;
     editor.richText = NO;
     editor.importsGraphics = NO;
-    editor.typingAttributes = @{NSFontAttributeName: [self inputFont]};
+    editor.typingAttributes = @{
+        NSFontAttributeName: [self inputFont],
+        NSForegroundColorAttributeName: [self inputTextColor],
+    };
     self.suppressTextChangeCallback = wasSuppressed;
 
     NSTextStorage *storage = editor.textStorage;
@@ -251,6 +262,10 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
                 [attrs[key] isEqual:[self inputFont]]) {
                 continue;
             }
+            if ([key isEqualToString:NSForegroundColorAttributeName] &&
+                [attrs[key] isEqual:[self inputTextColor]]) {
+                continue;
+            }
             needsNormalization = YES;
             *stop = YES;
             return;
@@ -267,7 +282,10 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
     NSRange selection = editor.selectedRange;
     self.suppressTextChangeCallback = YES;
     [storage beginEditing];
-    [storage setAttributes:@{NSFontAttributeName: [self inputFont]} range:all];
+    [storage setAttributes:@{
+        NSFontAttributeName: [self inputFont],
+        NSForegroundColorAttributeName: [self inputTextColor],
+    } range:all];
     for (NSUInteger index = 0; index < runRanges.count; index++) {
         [storage addAttribute:GAGlyphSelectionAttributeName
                         value:runValues[index]
@@ -559,7 +577,9 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
         if (targetGroup != nil) {
             rowToSelect = [self rowForGlyphKey:targetKey inGroup:targetGroup];
         }
-    } else {
+    }
+    // The selected text may have been deleted; fall back to the first base row.
+    if (rowToSelect == NSNotFound) {
         for (NSInteger index = 0; index < (NSInteger)self.rows.count; index++) {
             GARowItem *item = self.rows[index];
             if (item.variant.isBase) {
