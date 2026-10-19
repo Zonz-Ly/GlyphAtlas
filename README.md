@@ -2,6 +2,10 @@
 
 A native macOS inspector for the alternate glyphs, contextual substitutions, and ligatures a font provides for the text you type.
 
+<img width="712" height="512" alt="圖片" src="https://github.com/user-attachments/assets/62d2aca2-83aa-4f3f-ac30-e96c50b5aa45" />
+
+<img width="712" height="512" alt="圖片" src="https://github.com/user-attachments/assets/da0c8b0d-6379-4665-b72f-7e3c42c1bddf" />
+
 ## Requirements
 
 - macOS 11.0 or later
@@ -39,6 +43,8 @@ ARCHS=x86_64 ./build.sh
 - Glyph width comes from the horizontal advance. When `vmtx`/`vhea` is present, glyph height comes from the vertical advance; otherwise it uses `ascent + descent`. The baseline uses the `vmtx` top side bearing when available, and `descent` otherwise.
 
 ---
+
+# Glyph Atlas
 
 一個原生 macOS 字體替換字形查看器：使用系統原生 API，輸入文字，查看字體為該文字提供的所有替換字形、上下文替換和連字。
 
