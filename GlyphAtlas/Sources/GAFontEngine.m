@@ -3,6 +3,8 @@
 #import <AppKit/AppKit.h>
 
 const CGFloat GAFontShapingSize = 200.0;
+NSString * const GAGlyphSelectionAttributeName =
+    @"com.zonz.GlyphAtlas.glyphSelection";
 
 static BOOL GAProgressCancelled(NSProgress *progress) {
     return progress != nil && progress.isCancelled;
@@ -386,6 +388,46 @@ static NSDictionary<NSString *, id> *GAGSUBAlternatesForSeed(NSData *gsub, uint1
     return @{@"sources": sources, @"order": order};
 }
 
+#pragma mark - GAGlyphSelection
+
+@implementation GAGlyphSelection
+
+- (instancetype)initWithSourceText:(NSString *)sourceText
+                           glyphIDs:(NSArray<NSNumber *> *)glyphIDs
+                     featureSources:(NSArray<NSString *> *)featureSources
+                           ligature:(BOOL)ligature {
+    self = [super init];
+    if (self) {
+        _sourceText = [sourceText copy];
+        _glyphIDs = [glyphIDs copy];
+        _featureSources = [featureSources copy];
+        _ligature = ligature;
+    }
+    return self;
+}
+
+- (id)copyWithZone:(NSZone *)zone {
+    // Immutable value object.
+    return self;
+}
+
+- (BOOL)isEqual:(id)object {
+    if (self == object) return YES;
+    if (![object isKindOfClass:[GAGlyphSelection class]]) return NO;
+    GAGlyphSelection *other = object;
+    return [self.sourceText isEqualToString:other.sourceText] &&
+           [self.glyphIDs isEqualToArray:other.glyphIDs] &&
+           [self.featureSources isEqualToArray:other.featureSources] &&
+           self.ligature == other.ligature;
+}
+
+- (NSUInteger)hash {
+    return self.sourceText.hash ^ self.glyphIDs.hash ^
+           self.featureSources.hash ^ (self.ligature ? 1 : 0);
+}
+
+@end
+
 #pragma mark - GAGlyphVariant
 
 @interface GAGlyphVariant ()
@@ -423,6 +465,12 @@ static NSDictionary<NSString *, id> *GAGSUBAlternatesForSeed(NSData *gsub, uint1
     }
     [self.mutableFeatureSources addObject:source];
     self.featureSources = [self.mutableFeatureSources copy];
+}
+
+- (void)addFeatureSources:(NSArray<NSString *> *)sources {
+    for (NSString *source in sources) {
+        [self addFeatureSource:source];
+    }
 }
 
 - (NSString *)glyphKey {
@@ -683,7 +731,6 @@ static NSDictionary<NSString *, id> *GAGSUBAlternatesForSeed(NSData *gsub, uint1
     variant.positions = positions;
     if (isBase && glyphs.count == 0) {
         variant.glyphIDs = @[@(0)];
-        variant.positions = @[[NSValue valueWithPoint:NSZeroPoint]];
     }
     return variant;
 }
@@ -913,6 +960,10 @@ static NSRange GAGroupSpanForCluster(NSArray<GACharacterGroup *> *groups,
     return NSMakeRange((NSUInteger)first, (NSUInteger)(last - first + 1));
 }
 
+/// Adds whole-text cluster candidates to the glyph list. This is candidate
+/// discovery only; it does not read or write the input field's selection runs.
+/// New candidates intentionally leave positions empty, so drawing uses the
+/// default origin.
 - (void)appendWholeTextVariantsToGroups:(NSMutableArray<GACharacterGroup *> *)groups
                                   text:(NSString *)text
                               progress:(nullable NSProgress *)progress {
@@ -984,11 +1035,6 @@ static NSRange GAGroupSpanForCluster(NSArray<GACharacterGroup *> *groups,
                 GAGlyphVariant *candidate = [[GAGlyphVariant alloc] init];
                 candidate.fontBox = fontBox;
                 candidate.glyphIDs = glyphs;
-                NSMutableArray<NSValue *> *positions = [NSMutableArray array];
-                for (NSUInteger i = 0; i < glyphs.count; i++) {
-                    [positions addObject:[NSValue valueWithPoint:NSZeroPoint]];
-                }
-                candidate.positions = positions;
                 if (source.length > 0) [candidate addFeatureSource:source];
                 if (ligatureSpan) {
                     candidate.ligature = YES;
@@ -1002,12 +1048,11 @@ static NSRange GAGroupSpanForCluster(NSArray<GACharacterGroup *> *groups,
         };
 
     GAFontBox *baseBox = [[GAFontBox alloc] initWithFont:_font];
-    // Enumerate by end position, from single character to longer suffixes:
-    // a, b, ab, c, bc, abc, d, cd, bcd, abcd.
-    for (NSUInteger last = 0; last < groups.count; last++) {
-        for (NSInteger firstIndex = (NSInteger)last; firstIndex >= 0; firstIndex--) {
+    // Enumerate left to right by start position:
+    // a, ab, abc, abcd, b, bc, bcd, c, cd, d.
+    for (NSUInteger first = 0; first < groups.count; first++) {
+        for (NSUInteger last = first; last < groups.count; last++) {
             if (GAProgressCancelled(progress)) return;
-            NSUInteger first = (NSUInteger)firstIndex;
             NSRange firstRange = groups[first].textRange;
             NSRange lastRange = groups[last].textRange;
             if (firstRange.location == NSNotFound || lastRange.location == NSNotFound) {
@@ -1130,7 +1175,6 @@ static NSRange GAGroupSpanForCluster(NSArray<GACharacterGroup *> *groups,
                 GAGlyphVariant *candidate = [[GAGlyphVariant alloc] init];
                 candidate.fontBox = baseFont;
                 candidate.glyphIDs = @[glyphID];
-                candidate.positions = @[[NSValue valueWithPoint:NSZeroPoint]];
                 for (NSString *source in sources) {
                     [candidate addFeatureSource:source];
                 }
@@ -1188,11 +1232,6 @@ static NSRange GAGroupSpanForCluster(NSArray<GACharacterGroup *> *groups,
     GAGlyphVariant *base = [[GAGlyphVariant alloc] init];
     base.fontBox = fontBox;
     base.glyphIDs = glyphIDs;
-    NSMutableArray<NSValue *> *basePositions = [NSMutableArray array];
-    for (NSUInteger index = 0; index < glyphIDs.count; index++) {
-        [basePositions addObject:[NSValue valueWithPoint:NSZeroPoint]];
-    }
-    base.positions = basePositions;
     base.base = YES;
     [self decorateVariant:base withUnicodeMap:unicodeMap];
 
@@ -1204,7 +1243,6 @@ static NSRange GAGroupSpanForCluster(NSArray<GACharacterGroup *> *groups,
         GAGlyphVariant *variant = [[GAGlyphVariant alloc] init];
         variant.fontBox = fontBox;
         variant.glyphIDs = @[glyphID];
-        variant.positions = @[[NSValue valueWithPoint:NSZeroPoint]];
         NSMutableOrderedSet<NSString *> *variantSources = sources[glyphID];
         for (NSString *source in variantSources) {
             [variant addFeatureSource:source];

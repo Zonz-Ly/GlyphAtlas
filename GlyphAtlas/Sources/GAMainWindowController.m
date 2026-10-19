@@ -63,6 +63,45 @@
 
 @end
 
+#pragma mark - Selection run
+
+/// Finds needle in haystack only when it occurs exactly once. Used to trim a
+/// selection attribute back after standard field-editor insertion at a run
+/// boundary (typing there inherits the run's attributes).
+static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
+    if (needle.length == 0 || haystack.length < needle.length) {
+        return NSMakeRange(NSNotFound, 0);
+    }
+    NSRange search = NSMakeRange(0, haystack.length);
+    NSRange found = NSMakeRange(NSNotFound, 0);
+    while (search.length > 0) {
+        NSRange candidate = [haystack rangeOfString:needle options:0 range:search];
+        if (candidate.location == NSNotFound) {
+            break;
+        }
+        if (found.location != NSNotFound) {
+            return NSMakeRange(NSNotFound, 0);
+        }
+        found = candidate;
+        // Advance one UTF-16 unit so overlapping occurrences are also
+        // detected and treated as ambiguous.
+        NSUInteger next = candidate.location + 1;
+        if (next >= haystack.length) {
+            break;
+        }
+        search = NSMakeRange(next, haystack.length - next);
+    }
+    return found;
+}
+
+@interface GAGlyphSelectionRun : NSObject
+@property (nonatomic) NSRange range;
+@property (nonatomic, strong) GAGlyphSelection *selection;
+@end
+
+@implementation GAGlyphSelectionRun
+@end
+
 #pragma mark - Main window
 
 @interface GAMainWindowController () <NSWindowDelegate, NSToolbarDelegate>
@@ -70,7 +109,6 @@
 @property (nonatomic, strong) GASidebarViewController *sidebarViewController;
 @property (nonatomic, strong) GADetailViewController *detailViewController;
 @property (nonatomic, strong, nullable) GAFontDocument *fontDocument;
-@property (nonatomic, strong) NSMutableArray<GACharacterGroup *> *seedGroups;
 @property (nonatomic, strong) NSTextField *titleFontNameField;
 @property (nonatomic, strong) dispatch_queue_t fontQueue;
 @property (nonatomic, strong) dispatch_queue_t analysisQueue;
@@ -93,7 +131,6 @@
                                                                      NSWindowStyleMaskFullSizeContentView)
                                                             backing:NSBackingStoreBuffered
                                                               defer:NO];
-    window.title = @"";
     window.restorable = NO;
     window.minSize = NSMakeSize(600, 390);
     window.tabbingMode = NSWindowTabbingModeDisallowed;
@@ -128,7 +165,6 @@
 
     self.sidebarViewController = [[GASidebarViewController alloc] init];
     self.detailViewController = [[GADetailViewController alloc] init];
-    self.seedGroups = [NSMutableArray array];
 
     NSSplitViewController *split = [[NSSplitViewController alloc] init];
     split.splitView.dividerStyle = NSSplitViewDividerStyleThin;
@@ -164,8 +200,6 @@
     NSToolbar *toolbar = [[NSToolbar alloc] initWithIdentifier:@"GATitleToolbar"];
     toolbar.delegate = self;
     toolbar.displayMode = NSToolbarDisplayModeIconOnly;
-    toolbar.allowsUserCustomization = NO;
-    toolbar.autosavesConfiguration = NO;
     window.toolbar = toolbar;
     window.toolbarStyle = NSWindowToolbarStyleUnifiedCompact;
 
@@ -392,7 +426,6 @@
             if (self.onFontLoaded != nil) {
                 self.onFontLoaded(document.fontURL ?: url);
             }
-            [self.seedGroups removeAllObjects];
             self.window.title = document.fullName;
             self.window.subtitle = document.fontURL.lastPathComponent ?: @"";
             self.titleFontNameField.stringValue = document.fullName;
@@ -420,161 +453,202 @@
     return copy;
 }
 
-- (NSUInteger)occurrenceCountBeforeRange:(NSRange)sourceRange
-                                 forText:(NSString *)text {
-    if (text.length == 0 || sourceRange.location == NSNotFound) return 0;
-    NSString *fullText = self.sidebarViewController.text;
-    NSUInteger occurrence = 0;
-    NSRange search = NSMakeRange(0, fullText.length);
-    while (search.length > 0) {
-        NSRange found = [fullText rangeOfString:text options:0 range:search];
-        if (found.location == NSNotFound || found.location >= sourceRange.location) {
-            break;
-        }
-        occurrence++;
-        NSUInteger next = NSMaxRange(found);
-        if (next <= search.location || next >= fullText.length) break;
-        search = NSMakeRange(next, fullText.length - next);
+- (BOOL)rangeIntersectsSelectionRuns:(NSRange)range
+                                 runs:(NSArray<GAGlyphSelectionRun *> *)runs {
+    if (range.location == NSNotFound || range.length == 0) {
+        return NO;
     }
-    return occurrence;
+    for (GAGlyphSelectionRun *run in runs) {
+        if (NSIntersectionRange(range, run.range).length > 0) {
+            return YES;
+        }
+    }
+    return NO;
 }
 
-- (NSRange)spanForSeedText:(NSString *)text
-                 occurrence:(NSUInteger)occurrence
-                   inGroups:(NSArray<GACharacterGroup *> *)groups {
-    if (text.length == 0) return NSMakeRange(NSNotFound, 0);
-    NSUInteger seen = 0;
-    for (NSUInteger start = 0; start < groups.count; start++) {
-        NSMutableString *concat = [NSMutableString string];
-        for (NSUInteger end = start; end < groups.count; end++) {
-            [concat appendString:groups[end].text ?: @""];
-            if ([concat isEqualToString:text]) {
-                if (seen == occurrence) {
-                    return NSMakeRange(start, end - start + 1);
-                }
-                seen++;
-                break;
+- (NSArray<GAGlyphSelectionRun *> *)selectionRunsInAttributedText:(NSMutableAttributedString *)text
+                                                        didChange:(BOOL *)didChange {
+    NSMutableArray<GAGlyphSelectionRun *> *runs = [NSMutableArray array];
+    NSMutableArray<NSValue *> *invalidRanges = [NSMutableArray array];
+    NSMutableArray<GAGlyphSelectionRun *> *trimmedRuns = [NSMutableArray array];
+    NSMutableArray<NSValue *> *trimmedOldRanges = [NSMutableArray array];
+    NSRange inputSelection = self.sidebarViewController.inputSelectionRange;
+    [text enumerateAttribute:GAGlyphSelectionAttributeName
+                     inRange:NSMakeRange(0, text.length)
+                     options:0
+                  usingBlock:^(id value, NSRange range, BOOL *stop) {
+        (void)stop;
+        if (value == nil) {
+            return;
+        }
+        if (![value isKindOfClass:[GAGlyphSelection class]] ||
+            range.length == 0) {
+            [invalidRanges addObject:[NSValue valueWithRange:range]];
+            return;
+        }
+        GAGlyphSelection *selection = value;
+        if (selection.sourceText.length == 0 || selection.glyphIDs.count == 0) {
+            [invalidRanges addObject:[NSValue valueWithRange:range]];
+            return;
+        }
+
+        NSString *current = [text.string substringWithRange:range];
+        GAGlyphSelectionRun *run = [[GAGlyphSelectionRun alloc] init];
+        run.selection = selection;
+        if ([current isEqualToString:selection.sourceText]) {
+            run.range = range;
+            [runs addObject:run];
+            return;
+        }
+
+        if (current.length > selection.sourceText.length) {
+            // The field editor extends the run's attributes when text is
+            // inserted at a run boundary. Use the caret to tell which side
+            // grew; this disambiguates duplicate source strings such as "11".
+            NSString *source = selection.sourceText;
+            NSUInteger insertedLength = current.length - source.length;
+            BOOL caretAtStart = inputSelection.location != NSNotFound &&
+                inputSelection.length == 0 &&
+                inputSelection.location == range.location + insertedLength;
+            BOOL caretAtEnd = inputSelection.location != NSNotFound &&
+                inputSelection.length == 0 &&
+                inputSelection.location == NSMaxRange(range);
+
+            NSRange match = NSMakeRange(NSNotFound, 0);
+            if (caretAtEnd && [current hasPrefix:source]) {
+                match = NSMakeRange(range.location, source.length);
+            } else if (caretAtStart && [current hasSuffix:source]) {
+                match = NSMakeRange(NSMaxRange(range) - source.length,
+                                    source.length);
+            } else {
+                match = GAFindUniqueSubstring(current, source);
             }
-            if (concat.length >= text.length) break;
+            if (match.location != NSNotFound) {
+                run.range = match;
+                [runs addObject:run];
+                [trimmedRuns addObject:run];
+                [trimmedOldRanges addObject:[NSValue valueWithRange:range]];
+                return;
+            }
         }
-    }
-    return NSMakeRange(NSNotFound, 0);
-}
 
-- (void)matchSeedGroupsToBaseGroups:(NSArray<GACharacterGroup *> *)groups {
-    NSMutableArray<GACharacterGroup *> *matched = [NSMutableArray array];
-    for (GACharacterGroup *seed in [self.seedGroups copy]) {
-        NSRange span = [self spanForSeedText:seed.text
-                                  occurrence:seed.seedOccurrence
-                                    inGroups:groups];
-        if (span.location == NSNotFound) continue;
-
-        NSUInteger lastIndex = span.location + span.length - 1;
-        NSRange firstRange = groups[span.location].textRange;
-        NSRange lastRange = groups[lastIndex].textRange;
-        if (firstRange.location == NSNotFound || lastRange.location == NSNotFound) {
-            continue;
-        }
-        seed.textRange = NSMakeRange(firstRange.location,
-            NSMaxRange(lastRange) - firstRange.location);
-        seed.groupIndex = span.location;
-        seed.seedSpanLength = span.length;
-        [matched addObject:seed];
-    }
-
-    [matched sortUsingComparator:^NSComparisonResult(GACharacterGroup *a,
-                                                     GACharacterGroup *b) {
-        if (a.textRange.location != b.textRange.location) {
-            return a.textRange.location < b.textRange.location
-                ? NSOrderedAscending : NSOrderedDescending;
-        }
-        return a.seedSpanLength < b.seedSpanLength
-            ? NSOrderedAscending : NSOrderedDescending;
+        // The user edited inside the run. The stored source text no longer
+        // matches this range, so dissolve the run instead of guessing.
+        [invalidRanges addObject:[NSValue valueWithRange:range]];
     }];
 
-    NSMutableArray<GACharacterGroup *> *nonOverlapping = [NSMutableArray array];
-    NSRange previous = NSMakeRange(NSNotFound, 0);
-    for (GACharacterGroup *seed in matched) {
-        if (previous.location != NSNotFound &&
-            NSIntersectionRange(previous, seed.textRange).length > 0) {
-            continue;
+    for (NSValue *value in trimmedOldRanges) {
+        [text removeAttribute:GAGlyphSelectionAttributeName
+                        range:value.rangeValue];
+    }
+    for (GAGlyphSelectionRun *run in trimmedRuns) {
+        [text addAttribute:GAGlyphSelectionAttributeName
+                     value:run.selection
+                     range:run.range];
+    }
+    for (NSValue *value in invalidRanges) {
+        [text removeAttribute:GAGlyphSelectionAttributeName
+                        range:value.rangeValue];
+    }
+    if (didChange != NULL) {
+        *didChange = invalidRanges.count > 0 || trimmedRuns.count > 0;
+    }
+    return runs;
+}
+
+- (NSRange)fullSelectionRangeCoveringRange:(NSRange)range
+                          inAttributedText:(NSAttributedString *)text {
+    if (range.location == NSNotFound || range.length == 0 || text.length == 0) {
+        return range;
+    }
+    __block NSRange expanded = range;
+    [text enumerateAttribute:GAGlyphSelectionAttributeName
+                     inRange:NSMakeRange(0, text.length)
+                     options:0
+                  usingBlock:^(id value, NSRange candidate, BOOL *stop) {
+        (void)stop;
+        if (value != nil && NSIntersectionRange(candidate, expanded).length > 0) {
+            expanded = NSUnionRange(expanded, candidate);
         }
-        [nonOverlapping addObject:seed];
-        previous = seed.textRange;
-    }
-    self.seedGroups = nonOverlapping;
+    }];
+    return expanded;
 }
 
-- (void)removeSeedGroupsOverlappingRange:(NSRange)range {
-    if (range.location == NSNotFound) return;
-    NSMutableArray<GACharacterGroup *> *kept = [NSMutableArray array];
-    for (GACharacterGroup *seed in self.seedGroups) {
-        if (NSIntersectionRange(seed.textRange, range).length == 0) {
-            [kept addObject:seed];
+- (GACharacterGroup *)groupForSelectionRun:(GAGlyphSelectionRun *)run {
+    GAFontDocument *document = self.fontDocument;
+    if (document == nil) {
+        return nil;
+    }
+    GAGlyphSelection *selection = run.selection;
+    GACharacterGroup *storedGroup =
+        [document analyzeGlyphIDs:selection.glyphIDs].firstObject;
+    GAGlyphVariant *base = storedGroup.variants.firstObject;
+    if (base == nil) {
+        return nil;
+    }
+
+    [base addFeatureSources:selection.featureSources];
+    for (GAGlyphVariant *variant in storedGroup.variants) {
+        variant.base = (variant == base);
+    }
+    base.base = YES;
+    if (selection.ligature) {
+        base.ligature = YES;
+        base.sourceTextRange = run.range;
+    }
+
+    GACharacterGroup *group = [[GACharacterGroup alloc] init];
+    group.text = selection.sourceText;
+    group.textRange = run.range;
+    group.variants = storedGroup.variants;
+    return group;
+}
+
+- (NSArray<GACharacterGroup *> *)buildDisplayGroupsFromBaseGroups:(NSArray<GACharacterGroup *> *)groups
+                                                             text:(NSString *)text
+                                                       selections:(NSArray<GAGlyphSelectionRun *> *)selections {
+    NSMutableArray<GAGlyphSelectionRun *> *validSelections = [NSMutableArray array];
+    NSMutableArray<GACharacterGroup *> *selectionGroups = [NSMutableArray array];
+    for (GAGlyphSelectionRun *run in selections) {
+        GACharacterGroup *selectionGroup = [self groupForSelectionRun:run];
+        if (selectionGroup != nil) {
+            [validSelections addObject:run];
+            [selectionGroups addObject:selectionGroup];
         }
     }
-    self.seedGroups = kept;
-}
 
-- (void)addSeedGroup:(GACharacterGroup *)seed sourceRange:(NSRange)sourceRange {
-    [self removeSeedGroupsOverlappingRange:sourceRange];
-    NSUInteger index = 0;
-    while (index < self.seedGroups.count &&
-           self.seedGroups[index].textRange.location < sourceRange.location) {
-        index++;
-    }
-    [self.seedGroups insertObject:seed atIndex:index];
-}
-
-- (void)recordSeedWithGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
-                          text:(NSString *)seedText
-                   sourceRange:(NSRange)sourceRange
-                   selectedKey:(NSString *)selectedKey {
-    NSArray<GACharacterGroup *> *analyzedGroups =
-        [self.fontDocument analyzeGlyphIDs:glyphIDs];
-    if (analyzedGroups.count == 0) {
-        NSBeep();
-        return;
-    }
-    GACharacterGroup *seedGroup = analyzedGroups.firstObject;
-    seedGroup.text = seedText;
-    seedGroup.seedOccurrence = [self occurrenceCountBeforeRange:sourceRange
-                                                       forText:seedText];
-    [self addSeedGroup:seedGroup sourceRange:sourceRange];
-    [self.sidebarViewController selectGlyphKeyAfterNextReload:selectedKey];
-    [self scheduleAnalysis];
-}
-
-- (NSArray<GACharacterGroup *> *)buildDisplayGroupsFromBaseGroups:
-    (NSArray<GACharacterGroup *> *)groups text:(NSString *)text {
     NSMutableArray<GAGlyphVariant *> *ligatureVariants = [NSMutableArray array];
     for (GACharacterGroup *group in groups) {
         for (GAGlyphVariant *variant in group.variants) {
-            if (variant.isLigature && variant.sourceTextRange.length > 0) {
+            if (variant.isLigature && variant.sourceTextRange.length > 0 &&
+                ![self rangeIntersectsSelectionRuns:variant.sourceTextRange
+                                               runs:validSelections]) {
                 [ligatureVariants addObject:variant];
             }
         }
     }
 
-    [self matchSeedGroupsToBaseGroups:groups];
-    NSMutableDictionary<NSNumber *, GACharacterGroup *> *seedByStart =
-        [NSMutableDictionary dictionary];
-    for (GACharacterGroup *seed in self.seedGroups) {
-        seedByStart[@(seed.groupIndex)] = seed;
-    }
-
-    NSMutableArray<GACharacterGroup *> *display = [NSMutableArray array];
-    NSMutableArray<NSValue *> *seedRanges = [NSMutableArray array];
-    for (NSUInteger index = 0; index < groups.count; index++) {
-        GACharacterGroup *seed = seedByStart[@(index)];
-        if (seed != nil) {
-            [display addObject:seed];
-            [seedRanges addObject:[NSValue valueWithRange:seed.textRange]];
-            index += MAX((NSUInteger)1, seed.seedSpanLength) - 1;
-        } else {
-            [display addObject:[self displayCopyOfCharacterGroup:groups[index]]];
+    NSMutableArray<GACharacterGroup *> *sourceGroups = [NSMutableArray array];
+    for (GACharacterGroup *group in groups) {
+        if ([self rangeIntersectsSelectionRuns:group.textRange
+                                         runs:validSelections]) {
+            continue;
         }
+        [sourceGroups addObject:[self displayCopyOfCharacterGroup:group]];
     }
+    [sourceGroups addObjectsFromArray:selectionGroups];
+    [sourceGroups sortUsingComparator:^NSComparisonResult(GACharacterGroup *a,
+                                                          GACharacterGroup *b) {
+        if (a.textRange.location != b.textRange.location) {
+            return a.textRange.location < b.textRange.location
+                ? NSOrderedAscending : NSOrderedDescending;
+        }
+        if (a.textRange.length != b.textRange.length) {
+            return a.textRange.length < b.textRange.length
+                ? NSOrderedAscending : NSOrderedDescending;
+        }
+        return NSOrderedSame;
+    }];
 
     NSMutableDictionary<NSValue *, NSMutableArray<GAGlyphVariant *> *> *byRange =
         [NSMutableDictionary dictionary];
@@ -585,14 +659,6 @@
             NSMaxRange(range) > text.length) {
             continue;
         }
-        BOOL overlapsSeed = NO;
-        for (NSValue *seedValue in seedRanges) {
-            if (NSIntersectionRange(range, seedValue.rangeValue).length > 0) {
-                overlapsSeed = YES;
-                break;
-            }
-        }
-        if (overlapsSeed) continue;
         NSValue *rangeValue = [NSValue valueWithRange:range];
         NSMutableArray<GAGlyphVariant *> *variants = byRange[rangeValue];
         if (variants == nil) {
@@ -602,7 +668,11 @@
         }
         [variants addObject:variant];
     }
-
+    // rangeOrder follows left-to-right substring discovery. For a given end,
+    // longer ranges are discovered before shorter suffixes. Inserting each
+    // new ligature immediately after the same source anchor therefore leaves
+    // the later, shorter suffix in front ("fi" before "ffi").
+    NSMutableArray<GACharacterGroup *> *display = [sourceGroups mutableCopy];
     for (NSValue *rangeValue in rangeOrder) {
         NSRange range = rangeValue.rangeValue;
         NSMutableArray<GAGlyphVariant *> *variants = byRange[rangeValue];
@@ -621,18 +691,26 @@
         base.base = YES;
 
         GACharacterGroup *ligatureGroup = [[GACharacterGroup alloc] init];
-        ligatureGroup.ligatureGroup = YES;
         ligatureGroup.text = [text substringWithRange:range];
         ligatureGroup.textRange = range;
         ligatureGroup.variants = unique;
 
-        NSUInteger insertion = display.count;
-        for (NSUInteger i = 0; i < display.count; i++) {
-            NSRange groupRange = display[i].textRange;
-            if (groupRange.location != NSNotFound &&
-                groupRange.location < NSMaxRange(range)) {
-                insertion = i + 1;
+        // Anchor on the last source group that ends at or before this
+        // ligature's source end. Do not look at previously inserted ligature
+        // groups: they must not move the anchor.
+        NSUInteger rangeEnd = NSMaxRange(range);
+        NSUInteger sourceInsertion = 0;
+        for (GACharacterGroup *sourceGroup in sourceGroups) {
+            if (sourceGroup.textRange.location != NSNotFound &&
+                NSMaxRange(sourceGroup.textRange) <= rangeEnd) {
+                sourceInsertion++;
             }
+        }
+        NSUInteger insertion = 0;
+        if (sourceInsertion > 0) {
+            GACharacterGroup *anchor = sourceGroups[sourceInsertion - 1];
+            NSUInteger anchorIndex = [display indexOfObjectIdenticalTo:anchor];
+            insertion = anchorIndex != NSNotFound ? anchorIndex + 1 : display.count;
         }
         [display insertObject:ligatureGroup atIndex:insertion];
     }
@@ -640,69 +718,78 @@
     return display;
 }
 
+- (NSRange)sourceRangeForVariant:(GAGlyphVariant *)variant
+                         inGroup:(GACharacterGroup *)group
+                            text:(NSString *)text {
+    NSRange range = NSMakeRange(NSNotFound, 0);
+    if (variant.isLigature) {
+        range = variant.sourceTextRange;
+    }
+    if (range.location == NSNotFound || range.length == 0 ||
+        NSMaxRange(range) > text.length) {
+        range = group.textRange;
+    }
+    if (range.location == NSNotFound || range.length == 0 ||
+        NSMaxRange(range) > text.length) {
+        if (group.text.length > 0) {
+            range = [text rangeOfString:group.text];
+        }
+    }
+    return range;
+}
+
 - (void)activateGlyphVariant:(GAGlyphVariant *)variant inGroup:(GACharacterGroup *)group {
     NSArray<NSNumber *> *scalars = variant.unicodeScalars;
-    NSString *text = self.sidebarViewController.text;
+    NSAttributedString *currentText = self.sidebarViewController.attributedText;
+    NSString *text = currentText.string;
+    NSRange range = [self sourceRangeForVariant:variant inGroup:group text:text];
+    if (range.location == NSNotFound || range.length == 0 ||
+        NSMaxRange(range) > text.length) {
+        NSBeep();
+        return;
+    }
 
-    if (variant.isLigature) {
-        NSRange sourceRange = variant.sourceTextRange;
-        if (sourceRange.location == NSNotFound || sourceRange.length == 0 ||
-            NSMaxRange(sourceRange) > text.length) {
-            sourceRange = group.textRange;
-        }
-        if (sourceRange.location == NSNotFound || sourceRange.length == 0) {
+    NSMutableAttributedString *attributedText = [currentText mutableCopy];
+    NSRange removalRange = [self fullSelectionRangeCoveringRange:range
+                                              inAttributedText:attributedText];
+    if (removalRange.location != NSNotFound && removalRange.length > 0 &&
+        NSMaxRange(removalRange) <= attributedText.length) {
+        [attributedText removeAttribute:GAGlyphSelectionAttributeName
+                                  range:removalRange];
+    }
+
+    NSRange selectedRange = range;
+    if (scalars.count > 0) {
+        // Activation inserts a single source character. Copy still uses all
+        // encodings of the glyph.
+        NSString *replacement =
+            GAStringFromUnicodeScalars(@[scalars.firstObject]);
+        if (replacement.length == 0) {
             NSBeep();
             return;
         }
-
-        if (scalars.count > 0) {
-            NSString *replacement =
-                GAStringFromUnicodeScalars(@[scalars.firstObject]);
-            NSString *newText = [text stringByReplacingCharactersInRange:sourceRange
-                                                              withString:replacement];
-            [self removeSeedGroupsOverlappingRange:sourceRange];
-            [self.sidebarViewController selectGlyphKeyAfterNextReload:variant.glyphKey];
-            [self.sidebarViewController setText:newText];
-            [self scheduleAnalysis];
+        [attributedText replaceCharactersInRange:range withString:replacement];
+        selectedRange = NSMakeRange(range.location, replacement.length);
+    } else {
+        if (variant.glyphIDs.count == 0) {
+            NSBeep();
             return;
         }
-
-        NSString *spanText = [text substringWithRange:sourceRange];
-        [self recordSeedWithGlyphIDs:variant.glyphIDs
-                                text:spanText
-                         sourceRange:sourceRange
-                         selectedKey:variant.glyphKey];
-        return;
+        NSString *sourceText = [text substringWithRange:range];
+        GAGlyphSelection *selection = [[GAGlyphSelection alloc]
+            initWithSourceText:sourceText
+                      glyphIDs:variant.glyphIDs
+                featureSources:variant.featureSources
+                      ligature:variant.isLigature || range.length > 1];
+        [attributedText addAttribute:GAGlyphSelectionAttributeName
+                              value:selection
+                              range:range];
     }
 
-    if (scalars.count > 0) {
-        NSString *replacement =
-            GAStringFromUnicodeScalars(@[scalars.firstObject]);
-        NSRange range = group.textRange;
-        BOOL validRange = range.location != NSNotFound &&
-            NSMaxRange(range) <= text.length &&
-            group.text.length > 0 &&
-            [[text substringWithRange:range] isEqualToString:group.text];
-        if (!validRange) {
-            range = group.text.length > 0
-                ? [text rangeOfString:group.text]
-                : NSMakeRange(NSNotFound, 0);
-        }
-        NSString *newText = (range.location == NSNotFound ||
-                             NSMaxRange(range) > text.length)
-            ? replacement
-            : [text stringByReplacingCharactersInRange:range withString:replacement];
-        [self removeSeedGroupsOverlappingRange:range];
-        [self.sidebarViewController selectGlyphKeyAfterNextReload:variant.glyphKey];
-        [self.sidebarViewController setText:newText];
-        [self scheduleAnalysis];
-        return;
-    }
-
-    [self recordSeedWithGlyphIDs:variant.glyphIDs
-                            text:group.text
-                     sourceRange:group.textRange
-                     selectedKey:variant.glyphKey];
+    [self.sidebarViewController selectGlyphKeyAfterNextReload:variant.glyphKey
+                                                     textRange:selectedRange];
+    [self.sidebarViewController setAttributedText:attributedText];
+    [self scheduleAnalysis];
 }
 
 #pragma mark - Analysis
@@ -712,11 +799,19 @@
     self.analysisProgress = nil;
     self.analysisGeneration += 1;
     NSUInteger generation = self.analysisGeneration;
-    NSString *text = self.sidebarViewController.text;
+
+    NSMutableAttributedString *attributedText =
+        [self.sidebarViewController.attributedText mutableCopy];
+    BOOL didDissolveSelections = NO;
+    NSArray<GAGlyphSelectionRun *> *selections =
+        [self selectionRunsInAttributedText:attributedText
+                                  didChange:&didDissolveSelections];
+    if (didDissolveSelections) {
+        [self.sidebarViewController setAttributedText:attributedText];
+    }
+    NSString *text = attributedText.string;
 
     if (text.length == 0) {
-        // Deleting all text clears every seed record.
-        [self.seedGroups removeAllObjects];
         [self.sidebarViewController setGroups:@[]];
         [self.detailViewController setVariant:nil];
         return;
@@ -736,12 +831,16 @@
             generation != self.analysisGeneration) {
             return;
         }
-        [self performAnalysisWithGeneration:generation text:text progress:progress];
+        [self performAnalysisWithGeneration:generation
+                                       text:text
+                                 selections:selections
+                                   progress:progress];
     });
 }
 
 - (void)performAnalysisWithGeneration:(NSUInteger)generation
                                  text:(NSString *)text
+                           selections:(NSArray<GAGlyphSelectionRun *> *)selections
                              progress:(NSProgress *)progress {
     GAFontDocument *document = self.fontDocument;
     if (document == nil || progress.isCancelled) {
@@ -766,7 +865,9 @@
                     return;
                 }
                 NSArray<GACharacterGroup *> *display =
-                    [self buildDisplayGroupsFromBaseGroups:groups text:text];
+                    [self buildDisplayGroupsFromBaseGroups:groups
+                                                      text:text
+                                                selections:selections];
                 [self.sidebarViewController setGroups:display];
                 if (self.analysisProgress == progress) {
                     self.analysisProgress = nil;

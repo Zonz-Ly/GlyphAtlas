@@ -2,8 +2,6 @@
 #import "GAGlyphViews.h"
 #import "GAUnicode.h"
 
-@class GASidebarViewController;
-
 @interface GASidebarViewController (CommandArrowNavigation)
 - (void)selectCurrentGroupBase;
 - (void)selectNextGroupBase;
@@ -74,7 +72,9 @@
 @property (nonatomic) BOOL suppressSelectionCallback;
 @property (nonatomic) CGFloat lastTableWidth;
 @property (nonatomic, copy, nullable) NSString *pendingSelectionGlyphKey;
+@property (nonatomic) NSRange pendingSelectionTextRange;
 @property (nonatomic, strong, nullable) NSLayoutConstraint *searchTopConstraint;
+@property (nonatomic) BOOL suppressTextChangeCallback;
 @end
 
 static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
@@ -94,6 +94,9 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
     self.searchField.placeholderString = @"Enter text";
     self.searchField.controlSize = NSControlSizeLarge;
     self.searchField.font = [NSFont systemFontOfSize:13.5 weight:NSFontWeightRegular];
+    // Custom selection attributes live in the field's attributed string and
+    // must survive the field editor's edit cycle.
+    self.searchField.allowsEditingTextAttributes = YES;
     self.searchField.delegate = self;
     NSSearchFieldCell *searchCell = (NSSearchFieldCell *)self.searchField.cell;
     // Keep the native search-field bezel, but no magnifier or clear button.
@@ -109,7 +112,6 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
     self.tableView.style = NSTableViewStyleSourceList;
     self.tableView.rowSizeStyle = NSTableViewRowSizeStyleCustom;
     self.tableView.intercellSpacing = NSMakeSize(0, 0);
-    self.tableView.allowsEmptySelection = YES;
     self.tableView.focusRingType = NSFocusRingTypeNone;
     self.tableView.dataSource = self;
     self.tableView.delegate = self;
@@ -174,16 +176,154 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
     }
 }
 
+- (NSFont *)inputFont {
+    return self.searchField.font ?: [NSFont systemFontOfSize:13.5
+                                                         weight:NSFontWeightRegular];
+}
+
+- (void)collectSelectionRunsFrom:(NSAttributedString *)text
+                          ranges:(NSMutableArray<NSValue *> *)ranges
+                          values:(NSMutableArray<GAGlyphSelection *> *)values {
+    [text enumerateAttribute:GAGlyphSelectionAttributeName
+                     inRange:NSMakeRange(0, text.length)
+                     options:0
+                  usingBlock:^(id value, NSRange range, BOOL *stop) {
+        (void)stop;
+        if ([value isKindOfClass:[GAGlyphSelection class]]) {
+            [ranges addObject:[NSValue valueWithRange:range]];
+            [values addObject:value];
+        }
+    }];
+}
+
+/// Returns only the attributes this app understands: the default font and
+/// selection runs. Everything else (colors, backgrounds, paragraph styles,
+/// links, attachments) is discarded.
+- (NSAttributedString *)plainCopyOfAttributedText:(NSAttributedString *)text {
+    if (text == nil) {
+        return [[NSAttributedString alloc] init];
+    }
+    NSMutableArray<NSValue *> *runRanges = [NSMutableArray array];
+    NSMutableArray<GAGlyphSelection *> *runValues = [NSMutableArray array];
+    [self collectSelectionRunsFrom:text ranges:runRanges values:runValues];
+
+    NSMutableAttributedString *plain = [[NSMutableAttributedString alloc]
+        initWithString:text.string
+            attributes:@{NSFontAttributeName: [self inputFont]}];
+    for (NSUInteger index = 0; index < runRanges.count; index++) {
+        [plain addAttribute:GAGlyphSelectionAttributeName
+                      value:runValues[index]
+                      range:runRanges[index].rangeValue];
+    }
+    return plain;
+}
+
+- (void)prepareFieldEditor {
+    NSTextView *editor = (NSTextView *)self.searchField.currentEditor;
+    if (editor == nil) {
+        return;
+    }
+    // Allow programmatic attributes (selection runs), but keep user edits and
+    // pastes plain so external formatting cannot enter the field.
+    BOOL wasSuppressed = self.suppressTextChangeCallback;
+    self.suppressTextChangeCallback = YES;
+    editor.richText = NO;
+    editor.importsGraphics = NO;
+    editor.typingAttributes = @{NSFontAttributeName: [self inputFont]};
+    self.suppressTextChangeCallback = wasSuppressed;
+
+    NSTextStorage *storage = editor.textStorage;
+    if (storage.length == 0) {
+        return;
+    }
+    NSRange all = NSMakeRange(0, storage.length);
+    __block BOOL needsNormalization = NO;
+    [storage enumerateAttributesInRange:all
+                                options:0
+                             usingBlock:^(NSDictionary<NSAttributedStringKey, id> *attrs,
+                                          NSRange range, BOOL *stop) {
+        (void)range;
+        for (NSAttributedStringKey key in attrs) {
+            if ([key isEqualToString:GAGlyphSelectionAttributeName]) {
+                continue;
+            }
+            if ([key isEqualToString:NSFontAttributeName] &&
+                [attrs[key] isEqual:[self inputFont]]) {
+                continue;
+            }
+            needsNormalization = YES;
+            *stop = YES;
+            return;
+        }
+    }];
+    if (!needsNormalization) {
+        return;
+    }
+
+    NSMutableArray<NSValue *> *runRanges = [NSMutableArray array];
+    NSMutableArray<GAGlyphSelection *> *runValues = [NSMutableArray array];
+    [self collectSelectionRunsFrom:storage ranges:runRanges values:runValues];
+
+    NSRange selection = editor.selectedRange;
+    self.suppressTextChangeCallback = YES;
+    [storage beginEditing];
+    [storage setAttributes:@{NSFontAttributeName: [self inputFont]} range:all];
+    for (NSUInteger index = 0; index < runRanges.count; index++) {
+        [storage addAttribute:GAGlyphSelectionAttributeName
+                        value:runValues[index]
+                        range:runRanges[index].rangeValue];
+    }
+    [storage endEditing];
+    if (selection.location != NSNotFound) {
+        NSUInteger location = MIN(selection.location, storage.length);
+        NSUInteger length = MIN(selection.length, storage.length - location);
+        editor.selectedRange = NSMakeRange(location, length);
+    }
+    self.suppressTextChangeCallback = NO;
+}
+
+- (NSAttributedString *)attributedText {
+    NSAttributedString *text = nil;
+    NSTextView *editor = (NSTextView *)self.searchField.currentEditor;
+    if (editor != nil) {
+        text = editor.textStorage;
+    }
+    if (text == nil) {
+        text = self.searchField.attributedStringValue;
+    }
+    return [self plainCopyOfAttributedText:text];
+}
+
 - (NSString *)text {
-    return self.searchField.stringValue;
+    return self.attributedText.string;
 }
 
-- (void)setText:(NSString *)text {
-    self.searchField.stringValue = text ?: @"";
+- (NSRange)inputSelectionRange {
+    NSTextView *editor = (NSTextView *)self.searchField.currentEditor;
+    return editor != nil ? editor.selectedRange : NSMakeRange(NSNotFound, 0);
 }
 
-- (void)selectGlyphKeyAfterNextReload:(NSString *)glyphKey {
+- (void)setAttributedText:(NSAttributedString *)attributedText {
+    NSAttributedString *normalized = [self plainCopyOfAttributedText:attributedText];
+    NSTextView *editor = (NSTextView *)self.searchField.currentEditor;
+    NSRange selection = editor != nil ? editor.selectedRange : NSMakeRange(NSNotFound, 0);
+    self.suppressTextChangeCallback = YES;
+    self.searchField.attributedStringValue = normalized;
+    if (editor != nil && selection.location != NSNotFound) {
+        NSUInteger location = MIN(selection.location, normalized.length);
+        NSUInteger length = MIN(selection.length, normalized.length - location);
+        editor.selectedRange = NSMakeRange(location, length);
+    }
+    self.suppressTextChangeCallback = NO;
+    if (editor != nil) {
+        [self prepareFieldEditor];
+    }
+}
+
+- (void)selectGlyphKeyAfterNextReload:(NSString *)glyphKey
+                            textRange:(NSRange)textRange {
     self.pendingSelectionGlyphKey = [glyphKey copy];
+    self.pendingSelectionTextRange = textRange;
 }
 
 - (GARowItem *)selectedVariantRow {
@@ -238,20 +378,29 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
         return;
     }
     [self.view.window makeFirstResponder:self.searchField];
+    [self prepareFieldEditor];
 }
 
 - (void)setGlyphListDimmed:(BOOL)dimmed {
     self.tableView.alphaValue = dimmed ? GASidebarInactiveGlyphListAlpha : 1.0;
 }
 
-- (void)controlTextDidChange:(NSNotification *)obj {
+- (void)controlTextDidBeginEditing:(NSNotification *)obj {
     if (obj.object != self.searchField) {
+        return;
+    }
+    [self prepareFieldEditor];
+}
+
+- (void)controlTextDidChange:(NSNotification *)obj {
+    if (obj.object != self.searchField || self.suppressTextChangeCallback) {
         return;
     }
     NSTextView *editor = (NSTextView *)self.searchField.currentEditor;
     if (editor != nil && editor.hasMarkedText) {
         return;
     }
+    [self prepareFieldEditor];
     if (self.onTextChanged) {
         self.onTextChanged();
     }
@@ -326,14 +475,50 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
 
 #pragma mark - Updating groups
 
+- (BOOL)group:(GACharacterGroup *)group containsGlyphKey:(NSString *)glyphKey {
+    for (GAGlyphVariant *variant in group.variants) {
+        if ([variant.glyphKey isEqualToString:glyphKey]) {
+            return YES;
+        }
+    }
+    return NO;
+}
+
+/// Finds the group that owns a restored selection. The text range is the
+/// post-replacement range, so it matches exactly. The glyph key is part of
+/// the match.
+- (GACharacterGroup *)groupForGlyphKey:(NSString *)glyphKey
+                             textRange:(NSRange)textRange {
+    if (textRange.length == 0) {
+        return nil;
+    }
+    for (GACharacterGroup *group in self.groups) {
+        if (NSEqualRanges(group.textRange, textRange) &&
+            [self group:group containsGlyphKey:glyphKey]) {
+            return group;
+        }
+    }
+    return nil;
+}
+
+- (NSInteger)rowForGlyphKey:(NSString *)glyphKey inGroup:(GACharacterGroup *)group {
+    for (NSInteger index = 0; index < (NSInteger)self.rows.count; index++) {
+        GARowItem *item = self.rows[index];
+        if (item.group == group && [item.variant.glyphKey isEqualToString:glyphKey]) {
+            return index;
+        }
+    }
+    return NSNotFound;
+}
+
 - (void)setGroups:(NSArray<GACharacterGroup *> *)groups {
-    NSString *oldGroupText = nil;
     NSString *oldGlyphKey = nil;
+    NSRange oldGroupRange = NSMakeRange(NSNotFound, 0);
     if (self.selectedVariant != nil) {
         oldGlyphKey = self.selectedVariant.glyphKey;
         for (GACharacterGroup *group in self.groups) {
             if ([group.variants containsObject:self.selectedVariant]) {
-                oldGroupText = group.text;
+                oldGroupRange = group.textRange;
                 break;
             }
         }
@@ -355,28 +540,26 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
     self.suppressSelectionCallback = YES;
     [self.tableView reloadData];
 
-    NSInteger rowToSelect = -1;
+    NSString *targetKey = nil;
+    NSRange targetRange = NSMakeRange(NSNotFound, 0);
     if (self.pendingSelectionGlyphKey.length > 0) {
-        for (NSInteger index = 0; index < (NSInteger)self.rows.count; index++) {
-            GARowItem *item = self.rows[index];
-            if ([item.variant.glyphKey isEqualToString:self.pendingSelectionGlyphKey]) {
-                rowToSelect = index;
-                break;
-            }
-        }
+        targetKey = self.pendingSelectionGlyphKey;
+        targetRange = self.pendingSelectionTextRange;
         self.pendingSelectionGlyphKey = nil;
+        self.pendingSelectionTextRange = NSMakeRange(NSNotFound, 0);
+    } else if (oldGlyphKey.length > 0) {
+        targetKey = oldGlyphKey;
+        targetRange = oldGroupRange;
     }
-    if (rowToSelect < 0 && oldGlyphKey.length > 0) {
-        for (NSInteger index = 0; index < (NSInteger)self.rows.count; index++) {
-            GARowItem *item = self.rows[index];
-            if ([item.variant.glyphKey isEqualToString:oldGlyphKey] &&
-                (oldGroupText == nil || [item.group.text isEqualToString:oldGroupText])) {
-                rowToSelect = index;
-                break;
-            }
+
+    NSInteger rowToSelect = NSNotFound;
+    if (targetKey.length > 0) {
+        GACharacterGroup *targetGroup = [self groupForGlyphKey:targetKey
+                                                      textRange:targetRange];
+        if (targetGroup != nil) {
+            rowToSelect = [self rowForGlyphKey:targetKey inGroup:targetGroup];
         }
-    }
-    if (rowToSelect < 0) {
+    } else {
         for (NSInteger index = 0; index < (NSInteger)self.rows.count; index++) {
             GARowItem *item = self.rows[index];
             if (item.variant.isBase) {
@@ -386,7 +569,7 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
         }
     }
 
-    if (rowToSelect >= 0) {
+    if (rowToSelect != NSNotFound) {
         [self.tableView selectRowIndexes:[NSIndexSet indexSetWithIndex:(NSUInteger)rowToSelect]
                     byExtendingSelection:NO];
         [self.tableView scrollRowToVisible:rowToSelect];

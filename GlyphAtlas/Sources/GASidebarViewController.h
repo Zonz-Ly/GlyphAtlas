@@ -9,11 +9,15 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, copy, nullable) void (^onSelectionChanged)(GAGlyphVariant * _Nullable variant);
 @property (nonatomic, copy, nullable) void (^onGlyphActivated)(GACharacterGroup *group, GAGlyphVariant *variant);
 @property (nonatomic, readonly) NSString *text;
-@property (nonatomic, readonly, nullable) GAGlyphVariant *selectedVariant;
+@property (nonatomic, readonly) NSAttributedString *attributedText;
+/// Selected range in the field editor, or NSNotFound when the field is not
+/// being edited.
+@property (nonatomic, readonly) NSRange inputSelectionRange;
 
-- (void)setText:(NSString *)text;
+- (void)setAttributedText:(NSAttributedString *)attributedText;
 - (void)setGroups:(NSArray<GACharacterGroup *> *)groups;
-- (void)selectGlyphKeyAfterNextReload:(NSString *)glyphKey;
+- (void)selectGlyphKeyAfterNextReload:(NSString *)glyphKey
+                            textRange:(NSRange)textRange;
 - (void)focusInput;
 - (void)setGlyphListDimmed:(BOOL)dimmed;
 

@@ -133,8 +133,6 @@
         return;
     }
     NSOpenPanel *panel = [NSOpenPanel openPanel];
-    panel.canChooseFiles = YES;
-    panel.canChooseDirectories = NO;
     panel.allowsMultipleSelection = YES;
     panel.allowedContentTypes = GAFontContentTypes();
     self.openPanel = panel;
@@ -311,7 +309,6 @@
     NSMenuItem *close = [[NSMenuItem alloc] initWithTitle:@"Close Window"
                                                    action:@selector(performClose:)
                                             keyEquivalent:@"w"];
-    close.target = nil;
     [fileMenu addItem:close];
 
     // Edit
@@ -369,7 +366,6 @@
                modifiers:(NSEventModifierFlags)modifiers {
     NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:title action:action keyEquivalent:key];
     item.keyEquivalentModifierMask = modifiers;
-    item.target = nil;
     return item;
 }
 
@@ -398,7 +394,7 @@
         @"Type text on the left. Every composed character is analyzed with the font's OpenType and AAT features.\n\n"
         @"• Click a glyph to inspect it on the canvas.\n"
         @"• Press Return or double-click to activate the selected glyph.\n"
-        @"• Encoded glyphs replace the corresponding input text. Unencoded glyphs become seed glyphs for their character range.\n"
+        @"• Encoded glyphs replace the corresponding input text. Unencoded glyphs become selection runs over their source text; ligatures cover the whole source range.\n"
         @"• Ligatures and contextual multi-character results appear in their own groups after the source characters.\n"
         @"• ⌘C copies the Unicode character or characters of an encoded glyph.\n"
         @"• ⌘↑ / ⌘↓ move between character groups.\n"
