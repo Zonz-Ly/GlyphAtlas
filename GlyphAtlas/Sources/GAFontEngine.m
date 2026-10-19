@@ -40,6 +40,19 @@ static uint32_t GAU32(const uint8_t *bytes, NSUInteger length, NSUInteger offset
            (uint32_t)bytes[offset + 3];
 }
 
+static BOOL GAFontsMatch(CTFontRef runFont, CTFontRef font) {
+    if (runFont == NULL || font == NULL) {
+        return NO;
+    }
+    CFStringRef runName = CTFontCopyPostScriptName(runFont);
+    CFStringRef expectedName = CTFontCopyPostScriptName(font);
+    BOOL matches = (runName != NULL && expectedName != NULL &&
+                    CFStringCompare(runName, expectedName, 0) == kCFCompareEqualTo);
+    if (runName) CFRelease(runName);
+    if (expectedName) CFRelease(expectedName);
+    return matches;
+}
+
 #pragma mark - Feature setting
 
 @interface GAFeatureSetting : NSObject
@@ -707,7 +720,7 @@ static NSDictionary<NSString *, id> *GAGSUBAlternatesForSeed(NSData *gsub, uint1
             fontObject = runAttributes[NSFontAttributeName];
         }
         CTFontRef runFont = fontObject ? (__bridge CTFontRef)fontObject : NULL;
-        if (![self runFont:runFont matchesFont:fontBox.font]) {
+        if (!GAFontsMatch(runFont, fontBox.font)) {
             continue;
         }
         CGGlyph *runGlyphs = calloc((size_t)count, sizeof(CGGlyph));
@@ -733,19 +746,6 @@ static NSDictionary<NSString *, id> *GAGSUBAlternatesForSeed(NSData *gsub, uint1
         variant.glyphIDs = @[@(0)];
     }
     return variant;
-}
-
-- (BOOL)runFont:(CTFontRef)runFont matchesFont:(CTFontRef)font {
-    if (runFont == NULL || font == NULL) {
-        return NO;
-    }
-    CFStringRef runName = CTFontCopyPostScriptName(runFont);
-    CFStringRef expectedName = CTFontCopyPostScriptName(font);
-    BOOL matches = (runName != NULL && expectedName != NULL &&
-                    CFStringCompare(runName, expectedName, 0) == kCFCompareEqualTo);
-    if (runName) CFRelease(runName);
-    if (expectedName) CFRelease(expectedName);
-    return matches;
 }
 
 - (NSDictionary<NSNumber *, NSArray<NSNumber *> *> *)unicodeMap {
@@ -891,54 +891,69 @@ static NSArray<NSDictionary *> *GAWholeTextClusters(NSString *text, CTFontRef fo
         (__bridge CFAttributedStringRef)attributed);
     if (line == NULL) return @[];
 
-    NSMutableArray<NSNumber *> *glyphs = [NSMutableArray array];
-    NSMutableArray<NSNumber *> *indices = [NSMutableArray array];
+    NSMutableArray<NSDictionary *> *clusters = [NSMutableArray array];
     CFArrayRef runs = CTLineGetGlyphRuns(line);
     for (CFIndex runIndex = 0; runIndex < CFArrayGetCount(runs); runIndex++) {
         CTRunRef run = (CTRunRef)CFArrayGetValueAtIndex(runs, runIndex);
         CFIndex count = CTRunGetGlyphCount(run);
         if (count <= 0) continue;
 
+        NSDictionary *runAttributes =
+            (__bridge NSDictionary *)CTRunGetAttributes(run);
+        id fontObject = runAttributes[(__bridge NSString *)kCTFontAttributeName];
+        if (fontObject == nil) {
+            fontObject = runAttributes[NSFontAttributeName];
+        }
+        CTFontRef runFont = fontObject ? (__bridge CTFontRef)fontObject : NULL;
+        if (!GAFontsMatch(runFont, font)) {
+            continue;
+        }
+
+        CFRange stringRange = CTRunGetStringRange(run);
+        if (stringRange.location == kCFNotFound || stringRange.length <= 0) {
+            continue;
+        }
+        NSUInteger runStart = (NSUInteger)stringRange.location;
+        NSUInteger runEnd = MIN(runStart + (NSUInteger)stringRange.length, text.length);
+        if (runEnd <= runStart) continue;
+
         CGGlyph *runGlyphs = calloc((size_t)count, sizeof(CGGlyph));
         CFIndex *runIndices = calloc((size_t)count, sizeof(CFIndex));
         CTRunGetGlyphs(run, CFRangeMake(0, count), runGlyphs);
         CTRunGetStringIndices(run, CFRangeMake(0, count), runIndices);
+
+        NSMutableArray<NSNumber *> *clusterStarts = [NSMutableArray array];
+        NSMutableArray<NSMutableArray<NSNumber *> *> *clusterGlyphs =
+            [NSMutableArray array];
         for (CFIndex i = 0; i < count; i++) {
             if (runIndices[i] < 0) continue;
-            [glyphs addObject:@(runGlyphs[i])];
-            [indices addObject:@((NSUInteger)runIndices[i])];
+            NSUInteger start = (NSUInteger)runIndices[i];
+            if (start >= text.length) continue;
+            if (clusterStarts.count == 0 ||
+                clusterStarts.lastObject.unsignedIntegerValue != start) {
+                [clusterStarts addObject:@(start)];
+                [clusterGlyphs addObject:[NSMutableArray array]];
+            }
+            [clusterGlyphs.lastObject addObject:@(runGlyphs[i])];
         }
         free(runGlyphs);
         free(runIndices);
+
+        for (NSUInteger i = 0; i < clusterStarts.count; i++) {
+            NSUInteger start = clusterStarts[i].unsignedIntegerValue;
+            NSUInteger end = (i + 1 < clusterStarts.count)
+                ? clusterStarts[i + 1].unsignedIntegerValue
+                : runEnd;
+            if (end <= start || start >= text.length) continue;
+            end = MIN(end, text.length);
+            [clusters addObject:@{
+                @"start": @(start),
+                @"end": @(end),
+                @"glyphs": [clusterGlyphs[i] copy],
+            }];
+        }
     }
     CFRelease(line);
-
-    NSMutableArray<NSNumber *> *clusterStarts = [NSMutableArray array];
-    NSMutableArray<NSMutableArray<NSNumber *> *> *clusterGlyphs = [NSMutableArray array];
-    for (NSUInteger i = 0; i < glyphs.count; i++) {
-        NSUInteger start = indices[i].unsignedIntegerValue;
-        if (clusterStarts.count == 0 ||
-            clusterStarts.lastObject.unsignedIntegerValue != start) {
-            [clusterStarts addObject:@(start)];
-            [clusterGlyphs addObject:[NSMutableArray array]];
-        }
-        [clusterGlyphs.lastObject addObject:glyphs[i]];
-    }
-
-    NSMutableArray<NSDictionary *> *clusters = [NSMutableArray array];
-    for (NSUInteger i = 0; i < clusterStarts.count; i++) {
-        NSUInteger start = clusterStarts[i].unsignedIntegerValue;
-        NSUInteger end = (i + 1 < clusterStarts.count)
-            ? clusterStarts[i + 1].unsignedIntegerValue
-            : text.length;
-        if (end <= start || start >= text.length) continue;
-        end = MIN(end, text.length);
-        [clusters addObject:@{
-            @"start": @(start),
-            @"end": @(end),
-            @"glyphs": [clusterGlyphs[i] copy],
-        }];
-    }
     return clusters;
 }
 
