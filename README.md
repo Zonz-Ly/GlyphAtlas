@@ -37,16 +37,16 @@ ARCHS=x86_64 ./build.sh
 ## Limitations
 
 - Direct GSUB parsing covers single and alternate substitutions only; ligatures and contextual substitutions are discovered through CoreText shaping.
-- Variable fonts are inspected at their default instance.
 - Features or substitutions available only through private font tables, or not exposed by CoreText, cannot be enumerated.
 - Glyph names depend on the font's glyph-name data (`post` table or CFF charset); when CoreText returns no usable name, the app shows `GID n`.
-- Glyph width comes from the horizontal advance. When `vmtx`/`vhea` is present, glyph height comes from the vertical advance; otherwise it uses `ascent + descent`. The baseline uses the `vmtx` top side bearing when available, and `descent` otherwise.
+- Glyph width comes from the horizontal advance. When `vmtx`/`vhea` is present, glyph height comes from the vertical advance; otherwise it uses `ascent + descent`.
+- Variable fonts are inspected at their default instance.
 
 ---
 
 # Glyph Atlas
 
-一個原生 macOS 字體替換字形查看器：使用系統原生 API，輸入文字，查看字體為該文字提供的所有替換字形、上下文替換和連字。
+一個原生 macOS 字體替換字形查看器：輸入文字，查看字體為該文字提供的所有替換字形、上下文替換和連字。
 
 ## 系統要求
 
@@ -65,7 +65,7 @@ ARCHS=x86_64 ./build.sh
 ## 限制
 
 - GSUB 直接解析只覆蓋 single/alternate；連字和上下文替換通過 CoreText 排版發現。
-- 可變字體只檢查默認實例。
 - 只存在於字體私有表、或 CoreText 未暴露的特性無法枚舉。
 - 字形名稱取決於字體的 glyph name 數據（post 表或 CFF charset）；CoreText 沒有可用名稱時顯示 GID。
-- 字寬來自水平 advance。有 `vmtx`/`vhea` 時字高來自垂直 advance；否則使用 `ascent + descent`。基線優先用 `vmtx` 的 top side bearing，沒有垂直表時用 `descent`。
+- 字寬來自水平 advance。有 `vmtx`/`vhea` 時字高來自垂直 advance；否則使用 `ascent + descent`。
+- 可變字體只檢查默認實例。
