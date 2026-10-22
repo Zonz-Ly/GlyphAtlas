@@ -595,17 +595,18 @@
     NSAlert *alert = [[NSAlert alloc] init];
     alert.messageText = @"Glyph Atlas";
     alert.informativeText =
-        @"Type text on the left. Every composed character is analyzed with the font's OpenType and AAT features.\n\n"
-        @"• Click a glyph to inspect it on the canvas.\n"
-        @"• Press Return or double-click to activate the selected glyph.\n"
-        @"• Encoded glyphs replace the corresponding input text. Unencoded glyphs become selection runs over their source text; ligatures cover the whole source range.\n"
-        @"• Ligatures and contextual multi-character results appear in their own groups after the source characters.\n"
-        @"• ⌘C copies the Unicode character or characters of an encoded glyph.\n"
-        @"• ⌘↑ / ⌘↓ move between character groups.\n"
-        @"• Use ⌘O to open a font, or drag a font onto the window or Dock icon.\n"
-        @"• File > Open Recent reopens recently loaded fonts.\n"
-        @"• Each font opens in its own window; closing the last window does not quit the app.\n\n"
-        @"Glyph data comes from CoreText OpenType and AAT shaping. Unicode values come from the font's character map and system Unicode names.";
+        @"• Open a font, or drag one onto the app's window or Dock icon. Recently used fonts are supported.\n"
+        @"• Type one or more characters in the sidebar to see all associated glyphs.\n"
+        @"• Double-click a glyph, or select it and press Return, to replace the default glyph and show that glyph's substitution.\n"
+        @"• Use ↑/↓ to move between glyphs, ⌘↑/⌘↓ to move between base glyphs, and ⌥↑/⌥↓ to jump to the first or last glyph in the list.\n"
+        @"• Use ⌘C to copy all encoded characters of the selected glyph.\n"
+        @"• Hover over a Unicode badge to see the character name defined by the Unicode standard.\n"
+        @"• All Glyphs is the default. Right-click to switch views, or press ⌘1 for Single Glyph, ⌘2 for Multi-Character, or ⌘3 for All Glyphs.\n"
+        @"• In Multi-Character, click a glyph to view its alternates. Vertical writing is supported; right-click or press ⌘5 to switch writing direction.\n"
+        @"• In All Glyphs, double-click a glyph to add it to the existing text. Clicking a glyph in the sidebar also makes it blink there.\n"
+        @"• Use ⌘+/⌘- to zoom the glyphs, and ⌥⌘+/⌥⌘- to resize the margins in Multi-Character. Trackpad pinch also works.\n"
+        @"• The page shadow shows the glyph's width and height, as well as the layout's line height and leading; press ⌘4 to hide it.\n"
+        @"• Dark mode is supported, but be careful: clicking a solid glyph can blind you.";
     [alert addButtonWithTitle:@"OK"];
 
     NSWindow *window = NSApp.keyWindow ?: self.windowControllers.lastObject.window;
