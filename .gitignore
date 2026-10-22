@@ -1,5 +1,0 @@
-.build/
-dist/
-.DS_Store
-# local copy of the upstream sources, kept only for diffing
-Sources.Old/
