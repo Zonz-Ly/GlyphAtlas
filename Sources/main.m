@@ -1,9 +1,7 @@
 #import <AppKit/AppKit.h>
 #import "GAAppDelegate.h"
 
-int main(int argc, const char *argv[]) {
-    (void)argc;
-    (void)argv;
+int main(void) {
     @autoreleasepool {
         NSApplication *application = [NSApplication sharedApplication];
         GAAppDelegate *delegate = [[GAAppDelegate alloc] init];

@@ -365,7 +365,6 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
     NSTableColumn *column = [[NSTableColumn alloc] initWithIdentifier:@"main"];
     column.resizingMask = NSTableColumnAutoresizingMask;
     [self.tableView addTableColumn:column];
-    self.tableView.columnAutoresizingStyle = NSTableViewLastColumnOnlyAutoresizingStyle;
 
     self.scrollView = [[NSScrollView alloc] initWithFrame:NSZeroRect];
     self.scrollView.translatesAutoresizingMaskIntoConstraints = NO;
@@ -444,42 +443,50 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
     }];
 }
 
-/// Returns only the attributes this app understands: the default font,
-/// the app-owned foreground color, and selection runs. Everything else
-/// (pasted colors, backgrounds, paragraph styles, links, attachments) is
-/// discarded.
-- (NSAttributedString *)plainCopyOfAttributedText:(NSAttributedString *)text {
-    if (text == nil) {
-        return [[NSAttributedString alloc] init];
-    }
+/// Drops every attribute except the app font, the app foreground color,
+/// selection runs, and line-break markers. Shared by the plain copy and the
+/// field editor normalization path.
+- (void)applyPlainAttributesToStorage:(NSMutableAttributedString *)storage
+                             fromText:(NSAttributedString *)source {
+    NSRange all = NSMakeRange(0, storage.length);
     NSMutableArray<NSValue *> *runRanges = [NSMutableArray array];
     NSMutableArray<GAGlyphSelection *> *runValues = [NSMutableArray array];
-    [self collectSelectionRunsFrom:text ranges:runRanges values:runValues];
+    [self collectSelectionRunsFrom:source ranges:runRanges values:runValues];
     NSMutableArray<NSValue *> *markerRanges = [NSMutableArray array];
-    [text enumerateAttribute:GALineBreakAttributeName
-                     inRange:NSMakeRange(0, text.length)
-                     options:0
-                  usingBlock:^(id value, NSRange range, BOOL *stop) {
+    [source enumerateAttribute:GALineBreakAttributeName
+                       inRange:all
+                       options:0
+                    usingBlock:^(id value, NSRange range, BOOL *stop) {
         (void)stop;
         if (value != nil) {
             [markerRanges addObject:[NSValue valueWithRange:range]];
         }
     }];
 
-    NSMutableAttributedString *plain = [[NSMutableAttributedString alloc]
-        initWithString:text.string
-            attributes:@{
-                NSFontAttributeName: [self inputFont],
-                NSForegroundColorAttributeName: [self inputTextColor],
-            }];
+    [storage beginEditing];
+    [storage setAttributes:@{
+        NSFontAttributeName: [self inputFont],
+        NSForegroundColorAttributeName: [self inputTextColor],
+    } range:all];
     for (NSUInteger index = 0; index < runRanges.count; index++) {
-        [plain addAttribute:GAGlyphSelectionAttributeName
-                      value:runValues[index]
-                      range:runRanges[index].rangeValue];
+        [storage addAttribute:GAGlyphSelectionAttributeName
+                        value:runValues[index]
+                        range:runRanges[index].rangeValue];
     }
     for (NSValue *value in markerRanges) {
-        GASetLineBreakMarker(plain, value.rangeValue);
+        GASetLineBreakMarker(storage, value.rangeValue);
     }
+    [storage endEditing];
+}
+
+/// Returns only the attributes this app understands: the default font,
+/// the app-owned foreground color, and selection runs. Everything else
+/// (pasted colors, backgrounds, paragraph styles, links, attachments) is
+/// discarded.
+- (NSAttributedString *)plainCopyOfAttributedText:(NSAttributedString *)text {
+    NSMutableAttributedString *plain =
+        [[NSMutableAttributedString alloc] initWithString:text.string];
+    [self applyPlainAttributesToStorage:plain fromText:text];
     return plain;
 }
 
@@ -493,7 +500,6 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
     BOOL wasSuppressed = self.suppressTextChangeCallback;
     self.suppressTextChangeCallback = YES;
     editor.richText = NO;
-    editor.importsGraphics = NO;
     editor.typingAttributes = @{
         NSFontAttributeName: [self inputFont],
         NSForegroundColorAttributeName: [self inputTextColor],
@@ -520,9 +526,6 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
             if ([key isEqualToString:GAGlyphSelectionAttributeName]) {
                 continue;
             }
-            if ([key isEqualToString:GALineBreakAttributeName]) {
-                continue;
-            }
             if ([key isEqualToString:NSFontAttributeName] &&
                 [attrs[key] isEqual:[self inputFont]]) {
                 continue;
@@ -540,36 +543,9 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
         return;
     }
 
-    NSMutableArray<NSValue *> *runRanges = [NSMutableArray array];
-    NSMutableArray<GAGlyphSelection *> *runValues = [NSMutableArray array];
-    [self collectSelectionRunsFrom:storage ranges:runRanges values:runValues];
-    NSMutableArray<NSValue *> *markerRanges = [NSMutableArray array];
-    [storage enumerateAttribute:GALineBreakAttributeName
-                        inRange:all
-                        options:0
-                     usingBlock:^(id value, NSRange range, BOOL *stop) {
-        (void)stop;
-        if (value != nil) {
-            [markerRanges addObject:[NSValue valueWithRange:range]];
-        }
-    }];
-
     NSRange selection = editor.selectedRange;
     self.suppressTextChangeCallback = YES;
-    [storage beginEditing];
-    [storage setAttributes:@{
-        NSFontAttributeName: [self inputFont],
-        NSForegroundColorAttributeName: [self inputTextColor],
-    } range:all];
-    for (NSUInteger index = 0; index < runRanges.count; index++) {
-        [storage addAttribute:GAGlyphSelectionAttributeName
-                        value:runValues[index]
-                        range:runRanges[index].rangeValue];
-    }
-    for (NSValue *value in markerRanges) {
-        GASetLineBreakMarker(storage, value.rangeValue);
-    }
-    [storage endEditing];
+    [self applyPlainAttributesToStorage:storage fromText:storage];
     if (selection.location != NSNotFound) {
         NSUInteger location = MIN(selection.location, storage.length);
         NSUInteger length = MIN(selection.length, storage.length - location);
@@ -898,12 +874,16 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
             return index;
         }
     }
-    for (NSInteger index = 0; index < (NSInteger)self.rows.count; index++) {
-        if (self.rows[(NSUInteger)index].group == group) {
-            return index;
-        }
-    }
     return NSNotFound;
+}
+
+- (void)scrollClipViewToY:(CGFloat)y {
+    NSClipView *clipView = self.scrollView.contentView;
+    CGFloat maximum = MAX(0.0, self.tableView.frame.size.height -
+                               clipView.bounds.size.height);
+    y = MIN(MAX(0.0, y), maximum);
+    [clipView scrollToPoint:NSMakePoint(clipView.bounds.origin.x, y)];
+    [self.scrollView reflectScrolledClipView:clipView];
 }
 
 - (void)scrollSelectedRowToTopIfNeeded:(NSInteger)row {
@@ -915,12 +895,7 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
     if (NSIntersectsRect(rowRect, self.tableView.visibleRect)) {
         return;
     }
-    NSClipView *clipView = self.scrollView.contentView;
-    CGFloat maxOriginY = MAX(0.0, self.tableView.frame.size.height -
-                                   clipView.bounds.size.height);
-    CGFloat originY = MIN(MAX(0.0, NSMinY(rowRect)), maxOriginY);
-    [clipView scrollToPoint:NSMakePoint(clipView.bounds.origin.x, originY)];
-    [self.scrollView reflectScrolledClipView:clipView];
+    [self scrollClipViewToY:NSMinY(rowRect)];
 }
 
 /// Resolves a pending selection against the current rows. Returns YES when it
@@ -987,12 +962,7 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
         // scrollRowToVisible:first only makes the row visible; if it is already
         // visible it does nothing, and a selection below may sit at the bottom.
         // Move the clip view to the group's top explicitly.
-        CGFloat maxOriginY = MAX(0.0, self.tableView.bounds.size.height -
-                                       self.scrollView.contentView.bounds.size.height);
-        CGFloat originY = MIN(MAX(0.0, NSMinY(firstRect)), maxOriginY);
-        NSClipView *clipView = self.scrollView.contentView;
-        [clipView scrollToPoint:NSMakePoint(clipView.bounds.origin.x, originY)];
-        [self.scrollView reflectScrolledClipView:clipView];
+        [self scrollClipViewToY:NSMinY(firstRect)];
     } else if (NSMinY(firstRect) < NSMinY(visibleRect)) {
         // Group top is above the visible area: align the top.
         [self.tableView scrollRowToVisible:first];
@@ -1139,18 +1109,6 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
     [self.scrollView reflectScrolledClipView:self.scrollView.contentView];
 }
 
-- (NSInteger)rowForSelectedVariant {
-    if (self.selectedVariant == nil) {
-        return NSNotFound;
-    }
-    GACharacterGroup *group = [self groupForGlyphKey:self.selectedVariant.glyphKey
-                                           textRange:self.selectedVariantTextRange];
-    if (group == nil) {
-        return NSNotFound;
-    }
-    return [self rowForGlyphKey:self.selectedVariant.glyphKey inGroup:group];
-}
-
 - (void)reloadRowsPreservingSelection {
     NSInteger selectedRow = self.tableView.selectedRow;
     self.suppressSelectionCallback = YES;
@@ -1180,10 +1138,6 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
     self.onSelectionChanged(self.selectedVariant);
 }
 
-- (CGFloat)variantRowHeightForVariant:(GAGlyphVariant *)variant {
-    return [GAVariantCellView rowHeightForVariant:variant];
-}
-
 #pragma mark - Table data source / delegate
 
 - (NSInteger)numberOfRowsInTableView:(NSTableView *)tableView {
@@ -1194,7 +1148,7 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
     if (row < 0 || row >= (NSInteger)self.rows.count) {
         return 0;
     }
-    return [self variantRowHeightForVariant:self.rows[row].variant];
+    return [GAVariantCellView rowHeightForVariant:self.rows[row].variant];
 }
 
 - (NSView *)tableView:(NSTableView *)tableView

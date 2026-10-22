@@ -15,7 +15,6 @@ FOUNDATION_EXPORT NSRect GAInsetRectByFraction(NSRect rect, CGFloat fraction);
 
 /// The one zoom range both canvases share. The maximum inset is
 /// `0.5 * (1 - 1 / 1.12^22)`; 0 fills the viewport.
-FOUNDATION_EXPORT const CGFloat GACanvasMinInsetFraction;
 FOUNDATION_EXPORT const CGFloat GACanvasMaxInsetFraction;
 /// Default page inset. Two 1.12× zoom-outs from a full page.
 FOUNDATION_EXPORT const CGFloat GACanvasDefaultSideInsetFraction;

@@ -62,6 +62,73 @@ static BOOL GAFontsMatch(CTFontRef runFont, CTFontRef font) {
 
 #pragma mark - GSUB parser
 
+/// Reads the GSUB FeatureList once. Features with the same tag are merged in
+/// first-occurrence order, and lookup indices are deduplicated.
+static NSArray<NSDictionary<NSString *, id> *> *GAGSUBFeatures(NSData *table) {
+    if (table.length < 10) {
+        return @[];
+    }
+    const uint8_t *bytes = table.bytes;
+    NSUInteger length = table.length;
+    uint16_t featureListOffset = GAU16(bytes, length, 6);
+    if (featureListOffset == 0 || featureListOffset + 2 > length) {
+        return @[];
+    }
+    uint16_t featureCount = GAU16(bytes, length, featureListOffset);
+    NSMutableArray<NSString *> *order = [NSMutableArray array];
+    NSMutableDictionary<NSString *, NSMutableArray<NSNumber *> *> *lookupsByTag =
+        [NSMutableDictionary dictionary];
+
+    for (uint16_t featureIndex = 0; featureIndex < featureCount; featureIndex++) {
+        NSUInteger recordOffset = (NSUInteger)featureListOffset + 2 +
+                                  (NSUInteger)featureIndex * 6;
+        if (recordOffset + 6 > length) {
+            break;
+        }
+        char tagBytes[5] = {0};
+        tagBytes[0] = (char)bytes[recordOffset];
+        tagBytes[1] = (char)bytes[recordOffset + 1];
+        tagBytes[2] = (char)bytes[recordOffset + 2];
+        tagBytes[3] = (char)bytes[recordOffset + 3];
+        NSString *tag = [[NSString alloc] initWithBytes:tagBytes
+                                                 length:4
+                                               encoding:NSISOLatin1StringEncoding];
+        tag = GATrimTag(tag ?: @"");
+        if (tag.length != 4) {
+            continue;
+        }
+
+        NSUInteger featureOffset = (NSUInteger)featureListOffset +
+                                   GAU16(bytes, length, recordOffset + 4);
+        if (featureOffset + 4 > length) {
+            continue;
+        }
+        NSMutableArray<NSNumber *> *lookups = lookupsByTag[tag];
+        if (lookups == nil) {
+            lookups = [NSMutableArray array];
+            lookupsByTag[tag] = lookups;
+            [order addObject:tag];
+        }
+        uint16_t lookupIndexCount = GAU16(bytes, length, featureOffset + 2);
+        for (uint16_t index = 0; index < lookupIndexCount; index++) {
+            NSUInteger location = featureOffset + 4 + (NSUInteger)index * 2;
+            if (location + 2 > length) {
+                break;
+            }
+            NSNumber *lookup = @(GAU16(bytes, length, location));
+            if (![lookups containsObject:lookup]) {
+                [lookups addObject:lookup];
+            }
+        }
+    }
+
+    NSMutableArray<NSDictionary<NSString *, id> *> *features = [NSMutableArray array];
+    for (NSString *tag in order) {
+        [features addObject:@{@"tag": tag, @"lookups": lookupsByTag[tag]}];
+    }
+    return features;
+}
+
 /// Returns dictionaries with "tag" and "max" keys, preserving the font's
 /// feature order. Only AlternateSubst lookups can expose multiple alternates
 /// through a feature value; everything else has one selectable state.
@@ -71,14 +138,10 @@ static NSArray<NSDictionary *> *GAParseGSUBFeatures(NSData *table) {
     }
     const uint8_t *bytes = table.bytes;
     NSUInteger length = table.length;
-    uint16_t featureListOffset = GAU16(bytes, length, 6);
     uint16_t lookupListOffset = GAU16(bytes, length, 8);
-    if (featureListOffset == 0 || featureListOffset + 2 > length ||
-        lookupListOffset == 0 || lookupListOffset + 2 > length) {
+    if (lookupListOffset == 0 || lookupListOffset + 2 > length) {
         return @[];
     }
-
-    uint16_t featureCount = GAU16(bytes, length, featureListOffset);
     uint16_t lookupCount = GAU16(bytes, length, lookupListOffset);
     NSMutableDictionary<NSNumber *, NSNumber *> *alternateCounts = [NSMutableDictionary dictionary];
 
@@ -134,55 +197,15 @@ static NSArray<NSDictionary *> *GAParseGSUBFeatures(NSData *table) {
     }
 
     NSMutableArray<NSDictionary *> *features = [NSMutableArray array];
-    NSMutableDictionary<NSString *, NSNumber *> *aggregated = [NSMutableDictionary dictionary];
-    NSMutableArray<NSString *> *order = [NSMutableArray array];
-
-    for (uint16_t featureIndex = 0; featureIndex < featureCount; featureIndex++) {
-        NSUInteger recordOffset =
-            (NSUInteger)featureListOffset + 2 + (NSUInteger)featureIndex * 6;
-        if (recordOffset + 6 > length) break;
-
-        char tagBytes[5] = {0};
-        tagBytes[0] = (char)bytes[recordOffset];
-        tagBytes[1] = (char)bytes[recordOffset + 1];
-        tagBytes[2] = (char)bytes[recordOffset + 2];
-        tagBytes[3] = (char)bytes[recordOffset + 3];
-        NSString *tag = [[NSString alloc] initWithBytes:tagBytes
-                                                 length:4
-                                               encoding:NSISOLatin1StringEncoding];
-        tag = GATrimTag(tag ?: @"");
-        if (tag.length != 4) {
-            continue;
-        }
-
-        NSUInteger featureOffset =
-            (NSUInteger)featureListOffset + GAU16(bytes, length, recordOffset + 4);
-        if (featureOffset + 4 > length) {
-            continue;
-        }
-        uint16_t lookupIndexCount = GAU16(bytes, length, featureOffset + 2);
+    for (NSDictionary<NSString *, id> *feature in GAGSUBFeatures(table)) {
         NSInteger maximum = 0;
-        for (uint16_t lookupIndex = 0; lookupIndex < lookupIndexCount; lookupIndex++) {
-            NSUInteger location = featureOffset + 4 + (NSUInteger)lookupIndex * 2;
-            if (location + 2 > length) break;
-            uint16_t index = GAU16(bytes, length, location);
-            NSNumber *count = alternateCounts[@(index)];
+        for (NSNumber *lookupIndex in feature[@"lookups"]) {
+            NSNumber *count = alternateCounts[lookupIndex];
             if (count.integerValue > maximum) {
                 maximum = count.integerValue;
             }
         }
-
-        NSNumber *previous = aggregated[tag];
-        if (previous == nil) {
-            [order addObject:tag];
-        }
-        if (maximum > previous.integerValue) {
-            aggregated[tag] = @(maximum);
-        }
-    }
-
-    for (NSString *tag in order) {
-        [features addObject:@{@"tag": tag, @"max": aggregated[tag] ?: @0}];
+        [features addObject:@{@"tag": feature[@"tag"], @"max": @(maximum)}];
     }
     return features;
 }
@@ -217,41 +240,46 @@ static NSInteger GACoverageIndex(const uint8_t *bytes, NSUInteger length,
     return -1;
 }
 
-/// Lookup indices belonging to the OpenType `vert` feature. FeatureList may
-/// contain the same tag once per script/language system, so deduplicate.
+/// Single-substitution replacement for one subtable, or nil when the glyph is
+/// not covered, the format is unsupported, or the substitution is identity.
+static NSNumber *GASingleSubstitution(const uint8_t *bytes, NSUInteger length,
+                                      NSUInteger subtableOffset, uint16_t glyph) {
+    if (subtableOffset + 6 > length) {
+        return nil;
+    }
+    uint16_t format = GAU16(bytes, length, subtableOffset);
+    uint16_t coverageOffset = GAU16(bytes, length, subtableOffset + 2);
+    NSInteger coverageIndex = GACoverageIndex(
+        bytes, length, subtableOffset + coverageOffset, glyph);
+    if (coverageIndex < 0) {
+        return nil;
+    }
+    uint16_t replacement = 0;
+    if (format == 1) {
+        int16_t delta = (int16_t)GAU16(bytes, length, subtableOffset + 4);
+        replacement = (uint16_t)(glyph + delta);
+    } else if (format == 2) {
+        uint16_t count = GAU16(bytes, length, subtableOffset + 4);
+        if ((NSUInteger)coverageIndex >= count) {
+            return nil;
+        }
+        replacement = GAU16(bytes, length, subtableOffset + 6 +
+                            (NSUInteger)coverageIndex * 2);
+    } else {
+        return nil;
+    }
+    return replacement != glyph ? @(replacement) : nil;
+}
+
+/// Lookup indices belonging to the OpenType `vert` feature.
 static NSIndexSet *GAVerticalLookupIndices(NSData *table) {
     NSMutableIndexSet *indices = [NSMutableIndexSet indexSet];
-    if (table.length < 10) {
-        return indices;
-    }
-    const uint8_t *bytes = table.bytes;
-    NSUInteger length = table.length;
-    uint16_t featureListOffset = GAU16(bytes, length, 6);
-    if (featureListOffset == 0 || featureListOffset + 2 > length) {
-        return indices;
-    }
-    uint16_t featureCount = GAU16(bytes, length, featureListOffset);
-    for (uint16_t index = 0; index < featureCount; index++) {
-        NSUInteger record = (NSUInteger)featureListOffset + 2 +
-                            (NSUInteger)index * 6;
-        if (record + 6 > length) {
-            break;
-        }
-        if (GAU32(bytes, length, record) != 0x76657274) { // 'vert'
+    for (NSDictionary<NSString *, id> *feature in GAGSUBFeatures(table)) {
+        if (![feature[@"tag"] isEqualToString:@"vert"]) {
             continue;
         }
-        uint16_t featureOffset = GAU16(bytes, length, record + 4);
-        NSUInteger feature = (NSUInteger)featureListOffset + featureOffset;
-        if (feature + 4 > length) {
-            continue;
-        }
-        uint16_t lookupCount = GAU16(bytes, length, feature + 2);
-        for (uint16_t lookup = 0; lookup < lookupCount; lookup++) {
-            NSUInteger offset = feature + 4 + (NSUInteger)lookup * 2;
-            if (offset + 2 > length) {
-                break;
-            }
-            [indices addIndex:GAU16(bytes, length, offset)];
+        for (NSNumber *lookupIndex in feature[@"lookups"]) {
+            [indices addIndex:lookupIndex.unsignedIntValue];
         }
     }
     return indices;
@@ -304,34 +332,13 @@ static NSNumber *GAVerticalSubstituteForGlyph(NSData *table, uint16_t glyph) {
                 actualType = GAU16(bytes, length, subtableOffset + 2);
                 subtableOffset += GAU32(bytes, length, subtableOffset + 4);
             }
-            if (actualType != 1 || subtableOffset + 6 > length) {
+            if (actualType != 1) {
                 continue;
             }
-            uint16_t format = GAU16(bytes, length, subtableOffset);
-            uint16_t coverageOffset = GAU16(bytes, length,
-                                            subtableOffset + 2);
-            NSInteger coverageIndex = GACoverageIndex(
-                bytes, length, subtableOffset + coverageOffset, glyph);
-            if (coverageIndex < 0) {
-                continue;
-            }
-            uint16_t replacement = 0;
-            if (format == 1) {
-                int16_t delta = (int16_t)GAU16(bytes, length,
-                                               subtableOffset + 4);
-                replacement = (uint16_t)(glyph + delta);
-            } else if (format == 2) {
-                uint16_t count = GAU16(bytes, length, subtableOffset + 4);
-                if ((NSUInteger)coverageIndex >= count) {
-                    continue;
-                }
-                replacement = GAU16(bytes, length, subtableOffset + 6 +
-                                    (NSUInteger)coverageIndex * 2);
-            } else {
-                continue;
-            }
-            if (replacement != glyph) {
-                result = @(replacement);
+            NSNumber *replacement = GASingleSubstitution(
+                bytes, length, subtableOffset, glyph);
+            if (replacement != nil) {
+                result = replacement;
                 *stop = YES;
                 return;
             }
@@ -371,30 +378,19 @@ static void GAGSUBProcessSubtable(const uint8_t *bytes, NSUInteger length,
         return;
     }
 
+    if (lookupType == 1) {
+        NSNumber *replacement = GASingleSubstitution(
+            bytes, length, subtableOffset, seed);
+        if (replacement != nil) {
+            GAGSUBAddSource(sources, order, replacement.unsignedShortValue, tag);
+        }
+        return;
+    }
+
     uint16_t format = GAU16(bytes, length, subtableOffset);
     uint16_t coverageOffset = GAU16(bytes, length, subtableOffset + 2);
     NSUInteger coverage = subtableOffset + coverageOffset;
     NSInteger coverageIndex = GACoverageIndex(bytes, length, coverage, seed);
-
-    if (lookupType == 1) {
-        if (coverageIndex < 0) return;
-        uint16_t replacement = 0;
-        if (format == 1) {
-            int16_t delta = (int16_t)GAU16(bytes, length, subtableOffset + 4);
-            replacement = (uint16_t)(seed + delta);
-        } else if (format == 2) {
-            uint16_t count = GAU16(bytes, length, subtableOffset + 4);
-            if ((NSUInteger)coverageIndex >= count) return;
-            replacement = GAU16(bytes, length, subtableOffset + 6 +
-                                (NSUInteger)coverageIndex * 2);
-        } else {
-            return;
-        }
-        if (replacement != seed) {
-            GAGSUBAddSource(sources, order, replacement, tag);
-        }
-        return;
-    }
 
     if (lookupType != 3 || format != 1) return;
 
@@ -443,57 +439,19 @@ static NSDictionary<NSString *, id> *GAGSUBAlternatesForSeed(NSData *gsub, uint1
     if (gsub.length < 10) return nil;
     const uint8_t *bytes = gsub.bytes;
     NSUInteger length = gsub.length;
-    uint16_t featureListOffset = GAU16(bytes, length, 6);
     uint16_t lookupListOffset = GAU16(bytes, length, 8);
-    if (featureListOffset == 0 || lookupListOffset == 0 ||
-        featureListOffset + 2 > length || lookupListOffset + 2 > length) {
+    if (lookupListOffset == 0 || lookupListOffset + 2 > length) {
         return nil;
     }
-
-    uint16_t featureCount = GAU16(bytes, length, featureListOffset);
     uint16_t lookupCount = GAU16(bytes, length, lookupListOffset);
-    NSMutableDictionary<NSString *, NSMutableArray<NSNumber *> *> *lookupsByTag =
-        [NSMutableDictionary dictionary];
-    NSMutableArray<NSString *> *tagOrder = [NSMutableArray array];
-
-    for (uint16_t featureIndex = 0; featureIndex < featureCount; featureIndex++) {
-        NSUInteger recordOffset = (NSUInteger)featureListOffset + 2 +
-                                  (NSUInteger)featureIndex * 6;
-        if (recordOffset + 6 > length) break;
-        char tagBytes[5] = {0};
-        tagBytes[0] = (char)bytes[recordOffset];
-        tagBytes[1] = (char)bytes[recordOffset + 1];
-        tagBytes[2] = (char)bytes[recordOffset + 2];
-        tagBytes[3] = (char)bytes[recordOffset + 3];
-        NSString *tag = [[NSString alloc] initWithBytes:tagBytes length:4
-                                               encoding:NSISOLatin1StringEncoding];
-        tag = GATrimTag(tag ?: @"");
-        if (tag.length != 4) continue;
-
-        NSUInteger featureOffset = (NSUInteger)featureListOffset +
-                                   GAU16(bytes, length, recordOffset + 4);
-        if (featureOffset + 4 > length) continue;
-        uint16_t lookupIndexCount = GAU16(bytes, length, featureOffset + 2);
-        NSMutableArray<NSNumber *> *lookups = lookupsByTag[tag];
-        if (lookups == nil) {
-            lookups = [NSMutableArray array];
-            lookupsByTag[tag] = lookups;
-            [tagOrder addObject:tag];
-        }
-        for (uint16_t i = 0; i < lookupIndexCount; i++) {
-            NSUInteger p = featureOffset + 4 + (NSUInteger)i * 2;
-            if (p + 2 > length) break;
-            NSNumber *index = @(GAU16(bytes, length, p));
-            if (![lookups containsObject:index]) [lookups addObject:index];
-        }
-    }
 
     NSMutableDictionary<NSNumber *, NSMutableOrderedSet<NSString *> *> *sources =
         [NSMutableDictionary dictionary];
     NSMutableArray<NSNumber *> *order = [NSMutableArray array];
 
-    for (NSString *tag in tagOrder) {
-        for (NSNumber *lookupIndex in lookupsByTag[tag]) {
+    for (NSDictionary<NSString *, id> *feature in GAGSUBFeatures(gsub)) {
+        NSString *tag = feature[@"tag"];
+        for (NSNumber *lookupIndex in feature[@"lookups"]) {
             if (lookupIndex.unsignedIntValue >= lookupCount) continue;
             NSUInteger offsetLocation = (NSUInteger)lookupListOffset + 2 +
                                         lookupIndex.unsignedIntValue * 2;
@@ -657,6 +615,23 @@ static NSArray<NSNumber *> *GAScalarsForString(NSString *string) {
     return scalars;
 }
 
+NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text) {
+    NSMutableArray<GACharacterGroup *> *groups = [NSMutableArray array];
+    [text enumerateSubstringsInRange:NSMakeRange(0, text.length)
+                             options:NSStringEnumerationByComposedCharacterSequences
+                          usingBlock:^(NSString *substring, NSRange substringRange,
+                                       NSRange enclosingRange, BOOL *stop) {
+        (void)enclosingRange;
+        (void)stop;
+        GACharacterGroup *group = [[GACharacterGroup alloc] init];
+        group.text = substring;
+        group.textRange = substringRange;
+        group.variants = @[];
+        [groups addObject:group];
+    }];
+    return groups;
+}
+
 @implementation GAFontDocument {
     CTFontDescriptorRef _descriptor;
     CTFontRef _font;
@@ -746,17 +721,11 @@ static NSArray<NSNumber *> *GAScalarsForString(NSString *string) {
                     }
                 ],
             };
-            CTFontRef variantFont = [self createFontWithAttributes:attributes];
-            if (variantFont == NULL) {
-                continue;
+            GAFeatureSetting *setting =
+                [self createSettingWithKey:key attributes:attributes fromAAT:YES];
+            if (setting != nil) {
+                [settings addObject:setting];
             }
-
-            GAFeatureSetting *setting = [[GAFeatureSetting alloc] init];
-            setting.key = key;
-            setting.fromAAT = YES;
-            setting.fontBox = [[GAFontBox alloc] initWithFont:variantFont];
-            [settings addObject:setting];
-            CFRelease(variantFont);
         }
     }
 
@@ -779,25 +748,34 @@ static NSArray<NSNumber *> *GAScalarsForString(NSString *string) {
                     }
                 ],
             };
-            CTFontRef variantFont = [self createFontWithAttributes:attributes];
-            if (variantFont == NULL) {
-                continue;
+            GAFeatureSetting *setting =
+                [self createSettingWithKey:key attributes:attributes fromAAT:NO];
+            if (setting != nil) {
+                setting.tag = tag;
+                setting.sourceName = maximum > 1
+                    ? [NSString stringWithFormat:@"%@ %ld", tag, (long)value]
+                    : tag;
+                [settings addObject:setting];
             }
-
-            GAFeatureSetting *setting = [[GAFeatureSetting alloc] init];
-            setting.key = key;
-            setting.tag = tag;
-            setting.fromAAT = NO;
-            setting.sourceName = maximum > 1
-                ? [NSString stringWithFormat:@"%@ %ld", tag, (long)value]
-                : tag;
-            setting.fontBox = [[GAFontBox alloc] initWithFont:variantFont];
-            [settings addObject:setting];
-            CFRelease(variantFont);
         }
     }
 
     return settings;
+}
+
+- (nullable GAFeatureSetting *)createSettingWithKey:(NSString *)key
+                                         attributes:(NSDictionary *)attributes
+                                            fromAAT:(BOOL)fromAAT {
+    CTFontRef variantFont = [self createFontWithAttributes:attributes];
+    if (variantFont == NULL) {
+        return nil;
+    }
+    GAFeatureSetting *setting = [[GAFeatureSetting alloc] init];
+    setting.key = key;
+    setting.fromAAT = fromAAT;
+    setting.fontBox = [[GAFontBox alloc] initWithFont:variantFont];
+    CFRelease(variantFont);
+    return setting;
 }
 
 - (CTFontRef)createFontWithAttributes:(NSDictionary *)attributes {
@@ -1110,11 +1088,10 @@ static NSRange GAGroupSpanForCluster(NSArray<GACharacterGroup *> *groups,
 /// A line break is layout, not a glyph. It stays a group so text ranges keep
 /// their offsets, but the whole-text scan does not cross it.
 - (NSArray<GAGlyphVariant *> *)characterVariantsForContent:(NSString *)substring {
-    NSData *gsub = CFBridgingRelease(CTFontCopyTable(_font, kCTFontTableGSUB, 0));
     NSDictionary<NSNumber *, NSArray<NSNumber *> *> *unicodeMap = [self unicodeMap];
     NSArray<NSNumber *> *scalars = GAScalarsForString(substring);
 
-    GAFontBox *baseFont = [[GAFontBox alloc] initWithFont:_font];
+    GAFontBox *baseFont = _fontBox;
     GAGlyphVariant *baseVariant = [self shapeString:substring
                                             fontBox:baseFont
                                                base:YES];
@@ -1129,9 +1106,9 @@ static NSRange GAGroupSpanForCluster(NSArray<GACharacterGroup *> *groups,
                                            forKey:baseVariant.glyphKey];
 
     NSNumber *baseGlyph = baseVariant.glyphIDs.firstObject;
-    if (baseGlyph != nil && gsub.length > 0) {
+    if (baseGlyph != nil && _gsub.length > 0) {
         NSDictionary<NSString *, id> *directInfo = GAGSUBAlternatesForSeed(
-            gsub, (uint16_t)baseGlyph.unsignedShortValue);
+            _gsub, (uint16_t)baseGlyph.unsignedShortValue);
         NSDictionary<NSNumber *, NSMutableOrderedSet<NSString *> *> *directSources =
             directInfo[@"sources"];
         NSArray<NSNumber *> *directOrder = directInfo[@"order"] ?: @[];
@@ -1179,23 +1156,6 @@ static NSRange GAGroupSpanForCluster(NSArray<GACharacterGroup *> *groups,
     return variants;
 }
 
-- (NSArray<GACharacterGroup *> *)scanGroupsForContent:(NSString *)content {
-    NSMutableArray<GACharacterGroup *> *groups = [NSMutableArray array];
-    [content enumerateSubstringsInRange:NSMakeRange(0, content.length)
-                                options:NSStringEnumerationByComposedCharacterSequences
-                             usingBlock:^(NSString *substring, NSRange substringRange,
-                                          NSRange enclosingRange, BOOL *stop) {
-        (void)enclosingRange;
-        (void)stop;
-        GACharacterGroup *group = [[GACharacterGroup alloc] init];
-        group.text = substring;
-        group.textRange = substringRange;
-        group.variants = @[];
-        [groups addObject:group];
-    }];
-    return groups;
-}
-
 - (GARawScanResult *)rawSingleCharacterResultForContent:(NSString *)content {
     NSMutableArray<GAScanCandidate *> *candidates = [NSMutableArray array];
     for (GAGlyphVariant *variant in [self characterVariantsForContent:content]) {
@@ -1205,7 +1165,6 @@ static NSRange GAGroupSpanForCluster(NSArray<GACharacterGroup *> *groups,
         candidate.fontBox = variant.fontBox;
         candidate.sources = variant.featureSources ?: @[];
         candidate.base = variant.isBase;
-        candidate.actual = variant.isBase;
         candidate.ligature = NO;
         candidate.sourceRange = NSMakeRange(0, content.length);
         candidate.targetOffset = 0;
@@ -1213,7 +1172,6 @@ static NSRange GAGroupSpanForCluster(NSArray<GACharacterGroup *> *groups,
     }
     GARawScanResult *result = [[GARawScanResult alloc] init];
     result.candidates = candidates;
-    result.groupCount = 1;
     return result;
 }
 
@@ -1278,7 +1236,6 @@ static NSRange GAGroupSpanForCluster(NSArray<GACharacterGroup *> *groups,
         candidate.fontBox = fontBox;
         candidate.sources = sourceName.length > 0 ? @[sourceName] : @[];
         candidate.base = NO;
-        candidate.actual = actual;
         candidate.ligature = ligature;
         candidate.sourceRange = sourceRange;
         candidate.targetOffset = target;
@@ -1289,7 +1246,7 @@ static NSRange GAGroupSpanForCluster(NSArray<GACharacterGroup *> *groups,
 
 - (GARawScanResult *)rawContextResultForContent:(NSString *)content
                                          groups:(NSArray<GACharacterGroup *> *)groups {
-    GAFontBox *baseBox = [[GAFontBox alloc] initWithFont:_font];
+    GAFontBox *baseBox = _fontBox;
     NSArray<NSDictionary *> *baseClusters = GAWholeTextClusters(content, baseBox.font);
     NSMutableDictionary<NSNumber *, NSDictionary *> *baseByStart = [NSMutableDictionary dictionary];
     for (NSDictionary *cluster in baseClusters) {
@@ -1326,12 +1283,11 @@ static NSRange GAGroupSpanForCluster(NSArray<GACharacterGroup *> *groups,
     }
     GARawScanResult *result = [[GARawScanResult alloc] init];
     result.candidates = candidates;
-    result.groupCount = groups.count;
     return result;
 }
 
 - (GARawScanResult *)rawScanContent:(NSString *)content {
-    NSArray<GACharacterGroup *> *groups = [self scanGroupsForContent:content];
+    NSArray<GACharacterGroup *> *groups = GAGroupsForText(content);
     if (groups.count <= 1) {
         return [self rawSingleCharacterResultForContent:content];
     }
@@ -1426,11 +1382,10 @@ static NSRange GAGroupSpanForCluster(NSArray<GACharacterGroup *> *groups,
     if (glyphIDs.count == 0) {
         return @[];
     }
-    NSData *gsub = CFBridgingRelease(CTFontCopyTable(_font, kCTFontTableGSUB, 0));
     NSDictionary<NSString *, id> *info = GAGSUBAlternatesForSeed(
-        gsub, (uint16_t)glyphIDs.firstObject.unsignedShortValue);
+        _gsub, (uint16_t)glyphIDs.firstObject.unsignedShortValue);
     NSDictionary<NSNumber *, NSArray<NSNumber *> *> *unicodeMap = [self unicodeMap];
-    GAFontBox *fontBox = [[GAFontBox alloc] initWithFont:_font];
+    GAFontBox *fontBox = _fontBox;
 
     GAGlyphVariant *base = [[GAGlyphVariant alloc] init];
     base.fontBox = fontBox;
@@ -1545,10 +1500,7 @@ static NSRange GAGroupSpanForCluster(NSArray<GACharacterGroup *> *groups,
     if (count == 0) {
         return CGSizeZero;
     }
-    unsigned upem = CTFontGetUnitsPerEm(variant.fontBox.font);
-    if (upem == 0) {
-        upem = 1000;
-    }
+    CGFloat factor = CTFontGetUnitsPerEm(variant.fontBox.font) / GAFontShapingSize;
     CGGlyph *glyphs = calloc(count, sizeof(CGGlyph));
     for (NSUInteger index = 0; index < count; index++) {
         glyphs[index] = (CGGlyph)variant.glyphIDs[index].unsignedShortValue;
@@ -1567,7 +1519,6 @@ static NSRange GAGroupSpanForCluster(NSArray<GACharacterGroup *> *groups,
     }
     free(advances);
 
-    CGFloat factor = (CGFloat)upem / GAFontShapingSize;
     CGFloat height = 0;
     if ([self variantHasVerticalMetrics:variant]) {
         CGSize *vAdvances = calloc(count, sizeof(CGSize));

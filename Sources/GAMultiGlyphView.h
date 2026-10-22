@@ -15,7 +15,6 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) BOOL showsMetrics;
 /// Called after the inset changes so sibling views can share one zoom state.
 @property (nonatomic, copy, nullable) void (^onSideInsetFractionChanged)(CGFloat fraction);
-@property (nonatomic) CGFloat textScale;
 /// Called after the text scale changes so the controller can keep the page
 /// centred in the scroll view.
 @property (nonatomic, copy, nullable) void (^onTextScaleChanged)(void);

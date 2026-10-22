@@ -54,7 +54,7 @@ static const CGFloat GACodeLineHeight = 13.0;
         return;
     }
     CGRect ink = [GAFontDocument inkBoundsForVariant:variant];
-    if (CGRectIsNull(ink) || CGRectIsEmpty(ink)) {
+    if (CGRectIsEmpty(ink)) {
         return;
     }
 
@@ -194,20 +194,17 @@ static const CGFloat GABadgeHorizontalPadding = 4.0;
     }
     [self.labels removeAllObjects];
 
+    NSMutableArray<NSString *> *codes = [NSMutableArray array];
     for (NSNumber *scalarNumber in _unicodeScalars) {
         uint32_t scalar = scalarNumber.unsignedIntValue;
         NSString *text = [self.class codeTextForScalar:scalar];
+        [codes addObject:text];
         NSString *name = GAUnicodeNameForScalar(scalar);
         GAUnicodeBadgeView *badge = [[GAUnicodeBadgeView alloc]
             initWithText:text toolTip:name.length > 0 ? name : text];
         badge.backgroundStyle = self.backgroundStyle;
         [self addSubview:badge];
         [self.labels addObject:badge];
-    }
-
-    NSMutableArray<NSString *> *codes = [NSMutableArray array];
-    for (NSNumber *number in _unicodeScalars) {
-        [codes addObject:[self.class codeTextForScalar:number.unsignedIntValue]];
     }
     self.accessibilityLabel = [codes componentsJoinedByString:@", "];
     [self invalidateIntrinsicContentSize];
@@ -310,7 +307,6 @@ static const CGFloat GABadgeHorizontalPadding = 4.0;
         _sourceLabel.textColor = [NSColor secondaryLabelColor];
         _sourceLabel.lineBreakMode = NSLineBreakByTruncatingTail;
         _sourceLabel.maximumNumberOfLines = 1;
-        _sourceLabel.cell.wraps = NO;
 
         _codesView = [[GAUnicodeCodesView alloc] initWithFrame:NSZeroRect];
 
@@ -373,10 +369,9 @@ static const CGFloat GABadgeHorizontalPadding = 4.0;
     self.nameLabel.toolTip = name;
 
     NSArray<NSString *> *sources = variant.featureSources ?: @[];
-    self.sourceLabel.stringValue = [sources componentsJoinedByString:@", "];
-    self.sourceLabel.toolTip = sources.count > 0
-        ? [sources componentsJoinedByString:@", "]
-        : nil;
+    NSString *sourceText = [sources componentsJoinedByString:@", "];
+    self.sourceLabel.stringValue = sourceText;
+    self.sourceLabel.toolTip = sources.count > 0 ? sourceText : nil;
     self.sourceLabel.hidden = sources.count == 0;
     self.sourceTopConstraint.active = sources.count > 0;
     self.sourceHeightConstraint.constant = [self.class sourceHeightForVariant:variant];
@@ -403,7 +398,7 @@ static const CGFloat GABadgeHorizontalPadding = 4.0;
 
     NSMutableArray<NSString *> *descriptionParts = [NSMutableArray arrayWithObject:name];
     if (sources.count > 0) {
-        [descriptionParts addObject:[sources componentsJoinedByString:@", "]];
+        [descriptionParts addObject:sourceText];
     }
     if (variant.unicodeScalars.count > 0) {
         NSMutableArray<NSString *> *codeStrings = [NSMutableArray array];

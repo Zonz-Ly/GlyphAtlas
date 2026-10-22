@@ -58,6 +58,7 @@ static NSColor *GAResolvedColor(NSColor *color, NSAppearance *appearance) {
 @property (nonatomic, copy) NSString *text;
 @property (nonatomic, copy) NSArray<GACharacterGroup *> *groups;
 @property (nonatomic) NSSize pageContentSize;
+@property (nonatomic) CGFloat textScale;
 @property (nonatomic) CGFloat magnificationStartTextScale;
 @end
 
@@ -77,16 +78,10 @@ static NSColor *GAResolvedColor(NSColor *color, NSAppearance *appearance) {
         textView.hidden = YES;
         textView.editable = NO;
         textView.selectable = NO;
-        textView.richText = YES;
         textView.drawsBackground = NO;
-        textView.allowsUndo = NO;
-        textView.textContainerInset = NSZeroSize;
         textView.textContainer.lineFragmentPadding = 0;
         textView.textContainer.widthTracksTextView = NO;
-        textView.textContainer.heightTracksTextView = NO;
-        textView.horizontallyResizable = NO;
         textView.verticallyResizable = NO;
-        textView.autoresizingMask = NSViewNotSizable;
         textView.menu = nil;
         self.textView = textView;
         [self addSubview:textView];
@@ -146,11 +141,17 @@ static NSColor *GAResolvedColor(NSColor *color, NSAppearance *appearance) {
 }
 
 - (void)setTextAlignment:(NSTextAlignment)textAlignment {
+    if (_textAlignment == textAlignment) {
+        return;
+    }
     _textAlignment = textAlignment;
     [self rebuildLayout];
 }
 
 - (void)setVertical:(BOOL)vertical {
+    if (_vertical == vertical) {
+        return;
+    }
     _vertical = vertical;
     [self rebuildLayout];
 }
@@ -330,15 +331,20 @@ static NSColor *GAResolvedColor(NSColor *color, NSAppearance *appearance) {
     return vertical;
 }
 
+- (BOOL)groupHasVisibleRange:(GACharacterGroup *)group inLength:(NSUInteger)length {
+    if (group.insertedLigature) {
+        return NO;
+    }
+    NSRange range = group.textRange;
+    return range.location != NSNotFound && range.length > 0 &&
+           NSMaxRange(range) <= length;
+}
+
 - (NSDictionary<NSNumber *, GACharacterGroup *> *)groupsByTextLocation {
     NSMutableDictionary<NSNumber *, GACharacterGroup *> *result =
         [NSMutableDictionary dictionary];
     for (GACharacterGroup *group in self.groups) {
-        if (group.insertedLigature) {
-            continue;
-        }
-        if (group.textRange.location == NSNotFound || group.textRange.length == 0 ||
-            NSMaxRange(group.textRange) > self.text.length) {
+        if (![self groupHasVisibleRange:group inLength:self.text.length]) {
             continue;
         }
         result[@(group.textRange.location)] = group;
@@ -363,11 +369,7 @@ static NSColor *GAResolvedColor(NSColor *color, NSAppearance *appearance) {
         [[NSMutableAttributedString alloc] initWithString:self.text
                                                 attributes:attributes];
     for (GACharacterGroup *group in self.groups) {
-        if (group.insertedLigature) {
-            continue;
-        }
-        if (group.textRange.location == NSNotFound || group.textRange.length == 0 ||
-            NSMaxRange(group.textRange) > display.length) {
+        if (![self groupHasVisibleRange:group inLength:display.length]) {
             continue;
         }
         GAGlyphVariant *variant = group.variants.firstObject;
@@ -404,11 +406,11 @@ static NSColor *GAResolvedColor(NSColor *color, NSAppearance *appearance) {
 
 - (void)rebuildLayout {
     self.pageContentSize = NSZeroSize;
+    NSRect area = [self pageArea];
     NSFont *font = nil;
     NSSize page = NSZeroSize;
     if (self.document != nil && self.text.length > 0 &&
         self.viewportSize.width >= 1 && self.viewportSize.height >= 1) {
-        NSRect area = [self pageArea];
         page = area.size;
         font = [self fontAtSize:GAMultiBaseFontSize * self.textScale];
     }
@@ -427,7 +429,6 @@ static NSColor *GAResolvedColor(NSColor *color, NSAppearance *appearance) {
     // -setLayoutOrientation:; textContainerOrigin lives in that rotated space,
     // so the same inset expansion moves the text container off pageRect. Keep
     // vertical at zero inset (vertical ink overhanging the page is clipped).
-    NSRect area = [self pageArea];
     NSPoint inset = area.origin;
     self.textView.textContainerInset = self.vertical
         ? NSZeroSize
@@ -476,12 +477,9 @@ static NSColor *GAResolvedColor(NSColor *color, NSAppearance *appearance) {
 
 #pragma mark - Geometry
 
-- (NSRect)viewportRect {
-    return NSMakeRect(0, 0, self.viewportSize.width, self.viewportSize.height);
-}
-
 - (NSRect)pageArea {
-    return GAInsetRectByFraction([self viewportRect], self.sideInsetFraction);
+    NSRect viewport = NSMakeRect(0, 0, self.viewportSize.width, self.viewportSize.height);
+    return GAInsetRectByFraction(viewport, self.sideInsetFraction);
 }
 
 - (NSSize)documentSize {

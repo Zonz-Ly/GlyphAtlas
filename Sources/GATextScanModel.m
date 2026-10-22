@@ -1,15 +1,6 @@
 #import "GATextScanModel.h"
 
 @implementation GATextScanSubitem
-- (instancetype)init {
-    self = [super init];
-    if (self) {
-        _content = @"";
-        _range = NSMakeRange(0, 0);
-        _state = GATextScanSubitemStatePending;
-    }
-    return self;
-}
 @end
 
 @implementation GATextScanItem
@@ -33,14 +24,13 @@
 @end
 
 @interface GATextScanModel () {
+    GAFontDocument *_fontDocument;
     NSMutableArray<GACharacterGroup *> *_groups;
     NSMutableArray<GATextScanGroup *> *_scanGroups;
     NSMutableDictionary<NSString *, GARawScanResult *> *_cache;
-    NSUInteger _nextItemSequence;
-    NSUInteger _scanCount;
-    BOOL _scanning;
-    NSSet<NSString *> *_previousUITextCharacters;
+    NSMutableDictionary<NSString *, NSMutableArray<NSNumber *> *> *_singleGroupIndicesByContent;
 }
+- (BOOL)hasPendingSubitems;
 @end
 
 @implementation GATextScanModel
@@ -53,17 +43,8 @@
         _groups = [NSMutableArray array];
         _scanGroups = [NSMutableArray array];
         _cache = [NSMutableDictionary dictionary];
-        _nextItemSequence = 1;
     }
     return self;
-}
-
-- (BOOL)isScanning {
-    return _scanning;
-}
-
-- (NSUInteger)scanCount {
-    return _scanCount;
 }
 
 - (NSArray<GACharacterGroup *> *)groups {
@@ -75,43 +56,22 @@
 }
 
 - (BOOL)hasPendingSubitems {
-    return [self pendingSubitems].count > 0;
-}
-
-- (NSUInteger)pendingCount {
-    return [self pendingSubitems].count;
-}
-
-- (NSArray<GATextScanSubitem *> *)pendingSubitems {
-    NSMutableArray<GATextScanSubitem *> *pending = [NSMutableArray array];
     for (GATextScanGroup *group in _scanGroups) {
         for (GATextScanItem *item in group.items) {
             for (GATextScanSubitem *subitem in item.subitems) {
                 if (subitem.state == GATextScanSubitemStatePending) {
-                    [pending addObject:subitem];
+                    return YES;
                 }
             }
         }
     }
-    return pending;
+    return NO;
 }
 
 #pragma mark - Text / desired set
 
 - (void)updateText:(NSString *)text {
-    [self updateText:text previousUIText:@""];
-}
-
-- (void)updateText:(NSString *)text previousUIText:(NSString *)previousUIText {
-    NSMutableSet<NSString *> *previousUICharacters = [NSMutableSet set];
-    for (NSUInteger index = 0; index < previousUIText.length; ) {
-        NSRange range = [previousUIText rangeOfComposedCharacterSequenceAtIndex:index];
-        [previousUICharacters addObject:[previousUIText substringWithRange:range]];
-        index = NSMaxRange(range);
-    }
-    _previousUITextCharacters = previousUICharacters;
-
-    NSString *newText = [text copy] ?: @"";
+    NSString *newText = [text copy];
     _text = newText;
     [self rebuildGroups];
     NSArray<GATextScanSubitem *> *desired = [self desiredSubitems];
@@ -167,8 +127,6 @@
         GATextScanItem *item = missingItemByLength[key];
         if (item == nil) {
             item = [[GATextScanItem alloc] init];
-            item.sequence = _nextItemSequence++;
-            item.length = desiredSubitem.length;
             missingItemByLength[key] = item;
         }
         [item.subitems addObject:desiredSubitem];
@@ -188,10 +146,11 @@
                 continue;
             }
             oldItem.subitems = kept;
-            if (oldItem.length < 1 || oldItem.length > newGroups.count) {
+            NSUInteger length = oldGroup.length;
+            if (length < 1 || length > newGroups.count) {
                 continue;
             }
-            [newGroups[oldItem.length - 1].items addObject:oldItem];
+            [newGroups[length - 1].items addObject:oldItem];
         }
     }
     for (NSNumber *key in missingItemByLength) {
@@ -203,40 +162,26 @@
     }
 
     _scanGroups = newGroups;
-    _previousUITextCharacters = nil;
     [self notifyUpdate];
     if (![self hasPendingSubitems]) {
         [self.delegate textScanModelDidFinish:self];
     }
 }
 
-- (void)rebuildGroupItems {
-    // Remove empty groups and items whose subitems were dropped.
-    for (GATextScanGroup *group in _scanGroups) {
-        NSMutableArray<GATextScanItem *> *kept = [NSMutableArray array];
-        for (GATextScanItem *item in group.items) {
-            if (item.subitems.count > 0) {
-                [kept addObject:item];
-            }
-        }
-        group.items = kept;
-    }
-}
-
 - (void)rebuildGroups {
-    NSMutableArray<GACharacterGroup *> *groups = [NSMutableArray array];
-    [_text enumerateSubstringsInRange:NSMakeRange(0, _text.length)
-                              options:NSStringEnumerationByComposedCharacterSequences
-                           usingBlock:^(NSString *substring, NSRange substringRange,
-                                        NSRange enclosingRange, BOOL *stop) {
-        (void)enclosingRange; (void)stop;
-        GACharacterGroup *group = [[GACharacterGroup alloc] init];
-        group.text = substring;
-        group.textRange = substringRange;
-        group.variants = @[];
-        [groups addObject:group];
-    }];
-    _groups = groups;
+    _groups = [GAGroupsForText(_text) mutableCopy];
+    NSMutableDictionary<NSString *, NSMutableArray<NSNumber *> *> *indicesByContent =
+        [NSMutableDictionary dictionary];
+    for (NSUInteger index = 0; index < _groups.count; index++) {
+        NSString *content = _groups[index].text;
+        NSMutableArray<NSNumber *> *indices = indicesByContent[content];
+        if (indices == nil) {
+            indices = [NSMutableArray array];
+            indicesByContent[content] = indices;
+        }
+        [indices addObject:@(index)];
+    }
+    _singleGroupIndicesByContent = indicesByContent;
 }
 
 - (BOOL)groupIsLineBreak:(GACharacterGroup *)group {
@@ -253,13 +198,6 @@
             continue;
         }
         [seenSingleCharacters addObject:group.text];
-        if ([_previousUITextCharacters containsObject:group.text]) {
-            GARawScanResult *cached = _cache[group.text];
-            if (cached != nil) {
-                [self applySingleCharacterResult:cached content:group.text];
-            }
-            continue;
-        }
         GARawScanResult *cached = _cache[group.text];
         if (cached != nil) {
             [self applySingleCharacterResult:cached content:group.text];
@@ -318,13 +256,15 @@
                 if (cached != nil) {
                     subitem.result = cached;
                     subitem.state = GATextScanSubitemStateCompleted;
-                    [self applySubitem:subitem];
+                    if (subitem.length == 1) {
+                        [self applySingleCharacterResult:cached content:subitem.content];
+                    } else {
+                        [self applySubitem:subitem];
+                    }
                     [self notifyUpdate];
                     continue;
                 }
                 subitem.state = GATextScanSubitemStateScanning;
-                _scanning = YES;
-                _scanCount++;
                 return subitem;
             }
         }
@@ -333,11 +273,8 @@
 }
 
 - (void)completeSubitem:(GATextScanSubitem *)subitem result:(GARawScanResult *)result {
-    if (subitem == nil) {
-        return;
-    }
-    _scanning = NO;
     _cache[subitem.content] = result;
+    BOOL single = (subitem.length == 1);
     for (GATextScanGroup *group in _scanGroups) {
         for (GATextScanItem *item in group.items) {
             for (GATextScanSubitem *candidate in item.subitems) {
@@ -346,11 +283,13 @@
                 }
                 candidate.result = result;
                 candidate.state = GATextScanSubitemStateCompleted;
-                [self applySubitem:candidate];
+                if (!single) {
+                    [self applySubitem:candidate];
+                }
             }
         }
     }
-    if (subitem.length == 1) {
+    if (single) {
         [self applySingleCharacterResult:result content:subitem.content];
     }
     [self notifyUpdate];
@@ -360,33 +299,22 @@
 }
 
 - (void)applySingleCharacterResult:(GARawScanResult *)result content:(NSString *)content {
-    if (result == nil || content.length == 0) {
-        return;
-    }
-    for (NSUInteger index = 0; index < _groups.count; index++) {
+    NSArray<NSNumber *> *indices = _singleGroupIndicesByContent[content];
+    for (NSNumber *number in indices) {
+        NSUInteger index = number.unsignedIntegerValue;
         GACharacterGroup *group = _groups[index];
-        if (![group.text isEqualToString:content]) {
-            continue;
-        }
-        GATextScanSubitem *subitem = [[GATextScanSubitem alloc] init];
-        subitem.content = content;
-        subitem.range = group.textRange;
-        subitem.startGroup = index;
-        subitem.length = 1;
-        subitem.result = result;
-        subitem.state = GATextScanSubitemStateCompleted;
-        [self applySubitem:subitem];
+        [_fontDocument applyRawResult:result
+                         contentRange:group.textRange
+                      startGroupIndex:index
+                               groups:_groups];
     }
 }
 
 - (void)applySubitem:(GATextScanSubitem *)subitem {
-    if (subitem.result == nil) {
-        return;
-    }
-    [self.fontDocument applyRawResult:subitem.result
-                         contentRange:subitem.range
-                      startGroupIndex:subitem.startGroup
-                               groups:_groups];
+    [_fontDocument applyRawResult:subitem.result
+                     contentRange:subitem.range
+                  startGroupIndex:subitem.startGroup
+                           groups:_groups];
 }
 
 - (void)notifyUpdate {

@@ -6,14 +6,12 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface GADetailViewController : NSViewController
 @property (nonatomic) GAViewMode viewMode;
-@property (nonatomic, readonly) CGFloat canvasInsetFraction;
 @property (nonatomic, copy, nullable) void (^onAllGlyphDoubleClick)(GAAllGlyphEntry *entry);
 @property (nonatomic, copy, nullable) void (^onGroupSelected)(GACharacterGroup *group);
 
 - (void)setVariant:(nullable GAGlyphVariant *)variant;
 - (void)setFontDocument:(nullable GAFontDocument *)document;
 - (void)setShowsMetrics:(BOOL)showsMetrics;
-- (void)setCanvasInsetFraction:(CGFloat)fraction;
 - (void)zoomCanvasIn;
 - (void)zoomCanvasOut;
 - (void)resetCanvasZoom;

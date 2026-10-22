@@ -16,7 +16,7 @@ extern int32_t u_getPropertyEnum(const char *alias);
 extern int32_t u_getPropertyValueEnum(int32_t property, const char *alias);
 extern int32_t u_getIntPropertyValue(int32_t code, int32_t property);
 
-static NSString *GANameForScalar(uint32_t scalar) {
+NSString *GAUnicodeNameForScalar(uint32_t scalar) {
     char buffer[512] = {0};
     int32_t error = 0;
     (void)u_charName((int32_t)scalar, 0 /* U_UNICODE_CHAR_NAME */, buffer,
@@ -37,10 +37,6 @@ static NSString *GANameForScalar(uint32_t scalar) {
         return @"";
     }
     return name;
-}
-
-NSString *GAUnicodeNameForScalar(uint32_t scalar) {
-    return GANameForScalar(scalar);
 }
 
 BOOL GAVerticalScalarRotates(uint32_t scalar) {

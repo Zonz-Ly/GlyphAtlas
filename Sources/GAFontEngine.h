@@ -69,6 +69,9 @@ FOUNDATION_EXPORT NSString * const GAGlyphSelectionAttributeName;
 @property (nonatomic) BOOL insertedLigature;
 @end
 
+/// Splits text into one group per composed character, preserving UTF-16 ranges.
+FOUNDATION_EXPORT NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text);
+
 /// A range-independent scan result for one input context. The cache stores
 /// these, keyed by content; a range-bound GAGlyphVariant is created only when
 /// the result is applied to the current text.
@@ -78,7 +81,6 @@ FOUNDATION_EXPORT NSString * const GAGlyphSelectionAttributeName;
 @property (nonatomic, strong) GAFontBox *fontBox;
 @property (nonatomic, copy) NSArray<NSString *> *sources;
 @property (nonatomic, getter=isBase) BOOL base;
-@property (nonatomic, getter=isActual) BOOL actual;
 @property (nonatomic, getter=isLigature) BOOL ligature;
 /// UTF-16 range of the cluster relative to the scanned content.
 @property (nonatomic) NSRange sourceRange;
@@ -88,7 +90,6 @@ FOUNDATION_EXPORT NSString * const GAGlyphSelectionAttributeName;
 
 @interface GARawScanResult : NSObject
 @property (nonatomic, copy) NSArray<GAScanCandidate *> *candidates;
-@property (nonatomic) NSUInteger groupCount;
 @end
 
 @interface GAFontDocument : NSObject

@@ -151,9 +151,7 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 @property (nonatomic) BOOL scanDisplayPublished;
 @property (nonatomic, copy, nullable) NSString *pendingWorkerText;
 @property (nonatomic, copy, nullable) NSArray<GAGlyphSelectionRun *> *pendingWorkerSelections;
-@property (nonatomic, copy, nullable) NSString *pendingWorkerPreviousUIText;
 @property (nonatomic) NSUInteger workerGeneration;
-@property (nonatomic) CFAbsoluteTime workerLastPublish;
 @property (nonatomic, copy, nullable) NSString *workerLastMultiText;
 @property (nonatomic, copy, nullable) NSArray<NSString *> *workerLastMultiSeeds;
 @property (nonatomic, strong) dispatch_queue_t multiScanQueue;
@@ -217,14 +215,11 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 }
 
 - (void)configureInterfaceWithWindow:(NSWindow *)window {
-    _viewMode = GAViewModeAllGlyphs;
     _showsMetrics = YES;
     _analysisText = @"";
     _multiText = @"";
     _multiGroups = @[];
     _multiGroupSources = [NSMapTable weakToStrongObjectsMapTable];
-    _textAlignment = NSTextAlignmentLeft;
-    _verticalWriting = NO;
     self.fontQueue = dispatch_queue_create("com.zonz.GlyphAtlas.font", DISPATCH_QUEUE_SERIAL);
     self.analysisQueue = dispatch_queue_create("com.zonz.GlyphAtlas.analysis",
                                                DISPATCH_QUEUE_SERIAL);
@@ -479,9 +474,6 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 #pragma mark - Opening fonts
 
 - (void)loadFontAtURL:(NSURL *)url {
-    if (url == nil) {
-        return;
-    }
     CFArrayRef array = CTFontManagerCreateFontDescriptorsFromURL((__bridge CFURLRef)url);
     NSArray *descriptors = array ? CFBridgingRelease(array) : @[];
     if (descriptors.count == 0) {
@@ -589,9 +581,6 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
             return;
         }
         NSInteger index = popup.selectedItem.tag;
-        if (index < 0 || index >= (NSInteger)descriptors.count) {
-            index = 0;
-        }
         CTFontDescriptorRef descriptor =
             (__bridge CTFontDescriptorRef)descriptors[(NSUInteger)index];
         [weakSelf loadDescriptor:descriptor url:url];
@@ -1044,15 +1033,14 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
     if (self.fontDocument == nil || self.scanModel == nil) {
         return;
     }
-    if (text.length == 0) {
-        [self clearScanDisplay];
-    }
 
     @synchronized (self) {
         self.pendingWorkerText = text;
         self.pendingWorkerSelections = selections;
-        self.pendingWorkerPreviousUIText = self.analysisText ?: @"";
         self.workerGeneration += 1;
+    }
+    if (text.length == 0) {
+        [self clearScanDisplay];
     }
     if (![self.analysisText isEqualToString:text]) {
         self.scanDisplayPublished = NO;
@@ -1071,6 +1059,9 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
     self.multiText = @"";
     self.multiGroups = @[];
     self.multiGroupSources = [NSMapTable weakToStrongObjectsMapTable];
+    // The next text may equal the pre-clear text (for example "a" -> "" -> "a");
+    // force a rebuild instead of trusting the stale worker-side signature.
+    self.workerLastMultiText = nil;
     [self.detailViewController setMultiText:@"" groups:@[]];
 }
 
@@ -1083,17 +1074,14 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
     while (YES) {
         NSString *text = nil;
         NSArray<GAGlyphSelectionRun *> *selections = nil;
-        NSString *previousUIText = @"";
         NSUInteger generation = 0;
         @synchronized (self) {
             if (self.pendingWorkerText != nil) {
                 text = self.pendingWorkerText;
                 selections = self.pendingWorkerSelections ?: @[];
-                previousUIText = self.pendingWorkerPreviousUIText ?: @"";
                 generation = self.workerGeneration;
                 self.pendingWorkerText = nil;
                 self.pendingWorkerSelections = nil;
-                self.pendingWorkerPreviousUIText = nil;
             }
         }
         if (text != nil) {
@@ -1101,8 +1089,7 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
             self.workerSelections = selections;
             self.workerTextGeneration = generation;
             if (![self.scanModel.text isEqualToString:text]) {
-                [self.scanModel updateText:text previousUIText:previousUIText];
-                self.workerLastPublish = 0;
+                [self.scanModel updateText:text];
             }
         }
         if (self.workerText == nil) {
@@ -1127,8 +1114,7 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 
         [self publishWorkerSnapshotWithText:self.workerText
                                  selections:self.workerSelections
-                                 generation:self.workerTextGeneration
-                                      force:YES];
+                                 generation:self.workerTextGeneration];
         @synchronized (self) {
             if (self.pendingWorkerText != nil) {
                 continue;
@@ -1154,8 +1140,7 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 
         [self publishWorkerSnapshotWithText:self.workerText
                                  selections:self.workerSelections
-                                 generation:self.workerTextGeneration
-                                      force:YES];
+                                 generation:self.workerTextGeneration];
         @synchronized (self) {
             if (self.pendingWorkerText == nil) {
                 return;
@@ -1166,14 +1151,12 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 
 - (void)publishWorkerSnapshotWithText:(NSString *)text
                            selections:(NSArray<GAGlyphSelectionRun *> *)selections
-                           generation:(NSUInteger)generation
-                                force:(BOOL)force {
-    CFAbsoluteTime now = CFAbsoluteTimeGetCurrent();
-    if (!force && now - self.workerLastPublish < 0.10) {
-        return;
+                           generation:(NSUInteger)generation {
+    @synchronized (self) {
+        if (generation != self.workerGeneration) {
+            return;
+        }
     }
-    self.workerLastPublish = now;
-
     NSArray<GACharacterGroup *> *display =
         [self buildDisplayGroupsFromBaseGroups:self.scanModel.groups
                                           text:text
@@ -1293,12 +1276,10 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 }
 
 - (BOOL)singleCharacterScanComplete {
-    BOOL found = NO;
     for (GATextScanGroup *group in self.scanModel.scanGroups) {
         if (group.length != 1) {
             continue;
         }
-        found = YES;
         for (GATextScanItem *item in group.items) {
             for (GATextScanSubitem *subitem in item.subitems) {
                 if (subitem.state != GATextScanSubitemStateCompleted) {
@@ -1307,7 +1288,7 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
             }
         }
     }
-    return found;
+    return YES;
 }
 
 - (NSArray<NSString *> *)multiSeedSignatureForDisplay:(NSArray<GACharacterGroup *> *)display {

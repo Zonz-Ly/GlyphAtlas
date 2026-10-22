@@ -250,20 +250,20 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
     NSUInteger lastRow = (NSUInteger)MAX(0.0, floor((NSMaxY(visible) - contentTop) / stride));
     NSUInteger firstIndex = MIN(self.entries.count, firstRow * self.columns);
     NSUInteger lastIndex = MIN(self.entries.count, (lastRow + 1) * self.columns);
+    NSColor *glyphColor = GAGlyphForegroundColor();
     CGContextRef context = NSGraphicsContext.currentContext.CGContext;
-    CGContextSetFillColorWithColor(context, GAGlyphForegroundColor().CGColor);
+    CGContextSetFillColorWithColor(context, glyphColor.CGColor);
 
     for (NSUInteger index = firstIndex; index < lastIndex; index++) {
         BOOL highlighted = index == self.highlightIndex && self.highlightAlpha > 0;
         if (highlighted) {
             // Tint the glyph itself; the fade blends it back to the glyph colour.
-            NSColor *blend = [GAGlyphForegroundColor()
-                blendedColorWithFraction:self.highlightAlpha
-                                 ofColor:[NSColor controlAccentColor]]
+            NSColor *blend = [glyphColor blendedColorWithFraction:self.highlightAlpha
+                                                          ofColor:[NSColor controlAccentColor]]
                 ?: [NSColor controlAccentColor];
             CGContextSetFillColorWithColor(context, blend.CGColor);
         } else {
-            CGContextSetFillColorWithColor(context, GAGlyphForegroundColor().CGColor);
+            CGContextSetFillColorWithColor(context, glyphColor.CGColor);
         }
         CGGlyph glyph = (CGGlyph)self.entries[index].glyphID.unsignedShortValue;
         CGRect ink = CGRectNull;
@@ -301,10 +301,8 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
         _scrollView = [[NSScrollView alloc] initWithFrame:NSZeroRect];
         _scrollView.hasVerticalScroller = YES;
         _scrollView.autohidesScrollers = YES;
-        _scrollView.drawsBackground = YES;
         _scrollView.backgroundColor = GACanvasBackgroundColor();
         _scrollView.automaticallyAdjustsContentInsets = NO;
-        _scrollView.borderType = NSNoBorder;
         _scrollView.translatesAutoresizingMaskIntoConstraints = NO;
         [self addSubview:_scrollView];
         [NSLayoutConstraint activateConstraints:@[

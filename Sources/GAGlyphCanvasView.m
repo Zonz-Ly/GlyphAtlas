@@ -11,7 +11,6 @@ const CGFloat GAGlyphZoomStep10 =
     (GAGlyphZoomStep * GAGlyphZoomStep) *
     (GAGlyphZoomStep * GAGlyphZoomStep) *
     (GAGlyphZoomStep * GAGlyphZoomStep);
-const CGFloat GACanvasMinInsetFraction = 0.0;
 /// The default page is two zoom-outs from a full page. The maximum inset is
 /// the page after twenty more zoom-outs: `0.5 * (1 - 1 / 1.12^22)`.
 const CGFloat GACanvasMaxInsetFraction =
@@ -63,8 +62,7 @@ static CGFloat GAMaxScaleForAxis(CGFloat pageSize,
 }
 
 CGFloat GAClampSideInsetFraction(CGFloat fraction) {
-    return MIN(GACanvasMaxInsetFraction,
-               MAX(GACanvasMinInsetFraction, fraction));
+    return MIN(GACanvasMaxInsetFraction, MAX(0.0, fraction));
 }
 
 CGFloat GACanvasPageFractionForMagnification(CGFloat startPage, CGFloat magnification) {
@@ -207,23 +205,20 @@ NSColor *GAGlyphForegroundColor(void) {
     }
 
     CTFontRef font = variant.fontBox.font;
-    unsigned upem = CTFontGetUnitsPerEm(font);
-    if (upem == 0) {
-        upem = 1000;
-    }
-    CGFloat shapeToUnits = (CGFloat)upem / GAFontShapingSize;
+    CGFloat unitsPerEm = CTFontGetUnitsPerEm(font);
+    CGFloat shapeToUnits = unitsPerEm / GAFontShapingSize;
 
     CGRect ink = [GAFontDocument inkBoundsForVariant:variant];
-    BOOL hasInk = !CGRectIsNull(ink) && !CGRectIsEmpty(ink);
+    BOOL hasInk = !CGRectIsEmpty(ink);
 
     CGSize advance = [GAFontDocument advanceInFontUnitsForVariant:variant];
     CGFloat widthUnits = advance.width;
     CGFloat heightUnits = advance.height;
     if (widthUnits <= 0) {
-        widthUnits = hasInk ? CGRectGetWidth(ink) * shapeToUnits : upem * 0.01;
+        widthUnits = hasInk ? CGRectGetWidth(ink) * shapeToUnits : unitsPerEm * 0.01;
     }
     if (heightUnits <= 0) {
-        heightUnits = hasInk ? CGRectGetHeight(ink) * shapeToUnits : upem;
+        heightUnits = hasInk ? CGRectGetHeight(ink) * shapeToUnits : unitsPerEm;
     }
 
     CGFloat baselineUnits;
@@ -343,7 +338,7 @@ NSColor *GAGlyphForegroundColor(void) {
     CGFloat glyphScale = scale * shapeToUnits;
 
     if (self.showsMetrics) {
-        [self drawPageShadowInRect:page];
+        GADrawPage(page, self.effectiveAppearance);
     }
 
     NSUInteger count = variant.glyphIDs.count;
@@ -374,10 +369,6 @@ NSColor *GAGlyphForegroundColor(void) {
 
     free(glyphs);
     free(positions);
-}
-
-- (void)drawPageShadowInRect:(NSRect)page {
-    GADrawPage(page, self.effectiveAppearance);
 }
 
 @end

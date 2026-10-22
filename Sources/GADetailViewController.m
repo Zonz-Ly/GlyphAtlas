@@ -22,6 +22,7 @@
 @property (nonatomic, strong) GAMultiGlyphView *multiView;
 @property (nonatomic, strong) NSScrollView *multiScrollView;
 @property (nonatomic) BOOL updatingMultiLayout;
+@property (nonatomic) CGFloat canvasInsetFraction;
 @end
 
 @implementation GADetailViewController
@@ -29,9 +30,7 @@
 - (void)loadView {
     GADetailContainerView *container =
         [[GADetailContainerView alloc] initWithFrame:NSMakeRect(0, 0, 900, 760)];
-    __weak typeof(self) weakSelf = self;
     container.menuProvider = ^NSMenu *{
-        (void)weakSelf;
         id delegate = NSApp.delegate;
         if ([delegate respondsToSelector:@selector(viewMenuForContext)]) {
             return [delegate viewMenuForContext];
@@ -57,10 +56,8 @@
     self.multiScrollView.hasVerticalScroller = YES;
     self.multiScrollView.hasHorizontalScroller = YES;
     self.multiScrollView.autohidesScrollers = YES;
-    self.multiScrollView.drawsBackground = YES;
     self.multiScrollView.backgroundColor = GACanvasBackgroundColor();
     self.multiScrollView.automaticallyAdjustsContentInsets = NO;
-    self.multiScrollView.borderType = NSNoBorder;
     [self.view addSubview:self.multiScrollView];
 
     self.multiView = [[GAMultiGlyphView alloc] initWithFrame:NSMakeRect(0, 0, 900, 760)];
@@ -157,15 +154,19 @@
     self.multiView.document = document;
 }
 
+- (void)scrollMultiToPoint:(NSPoint)point {
+    NSSize viewport = self.multiScrollView.contentSize;
+    NSSize document = self.multiView.frame.size;
+    point.x = MIN(MAX(0.0, point.x), MAX(0.0, document.width - viewport.width));
+    point.y = MIN(MAX(0.0, point.y), MAX(0.0, document.height - viewport.height));
+    [self.multiScrollView.contentView scrollToPoint:point];
+    [self.multiScrollView reflectScrolledClipView:self.multiScrollView.contentView];
+}
+
 - (void)setMultiText:(NSString *)text groups:(NSArray<GACharacterGroup *> *)groups {
     NSPoint origin = self.multiScrollView.contentView.bounds.origin;
     [self.multiView setText:text groups:groups];
-    NSSize viewport = self.multiScrollView.contentSize;
-    NSSize document = self.multiView.frame.size;
-    origin.x = MIN(MAX(0.0, origin.x), MAX(0.0, document.width - viewport.width));
-    origin.y = MIN(MAX(0.0, origin.y), MAX(0.0, document.height - viewport.height));
-    [self.multiScrollView.contentView scrollToPoint:origin];
-    [self.multiScrollView reflectScrolledClipView:self.multiScrollView.contentView];
+    [self scrollMultiToPoint:origin];
 }
 
 - (void)setShowsMetrics:(BOOL)showsMetrics {
@@ -251,14 +252,10 @@
         return;
     }
     NSSize viewport = self.multiScrollView.contentSize;
-    NSSize document = self.multiView.frame.size;
     NSRect page = [self.multiView pageRect];
-    CGFloat x = NSMidX(page) - viewport.width * 0.5;
-    CGFloat y = NSMidY(page) - viewport.height * 0.5;
-    x = MIN(MAX(0, x), MAX(0, document.width - viewport.width));
-    y = MIN(MAX(0, y), MAX(0, document.height - viewport.height));
-    [self.multiScrollView.contentView scrollToPoint:NSMakePoint(x, y)];
-    [self.multiScrollView reflectScrolledClipView:self.multiScrollView.contentView];
+    NSPoint point = NSMakePoint(NSMidX(page) - viewport.width * 0.5,
+                                NSMidY(page) - viewport.height * 0.5);
+    [self scrollMultiToPoint:point];
 }
 
 @end
