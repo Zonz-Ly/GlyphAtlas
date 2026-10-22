@@ -1,10 +1,26 @@
 #import "GAGlyphCanvasView.h"
 
 @interface GAGlyphCanvasView ()
-@property (nonatomic, strong) NSLayoutGuide *contentGuide;
+@property (nonatomic) CGFloat magnificationStartPage;
 @end
 
-static const CGFloat GACanvasSideInsetFraction = 0.11;
+const CGFloat GAGlyphZoomStep = 1.12;
+const CGFloat GAGlyphZoomStep10 =
+    (GAGlyphZoomStep * GAGlyphZoomStep) *
+    (GAGlyphZoomStep * GAGlyphZoomStep) *
+    (GAGlyphZoomStep * GAGlyphZoomStep) *
+    (GAGlyphZoomStep * GAGlyphZoomStep) *
+    (GAGlyphZoomStep * GAGlyphZoomStep);
+const CGFloat GACanvasMinInsetFraction = 0.0;
+/// The default page is two zoom-outs from a full page. The maximum inset is
+/// the page after twenty more zoom-outs: `0.5 * (1 - 1 / 1.12^22)`.
+const CGFloat GACanvasMaxInsetFraction =
+    0.5 * (1.0 - 1.0 /
+        (GAGlyphZoomStep10 * GAGlyphZoomStep10 *
+         GAGlyphZoomStep * GAGlyphZoomStep));
+/// Two 1.12× zoom-outs from a full-page canvas.
+const CGFloat GACanvasDefaultSideInsetFraction =
+    0.5 * (1.0 - 1.0 / (GAGlyphZoomStep * GAGlyphZoomStep));
 static const CGFloat GACanvasBoundaryMargin = 1.0;
 static const CGFloat GACanvasScaleEpsilon = 0.999999;
 
@@ -46,7 +62,39 @@ static CGFloat GAMaxScaleForAxis(CGFloat pageSize,
     return MAX(0, maxScale);
 }
 
-static NSColor *GACanvasBackgroundColor(void) {
+CGFloat GAClampSideInsetFraction(CGFloat fraction) {
+    return MIN(GACanvasMaxInsetFraction,
+               MAX(GACanvasMinInsetFraction, fraction));
+}
+
+CGFloat GACanvasPageFractionForMagnification(CGFloat startPage, CGFloat magnification) {
+    CGFloat minimum = 1.0 - 2.0 * GACanvasMaxInsetFraction;
+    return MIN(1.0, MAX(minimum, startPage * (1.0 + magnification)));
+}
+
+NSRect GAInsetRectByFraction(NSRect rect, CGFloat fraction) {
+    CGFloat insetX = NSWidth(rect) * fraction;
+    CGFloat insetY = NSHeight(rect) * fraction;
+    return NSInsetRect(rect, insetX, insetY);
+}
+
+void GADrawPage(NSRect page, NSAppearance *appearance) {
+    NSString *match = [appearance bestMatchFromAppearancesWithNames:
+        @[NSAppearanceNameAqua, NSAppearanceNameDarkAqua]];
+    BOOL darkAppearance = [match isEqualToString:NSAppearanceNameDarkAqua];
+    [NSGraphicsContext saveGraphicsState];
+    NSShadow *shadow = [[NSShadow alloc] init];
+    shadow.shadowColor = [[NSColor blackColor]
+        colorWithAlphaComponent:darkAppearance ? 0.58 : 0.18];
+    shadow.shadowBlurRadius = 22;
+    shadow.shadowOffset = NSMakeSize(0, -8);
+    [shadow set];
+    [GACanvasBackgroundColor() setFill];
+    [[NSBezierPath bezierPathWithRoundedRect:page xRadius:2 yRadius:2] fill];
+    [NSGraphicsContext restoreGraphicsState];
+}
+
+NSColor *GACanvasBackgroundColor(void) {
     return [NSColor colorWithName:@"GACanvasBackground"
                   dynamicProvider:^NSColor *(NSAppearance *appearance) {
         NSString *match = [appearance bestMatchFromAppearancesWithNames:
@@ -60,7 +108,7 @@ static NSColor *GACanvasBackgroundColor(void) {
     }];
 }
 
-static NSColor *GAGlyphForegroundColor(void) {
+NSColor *GAGlyphForegroundColor(void) {
     return [NSColor colorWithName:@"GAGlyphForeground"
                   dynamicProvider:^NSColor *(NSAppearance *appearance) {
         NSString *match = [appearance bestMatchFromAppearancesWithNames:
@@ -84,16 +132,12 @@ static NSColor *GAGlyphForegroundColor(void) {
         self.layerContentsRedrawPolicy = NSViewLayerContentsRedrawOnSetNeedsDisplay;
         self.accessibilityLabel = @"Glyph canvas";
 
-        _contentGuide = [[NSLayoutGuide alloc] init];
-        [self addLayoutGuide:_contentGuide];
-        [NSLayoutConstraint activateConstraints:@[
-            [_contentGuide.centerXAnchor constraintEqualToAnchor:self.centerXAnchor],
-            [_contentGuide.centerYAnchor constraintEqualToAnchor:self.centerYAnchor],
-            [_contentGuide.widthAnchor constraintEqualToAnchor:self.widthAnchor
-                multiplier:1.0 - 2.0 * GACanvasSideInsetFraction],
-            [_contentGuide.heightAnchor constraintEqualToAnchor:self.heightAnchor
-                multiplier:1.0 - 2.0 * GACanvasSideInsetFraction],
-        ]];
+        _sideInsetFraction = GACanvasDefaultSideInsetFraction;
+        _showsMetrics = YES;
+        NSMagnificationGestureRecognizer *magnification =
+            [[NSMagnificationGestureRecognizer alloc] initWithTarget:self
+                                                               action:@selector(handleMagnification:)];
+        [self addGestureRecognizer:magnification];
     }
     return self;
 }
@@ -113,6 +157,34 @@ static NSColor *GAGlyphForegroundColor(void) {
 - (void)setVariant:(GAGlyphVariant *)variant {
     _variant = variant;
     [self setNeedsDisplay:YES];
+}
+
+- (void)setSideInsetFraction:(CGFloat)sideInsetFraction {
+    CGFloat clamped = GAClampSideInsetFraction(sideInsetFraction);
+    if (fabs(clamped - _sideInsetFraction) < 1e-9) {
+        return;
+    }
+    _sideInsetFraction = clamped;
+    [self setNeedsDisplay:YES];
+    if (self.onSideInsetFractionChanged) {
+        self.onSideInsetFractionChanged(clamped);
+    }
+}
+
+- (void)setShowsMetrics:(BOOL)showsMetrics {
+    _showsMetrics = showsMetrics;
+    [self setNeedsDisplay:YES];
+}
+
+- (void)handleMagnification:(NSMagnificationGestureRecognizer *)recognizer {
+    if (recognizer.state == NSGestureRecognizerStateBegan) {
+        self.magnificationStartPage = 1.0 - 2.0 * self.sideInsetFraction;
+    } else if (recognizer.state == NSGestureRecognizerStateChanged) {
+        // 1:1 with the gesture, like system zooming views.
+        CGFloat page = GACanvasPageFractionForMagnification(self.magnificationStartPage,
+                                                            recognizer.magnification);
+        self.sideInsetFraction = (1.0 - page) * 0.5;
+    }
 }
 
 - (void)setFrameSize:(NSSize)newSize {
@@ -163,7 +235,7 @@ static NSColor *GAGlyphForegroundColor(void) {
         baselineUnits = CTFontGetDescent(font) * shapeToUnits;
     }
 
-    NSRect contentRect = self.contentGuide.frame;
+    NSRect contentRect = GAInsetRectByFraction(self.bounds, self.sideInsetFraction);
     if (NSIsEmptyRect(contentRect)) {
         contentRect = NSInsetRect(self.bounds, 80.0, 80.0);
     }
@@ -270,7 +342,9 @@ static NSColor *GAGlyphForegroundColor(void) {
     NSRect page = NSMakeRect(pageX, pageY, pageWidth, pageHeight);
     CGFloat glyphScale = scale * shapeToUnits;
 
-    [self drawPageShadowInRect:page];
+    if (self.showsMetrics) {
+        [self drawPageShadowInRect:page];
+    }
 
     NSUInteger count = variant.glyphIDs.count;
     if (count == 0) {
@@ -303,19 +377,7 @@ static NSColor *GAGlyphForegroundColor(void) {
 }
 
 - (void)drawPageShadowInRect:(NSRect)page {
-    NSString *match = [self.effectiveAppearance bestMatchFromAppearancesWithNames:
-        @[NSAppearanceNameAqua, NSAppearanceNameDarkAqua]];
-    BOOL darkAppearance = [match isEqualToString:NSAppearanceNameDarkAqua];
-    [NSGraphicsContext saveGraphicsState];
-    NSShadow *shadow = [[NSShadow alloc] init];
-    shadow.shadowColor = [[NSColor blackColor]
-        colorWithAlphaComponent:darkAppearance ? 0.58 : 0.18];
-    shadow.shadowBlurRadius = 22;
-    shadow.shadowOffset = NSMakeSize(0, -8);
-    [shadow set];
-    [GACanvasBackgroundColor() setFill];
-    [[NSBezierPath bezierPathWithRoundedRect:page xRadius:2 yRadius:2] fill];
-    [NSGraphicsContext restoreGraphicsState];
+    GADrawPage(page, self.effectiveAppearance);
 }
 
 @end

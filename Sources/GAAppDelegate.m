@@ -328,6 +328,13 @@
     [editMenu addItem:[self menuItem:@"Delete" action:@selector(delete:) key:@"" modifiers:0]];
     [editMenu addItem:[self menuItem:@"Select All" action:@selector(selectAll:) key:@"a" modifiers:NSEventModifierFlagCommand]];
 
+    // View
+    NSMenuItem *viewItem = [[NSMenuItem alloc] initWithTitle:@"View"
+                                                     action:nil
+                                              keyEquivalent:@""];
+    [mainMenu addItem:viewItem];
+    viewItem.submenu = [self buildViewMenuIncludingZoom:YES];
+
     // Window
     NSMenuItem *windowItem = [[NSMenuItem alloc] initWithTitle:@"Window"
                                                         action:nil
@@ -358,6 +365,203 @@
     [helpMenu addItem:help];
 
     NSApp.mainMenu = mainMenu;
+}
+
+- (NSMenu *)buildViewMenuIncludingZoom:(BOOL)includeZoom {
+    NSMenu *menu = [[NSMenu alloc] initWithTitle:@"View"];
+    // Menu order is also the shortcut order: Single ⌘1, Multi ⌘2, All ⌘3.
+    NSArray<NSString *> *modeTitles = @[@"Single Glyph", @"Multi-Character", @"All Glyphs"];
+    NSArray<NSNumber *> *modeTags = @[@(GAViewModeSingleGlyph),
+                                      @(GAViewModeMultiCharacter),
+                                      @(GAViewModeAllGlyphs)];
+    NSArray<NSString *> *modeKeys = @[@"1", @"2", @"3"];
+    for (NSInteger index = 0; index < 3; index++) {
+        NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:modeTitles[(NSUInteger)index]
+                                                      action:@selector(switchViewMode:)
+                                               keyEquivalent:modeKeys[(NSUInteger)index]];
+        item.target = self;
+        item.tag = modeTags[(NSUInteger)index].integerValue;
+        [menu addItem:item];
+    }
+    [menu addItem:[NSMenuItem separatorItem]];
+
+    NSMenuItem *metrics = [[NSMenuItem alloc] initWithTitle:@"Show Metrics"
+                                                     action:@selector(toggleShowMetrics:)
+                                              keyEquivalent:@"4"];
+    metrics.target = self;
+    [menu addItem:metrics];
+    [menu addItem:[NSMenuItem separatorItem]];
+
+    if (!includeZoom) {
+        [self addViewAlignmentItemsToMenu:menu];
+        return menu;
+    }
+
+    NSMenuItem *zoomIn = [[NSMenuItem alloc] initWithTitle:@"Zoom In"
+                                                    action:@selector(zoomIn:)
+                                             keyEquivalent:@"+"];
+    zoomIn.target = self;
+    [menu addItem:zoomIn];
+    NSMenuItem *metricsZoomIn =
+        [[NSMenuItem alloc] initWithTitle:@"Metrics Zoom In"
+                                   action:@selector(zoomMetricsIn:)
+                            keyEquivalent:@"+"];
+    metricsZoomIn.target = self;
+    metricsZoomIn.keyEquivalentModifierMask =
+        NSEventModifierFlagCommand | NSEventModifierFlagOption;
+    metricsZoomIn.alternate = YES;
+    [menu addItem:metricsZoomIn];
+
+    NSMenuItem *zoomOut = [[NSMenuItem alloc] initWithTitle:@"Zoom Out"
+                                                     action:@selector(zoomOut:)
+                                              keyEquivalent:@"-"];
+    zoomOut.target = self;
+    [menu addItem:zoomOut];
+    NSMenuItem *metricsZoomOut =
+        [[NSMenuItem alloc] initWithTitle:@"Metrics Zoom Out"
+                                   action:@selector(zoomMetricsOut:)
+                            keyEquivalent:@"-"];
+    metricsZoomOut.target = self;
+    metricsZoomOut.keyEquivalentModifierMask =
+        NSEventModifierFlagCommand | NSEventModifierFlagOption;
+    metricsZoomOut.alternate = YES;
+    [menu addItem:metricsZoomOut];
+    NSMenuItem *actualSize = [[NSMenuItem alloc] initWithTitle:@"Actual Size"
+                                                        action:@selector(resetZoom:)
+                                                 keyEquivalent:@"0"];
+    actualSize.target = self;
+    [menu addItem:actualSize];
+    [menu addItem:[NSMenuItem separatorItem]];
+
+    [self addViewAlignmentItemsToMenu:menu];
+    return menu;
+}
+
+- (void)addViewAlignmentItemsToMenu:(NSMenu *)menu {
+    NSMenuItem *verticalItem = [[NSMenuItem alloc] initWithTitle:@"Vertical"
+                                                          action:@selector(toggleWritingDirection:)
+                                                   keyEquivalent:@"5"];
+    verticalItem.target = self;
+    [menu addItem:verticalItem];
+
+    NSMenuItem *alignmentItem = [[NSMenuItem alloc] initWithTitle:@"Text Alignment"
+                                                           action:nil
+                                                    keyEquivalent:@""];
+    NSMenu *alignmentMenu = [[NSMenu alloc] initWithTitle:@"Text Alignment"];
+    NSArray<NSString *> *alignmentTitles =
+        @[@"Left", @"Center", @"Right", @"Justified"];
+    NSArray<NSNumber *> *alignmentTags = @[@(NSTextAlignmentLeft),
+                                           @(NSTextAlignmentCenter),
+                                           @(NSTextAlignmentRight),
+                                           @(NSTextAlignmentJustified)];
+    for (NSInteger alignment = 0; alignment < 4; alignment++) {
+        NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:alignmentTitles[(NSUInteger)alignment]
+                                                      action:@selector(setTextAlignment:)
+                                               keyEquivalent:@""];
+        item.target = self;
+        item.tag = alignmentTags[(NSUInteger)alignment].integerValue;
+        [alignmentMenu addItem:item];
+    }
+    alignmentItem.submenu = alignmentMenu;
+    [menu addItem:alignmentItem];
+}
+
+- (NSMenu *)viewMenuForContext {
+    return [self buildViewMenuIncludingZoom:NO];
+}
+
+- (GAMainWindowController *)activeMainWindowController {
+    NSWindowController *controller = NSApp.keyWindow.windowController;
+    if ([controller isKindOfClass:GAMainWindowController.class]) {
+        return (GAMainWindowController *)controller;
+    }
+    for (GAMainWindowController *candidate in self.windowControllers) {
+        if (candidate.window.isVisible) {
+            return candidate;
+        }
+    }
+    return nil;
+}
+
+- (void)switchViewMode:(NSMenuItem *)sender {
+    [self.activeMainWindowController setViewMode:(GAViewMode)sender.tag];
+}
+
+- (void)toggleShowMetrics:(id)sender {
+    [self.activeMainWindowController toggleShowsMetrics];
+}
+
+- (void)zoomIn:(id)sender {
+    [self.activeMainWindowController zoomIn];
+}
+
+- (void)zoomOut:(id)sender {
+    [self.activeMainWindowController zoomOut];
+}
+
+- (void)zoomMetricsIn:(id)sender {
+    [self.activeMainWindowController zoomMetricsIn];
+}
+
+- (void)zoomMetricsOut:(id)sender {
+    [self.activeMainWindowController zoomMetricsOut];
+}
+
+- (void)resetZoom:(id)sender {
+    [self.activeMainWindowController resetZoom];
+}
+
+- (void)setTextAlignment:(NSMenuItem *)sender {
+    [self.activeMainWindowController setTextAlignment:(NSTextAlignment)sender.tag];
+}
+
+- (void)toggleWritingDirection:(id)sender {
+    GAMainWindowController *controller = [self activeMainWindowController];
+    [controller setVerticalWriting:!controller.verticalWriting];
+}
+
+- (BOOL)validateMenuItem:(NSMenuItem *)item {
+    GAMainWindowController *controller = [self activeMainWindowController];
+    if (controller == nil) {
+        return NO;
+    }
+    SEL action = item.action;
+    if (action == @selector(switchViewMode:)) {
+        item.state = controller.viewMode == (GAViewMode)item.tag
+            ? NSControlStateValueOn : NSControlStateValueOff;
+        return YES;
+    }
+    if (action == @selector(toggleShowMetrics:)) {
+        item.state = controller.showsMetrics ? NSControlStateValueOn : NSControlStateValueOff;
+        return controller.viewMode != GAViewModeAllGlyphs;
+    }
+    if (action == @selector(zoomMetricsIn:) ||
+        action == @selector(zoomMetricsOut:)) {
+        return controller.viewMode == GAViewModeMultiCharacter;
+    }
+    if (action == @selector(zoomIn:) ||
+        action == @selector(zoomOut:) ||
+        action == @selector(resetZoom:)) {
+        return YES;
+    }
+    if (action == @selector(setTextAlignment:)) {
+        item.state = controller.textAlignment == (NSTextAlignment)item.tag
+            ? NSControlStateValueOn : NSControlStateValueOff;
+        BOOL vertical = controller.verticalWriting;
+        switch ((NSTextAlignment)item.tag) {
+            case NSTextAlignmentLeft: item.title = vertical ? @"Top" : @"Left"; break;
+            case NSTextAlignmentCenter: item.title = @"Center"; break;
+            case NSTextAlignmentRight: item.title = vertical ? @"Bottom" : @"Right"; break;
+            default: item.title = @"Justified"; break;
+        }
+        return controller.viewMode == GAViewModeMultiCharacter;
+    }
+    if (action == @selector(toggleWritingDirection:)) {
+        item.state = controller.verticalWriting
+            ? NSControlStateValueOn : NSControlStateValueOff;
+        return controller.viewMode == GAViewModeMultiCharacter;
+    }
+    return YES;
 }
 
 - (NSMenuItem *)menuItem:(NSString *)title

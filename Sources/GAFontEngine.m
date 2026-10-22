@@ -6,12 +6,6 @@ const CGFloat GAFontShapingSize = 200.0;
 NSString * const GAGlyphSelectionAttributeName =
     @"com.zonz.GlyphAtlas.glyphSelection";
 
-static BOOL GAProgressCancelled(NSProgress *progress) {
-    return progress != nil && progress.isCancelled;
-}
-
-#pragma mark - CoreText helpers
-
 static NSString *GACopyString(CFStringRef _Nullable string) {
     if (string == NULL) {
         return @"";
@@ -223,6 +217,129 @@ static NSInteger GACoverageIndex(const uint8_t *bytes, NSUInteger length,
     return -1;
 }
 
+/// Lookup indices belonging to the OpenType `vert` feature. FeatureList may
+/// contain the same tag once per script/language system, so deduplicate.
+static NSIndexSet *GAVerticalLookupIndices(NSData *table) {
+    NSMutableIndexSet *indices = [NSMutableIndexSet indexSet];
+    if (table.length < 10) {
+        return indices;
+    }
+    const uint8_t *bytes = table.bytes;
+    NSUInteger length = table.length;
+    uint16_t featureListOffset = GAU16(bytes, length, 6);
+    if (featureListOffset == 0 || featureListOffset + 2 > length) {
+        return indices;
+    }
+    uint16_t featureCount = GAU16(bytes, length, featureListOffset);
+    for (uint16_t index = 0; index < featureCount; index++) {
+        NSUInteger record = (NSUInteger)featureListOffset + 2 +
+                            (NSUInteger)index * 6;
+        if (record + 6 > length) {
+            break;
+        }
+        if (GAU32(bytes, length, record) != 0x76657274) { // 'vert'
+            continue;
+        }
+        uint16_t featureOffset = GAU16(bytes, length, record + 4);
+        NSUInteger feature = (NSUInteger)featureListOffset + featureOffset;
+        if (feature + 4 > length) {
+            continue;
+        }
+        uint16_t lookupCount = GAU16(bytes, length, feature + 2);
+        for (uint16_t lookup = 0; lookup < lookupCount; lookup++) {
+            NSUInteger offset = feature + 4 + (NSUInteger)lookup * 2;
+            if (offset + 2 > length) {
+                break;
+            }
+            [indices addIndex:GAU16(bytes, length, offset)];
+        }
+    }
+    return indices;
+}
+
+/// Returns the GSUB single-substitution target of the `vert` feature, if it
+/// covers this glyph. Only type 1 lookups (and type 7 extensions of them) can
+/// supply a vertical form; alternate substitutions are left alone.
+static NSNumber *GAVerticalSubstituteForGlyph(NSData *table, uint16_t glyph) {
+    if (table.length < 10) {
+        return nil;
+    }
+    NSIndexSet *lookupIndices = GAVerticalLookupIndices(table);
+    if (lookupIndices.count == 0) {
+        return nil;
+    }
+    const uint8_t *bytes = table.bytes;
+    NSUInteger length = table.length;
+    uint16_t lookupListOffset = GAU16(bytes, length, 8);
+    if (lookupListOffset == 0 || lookupListOffset + 2 > length) {
+        return nil;
+    }
+    __block NSNumber *result = nil;
+    [lookupIndices enumerateIndexesUsingBlock:^(NSUInteger lookupIndex, BOOL *stop) {
+        NSUInteger offsetLocation = (NSUInteger)lookupListOffset + 2 +
+                                    lookupIndex * 2;
+        if (offsetLocation + 2 > length) {
+            return;
+        }
+        NSUInteger lookupOffset = (NSUInteger)lookupListOffset +
+                                  GAU16(bytes, length, offsetLocation);
+        if (lookupOffset + 6 > length) {
+            return;
+        }
+        uint16_t lookupType = GAU16(bytes, length, lookupOffset);
+        uint16_t subtableCount = GAU16(bytes, length, lookupOffset + 4);
+        for (uint16_t subIndex = 0; subIndex < subtableCount; subIndex++) {
+            NSUInteger subOffsetLocation = lookupOffset + 6 +
+                                           (NSUInteger)subIndex * 2;
+            if (subOffsetLocation + 2 > length) {
+                break;
+            }
+            NSUInteger subtableOffset = lookupOffset +
+                                        GAU16(bytes, length, subOffsetLocation);
+            uint16_t actualType = lookupType;
+            if (actualType == 7) {
+                if (subtableOffset + 6 > length) {
+                    continue;
+                }
+                actualType = GAU16(bytes, length, subtableOffset + 2);
+                subtableOffset += GAU32(bytes, length, subtableOffset + 4);
+            }
+            if (actualType != 1 || subtableOffset + 6 > length) {
+                continue;
+            }
+            uint16_t format = GAU16(bytes, length, subtableOffset);
+            uint16_t coverageOffset = GAU16(bytes, length,
+                                            subtableOffset + 2);
+            NSInteger coverageIndex = GACoverageIndex(
+                bytes, length, subtableOffset + coverageOffset, glyph);
+            if (coverageIndex < 0) {
+                continue;
+            }
+            uint16_t replacement = 0;
+            if (format == 1) {
+                int16_t delta = (int16_t)GAU16(bytes, length,
+                                               subtableOffset + 4);
+                replacement = (uint16_t)(glyph + delta);
+            } else if (format == 2) {
+                uint16_t count = GAU16(bytes, length, subtableOffset + 4);
+                if ((NSUInteger)coverageIndex >= count) {
+                    continue;
+                }
+                replacement = GAU16(bytes, length, subtableOffset + 6 +
+                                    (NSUInteger)coverageIndex * 2);
+            } else {
+                continue;
+            }
+            if (replacement != glyph) {
+                result = @(replacement);
+                *stop = YES;
+                return;
+            }
+        }
+    }];
+    return result;
+}
+
 static void GAGSUBAddSource(NSMutableDictionary<NSNumber *, NSMutableOrderedSet<NSString *> *> *sources,
                             NSMutableArray<NSNumber *> *order,
                             uint16_t glyph, NSString *source) {
@@ -419,26 +536,11 @@ static NSDictionary<NSString *, id> *GAGSUBAlternatesForSeed(NSData *gsub, uint1
     return self;
 }
 
-- (id)copyWithZone:(NSZone *)zone {
-    // Immutable value object.
-    return self;
-}
+@end
 
-- (BOOL)isEqual:(id)object {
-    if (self == object) return YES;
-    if (![object isKindOfClass:[GAGlyphSelection class]]) return NO;
-    GAGlyphSelection *other = object;
-    return [self.sourceText isEqualToString:other.sourceText] &&
-           [self.glyphIDs isEqualToArray:other.glyphIDs] &&
-           [self.featureSources isEqualToArray:other.featureSources] &&
-           self.ligature == other.ligature;
-}
+#pragma mark - GAAllGlyphEntry
 
-- (NSUInteger)hash {
-    return self.sourceText.hash ^ self.glyphIDs.hash ^
-           self.featureSources.hash ^ (self.ligature ? 1 : 0);
-}
-
+@implementation GAAllGlyphEntry
 @end
 
 #pragma mark - GAGlyphVariant
@@ -530,11 +632,39 @@ static NSDictionary<NSString *, id> *GAGSUBAlternatesForSeed(NSData *gsub, uint1
 
 #pragma mark - GAFontDocument
 
+@implementation GAScanCandidate
+@end
+
+@implementation GARawScanResult
+@end
+
+static NSArray<NSNumber *> *GAScalarsForString(NSString *string) {
+    NSMutableArray<NSNumber *> *scalars = [NSMutableArray array];
+    for (NSUInteger index = 0; index < string.length; index++) {
+        unichar unit = [string characterAtIndex:index];
+        if (CFStringIsSurrogateHighCharacter(unit) &&
+            index + 1 < string.length &&
+            CFStringIsSurrogateLowCharacter([string characterAtIndex:index + 1])) {
+            unichar low = [string characterAtIndex:index + 1];
+            uint32_t scalar = ((uint32_t)(unit - 0xD800) << 10) +
+                              (uint32_t)(low - 0xDC00) + 0x10000;
+            [scalars addObject:@(scalar)];
+            index++;
+        } else {
+            [scalars addObject:@(unit)];
+        }
+    }
+    return scalars;
+}
+
 @implementation GAFontDocument {
     CTFontDescriptorRef _descriptor;
     CTFontRef _font;
+    GAFontBox *_fontBox;
     NSArray<GAFeatureSetting *> *_settings;
+    NSData *_gsub;
     NSDictionary<NSNumber *, NSArray<NSNumber *> *> *_unicodeMap;
+    NSArray<GAAllGlyphEntry *> *_allGlyphEntries;
 }
 
 - (instancetype)initWithDescriptor:(CTFontDescriptorRef)descriptor
@@ -553,6 +683,7 @@ static NSDictionary<NSString *, id> *GAGSUBAlternatesForSeed(NSData *gsub, uint1
     if (_font == NULL) {
         return nil;
     }
+    _fontBox = [[GAFontBox alloc] initWithFont:_font];
 
     _fontURL = [url copy];
 
@@ -563,6 +694,7 @@ static NSDictionary<NSString *, id> *GAGSUBAlternatesForSeed(NSData *gsub, uint1
     }
 
     NSData *gsub = CFBridgingRelease(CTFontCopyTable(_font, kCTFontTableGSUB, 0));
+    _gsub = gsub;
     _settings = [self buildSettingsWithGSUB:gsub];
 
     return self;
@@ -975,263 +1107,319 @@ static NSRange GAGroupSpanForCluster(NSArray<GACharacterGroup *> *groups,
     return NSMakeRange((NSUInteger)first, (NSUInteger)(last - first + 1));
 }
 
-/// Adds whole-text cluster candidates to the glyph list. This is candidate
-/// discovery only; it does not read or write the input field's selection runs.
-/// New candidates intentionally leave positions empty, so drawing uses the
-/// default origin.
-- (void)appendWholeTextVariantsToGroups:(NSMutableArray<GACharacterGroup *> *)groups
-                                  text:(NSString *)text
-                              progress:(nullable NSProgress *)progress {
-    if (groups.count < 2 || text.length == 0 || GAProgressCancelled(progress)) return;
-
-    NSMutableDictionary<NSNumber *, NSMutableDictionary<NSString *, GAGlyphVariant *> *> *byKey =
-        [NSMutableDictionary dictionary];
-    NSMutableDictionary<NSNumber *, NSMutableArray<GAGlyphVariant *> *> *extras =
-        [NSMutableDictionary dictionary];
-    for (NSUInteger i = 0; i < groups.count; i++) {
-        GACharacterGroup *group = groups[i];
-        NSMutableDictionary<NSString *, GAGlyphVariant *> *keys =
-            [NSMutableDictionary dictionary];
-        for (GAGlyphVariant *variant in group.variants) {
-            if (variant.glyphKey.length > 0) keys[variant.glyphKey] = variant;
-        }
-        byKey[@(i)] = keys;
-        extras[@(i)] = [NSMutableArray array];
-    }
-
-    void (^addClusters)(NSArray<NSDictionary *> *, GAFontBox *, NSString *,
-                        NSDictionary<NSNumber *, NSDictionary *> *, NSUInteger) =
-        ^(NSArray<NSDictionary *> *clusters, GAFontBox *fontBox,
-          NSString *source,
-          NSDictionary<NSNumber *, NSDictionary *> *baseByStart,
-          NSUInteger offset) {
-            for (NSDictionary *cluster in clusters) {
-                NSUInteger start = [cluster[@"start"] unsignedIntegerValue];
-                NSUInteger end = [cluster[@"end"] unsignedIntegerValue];
-                NSArray<NSNumber *> *glyphs = cluster[@"glyphs"];
-                if (glyphs.count == 0) continue;
-
-                if (baseByStart != nil) {
-                    NSDictionary *baseCluster = baseByStart[@(start)];
-                    if (baseCluster != nil) {
-                        NSUInteger baseEnd = [baseCluster[@"end"] unsignedIntegerValue];
-                        NSArray<NSNumber *> *baseGlyphs = baseCluster[@"glyphs"];
-                        if (baseEnd == end && [baseGlyphs isEqualToArray:glyphs]) {
-                            continue;
-                        }
-                    }
-                }
-                NSUInteger absoluteStart = start + offset;
-                NSUInteger absoluteEnd = end + offset;
-                NSRange span = GAGroupSpanForCluster(groups, absoluteStart, absoluteEnd);
-                if (span.location == NSNotFound) continue;
-                NSUInteger target = NSMaxRange(span) - 1;
-
-                NSMutableArray<NSString *> *parts =
-                    [NSMutableArray arrayWithCapacity:glyphs.count];
-                for (NSNumber *glyph in glyphs) {
-                    [parts addObject:glyph.stringValue];
-                }
-                NSString *key = [parts componentsJoinedByString:@","];
-                BOOL ligatureSpan = span.length > 1;
-                GAGlyphVariant *existing = byKey[@(target)][key];
-                if (existing != nil) {
-                    if (!existing.isBase) {
-                        if (source.length > 0) [existing addFeatureSource:source];
-                        if (ligatureSpan) {
-                            existing.ligature = YES;
-                            existing.sourceTextRange =
-                                NSMakeRange(absoluteStart, absoluteEnd - absoluteStart);
-                        }
-                    }
-                    continue;
-                }
-
-                GAGlyphVariant *candidate = [[GAGlyphVariant alloc] init];
-                candidate.fontBox = fontBox;
-                candidate.glyphIDs = glyphs;
-                if (source.length > 0) [candidate addFeatureSource:source];
-                if (ligatureSpan) {
-                    candidate.ligature = YES;
-                    candidate.sourceTextRange =
-                        NSMakeRange(absoluteStart, absoluteEnd - absoluteStart);
-                }
-                [self decorateVariant:candidate withUnicodeMap:self.unicodeMap];
-                byKey[@(target)][key] = candidate;
-                [extras[@(target)] addObject:candidate];
-            }
-        };
-
-    GAFontBox *baseBox = [[GAFontBox alloc] initWithFont:_font];
-    // Enumerate left to right by start position:
-    // a, ab, abc, abcd, b, bc, bcd, c, cd, d.
-    for (NSUInteger first = 0; first < groups.count; first++) {
-        for (NSUInteger last = first; last < groups.count; last++) {
-            if (GAProgressCancelled(progress)) return;
-            NSRange firstRange = groups[first].textRange;
-            NSRange lastRange = groups[last].textRange;
-            if (firstRange.location == NSNotFound || lastRange.location == NSNotFound) {
-                continue;
-            }
-            NSUInteger start = firstRange.location;
-            NSUInteger end = NSMaxRange(lastRange);
-            if (end <= start || end > text.length) continue;
-            NSRange substringRange = NSMakeRange(start, end - start);
-            NSString *substring = [text substringWithRange:substringRange];
-
-            NSArray<NSDictionary *> *baseClusters =
-                GAWholeTextClusters(substring, baseBox.font);
-            NSMutableDictionary<NSNumber *, NSDictionary *> *baseByStart =
-                [NSMutableDictionary dictionary];
-            for (NSDictionary *cluster in baseClusters) {
-                NSNumber *clusterStart = cluster[@"start"];
-                if (clusterStart != nil) baseByStart[clusterStart] = cluster;
-            }
-            addClusters(baseClusters, baseBox, @"actual", nil, start);
-            for (GAFeatureSetting *setting in _settings) {
-                NSString *source = nil;
-                if (!setting.fromAAT) {
-                    source = setting.sourceName;
-                    if (source.length == 0) source = setting.tag;
-                    if (source.length == 0) source = setting.key;
-                }
-                // AAT features are only used to discover glyphs. Their
-                // type/selector names are transient system metadata, not
-                // actual font feature information, so don't label them.
-                addClusters(GAWholeTextClusters(substring, setting.fontBox.font),
-                            setting.fontBox, source ?: @"", baseByStart, start);
-            }
-        }
-    }
-
-    for (NSNumber *index in extras) {
-        NSArray<GAGlyphVariant *> *extra = extras[index];
-        if (extra.count == 0) continue;
-        GACharacterGroup *group = groups[index.unsignedIntegerValue];
-        NSMutableArray<GAGlyphVariant *> *variants = [group.variants mutableCopy];
-        [variants addObjectsFromArray:extra];
-        group.variants = variants;
-    }
-}
-
-- (NSArray<GACharacterGroup *> *)analyzeText:(NSString *)text {
-    return [self analyzeText:text progress:nil];
-}
-
-- (NSArray<GACharacterGroup *> *)analyzeText:(NSString *)text
-                                    progress:(nullable NSProgress *)progress {
-    if (text.length == 0 || GAProgressCancelled(progress)) {
-        return @[];
-    }
-
-    NSDictionary<NSNumber *, NSArray<NSNumber *> *> *unicodeMap = [self unicodeMap];
-    NSMutableArray<GACharacterGroup *> *groups = [NSMutableArray array];
+/// A line break is layout, not a glyph. It stays a group so text ranges keep
+/// their offsets, but the whole-text scan does not cross it.
+- (NSArray<GAGlyphVariant *> *)characterVariantsForContent:(NSString *)substring {
     NSData *gsub = CFBridgingRelease(CTFontCopyTable(_font, kCTFontTableGSUB, 0));
+    NSDictionary<NSNumber *, NSArray<NSNumber *> *> *unicodeMap = [self unicodeMap];
+    NSArray<NSNumber *> *scalars = GAScalarsForString(substring);
 
-    [text enumerateSubstringsInRange:NSMakeRange(0, text.length)
-                             options:NSStringEnumerationByComposedCharacterSequences
-                          usingBlock:^(NSString *substring,
-                                       NSRange substringRange,
-                                       NSRange enclosingRange,
-                                       BOOL *stop) {
-        (void)enclosingRange;
-        if (GAProgressCancelled(progress)) {
-            *stop = YES;
-            return;
-        }
-        if (substring.length == 0) {
-            return;
-        }
+    GAFontBox *baseFont = [[GAFontBox alloc] initWithFont:_font];
+    GAGlyphVariant *baseVariant = [self shapeString:substring
+                                            fontBox:baseFont
+                                               base:YES];
+    [self decorateVariant:baseVariant withUnicodeMap:unicodeMap];
+    if (baseVariant.unicodeScalars.count == 0) {
+        baseVariant.unicodeScalars = scalars;
+    }
 
-        NSMutableArray<NSNumber *> *scalars = [NSMutableArray array];
-        for (NSUInteger index = 0; index < substring.length; index++) {
-            unichar unit = [substring characterAtIndex:index];
-            if (CFStringIsSurrogateHighCharacter(unit) &&
-                index + 1 < substring.length &&
-                CFStringIsSurrogateLowCharacter([substring characterAtIndex:index + 1])) {
-                unichar low = [substring characterAtIndex:index + 1];
-                uint32_t scalar =
-                    ((uint32_t)(unit - 0xD800) << 10) +
-                    (uint32_t)(low - 0xDC00) + 0x10000;
-                [scalars addObject:@(scalar)];
-                index++;
-            } else {
-                [scalars addObject:@(unit)];
-            }
-        }
+    NSMutableArray<GAGlyphVariant *> *variants = [NSMutableArray arrayWithObject:baseVariant];
+    NSMutableDictionary<NSString *, GAGlyphVariant *> *seen =
+        [NSMutableDictionary dictionaryWithObject:baseVariant
+                                           forKey:baseVariant.glyphKey];
 
-        GAFontBox *baseFont = [[GAFontBox alloc] initWithFont:_font];
-        GAGlyphVariant *baseVariant = [self shapeString:substring
-                                                fontBox:baseFont
-                                                   base:YES];
-        [self decorateVariant:baseVariant withUnicodeMap:unicodeMap];
-        if (baseVariant.unicodeScalars.count == 0) {
-            baseVariant.unicodeScalars = scalars;
-        }
-
-        NSMutableArray<GAGlyphVariant *> *variants = [NSMutableArray arrayWithObject:baseVariant];
-        NSMutableDictionary<NSString *, GAGlyphVariant *> *seen =
-            [NSMutableDictionary dictionaryWithObject:baseVariant
-                                               forKey:baseVariant.glyphKey];
-
-        NSNumber *baseGlyph = baseVariant.glyphIDs.firstObject;
-        if (baseGlyph != nil && gsub.length > 0) {
-            NSDictionary<NSString *, id> *directInfo = GAGSUBAlternatesForSeed(
-                gsub, (uint16_t)baseGlyph.unsignedShortValue);
-            NSDictionary<NSNumber *, NSMutableOrderedSet<NSString *> *> *directSources =
-                directInfo[@"sources"];
-            NSArray<NSNumber *> *directOrder = directInfo[@"order"] ?: @[];
-            for (NSNumber *glyphID in directOrder) {
-                NSString *key = glyphID.stringValue;
-                NSMutableOrderedSet<NSString *> *sources = directSources[glyphID];
-                if (seen[key] != nil) {
-                    continue;
-                }
-                GAGlyphVariant *candidate = [[GAGlyphVariant alloc] init];
-                candidate.fontBox = baseFont;
-                candidate.glyphIDs = @[glyphID];
-                for (NSString *source in sources) {
-                    [candidate addFeatureSource:source];
-                }
-                [self decorateVariant:candidate withUnicodeMap:unicodeMap];
-                seen[key] = candidate;
-                [variants addObject:candidate];
-            }
-        }
-
-        for (GAFeatureSetting *setting in _settings) {
-            GAGlyphVariant *candidate = [self shapeString:substring
-                                                 fontBox:setting.fontBox
-                                                    base:NO];
-            NSString *key = candidate.glyphKey;
-            if (key.length == 0 || [seen objectForKey:key] != nil) {
-                GAGlyphVariant *existing = seen[key];
-                if (existing != nil && !existing.isBase && key.length > 0) {
-                    if (!setting.fromAAT && setting.sourceName.length > 0) {
-                        [existing addFeatureSource:setting.sourceName];
-                    }
-                }
+    NSNumber *baseGlyph = baseVariant.glyphIDs.firstObject;
+    if (baseGlyph != nil && gsub.length > 0) {
+        NSDictionary<NSString *, id> *directInfo = GAGSUBAlternatesForSeed(
+            gsub, (uint16_t)baseGlyph.unsignedShortValue);
+        NSDictionary<NSNumber *, NSMutableOrderedSet<NSString *> *> *directSources =
+            directInfo[@"sources"];
+        NSArray<NSNumber *> *directOrder = directInfo[@"order"] ?: @[];
+        for (NSNumber *glyphID in directOrder) {
+            NSString *key = glyphID.stringValue;
+            NSMutableOrderedSet<NSString *> *sources = directSources[glyphID];
+            if (seen[key] != nil) {
                 continue;
             }
-
-            if (!setting.fromAAT && setting.sourceName.length > 0) {
-                [candidate addFeatureSource:setting.sourceName];
+            GAGlyphVariant *candidate = [[GAGlyphVariant alloc] init];
+            candidate.fontBox = baseFont;
+            candidate.glyphIDs = @[glyphID];
+            for (NSString *source in sources) {
+                [candidate addFeatureSource:source];
             }
             [self decorateVariant:candidate withUnicodeMap:unicodeMap];
             seen[key] = candidate;
             [variants addObject:candidate];
         }
+    }
 
+    for (GAFeatureSetting *setting in _settings) {
+        GAGlyphVariant *candidate = [self shapeString:substring
+                                             fontBox:setting.fontBox
+                                                base:NO];
+        NSString *key = candidate.glyphKey;
+        if (key.length == 0 || [seen objectForKey:key] != nil) {
+            GAGlyphVariant *existing = seen[key];
+            if (existing != nil && !existing.isBase && key.length > 0) {
+                if (!setting.fromAAT && setting.sourceName.length > 0) {
+                    [existing addFeatureSource:setting.sourceName];
+                }
+            }
+            continue;
+        }
+
+        if (!setting.fromAAT && setting.sourceName.length > 0) {
+            [candidate addFeatureSource:setting.sourceName];
+        }
+        [self decorateVariant:candidate withUnicodeMap:unicodeMap];
+        seen[key] = candidate;
+        [variants addObject:candidate];
+    }
+
+    return variants;
+}
+
+- (NSArray<GACharacterGroup *> *)scanGroupsForContent:(NSString *)content {
+    NSMutableArray<GACharacterGroup *> *groups = [NSMutableArray array];
+    [content enumerateSubstringsInRange:NSMakeRange(0, content.length)
+                                options:NSStringEnumerationByComposedCharacterSequences
+                             usingBlock:^(NSString *substring, NSRange substringRange,
+                                          NSRange enclosingRange, BOOL *stop) {
+        (void)enclosingRange;
+        (void)stop;
         GACharacterGroup *group = [[GACharacterGroup alloc] init];
         group.text = substring;
         group.textRange = substringRange;
-        group.variants = variants;
+        group.variants = @[];
         [groups addObject:group];
     }];
+    return groups;
+}
 
-    [self appendWholeTextVariantsToGroups:groups text:text progress:progress];
+- (GARawScanResult *)rawSingleCharacterResultForContent:(NSString *)content {
+    NSMutableArray<GAScanCandidate *> *candidates = [NSMutableArray array];
+    for (GAGlyphVariant *variant in [self characterVariantsForContent:content]) {
+        GAScanCandidate *candidate = [[GAScanCandidate alloc] init];
+        candidate.glyphIDs = variant.glyphIDs;
+        candidate.positions = variant.positions;
+        candidate.fontBox = variant.fontBox;
+        candidate.sources = variant.featureSources ?: @[];
+        candidate.base = variant.isBase;
+        candidate.actual = variant.isBase;
+        candidate.ligature = NO;
+        candidate.sourceRange = NSMakeRange(0, content.length);
+        candidate.targetOffset = 0;
+        [candidates addObject:candidate];
+    }
+    GARawScanResult *result = [[GARawScanResult alloc] init];
+    result.candidates = candidates;
+    result.groupCount = 1;
+    return result;
+}
 
-    return [groups copy];
+- (void)addRawClusters:(NSArray<NSDictionary *> *)clusters
+               fontBox:(GAFontBox *)fontBox
+                source:(NSString *)source
+                actual:(BOOL)actual
+            baseByStart:(nullable NSDictionary<NSNumber *, NSDictionary *> *)baseByStart
+                 groups:(NSArray<GACharacterGroup *> *)groups
+             candidates:(NSMutableArray<GAScanCandidate *> *)candidates
+               keyIndex:(NSMutableDictionary<NSString *, GAScanCandidate *> *)keyIndex {
+    for (NSDictionary *cluster in clusters) {
+        NSUInteger start = [cluster[@"start"] unsignedIntegerValue];
+        NSUInteger end = [cluster[@"end"] unsignedIntegerValue];
+        NSArray<NSNumber *> *glyphs = cluster[@"glyphs"];
+        if (glyphs.count == 0) {
+            continue;
+        }
+        if (baseByStart != nil) {
+            NSDictionary *baseCluster = baseByStart[@(start)];
+            if (baseCluster != nil) {
+                NSUInteger baseEnd = [baseCluster[@"end"] unsignedIntegerValue];
+                NSArray<NSNumber *> *baseGlyphs = baseCluster[@"glyphs"];
+                if (baseEnd == end && [baseGlyphs isEqualToArray:glyphs]) {
+                    continue;
+                }
+            }
+        }
+        NSRange span = GAGroupSpanForCluster(groups, start, end);
+        if (span.location == NSNotFound) {
+            continue;
+        }
+        NSUInteger target = NSMaxRange(span) - 1;
+        NSMutableString *parts = [NSMutableString string];
+        for (NSNumber *glyph in glyphs) {
+            if (parts.length > 0) [parts appendString:@","];
+            [parts appendString:glyph.stringValue];
+        }
+        NSString *key = [NSString stringWithFormat:@"%lu:%@", (unsigned long)target, parts];
+        BOOL ligature = span.length > 1;
+        NSRange sourceRange = NSMakeRange(start, end - start);
+        NSString *sourceName = actual ? @"actual" : (source ?: @"");
+        GAScanCandidate *existing = keyIndex[key];
+        if (existing != nil) {
+            if (!existing.isBase) {
+                if (sourceName.length > 0) {
+                    NSMutableOrderedSet<NSString *> *sources =
+                        [NSMutableOrderedSet orderedSetWithArray:existing.sources ?: @[]];
+                    [sources addObject:sourceName];
+                    existing.sources = sources.array;
+                }
+                if (ligature) {
+                    existing.ligature = YES;
+                    existing.sourceRange = sourceRange;
+                }
+            }
+            continue;
+        }
+        GAScanCandidate *candidate = [[GAScanCandidate alloc] init];
+        candidate.glyphIDs = glyphs;
+        candidate.positions = @[];
+        candidate.fontBox = fontBox;
+        candidate.sources = sourceName.length > 0 ? @[sourceName] : @[];
+        candidate.base = NO;
+        candidate.actual = actual;
+        candidate.ligature = ligature;
+        candidate.sourceRange = sourceRange;
+        candidate.targetOffset = target;
+        keyIndex[key] = candidate;
+        [candidates addObject:candidate];
+    }
+}
+
+- (GARawScanResult *)rawContextResultForContent:(NSString *)content
+                                         groups:(NSArray<GACharacterGroup *> *)groups {
+    GAFontBox *baseBox = [[GAFontBox alloc] initWithFont:_font];
+    NSArray<NSDictionary *> *baseClusters = GAWholeTextClusters(content, baseBox.font);
+    NSMutableDictionary<NSNumber *, NSDictionary *> *baseByStart = [NSMutableDictionary dictionary];
+    for (NSDictionary *cluster in baseClusters) {
+        NSNumber *start = cluster[@"start"];
+        if (start != nil) {
+            baseByStart[start] = cluster;
+        }
+    }
+    NSMutableArray<GAScanCandidate *> *candidates = [NSMutableArray array];
+    NSMutableDictionary<NSString *, GAScanCandidate *> *keyIndex = [NSMutableDictionary dictionary];
+    [self addRawClusters:baseClusters
+                 fontBox:baseBox
+                  source:@"actual"
+                  actual:YES
+              baseByStart:nil
+                   groups:groups
+               candidates:candidates
+                 keyIndex:keyIndex];
+    for (GAFeatureSetting *setting in _settings) {
+        NSString *source = nil;
+        if (!setting.fromAAT) {
+            source = setting.sourceName;
+            if (source.length == 0) source = setting.tag;
+            if (source.length == 0) source = setting.key;
+        }
+        [self addRawClusters:GAWholeTextClusters(content, setting.fontBox.font)
+                     fontBox:setting.fontBox
+                      source:source ?: @""
+                      actual:NO
+                  baseByStart:baseByStart
+                       groups:groups
+                   candidates:candidates
+                     keyIndex:keyIndex];
+    }
+    GARawScanResult *result = [[GARawScanResult alloc] init];
+    result.candidates = candidates;
+    result.groupCount = groups.count;
+    return result;
+}
+
+- (GARawScanResult *)rawScanContent:(NSString *)content {
+    NSArray<GACharacterGroup *> *groups = [self scanGroupsForContent:content];
+    if (groups.count <= 1) {
+        return [self rawSingleCharacterResultForContent:content];
+    }
+    return [self rawContextResultForContent:content groups:groups];
+}
+
+- (void)applyRawResult:(GARawScanResult *)result
+          contentRange:(NSRange)contentRange
+       startGroupIndex:(NSUInteger)startGroupIndex
+                groups:(NSArray<GACharacterGroup *> *)groups {
+    for (GAScanCandidate *candidate in result.candidates) {
+        NSUInteger target = startGroupIndex + candidate.targetOffset;
+        if (target >= groups.count) {
+            continue;
+        }
+        GACharacterGroup *group = groups[target];
+        NSMutableArray<GAGlyphVariant *> *variants =
+            [group.variants mutableCopy] ?: [NSMutableArray array];
+        NSMutableString *parts = [NSMutableString string];
+        for (NSNumber *glyph in candidate.glyphIDs) {
+            if (parts.length > 0) [parts appendString:@","];
+            [parts appendString:glyph.stringValue];
+        }
+        NSString *key = parts;
+        GAGlyphVariant *existing = nil;
+        for (GAGlyphVariant *variant in variants) {
+            if ([variant.glyphKey isEqualToString:key]) {
+                existing = variant;
+                break;
+            }
+        }
+        NSRange sourceRange = NSMakeRange(0, 0);
+        if (candidate.ligature) {
+            sourceRange = NSMakeRange(contentRange.location +
+                                      candidate.sourceRange.location,
+                                      candidate.sourceRange.length);
+        }
+        if (existing != nil) {
+            if (!existing.isBase) {
+                if (candidate.sources.count > 0) {
+                    [existing addFeatureSources:candidate.sources];
+                }
+                if (candidate.ligature) {
+                    existing.ligature = YES;
+                    existing.sourceTextRange = sourceRange;
+                }
+            }
+            continue;
+        }
+        GAGlyphVariant *variant = [[GAGlyphVariant alloc] init];
+        variant.fontBox = candidate.fontBox;
+        variant.glyphIDs = candidate.glyphIDs;
+        variant.positions = candidate.positions ?: @[];
+        [variant addFeatureSources:candidate.sources ?: @[]];
+        variant.base = candidate.isBase;
+        if (candidate.ligature) {
+            variant.ligature = YES;
+            variant.sourceTextRange = sourceRange;
+        }
+        [self decorateVariant:variant withUnicodeMap:self.unicodeMap];
+        if (candidate.isBase && variant.unicodeScalars.count == 0) {
+            variant.unicodeScalars = GAScalarsForString(group.text);
+        }
+        [variants addObject:variant];
+        group.variants = variants;
+    }
+}
+
+- (NSArray<GAAllGlyphEntry *> *)allGlyphEntries {
+    if (_allGlyphEntries != nil) {
+        return _allGlyphEntries;
+    }
+    NSDictionary<NSNumber *, NSArray<NSNumber *> *> *map = [self unicodeMap];
+    CFIndex glyphCount = CTFontGetGlyphCount(_font);
+    NSMutableArray<GAAllGlyphEntry *> *entries =
+        [NSMutableArray arrayWithCapacity:(NSUInteger)MAX(0, glyphCount)];
+    for (CFIndex glyph = 0; glyph < glyphCount; glyph++) {
+        GAAllGlyphEntry *entry = [[GAAllGlyphEntry alloc] init];
+        entry.glyphID = @(glyph);
+        entry.unicodeScalars = map[@(glyph)] ?: @[];
+        [entries addObject:entry];
+    }
+    _allGlyphEntries = [entries copy];
+    return _allGlyphEntries;
+}
+
+- (NSNumber *)verticalSubstituteForGlyph:(CGGlyph)glyph {
+    return GAVerticalSubstituteForGlyph(_gsub, glyph);
 }
 
 - (NSArray<GACharacterGroup *> *)analyzeGlyphIDs:(NSArray<NSNumber *> *)glyphIDs {

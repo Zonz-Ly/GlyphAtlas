@@ -20,16 +20,16 @@ for ARCH in $ARCHS; do
   clang \
     -fobjc-arc -fmodules \
     -fmodules-cache-path="$MODULE_CACHE" \
-    -mmacosx-version-min=11.0 \
+    -mmacosx-version-min=12.0 \
     -O2 \
     -Wall -Wextra \
     -arch "$ARCH" \
-    -I "$ROOT/GlyphAtlas/Sources" \
+    -I "$ROOT/Sources" \
     -framework Cocoa \
     -framework CoreText \
     -framework UniformTypeIdentifiers \
     -licucore \
-    "$ROOT/GlyphAtlas/Sources"/*.m \
+    "$ROOT/Sources"/*.m \
     -o "$ARCH_BIN"
   ARCH_BINARIES+=("$ARCH_BIN")
 done
@@ -41,7 +41,7 @@ echo "→ Assembling $APP"
 rm -rf "$APP"
 mkdir -p "$BUNDLE/MacOS" "$BUNDLE/Resources"
 cp "$BUILD/bin/GlyphAtlas" "$BUNDLE/MacOS/GlyphAtlas"
-cp "$ROOT/GlyphAtlas/Resources/Info.plist" "$BUNDLE/Info.plist"
+cp "$ROOT/Resources/Info.plist" "$BUNDLE/Info.plist"
 chmod +x "$BUNDLE/MacOS/GlyphAtlas"
 
 plutil -lint "$BUNDLE/Info.plist" >/dev/null

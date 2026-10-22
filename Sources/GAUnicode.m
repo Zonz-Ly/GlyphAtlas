@@ -10,6 +10,12 @@ extern int32_t u_charName(int32_t code,
                           int32_t bufferLength,
                           int32_t *errorCode);
 
+// Same approach as u_charName: use the system ICU data without depending on
+// the ICU headers.
+extern int32_t u_getPropertyEnum(const char *alias);
+extern int32_t u_getPropertyValueEnum(int32_t property, const char *alias);
+extern int32_t u_getIntPropertyValue(int32_t code, int32_t property);
+
 static NSString *GANameForScalar(uint32_t scalar) {
     char buffer[512] = {0};
     int32_t error = 0;
@@ -35,6 +41,24 @@ static NSString *GANameForScalar(uint32_t scalar) {
 
 NSString *GAUnicodeNameForScalar(uint32_t scalar) {
     return GANameForScalar(scalar);
+}
+
+BOOL GAVerticalScalarRotates(uint32_t scalar) {
+    static int32_t property = -2;
+    static int32_t rotated = -1;
+    static int32_t transformedRotated = -1;
+    if (property == -2) {
+        property = u_getPropertyEnum("Vertical_Orientation");
+        if (property >= 0) {
+            rotated = u_getPropertyValueEnum(property, "R");
+            transformedRotated = u_getPropertyValueEnum(property, "Tr");
+        }
+    }
+    if (property < 0) {
+        return NO;
+    }
+    int32_t value = u_getIntPropertyValue((int32_t)scalar, property);
+    return value == rotated || value == transformedRotated;
 }
 
 NSString *GAStringFromUnicodeScalars(NSArray<NSNumber *> *scalars) {
