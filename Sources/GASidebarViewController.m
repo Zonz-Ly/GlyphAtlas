@@ -299,6 +299,53 @@ static NSAttributedString *GAFieldTextFromModelText(NSAttributedString *modelTex
 
 @end
 
+/// macOS 27's search field drops the leading text inset when the search button
+/// cell is removed; the text then starts at the bezel edge. Keep the 9 pt inset
+/// that AppKit applies on macOS 12-15 without changing the field's frame, font
+/// or text.
+static const CGFloat GASearchFieldTextInset = 9.0;
+
+@interface GASearchFieldCell : NSSearchFieldCell
+@end
+
+@implementation GASearchFieldCell
+
+- (NSRect)rectByInsettingLeadingEdge:(NSRect)rect bounds:(NSRect)bounds {
+    CGFloat trailing = MAX(0, NSMaxX(bounds) - NSMaxX(rect));
+    CGFloat x = NSMinX(bounds) + GASearchFieldTextInset;
+    rect.origin.x = x;
+    rect.size.width = MAX(0, NSMaxX(bounds) - trailing - x);
+    return rect;
+}
+
+- (NSRect)searchTextRectForBounds:(NSRect)bounds {
+    return [self rectByInsettingLeadingEdge:[super searchTextRectForBounds:bounds]
+                                     bounds:bounds];
+}
+
+- (NSRect)titleRectForBounds:(NSRect)bounds {
+    return [self rectByInsettingLeadingEdge:[super titleRectForBounds:bounds]
+                                     bounds:bounds];
+}
+
+- (NSRect)drawingRectForBounds:(NSRect)bounds {
+    return [self rectByInsettingLeadingEdge:[super drawingRectForBounds:bounds]
+                                     bounds:bounds];
+}
+
+@end
+
+@interface GASearchField : NSSearchField
+@end
+
+@implementation GASearchField
+
++ (Class)cellClass {
+    return [GASearchFieldCell class];
+}
+
+@end
+
 @interface GASidebarViewController () <NSSearchFieldDelegate,
                                        NSTableViewDataSource,
                                        NSTableViewDelegate>
@@ -333,7 +380,7 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
 - (void)viewDidLoad {
     [super viewDidLoad];
 
-    self.searchField = [[NSSearchField alloc] initWithFrame:NSZeroRect];
+    self.searchField = [[GASearchField alloc] initWithFrame:NSZeroRect];
     self.searchField.translatesAutoresizingMaskIntoConstraints = NO;
     self.searchField.placeholderString = @"Enter text";
     self.searchField.controlSize = NSControlSizeLarge;
