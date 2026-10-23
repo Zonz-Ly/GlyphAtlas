@@ -27,7 +27,7 @@ ARCHS=x86_64 ./build.sh
 ## Usage
 
 - Open a font, or drag one onto the app's window or Dock icon. Recently used fonts are supported.
-- Type one or more characters in the sidebar to see all associated glyphs.
+- Type one or more characters in the sidebar to see all associated glyphs. Use `⌥⏎` to insert a line break.
 - Double-click a glyph, or select it and press `Return`, to replace the default glyph and show that glyph's substitution.
 - Use `↑`/`↓` to move between glyphs, `⌘↑`/`⌘↓` to move between base glyphs, and `⌥↑`/`⌥↓` to jump to the first or last glyph in the list.
 - Use `⌘C` to copy all encoded characters of the selected glyph.
@@ -46,8 +46,7 @@ ARCHS=x86_64 ./build.sh
 - Features or substitutions available only through private font tables, or not exposed by CoreText, cannot be enumerated.
 - Glyph names depend on the font's glyph-name data (`post` table or CFF charset); when CoreText returns no usable name, the app shows `GID n`.
 - Glyph width comes from the horizontal advance. When `vmtx`/`vhea` is present, glyph height comes from the vertical advance; otherwise it uses `ascent + descent`.
-- Multi-Character layout and its metrics are provided by the system NSTextView; some effects are out of our control.
-- Variable fonts are inspected at their default instance.
+- Multi-Character layout and its metrics are provided by the system NSTextView; some effects are out of our control, yet it reflects the true rendering behavior of macOS.
 - When the sidebar holds a lot of items, clicking gets twitchy and items sometimes fly around, witch Apple did. Use the arrow keys instead.
 - Because of a system title-bar limitation, double-clicking the top of an All Glyphs window zooms the window; it can't be prevented, so don't be startled.
 
@@ -69,8 +68,8 @@ ARCHS=x86_64 ./build.sh
 ## 使用
 
 - 打開字體，也可以把字體拖到 app 的窗口或圖標上，支持最近使用的文件。
-- 在側邊欄中輸入單個或多個字符來查看所有關聯字形。
-- 按兩下字形或選中後按 `Return`，可以取代默認字形，顯示該字形的替換字。
+- 在側邊欄中輸入單個或多個字符來查看所有關聯字形，可以用 `⌥⏎` 換行。
+- 按兩下字形或選中後按 `⏎`，可以取代默認字形，顯示該字形的替換字。
 - 使用方向鍵 `↑`／`↓` 選擇上下字形，使用 `⌘↑`／`⌘↓` 選擇上下默認字形，使用 `⌥↑`／`⌥↓` 選擇字形列表中的第一個和最後一個字形。
 - 使用 `⌘C` 複製選中字形的所有編碼字符。
 - 鼠標在 Unicode 上靜置時顯示該 Unicode 標準規定的字符名稱。
@@ -87,12 +86,11 @@ ARCHS=x86_64 ./build.sh
 - 由於替換字發現原理限制，輸入長文本後刷新可能會有點卡。
 - 只存在於字體私有表、或 CoreText 未暴露的特性無法枚舉。
 - 字形名稱取決於字體的 glyph name 數據（post 表或 CFF charset）；CoreText 沒有可用名稱時顯示 GID。
-- 字寬來自水平 advance。有 `vmtx`/`vhea` 時字高來自垂直 advance；否則使用 `ascent + descent`。
-- 多字符排版及其度量由系統 NSTextView 提供，部分效果不可控。
-- 可變字體只檢查默認實例。
+- 字寬來自水平 advance。字高有 `vmtx`/`vhea` 時來自垂直 advance；無則使用 `ascent + descent`。
+- 多字符排版及其度量由系統 NSTextView 提供，部分效果不可控但卻能反映真實的 macOS 渲染效果。
 - 當側邊欄東西很多很多的時候，點起來會抽抽，有時還會飛，這是林檎幹的。用方向鍵代替操作可解。
 - 由於系統標題欄限制，在全部字的窗口最上面點兩下會放大窗口，阻止不了，被嚇到不要意外。
 
 ## 特別鳴謝
 
-- 整個 app 由 DeepSeek Flash 1013 Max 親力打造，並由本人全程指指點點，共計花費 24,8423,7676 偷啃。
+- 整個 app 由 DeepSeek Flash 1013 Max 親自打造，並由本人全程指手畫腳，共計花費 24,8423,7676 偷啃。
