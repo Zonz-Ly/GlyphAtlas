@@ -305,38 +305,37 @@ static NSAttributedString *GAFieldTextFromModelText(NSAttributedString *modelTex
 
 @end
 
-/// macOS 27's search field drops the leading text inset when the search button
-/// cell is removed; the text then starts at the bezel edge. Keep the 9 pt inset
-/// that AppKit applies on macOS 12-15 without changing the field's frame, font
-/// or text.
+/// macOS 26+ search fields drop the leading text inset when the search button
+/// cell is removed; the text then starts at the bezel edge. Use fixed 9 pt
+/// leading and 7 pt trailing text insets without changing the field's frame,
+/// font or text.
 static const CGFloat GASearchFieldTextInset = 9.0;
+static const CGFloat GASearchFieldTextTrailingInset = 7.0;
 
 @interface GASearchFieldCell : NSSearchFieldCell
 @end
 
 @implementation GASearchFieldCell
 
-- (NSRect)rectByInsettingLeadingEdge:(NSRect)rect bounds:(NSRect)bounds {
-    CGFloat trailing = MAX(0, NSMaxX(bounds) - NSMaxX(rect));
-    CGFloat x = NSMinX(bounds) + GASearchFieldTextInset;
-    rect.origin.x = x;
-    rect.size.width = MAX(0, NSMaxX(bounds) - trailing - x);
+- (NSRect)rectByInsettingTextEdges:(NSRect)rect bounds:(NSRect)bounds {
+    rect.origin.x = NSMinX(bounds) + GASearchFieldTextInset;
+    rect.size.width = MAX(0, NSMaxX(bounds) - GASearchFieldTextTrailingInset - NSMinX(rect));
     return rect;
 }
 
 - (NSRect)searchTextRectForBounds:(NSRect)bounds {
-    return [self rectByInsettingLeadingEdge:[super searchTextRectForBounds:bounds]
-                                     bounds:bounds];
+    return [self rectByInsettingTextEdges:[super searchTextRectForBounds:bounds]
+                                   bounds:bounds];
 }
 
 - (NSRect)titleRectForBounds:(NSRect)bounds {
-    return [self rectByInsettingLeadingEdge:[super titleRectForBounds:bounds]
-                                     bounds:bounds];
+    return [self rectByInsettingTextEdges:[super titleRectForBounds:bounds]
+                                   bounds:bounds];
 }
 
 - (NSRect)drawingRectForBounds:(NSRect)bounds {
-    return [self rectByInsettingLeadingEdge:[super drawingRectForBounds:bounds]
-                                     bounds:bounds];
+    return [self rectByInsettingTextEdges:[super drawingRectForBounds:bounds]
+                                   bounds:bounds];
 }
 
 @end
