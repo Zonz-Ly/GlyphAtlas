@@ -280,6 +280,10 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
                                                     GAGlyphVariant *variant) {
         [weakSelf activateGlyphVariant:variant inGroup:group];
     };
+    self.sidebarViewController.onGlyphShiftActivated = ^(GACharacterGroup *group,
+                                                         GAGlyphVariant *variant) {
+        [weakSelf insertGlyphVariant:variant inGroup:group];
+    };
     self.detailViewController.onAllGlyphDoubleClick = ^(GAAllGlyphEntry *entry) {
         [weakSelf appendAllGlyphEntry:entry];
     };
@@ -960,8 +964,39 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
     return range;
 }
 
-- (void)activateGlyphVariant:(GAGlyphVariant *)variant inGroup:(GACharacterGroup *)group {
+/// Returns the text that activation puts at the source range. An encoded glyph
+/// contributes its first Unicode scalar; an unencoded glyph contributes the
+/// existing source text and a run through `outSelection`.
+- (NSString *)activationPayloadForVariant:(GAGlyphVariant *)variant
+                               sourceText:(NSString *)sourceText
+                                selection:(GAGlyphSelection **)outSelection {
     NSArray<NSNumber *> *scalars = variant.unicodeScalars;
+    if (scalars.count > 0) {
+        NSString *replacement =
+            GAStringFromUnicodeScalars(@[scalars.firstObject]);
+        if (replacement.length == 0) {
+            return nil;
+        }
+        if (outSelection != NULL) {
+            *outSelection = nil;
+        }
+        return replacement;
+    }
+    if (variant.glyphIDs.count == 0) {
+        return nil;
+    }
+    GAGlyphSelection *selection = [[GAGlyphSelection alloc]
+        initWithSourceText:sourceText
+                  glyphIDs:variant.glyphIDs
+            featureSources:variant.featureSources
+                  ligature:variant.isLigature || sourceText.length > 1];
+    if (outSelection != NULL) {
+        *outSelection = selection;
+    }
+    return sourceText;
+}
+
+- (void)activateGlyphVariant:(GAGlyphVariant *)variant inGroup:(GACharacterGroup *)group {
     NSAttributedString *currentText = self.sidebarViewController.attributedText;
     NSString *text = currentText.string;
     NSRange range = [self sourceRangeForVariant:variant inGroup:group text:text];
@@ -980,38 +1015,69 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
                                   range:removalRange];
     }
 
+    GAGlyphSelection *selection = nil;
+    NSString *payload =
+        [self activationPayloadForVariant:variant
+                               sourceText:[text substringWithRange:range]
+                                selection:&selection];
+    if (payload == nil) {
+        NSBeep();
+        return;
+    }
+
     NSRange selectedRange = range;
-    if (scalars.count > 0) {
-        // Activation inserts a single source character. Copy still uses all
-        // encodings of the glyph.
-        NSString *replacement =
-            GAStringFromUnicodeScalars(@[scalars.firstObject]);
-        if (replacement.length == 0) {
-            NSBeep();
-            return;
-        }
-        [attributedText replaceCharactersInRange:range withString:replacement];
-        selectedRange = NSMakeRange(range.location, replacement.length);
-    } else {
-        if (variant.glyphIDs.count == 0) {
-            NSBeep();
-            return;
-        }
-        NSString *sourceText = [text substringWithRange:range];
-        GAGlyphSelection *selection = [[GAGlyphSelection alloc]
-            initWithSourceText:sourceText
-                      glyphIDs:variant.glyphIDs
-                featureSources:variant.featureSources
-                      ligature:variant.isLigature || range.length > 1];
+    if (selection != nil) {
         [attributedText addAttribute:GAGlyphSelectionAttributeName
                               value:selection
                               range:range];
+    } else {
+        // Activation inserts a single source character. Copy still uses all
+        // encodings of the glyph.
+        [attributedText replaceCharactersInRange:range withString:payload];
+        selectedRange = NSMakeRange(range.location, payload.length);
     }
 
     [self.sidebarViewController
         selectGlyphKeyAfterNextReload:variant.glyphKey
                             textRange:selectedRange
                                scroll:GAPendingSelectionScrollSelectedToTopIfNeeded];
+    [self.sidebarViewController setAttributedText:attributedText];
+    [self scheduleAnalysis];
+}
+
+- (void)insertGlyphVariant:(GAGlyphVariant *)variant inGroup:(GACharacterGroup *)group {
+    NSAttributedString *currentText = self.sidebarViewController.attributedText;
+    NSString *text = currentText.string;
+    NSRange range = [self sourceRangeForVariant:variant inGroup:group text:text];
+    if (range.location == NSNotFound || range.length == 0 ||
+        NSMaxRange(range) > text.length) {
+        NSBeep();
+        return;
+    }
+
+    GAGlyphSelection *selection = nil;
+    NSString *payload =
+        [self activationPayloadForVariant:variant
+                               sourceText:[text substringWithRange:range]
+                                selection:&selection];
+    if (payload == nil) {
+        NSBeep();
+        return;
+    }
+
+    NSUInteger location = NSMaxRange(range);
+    NSMutableAttributedString *inserted =
+        [[NSMutableAttributedString alloc] initWithString:payload];
+    if (selection != nil) {
+        [inserted addAttribute:GAGlyphSelectionAttributeName
+                         value:selection
+                         range:NSMakeRange(0, inserted.length)];
+    }
+
+    NSMutableAttributedString *attributedText = [currentText mutableCopy];
+    [attributedText insertAttributedString:inserted atIndex:location];
+    // Shift insertion keeps the current selection; only normal activation
+    // selects the resulting glyph.
     [self.sidebarViewController setAttributedText:attributedText];
     [self scheduleAnalysis];
 }

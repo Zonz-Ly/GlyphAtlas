@@ -2,10 +2,23 @@
 #import "GAGlyphViews.h"
 #import "GAUnicode.h"
 
+/// YES when the shortcut modifiers in `modifiers` are exactly `expected`.
+/// Caps Lock, the function key, the numeric keypad, Help, and device-dependent
+/// bits do not count.
+static BOOL GAModifiersAre(NSEventModifierFlags modifiers,
+                           NSEventModifierFlags expected) {
+    NSEventModifierFlags mask =
+        NSEventModifierFlagCommand |
+        NSEventModifierFlagShift |
+        NSEventModifierFlagOption |
+        NSEventModifierFlagControl;
+    return (modifiers & mask) == expected;
+}
+
 @interface GASidebarViewController (CommandArrowNavigation)
 - (void)selectCurrentGroupBase;
 - (void)selectNextGroupBase;
-- (void)activateSelectedVariant;
+- (void)activateSelectedVariantWithModifiers:(NSEventModifierFlags)modifiers;
 - (void)copySelectedGlyphEncoding;
 - (BOOL)selectedGlyphHasEncoding;
 @end
@@ -17,18 +30,15 @@
 @implementation GASidebarTableView
 
 - (void)keyDown:(NSEvent *)event {
-    NSEventModifierFlags flags = event.modifierFlags &
-        NSEventModifierFlagDeviceIndependentFlagsMask;
-    BOOL commandOnly = (flags & NSEventModifierFlagCommand) &&
-        !(flags & (NSEventModifierFlagShift |
-                   NSEventModifierFlagOption |
-                   NSEventModifierFlagControl));
-    BOOL noModifiers = (flags & (NSEventModifierFlagCommand |
-                                 NSEventModifierFlagShift |
-                                 NSEventModifierFlagOption |
-                                 NSEventModifierFlagControl)) == 0;
-    if (noModifiers && (event.keyCode == 36 || event.keyCode == 76)) {
-        [self.sidebarController activateSelectedVariant];
+    // Return works with no modifier or Shift only.
+    BOOL canActivate =
+        GAModifiersAre(event.modifierFlags, 0) ||
+        GAModifiersAre(event.modifierFlags, NSEventModifierFlagShift);
+    BOOL commandOnly =
+        GAModifiersAre(event.modifierFlags, NSEventModifierFlagCommand);
+    if (canActivate && (event.keyCode == 36 || event.keyCode == 76)) {
+        [self.sidebarController
+            activateSelectedVariantWithModifiers:event.modifierFlags];
         return;
     }
     if (commandOnly &&
@@ -189,12 +199,8 @@ static NSAttributedString *GAFieldTextFromModelText(NSAttributedString *modelTex
 /// variants to the document start/end (Command-Down is a no-op). Handle them
 /// explicitly so the whole field behaves as one document.
 - (void)keyDown:(NSEvent *)event {
-    NSEventModifierFlags flags = event.modifierFlags &
-        NSEventModifierFlagDeviceIndependentFlagsMask;
-    BOOL commandOnly = (flags & NSEventModifierFlagCommand) &&
-        !(flags & (NSEventModifierFlagShift |
-                   NSEventModifierFlagOption |
-                   NSEventModifierFlagControl));
+    BOOL commandOnly =
+        GAModifiersAre(event.modifierFlags, NSEventModifierFlagCommand);
     if (commandOnly) {
         if (event.keyCode == 123 || event.keyCode == 126) { // Left, Up
             [self moveToBeginningOfDocument:nil];
@@ -665,16 +671,24 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
     return item;
 }
 
-- (void)activateRowAtIndex:(NSInteger)row {
+- (void)activateRowAtIndex:(NSInteger)row
+                 modifiers:(NSEventModifierFlags)modifiers {
     if (row < 0 || row >= (NSInteger)self.rows.count) return;
     GARowItem *item = self.rows[(NSUInteger)row];
-    if (item.variant != nil && item.group != nil && self.onGlyphActivated) {
+    if (item.variant == nil || item.group == nil) return;
+    if (GAModifiersAre(modifiers, NSEventModifierFlagShift)) {
+        if (self.onGlyphShiftActivated) {
+            self.onGlyphShiftActivated(item.group, item.variant);
+        }
+        return;
+    }
+    if (self.onGlyphActivated) {
         self.onGlyphActivated(item.group, item.variant);
     }
 }
 
-- (void)activateSelectedVariant {
-    [self activateRowAtIndex:self.tableView.selectedRow];
+- (void)activateSelectedVariantWithModifiers:(NSEventModifierFlags)modifiers {
+    [self activateRowAtIndex:self.tableView.selectedRow modifiers:modifiers];
 }
 
 - (BOOL)selectedGlyphHasEncoding {
@@ -699,7 +713,8 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
 }
 
 - (void)tableDoubleClicked:(id)sender {
-    [self activateRowAtIndex:self.tableView.clickedRow];
+    [self activateRowAtIndex:self.tableView.clickedRow
+                   modifiers:NSApp.currentEvent.modifierFlags];
 }
 
 - (NSRange)appendInputString:(NSString *)string
