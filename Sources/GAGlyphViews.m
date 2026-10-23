@@ -369,7 +369,15 @@ static const CGFloat GABadgeHorizontalPadding = 4.0;
     self.nameLabel.toolTip = name;
 
     NSArray<NSString *> *sources = variant.featureSources ?: @[];
-    NSString *sourceText = [sources componentsJoinedByString:@", "];
+    NSMutableArray<NSString *> *sourceLabels = [NSMutableArray arrayWithCapacity:sources.count];
+    for (NSString *source in sources) {
+        // Keep feature tags and the internal scan identifier unchanged. Only
+        // the user-facing label for the actual shaping result is localized.
+        [sourceLabels addObject:[source isEqualToString:@"actual"]
+            ? NSLocalizedString(@"actual", @"Glyph found in the actual typeset result")
+            : source];
+    }
+    NSString *sourceText = [sourceLabels componentsJoinedByString:@", "];
     self.sourceLabel.stringValue = sourceText;
     self.sourceLabel.toolTip = sources.count > 0 ? sourceText : nil;
     self.sourceLabel.hidden = sources.count == 0;

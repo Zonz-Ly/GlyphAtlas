@@ -42,9 +42,14 @@ rm -rf "$APP"
 mkdir -p "$BUNDLE/MacOS" "$BUNDLE/Resources"
 cp "$BUILD/bin/GlyphAtlas" "$BUNDLE/MacOS/GlyphAtlas"
 cp "$ROOT/Resources/Info.plist" "$BUNDLE/Info.plist"
+for LOCALIZATION in "$ROOT"/Resources/*.lproj; do
+  cp -R "$LOCALIZATION" "$BUNDLE/Resources/"
+done
 chmod +x "$BUNDLE/MacOS/GlyphAtlas"
 
-plutil -lint "$BUNDLE/Info.plist" >/dev/null
+plutil -lint "$BUNDLE/Info.plist" \
+  "$BUNDLE"/Resources/*.lproj/*.strings \
+  "$BUNDLE"/Resources/*.lproj/*.stringsdict >/dev/null
 # The workspace may live on a file-provider volume that attaches Finder
 # metadata to folders. Strip it before sealing the bundle.
 xattr -cr "$APP" 2>/dev/null || true

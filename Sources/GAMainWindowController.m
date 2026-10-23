@@ -463,8 +463,8 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
         return nil;
     }
     NSToolbarItem *item = [[NSToolbarItem alloc] initWithItemIdentifier:itemIdentifier];
-    item.label = @"Font Name";
-    item.paletteLabel = @"Font Name";
+    item.label = NSLocalizedString(@"Font Name", @"Font Name");
+    item.paletteLabel = NSLocalizedString(@"Font Name", @"Font Name");
     item.view = self.titleFontNameField;
     CGFloat titleHeight = self.titleFontNameField.fittingSize.height;
 #pragma clang diagnostic push
@@ -481,8 +481,8 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
     CFArrayRef array = CTFontManagerCreateFontDescriptorsFromURL((__bridge CFURLRef)url);
     NSArray *descriptors = array ? CFBridgingRelease(array) : @[];
     if (descriptors.count == 0) {
-        [self showErrorWithTitle:@"Cannot Open Font"
-                         message:@"This file does not contain a font that CoreText can read."];
+        [self showErrorWithTitle:NSLocalizedString(@"Cannot Open Font", @"Cannot Open Font")
+                         message:NSLocalizedString(@"This file does not contain a font that CoreText can read.", @"This file does not contain a font that CoreText can read.")];
         return;
     }
 
@@ -500,12 +500,12 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 - (void)chooseDescriptorFromDescriptors:(NSArray *)descriptors
                                     url:(NSURL *)url {
     NSAlert *alert = [[NSAlert alloc] init];
-    alert.messageText = @"Choose Font Style";
-    alert.informativeText = [NSString stringWithFormat:
-        @"“%@” contains %lu fonts. Choose a style to inspect.",
+    alert.messageText = NSLocalizedString(@"Choose Font Style", @"Choose Font Style");
+    alert.informativeText = [NSString localizedStringWithFormat:
+        NSLocalizedString(@"“%@” contains %lu fonts. Choose a style to inspect.", @"“%@” contains %lu fonts. Choose a style to inspect."),
         url.lastPathComponent, (unsigned long)descriptors.count];
-    [alert addButtonWithTitle:@"Open"];
-    [alert addButtonWithTitle:@"Cancel"];
+    [alert addButtonWithTitle:NSLocalizedString(@"Open", @"Open")];
+    [alert addButtonWithTitle:NSLocalizedString(@"Cancel", @"Cancel")];
 
     NSPopUpButton *popup = [[NSPopUpButton alloc] initWithFrame:NSMakeRect(0, 0, 290, 26)
                                                        pullsDown:NO];
@@ -549,7 +549,7 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
                 defaultWeightIndex = (NSInteger)index;
             }
         }
-        NSString *title = name.length > 0 ? name : @"Untitled Font";
+        NSString *title = name.length > 0 ? name : NSLocalizedString(@"Untitled Font", @"Untitled Font");
         [titles addObject:title];
         titleCounts[title] = @([titleCounts[title] integerValue] + 1);
     }
@@ -608,8 +608,8 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
                 return;
             }
             if (document == nil) {
-                [self showErrorWithTitle:@"Cannot Read Font"
-                                 message:@"CoreText could not create this font."];
+                [self showErrorWithTitle:NSLocalizedString(@"Cannot Read Font", @"Cannot Read Font")
+                                 message:NSLocalizedString(@"CoreText could not create this font.", @"CoreText could not create this font.")];
                 return;
             }
 
@@ -1378,7 +1378,7 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
     alert.alertStyle = NSAlertStyleWarning;
     alert.messageText = title;
     alert.informativeText = message;
-    [alert addButtonWithTitle:@"OK"];
+    [alert addButtonWithTitle:NSLocalizedString(@"OK", @"OK")];
     if (self.window != nil && self.window.isVisible) {
         [alert beginSheetModalForWindow:self.window completionHandler:nil];
     } else {

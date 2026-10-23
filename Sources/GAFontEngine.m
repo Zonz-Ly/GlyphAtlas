@@ -665,7 +665,7 @@ NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text) {
     _fullName = GACopyString(CTFontCopyFullName(_font));
     if (_fullName.length == 0) {
         NSString *postScriptName = GACopyString(CTFontCopyPostScriptName(_font));
-        _fullName = postScriptName.length > 0 ? postScriptName : @"Untitled Font";
+        _fullName = postScriptName.length > 0 ? postScriptName : NSLocalizedString(@"Untitled Font", @"Untitled Font");
     }
 
     NSData *gsub = CFBridgingRelease(CTFontCopyTable(_font, kCTFontTableGSUB, 0));

@@ -176,7 +176,7 @@
         }
     }
     if (urls.count == 0) {
-        NSMenuItem *empty = [[NSMenuItem alloc] initWithTitle:@"No Recent Fonts"
+        NSMenuItem *empty = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"No Recent Fonts", @"No Recent Fonts")
                                                        action:nil
                                                 keyEquivalent:@""];
         empty.enabled = NO;
@@ -198,7 +198,7 @@
     }
 
     [menu addItem:[NSMenuItem separatorItem]];
-    NSMenuItem *clear = [[NSMenuItem alloc] initWithTitle:@"Clear Menu"
+    NSMenuItem *clear = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Clear Menu", @"Clear Menu")
                                                    action:@selector(clearRecentFonts:)
                                             keyEquivalent:@""];
     clear.target = self;
@@ -235,15 +235,15 @@
     NSMenu *appMenu = [[NSMenu alloc] initWithTitle:appName];
     appItem.submenu = appMenu;
 
-    NSMenuItem *about = [[NSMenuItem alloc] initWithTitle:@"About Glyph Atlas"
+    NSMenuItem *about = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"About Glyph Atlas", @"About Glyph Atlas")
                                                    action:@selector(showAbout:)
                                             keyEquivalent:@""];
     about.target = self;
     [appMenu addItem:about];
     [appMenu addItem:[NSMenuItem separatorItem]];
 
-    NSMenu *servicesMenu = [[NSMenu alloc] initWithTitle:@"Services"];
-    NSMenuItem *servicesItem = [[NSMenuItem alloc] initWithTitle:@"Services"
+    NSMenu *servicesMenu = [[NSMenu alloc] initWithTitle:NSLocalizedString(@"Services", @"Services")];
+    NSMenuItem *servicesItem = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Services", @"Services")
                                                           action:nil
                                                    keyEquivalent:@""];
     servicesItem.submenu = servicesMenu;
@@ -252,13 +252,13 @@
 
     [appMenu addItem:[NSMenuItem separatorItem]];
 
-    NSMenuItem *hide = [[NSMenuItem alloc] initWithTitle:@"Hide Glyph Atlas"
+    NSMenuItem *hide = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Hide Glyph Atlas", @"Hide Glyph Atlas")
                                                   action:@selector(hide:)
                                            keyEquivalent:@"h"];
     hide.target = NSApp;
     [appMenu addItem:hide];
 
-    NSMenuItem *hideOthers = [[NSMenuItem alloc] initWithTitle:@"Hide Others"
+    NSMenuItem *hideOthers = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Hide Others", @"Hide Others")
                                                         action:@selector(hideOtherApplications:)
                                                  keyEquivalent:@"h"];
     hideOthers.keyEquivalentModifierMask = NSEventModifierFlagCommand |
@@ -266,7 +266,7 @@
     hideOthers.target = NSApp;
     [appMenu addItem:hideOthers];
 
-    NSMenuItem *showAll = [[NSMenuItem alloc] initWithTitle:@"Show All"
+    NSMenuItem *showAll = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Show All", @"Show All")
                                                      action:@selector(unhideAllApplications:)
                                               keyEquivalent:@""];
     showAll.target = NSApp;
@@ -274,30 +274,30 @@
 
     [appMenu addItem:[NSMenuItem separatorItem]];
 
-    NSMenuItem *quit = [[NSMenuItem alloc] initWithTitle:@"Quit Glyph Atlas"
+    NSMenuItem *quit = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Quit Glyph Atlas", @"Quit Glyph Atlas")
                                                   action:@selector(terminate:)
                                            keyEquivalent:@"q"];
     quit.target = NSApp;
     [appMenu addItem:quit];
 
     // File
-    NSMenuItem *fileItem = [[NSMenuItem alloc] initWithTitle:@"File"
+    NSMenuItem *fileItem = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"File", @"File")
                                                      action:nil
                                               keyEquivalent:@""];
     [mainMenu addItem:fileItem];
-    NSMenu *fileMenu = [[NSMenu alloc] initWithTitle:@"File"];
+    NSMenu *fileMenu = [[NSMenu alloc] initWithTitle:NSLocalizedString(@"File", @"File")];
     fileItem.submenu = fileMenu;
 
-    NSMenuItem *open = [[NSMenuItem alloc] initWithTitle:@"Open Font…"
+    NSMenuItem *open = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Open Font…", @"Open Font…")
                                                   action:@selector(openFont:)
                                            keyEquivalent:@"o"];
     open.target = self;
     [fileMenu addItem:open];
 
-    NSMenuItem *recentItem = [[NSMenuItem alloc] initWithTitle:@"Open Recent"
+    NSMenuItem *recentItem = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Open Recent", @"Open Recent")
                                                         action:nil
                                                  keyEquivalent:@""];
-    NSMenu *recentMenu = [[NSMenu alloc] initWithTitle:@"Open Recent"];
+    NSMenu *recentMenu = [[NSMenu alloc] initWithTitle:NSLocalizedString(@"Open Recent", @"Open Recent")];
     recentMenu.delegate = self;
     recentItem.submenu = recentMenu;
     self.recentMenu = recentMenu;
@@ -306,59 +306,59 @@
 
     [fileMenu addItem:[NSMenuItem separatorItem]];
 
-    NSMenuItem *close = [[NSMenuItem alloc] initWithTitle:@"Close Window"
+    NSMenuItem *close = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Close Window", @"Close Window")
                                                    action:@selector(performClose:)
                                             keyEquivalent:@"w"];
     [fileMenu addItem:close];
 
     // Edit
-    NSMenuItem *editItem = [[NSMenuItem alloc] initWithTitle:@"Edit"
+    NSMenuItem *editItem = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Edit", @"Edit")
                                                       action:nil
                                                keyEquivalent:@""];
     [mainMenu addItem:editItem];
-    NSMenu *editMenu = [[NSMenu alloc] initWithTitle:@"Edit"];
+    NSMenu *editMenu = [[NSMenu alloc] initWithTitle:NSLocalizedString(@"Edit", @"Edit")];
     editItem.submenu = editMenu;
 
-    [editMenu addItem:[self menuItem:@"Undo" action:@selector(undo:) key:@"z" modifiers:NSEventModifierFlagCommand]];
-    [editMenu addItem:[self menuItem:@"Redo" action:@selector(redo:) key:@"z" modifiers:(NSEventModifierFlagCommand | NSEventModifierFlagShift)]];
+    [editMenu addItem:[self menuItem:NSLocalizedString(@"Undo", @"Undo") action:@selector(undo:) key:@"z" modifiers:NSEventModifierFlagCommand]];
+    [editMenu addItem:[self menuItem:NSLocalizedString(@"Redo", @"Redo") action:@selector(redo:) key:@"z" modifiers:(NSEventModifierFlagCommand | NSEventModifierFlagShift)]];
     [editMenu addItem:[NSMenuItem separatorItem]];
-    [editMenu addItem:[self menuItem:@"Cut" action:@selector(cut:) key:@"x" modifiers:NSEventModifierFlagCommand]];
-    [editMenu addItem:[self menuItem:@"Copy" action:@selector(copy:) key:@"c" modifiers:NSEventModifierFlagCommand]];
-    [editMenu addItem:[self menuItem:@"Paste" action:@selector(paste:) key:@"v" modifiers:NSEventModifierFlagCommand]];
-    [editMenu addItem:[self menuItem:@"Delete" action:@selector(delete:) key:@"" modifiers:0]];
-    [editMenu addItem:[self menuItem:@"Select All" action:@selector(selectAll:) key:@"a" modifiers:NSEventModifierFlagCommand]];
+    [editMenu addItem:[self menuItem:NSLocalizedString(@"Cut", @"Cut") action:@selector(cut:) key:@"x" modifiers:NSEventModifierFlagCommand]];
+    [editMenu addItem:[self menuItem:NSLocalizedString(@"Copy", @"Copy") action:@selector(copy:) key:@"c" modifiers:NSEventModifierFlagCommand]];
+    [editMenu addItem:[self menuItem:NSLocalizedString(@"Paste", @"Paste") action:@selector(paste:) key:@"v" modifiers:NSEventModifierFlagCommand]];
+    [editMenu addItem:[self menuItem:NSLocalizedString(@"Delete", @"Delete") action:@selector(delete:) key:@"" modifiers:0]];
+    [editMenu addItem:[self menuItem:NSLocalizedString(@"Select All", @"Select All") action:@selector(selectAll:) key:@"a" modifiers:NSEventModifierFlagCommand]];
 
     // View
-    NSMenuItem *viewItem = [[NSMenuItem alloc] initWithTitle:@"View"
+    NSMenuItem *viewItem = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"View", @"View")
                                                      action:nil
                                               keyEquivalent:@""];
     [mainMenu addItem:viewItem];
     viewItem.submenu = [self buildViewMenuIncludingZoom:YES];
 
     // Window
-    NSMenuItem *windowItem = [[NSMenuItem alloc] initWithTitle:@"Window"
+    NSMenuItem *windowItem = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Window", @"Window")
                                                         action:nil
                                                  keyEquivalent:@""];
     [mainMenu addItem:windowItem];
-    NSMenu *windowMenu = [[NSMenu alloc] initWithTitle:@"Window"];
+    NSMenu *windowMenu = [[NSMenu alloc] initWithTitle:NSLocalizedString(@"Window", @"Window")];
     windowItem.submenu = windowMenu;
     NSApp.windowsMenu = windowMenu;
 
-    [windowMenu addItem:[self menuItem:@"Minimize" action:@selector(performMiniaturize:) key:@"m" modifiers:NSEventModifierFlagCommand]];
-    [windowMenu addItem:[self menuItem:@"Zoom" action:@selector(performZoom:) key:@"" modifiers:0]];
+    [windowMenu addItem:[self menuItem:NSLocalizedString(@"Minimize", @"Minimize") action:@selector(performMiniaturize:) key:@"m" modifiers:NSEventModifierFlagCommand]];
+    [windowMenu addItem:[self menuItem:NSLocalizedString(@"Zoom", @"Zoom") action:@selector(performZoom:) key:@"" modifiers:0]];
     [windowMenu addItem:[NSMenuItem separatorItem]];
-    [windowMenu addItem:[self menuItem:@"Bring All to Front" action:@selector(arrangeInFront:) key:@"" modifiers:0]];
+    [windowMenu addItem:[self menuItem:NSLocalizedString(@"Bring All to Front", @"Bring All to Front") action:@selector(arrangeInFront:) key:@"" modifiers:0]];
 
     // Help
-    NSMenuItem *helpItem = [[NSMenuItem alloc] initWithTitle:@"Help"
+    NSMenuItem *helpItem = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Help", @"Help")
                                                       action:nil
                                                keyEquivalent:@""];
     [mainMenu addItem:helpItem];
-    NSMenu *helpMenu = [[NSMenu alloc] initWithTitle:@"Help"];
+    NSMenu *helpMenu = [[NSMenu alloc] initWithTitle:NSLocalizedString(@"Help", @"Help")];
     helpItem.submenu = helpMenu;
     NSApp.helpMenu = helpMenu;
 
-    NSMenuItem *help = [[NSMenuItem alloc] initWithTitle:@"Glyph Atlas Help"
+    NSMenuItem *help = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Glyph Atlas Help", @"Glyph Atlas Help")
                                                   action:@selector(showHelp:)
                                            keyEquivalent:@"?"];
     help.target = self;
@@ -368,9 +368,9 @@
 }
 
 - (NSMenu *)buildViewMenuIncludingZoom:(BOOL)includeZoom {
-    NSMenu *menu = [[NSMenu alloc] initWithTitle:@"View"];
+    NSMenu *menu = [[NSMenu alloc] initWithTitle:NSLocalizedString(@"View", @"View")];
     // Menu order is also the shortcut order: Single ⌘1, Multi ⌘2, All ⌘3.
-    NSArray<NSString *> *modeTitles = @[@"Single Glyph", @"Multi-Character", @"All Glyphs"];
+    NSArray<NSString *> *modeTitles = @[NSLocalizedString(@"Single Glyph", @"Single Glyph"), NSLocalizedString(@"Multi-Character", @"Multi-Character"), NSLocalizedString(@"All Glyphs", @"All Glyphs")];
     NSArray<NSNumber *> *modeTags = @[@(GAViewModeSingleGlyph),
                                       @(GAViewModeMultiCharacter),
                                       @(GAViewModeAllGlyphs)];
@@ -385,7 +385,7 @@
     }
     [menu addItem:[NSMenuItem separatorItem]];
 
-    NSMenuItem *metrics = [[NSMenuItem alloc] initWithTitle:@"Show Metrics"
+    NSMenuItem *metrics = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Show Metrics", @"Show Metrics")
                                                      action:@selector(toggleShowMetrics:)
                                               keyEquivalent:@"4"];
     metrics.target = self;
@@ -397,13 +397,13 @@
         return menu;
     }
 
-    NSMenuItem *zoomIn = [[NSMenuItem alloc] initWithTitle:@"Zoom In"
+    NSMenuItem *zoomIn = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Zoom In", @"Zoom In")
                                                     action:@selector(zoomIn:)
                                              keyEquivalent:@"+"];
     zoomIn.target = self;
     [menu addItem:zoomIn];
     NSMenuItem *metricsZoomIn =
-        [[NSMenuItem alloc] initWithTitle:@"Metrics Zoom In"
+        [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Metrics Zoom In", @"Metrics Zoom In")
                                    action:@selector(zoomMetricsIn:)
                             keyEquivalent:@"+"];
     metricsZoomIn.target = self;
@@ -412,13 +412,13 @@
     metricsZoomIn.alternate = YES;
     [menu addItem:metricsZoomIn];
 
-    NSMenuItem *zoomOut = [[NSMenuItem alloc] initWithTitle:@"Zoom Out"
+    NSMenuItem *zoomOut = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Zoom Out", @"Zoom Out")
                                                      action:@selector(zoomOut:)
                                               keyEquivalent:@"-"];
     zoomOut.target = self;
     [menu addItem:zoomOut];
     NSMenuItem *metricsZoomOut =
-        [[NSMenuItem alloc] initWithTitle:@"Metrics Zoom Out"
+        [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Metrics Zoom Out", @"Metrics Zoom Out")
                                    action:@selector(zoomMetricsOut:)
                             keyEquivalent:@"-"];
     metricsZoomOut.target = self;
@@ -426,7 +426,7 @@
         NSEventModifierFlagCommand | NSEventModifierFlagOption;
     metricsZoomOut.alternate = YES;
     [menu addItem:metricsZoomOut];
-    NSMenuItem *actualSize = [[NSMenuItem alloc] initWithTitle:@"Actual Size"
+    NSMenuItem *actualSize = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Actual Size", @"Actual Size")
                                                         action:@selector(resetZoom:)
                                                  keyEquivalent:@"0"];
     actualSize.target = self;
@@ -438,18 +438,18 @@
 }
 
 - (void)addViewAlignmentItemsToMenu:(NSMenu *)menu {
-    NSMenuItem *verticalItem = [[NSMenuItem alloc] initWithTitle:@"Vertical"
+    NSMenuItem *verticalItem = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Vertical", @"Vertical")
                                                           action:@selector(toggleWritingDirection:)
                                                    keyEquivalent:@"5"];
     verticalItem.target = self;
     [menu addItem:verticalItem];
 
-    NSMenuItem *alignmentItem = [[NSMenuItem alloc] initWithTitle:@"Text Alignment"
+    NSMenuItem *alignmentItem = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Text Alignment", @"Text Alignment")
                                                            action:nil
                                                     keyEquivalent:@""];
-    NSMenu *alignmentMenu = [[NSMenu alloc] initWithTitle:@"Text Alignment"];
+    NSMenu *alignmentMenu = [[NSMenu alloc] initWithTitle:NSLocalizedString(@"Text Alignment", @"Text Alignment")];
     NSArray<NSString *> *alignmentTitles =
-        @[@"Left", @"Center", @"Right", @"Justified"];
+        @[NSLocalizedString(@"Left", @"Left"), NSLocalizedString(@"Center", @"Center"), NSLocalizedString(@"Right", @"Right"), NSLocalizedString(@"Justified", @"Justified")];
     NSArray<NSNumber *> *alignmentTags = @[@(NSTextAlignmentLeft),
                                            @(NSTextAlignmentCenter),
                                            @(NSTextAlignmentRight),
@@ -549,10 +549,10 @@
             ? NSControlStateValueOn : NSControlStateValueOff;
         BOOL vertical = controller.verticalWriting;
         switch ((NSTextAlignment)item.tag) {
-            case NSTextAlignmentLeft: item.title = vertical ? @"Top" : @"Left"; break;
-            case NSTextAlignmentCenter: item.title = @"Center"; break;
-            case NSTextAlignmentRight: item.title = vertical ? @"Bottom" : @"Right"; break;
-            default: item.title = @"Justified"; break;
+            case NSTextAlignmentLeft: item.title = vertical ? NSLocalizedString(@"Top", @"Top") : NSLocalizedString(@"Left", @"Left"); break;
+            case NSTextAlignmentCenter: item.title = NSLocalizedString(@"Center", @"Center"); break;
+            case NSTextAlignmentRight: item.title = vertical ? NSLocalizedString(@"Bottom", @"Bottom") : NSLocalizedString(@"Right", @"Right"); break;
+            default: item.title = NSLocalizedString(@"Justified", @"Justified"); break;
         }
         return controller.viewMode == GAViewModeMultiCharacter;
     }
@@ -584,9 +584,9 @@
         NSAboutPanelOptionApplicationName: @"Glyph Atlas",
         NSAboutPanelOptionApplicationVersion:
             [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"] ?: @"1.0",
-        NSAboutPanelOptionCredits: @"Inspect every alternate glyph for each character in a font.\n"
-                                   @"Built with native AppKit, CoreText, and system Unicode data.\n\n"
-                                   @"© 2026",
+        NSAboutPanelOptionCredits: [NSString stringWithFormat:@"%@\n%@\n\n© 2026",
+            NSLocalizedString(@"Inspect every alternate glyph for each character in a font.", @"About description"),
+            NSLocalizedString(@"Built with native AppKit, CoreText, and system Unicode data.", @"About credits")],
     };
     [NSApp orderFrontStandardAboutPanelWithOptions:options];
 }
@@ -594,20 +594,22 @@
 - (void)showHelp:(id)sender {
     NSAlert *alert = [[NSAlert alloc] init];
     alert.messageText = @"Glyph Atlas";
-    alert.informativeText =
-        @"• Open a font, or drag one onto the app's window or Dock icon. Recently used fonts are supported.\n"
-        @"• Type one or more characters in the sidebar to see all associated glyphs.\n"
-        @"• Double-click a glyph, or select it and press Return, to replace the default glyph and show that glyph's substitution.\n"
-        @"• Use ↑/↓ to move between glyphs, ⌘↑/⌘↓ to move between base glyphs, and ⌥↑/⌥↓ to jump to the first or last glyph in the list.\n"
-        @"• Use ⌘C to copy all encoded characters of the selected glyph.\n"
-        @"• Hover over a Unicode badge to see the character name defined by the Unicode standard.\n"
-        @"• All Glyphs is the default. Right-click to switch views, or press ⌘1 for Single Glyph, ⌘2 for Multi-Character, or ⌘3 for All Glyphs.\n"
-        @"• In Multi-Character, click a glyph to view its alternates. Vertical writing is supported; right-click or press ⌘5 to switch writing direction.\n"
-        @"• In All Glyphs, double-click a glyph to add it to the existing text. Clicking a glyph in the sidebar also makes it blink there.\n"
-        @"• Use ⌘+/⌘- to zoom the glyphs, and ⌥⌘+/⌥⌘- to resize the margins in Multi-Character. Trackpad pinch also works.\n"
-        @"• The page shadow shows the glyph's width and height, as well as the layout's line height and leading; press ⌘4 to hide it.\n"
-        @"• Dark mode is supported, but be careful: clicking a solid glyph can blind you.";
-    [alert addButtonWithTitle:@"OK"];
+    NSArray<NSString *> *paragraphs = @[
+        NSLocalizedString(@"Help.01", @"Usage paragraph 1"),
+        NSLocalizedString(@"Help.02", @"Usage paragraph 2"),
+        NSLocalizedString(@"Help.03", @"Usage paragraph 3"),
+        NSLocalizedString(@"Help.04", @"Usage paragraph 4"),
+        NSLocalizedString(@"Help.05", @"Usage paragraph 5"),
+        NSLocalizedString(@"Help.06", @"Usage paragraph 6"),
+        NSLocalizedString(@"Help.07", @"Usage paragraph 7"),
+        NSLocalizedString(@"Help.08", @"Usage paragraph 8"),
+        NSLocalizedString(@"Help.09", @"Usage paragraph 9"),
+        NSLocalizedString(@"Help.10", @"Usage paragraph 10"),
+        NSLocalizedString(@"Help.11", @"Usage paragraph 11"),
+        NSLocalizedString(@"Help.12", @"Usage paragraph 12")
+    ];
+    alert.informativeText = [@"• " stringByAppendingString:[paragraphs componentsJoinedByString:@"\n• "]];
+    [alert addButtonWithTitle:NSLocalizedString(@"OK", @"OK")];
 
     NSWindow *window = NSApp.keyWindow ?: self.windowControllers.lastObject.window;
     if (window != nil) {

@@ -14,6 +14,10 @@ A native macOS font and alternate-glyph inspector. Type text to see every altern
 
 - .ttf .otf .ttc .otc .woff .woff2
 
+## Languages
+
+The interface supports English, Traditional Chinese (Taiwan and Hong Kong), Simplified Chinese, Japanese, Korean, German, French, Spanish, Italian, Brazilian Portuguese, Russian, and Arabic. It follows the macOS language preference, including per-app language settings. See [Localization](LOCALIZATION.md) for translation maintenance and validation.
+
 ## Usage
 
 - Open a font, or drag one onto the app's window or Dock icon. Recently used fonts are supported.
@@ -67,6 +71,10 @@ ARCHS=x86_64 ./build.sh
 ## 支持
 
 - .ttf .otf .ttc .otc .woff .woff2
+
+## 語言
+
+介面支援英文、繁體中文（台灣及香港）、簡體中文、日文、韓文、德文、法文、西班牙文、義大利文、巴西葡萄牙文、俄文和阿拉伯文，並依照 macOS 的語言偏好及個別 App 語言設定顯示。
 
 ## 使用
 

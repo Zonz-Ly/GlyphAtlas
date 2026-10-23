@@ -388,7 +388,7 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
 
     self.searchField = [[GASearchField alloc] initWithFrame:NSZeroRect];
     self.searchField.translatesAutoresizingMaskIntoConstraints = NO;
-    self.searchField.placeholderString = @"Enter text";
+    self.searchField.placeholderString = NSLocalizedString(@"Enter text", @"Enter text");
     self.searchField.controlSize = NSControlSizeLarge;
     self.searchField.font = [NSFont systemFontOfSize:13.5 weight:NSFontWeightRegular];
     // Custom selection attributes live in the field's attributed string and
@@ -399,7 +399,7 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
     // Keep the native search-field bezel, but no magnifier or clear button.
     searchCell.searchButtonCell = nil;
     searchCell.cancelButtonCell = nil;
-    self.searchField.accessibilityLabel = @"Enter text";
+    self.searchField.accessibilityLabel = NSLocalizedString(@"Enter text", @"Enter text");
 
     GASidebarTableView *tableView = [[GASidebarTableView alloc] initWithFrame:NSZeroRect];
     tableView.sidebarController = self;
@@ -425,7 +425,7 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
     self.scrollView.autohidesScrollers = YES;
     self.scrollView.documentView = self.tableView;
     self.scrollView.contentInsets = NSEdgeInsetsMake(4, 0, 14, 0);
-    self.scrollView.accessibilityLabel = @"Text and alternate glyph list";
+    self.scrollView.accessibilityLabel = NSLocalizedString(@"Text and alternate glyph list", @"Text and alternate glyph list");
 
     [self.view addSubview:self.searchField];
     [self.view addSubview:self.scrollView];

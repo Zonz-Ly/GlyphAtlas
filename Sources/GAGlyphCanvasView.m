@@ -128,7 +128,7 @@ NSColor *GAGlyphForegroundColor(void) {
         self.wantsLayer = YES;
         self.layer.masksToBounds = YES;
         self.layerContentsRedrawPolicy = NSViewLayerContentsRedrawOnSetNeedsDisplay;
-        self.accessibilityLabel = @"Glyph canvas";
+        self.accessibilityLabel = NSLocalizedString(@"Glyph canvas", @"Glyph canvas");
 
         _sideInsetFraction = GACanvasDefaultSideInsetFraction;
         _showsMetrics = YES;

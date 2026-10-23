@@ -31,7 +31,7 @@ NSString *GAUnicodeNameForScalar(uint32_t scalar) {
     }
 
     if ([name isEqualToString:@"<control>"]) {
-        return @"CONTROL CHARACTER";
+        return NSLocalizedString(@"CONTROL CHARACTER", @"CONTROL CHARACTER");
     }
     if ([name hasPrefix:@"<"] && [name hasSuffix:@">"]) {
         return @"";
