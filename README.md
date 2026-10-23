@@ -6,9 +6,10 @@ A native macOS font and alternate-glyph inspector. Type text to see every altern
 
 <img width="712" height="512" alt="圖片" src="https://github.com/user-attachments/assets/da0c8b0d-6379-4665-b72f-7e3c42c1bddf" />
 
-## Requirements
+## Support
 
 - macOS 12.0 or later
+- .ttf, .otf, .ttc, .otc, .woff, .woff2
 
 ## Build
 
@@ -64,6 +65,7 @@ ARCHS=x86_64 ./build.sh
 ## 系統要求
 
 - macOS 12.0 或更高版本
+- .ttf、 .otf、 .ttc、 .otc、 .woff、 .woff2
 
 ## 使用
 
