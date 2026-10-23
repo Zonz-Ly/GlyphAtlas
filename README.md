@@ -9,7 +9,7 @@ A native macOS font and alternate-glyph inspector. Type text to see every altern
 ## Support
 
 - macOS 12.0 or later
-- .ttf, .otf, .ttc, .otc, .woff, .woff2
+- .ttf .otf .ttc .otc .woff .woff2
 
 ## Build
 
@@ -65,7 +65,7 @@ ARCHS=x86_64 ./build.sh
 ## 支持
 
 - macOS 12.0 或更高版本
-- .ttf、.otf、.ttc、.otc、.woff、.woff2
+- .ttf .otf .ttc .otc .woff .woff2
 
 ## 使用
 
