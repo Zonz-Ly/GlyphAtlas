@@ -60,8 +60,6 @@
 "Text and alternate glyph list" = "Lista de texto e glifos alternativos";
 "CONTROL CHARACTER" = "CARACTERE DE CONTROLE";
 "actual" = "composição real";
-"Inspect every alternate glyph for each character in a font." = "Inspecione todos os glifos alternativos de cada caractere de uma fonte.";
-"Built with native AppKit, CoreText, and system Unicode data." = "Criado com AppKit, CoreText e os dados Unicode do sistema.";
 "Help.01" = "Abra uma fonte ou arraste-a para a janela do app ou seu ícone no Dock. Fontes usadas recentemente também são compatíveis.";
 "Help.02" = "Digite um ou mais caracteres na barra lateral para ver todos os glifos associados. Use ⌥⏎ para inserir uma quebra de linha.";
 "Help.03" = "Clique duas vezes em um glifo, ou selecione-o e pressione Return, para substituir o glifo padrão e mostrar suas alternativas.";

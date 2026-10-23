@@ -38,6 +38,9 @@ the project; the app does not read private system string tables at runtime.
   is argument 1 and the unsigned font count is argument 2. Russian and Arabic
   require more plural forms than English.
 - Translate the `Font File` document-type name in both string tables.
+- Translate `NSHumanReadableCopyright` in every `InfoPlist.strings`. AppKit
+  reads this metadata for the standard About panel, along with the app's icon,
+  name, and version. The panel does not supply custom credits.
 - Keep font names, glyph names, glyph IDs, Unicode standard character names,
   and OpenType/AAT feature tags intact. The internal `actual` scan marker is
   translated only when displayed, leaving scanning and deduplication unchanged.
@@ -67,3 +70,8 @@ percent sign), Copy's shortcut, and dynamically updated alignment labels in the
 actual AppKit context menu. It needs access to a graphical macOS session but
 does not open documents or change language preferences. Build artifacts stay in
 `.build/` and `dist/`.
+
+The test also checks localized copyright metadata and application-level
+commands remaining available without an open font.
+The build generates `AppIcon.icns` from `Resources/AppIcon.png` with macOS
+`sips` and `iconutil`; the PNG is the icon's source of truth.

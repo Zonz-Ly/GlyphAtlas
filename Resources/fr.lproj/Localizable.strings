@@ -60,8 +60,6 @@
 "Text and alternate glyph list" = "Liste du texte et des glyphes alternatifs";
 "CONTROL CHARACTER" = "CARACTÈRE DE CONTRÔLE";
 "actual" = "composition effective";
-"Inspect every alternate glyph for each character in a font." = "Examiner tous les glyphes alternatifs de chaque caractère d’une police.";
-"Built with native AppKit, CoreText, and system Unicode data." = "Conçu avec AppKit, CoreText et les données Unicode du système.";
 "Help.01" = "Ouvrez une police ou faites-la glisser sur la fenêtre de l’app ou son icône dans le Dock. Les polices récemment utilisées sont également prises en charge.";
 "Help.02" = "Saisissez un ou plusieurs caractères dans la barre latérale pour voir tous les glyphes associés. Utilisez ⌥⏎ pour insérer un saut de ligne.";
 "Help.03" = "Cliquez deux fois sur un glyphe, ou sélectionnez-le et appuyez sur Retour, pour remplacer le glyphe par défaut et afficher ses variantes.";

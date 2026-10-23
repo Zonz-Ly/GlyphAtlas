@@ -45,6 +45,18 @@ cp "$ROOT/Resources/Info.plist" "$BUNDLE/Info.plist"
 for LOCALIZATION in "$ROOT"/Resources/*.lproj; do
   cp -R "$LOCALIZATION" "$BUNDLE/Resources/"
 done
+
+echo "→ Generating AppIcon.icns"
+ICONSET="$BUILD/AppIcon.iconset"
+mkdir -p "$ICONSET"
+for SIZE in 16 32 128 256 512; do
+  sips -z "$SIZE" "$SIZE" "$ROOT/Resources/AppIcon.png" \
+    --out "$ICONSET/icon_${SIZE}x${SIZE}.png" >/dev/null
+  RETINA_SIZE=$((SIZE * 2))
+  sips -z "$RETINA_SIZE" "$RETINA_SIZE" "$ROOT/Resources/AppIcon.png" \
+    --out "$ICONSET/icon_${SIZE}x${SIZE}@2x.png" >/dev/null
+done
+iconutil -c icns "$ICONSET" -o "$BUNDLE/Resources/AppIcon.icns"
 chmod +x "$BUNDLE/MacOS/GlyphAtlas"
 
 plutil -lint "$BUNDLE/Info.plist" \

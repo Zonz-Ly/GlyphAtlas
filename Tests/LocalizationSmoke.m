@@ -62,6 +62,10 @@ int main(void) {
         }
         NSString *documentType = [bundle localizedStringForKey:@"Font File" value:sentinel table:@"InfoPlist"];
         Require(![documentType isEqualToString:sentinel], @"Document type localization is missing");
+        NSString *copyright = [bundle localizedStringForKey:@"NSHumanReadableCopyright" value:sentinel table:@"InfoPlist"];
+        Require([copyright containsString:@"© 2026 Zonz."] && ![copyright isEqualToString:sentinel], @"Copyright metadata is missing or has the wrong year");
+        Require([[bundle objectForInfoDictionaryKey:@"NSHumanReadableCopyright"] isEqualToString:copyright],
+                @"The standard About panel cannot read the localized copyright");
 
         NSMutableArray *formats = [NSMutableArray array];
         NSString *format = NSLocalizedString(@"“%@” contains %lu fonts. Choose a style to inspect.", @"");
@@ -83,8 +87,15 @@ int main(void) {
 
         [NSApplication sharedApplication];
         GALocalizationDelegate *delegate = [[GALocalizationDelegate alloc] init];
-        delegate.testWindow = [[GALocalizationWindow alloc] init];
         [delegate buildMainMenu];
+        for (NSString *action in @[@"showAbout:", @"showHelp:", @"openFont:"]) {
+            NSMenuItem *item = FindAction(NSApp.mainMenu, action);
+            Require(item != nil && [delegate validateMenuItem:item],
+                    [@"Application command disabled with no open font: " stringByAppendingString:action]);
+        }
+        Require(![delegate validateMenuItem:FindAction(NSApp.mainMenu, @"zoomIn:")],
+                @"A font-dependent command must remain disabled with no open font");
+        delegate.testWindow = [[GALocalizationWindow alloc] init];
         NSMenuItem *copy = FindAction(NSApp.mainMenu, @"copy:");
         Require([copy.title isEqualToString:NSLocalizedString(@"Copy", @"")] && [copy.keyEquivalent isEqualToString:@"c"], @"Copy command or shortcut changed");
         NSMutableArray *alignmentTitles = [NSMutableArray array];
@@ -105,7 +116,8 @@ int main(void) {
         }
         NSDictionary *output = @{@"locale": expected, @"copy": copy.title,
             @"alignment": alignmentTitles, @"pluralExamples": formats,
-            @"keys": @(english.count)};
+            @"keys": @(english.count), @"copyright": copyright,
+            @"copyrightLocalized": @YES};
         NSData *data = [NSJSONSerialization dataWithJSONObject:output options:0 error:nil];
         puts([[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding].UTF8String);
     }

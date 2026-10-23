@@ -60,8 +60,6 @@
 "Text and alternate glyph list" = "Liste der Zeichen und alternativen Glyphen";
 "CONTROL CHARACTER" = "STEUERZEICHEN";
 "actual" = "tatsächlicher Satz";
-"Inspect every alternate glyph for each character in a font." = "Alle alternativen Glyphen für jedes Zeichen einer Schrift untersuchen.";
-"Built with native AppKit, CoreText, and system Unicode data." = "Entwickelt mit nativem AppKit, CoreText und den Unicode-Daten des Systems.";
 "Help.01" = "Öffne eine Schrift oder ziehe sie auf das App-Fenster oder das Dock-Symbol. Zuletzt benutzte Schriften werden ebenfalls unterstützt.";
 "Help.02" = "Gib ein oder mehrere Zeichen in der Seitenleiste ein, um alle zugehörigen Glyphen zu sehen. Mit ⌥⏎ fügst du einen Zeilenumbruch ein.";
 "Help.03" = "Doppelklicke auf eine Glyphe oder wähle sie aus und drücke Return, um die Standardglyphe zu ersetzen und die Alternativen dieser Glyphe anzuzeigen.";

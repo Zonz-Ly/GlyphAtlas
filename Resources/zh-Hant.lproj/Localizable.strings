@@ -61,8 +61,6 @@
 "Text and alternate glyph list" = "文字與替換字形列表";
 "CONTROL CHARACTER" = "控制字元";
 "actual" = "實際排版";
-"Inspect every alternate glyph for each character in a font." = "查看字體中每個字元的所有替換字形。";
-"Built with native AppKit, CoreText, and system Unicode data." = "使用原生 AppKit、CoreText 和系統 Unicode 資料打造。";
 "Help.01" = "打開字體，也可以把字體拖到 app 的窗口或圖標上，支持最近使用的文件。";
 "Help.02" = "在側邊欄中輸入單個或多個字符來查看所有關聯字形，可以用 ⌥⏎ 換行。";
 "Help.03" = "按兩下字形或選中後按 ⏎，可以取代默認字形，顯示該字形的替換字。";

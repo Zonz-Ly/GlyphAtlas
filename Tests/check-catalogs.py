@@ -22,6 +22,8 @@ for locale, catalog in catalogs.items():
     assert all(isinstance(value, str) and value for value in catalog.values()), locale
     info = strings(folders[locale] / 'InfoPlist.strings')
     assert info['Font File'] == catalog['Font File'], f'{locale}: document type name differs'
+    assert '© 2026 Zonz.' in info['NSHumanReadableCopyright'], f'{locale}: copyright metadata missing'
+    assert set(info) == {'Font File', 'NSHumanReadableCopyright'}, f'{locale}: localized metadata keys differ'
     plural = plistlib.loads((folders[locale] / 'Localizable.stringsdict').read_bytes())
     entry = plural['“%@” contains %lu fonts. Choose a style to inspect.']
     assert '%1$@' in entry['NSStringLocalizedFormatKey'], f'{locale}: filename argument missing'
@@ -47,6 +49,8 @@ for key, value in {'Left': '靠左', 'Right': '靠右', 'Top': '靠上', 'Bottom
 assert catalogs['zh-Hant']['Open Recent'] == '打開最近使用過的檔案'
 assert catalogs['zh-HK']['Open Recent'] == '開啟最近項目'
 assert catalogs['zh-Hans']['Open Recent'] == '打开最近使用'
+for locale in ['zh-Hant', 'zh-HK']:
+    assert strings(folders[locale] / 'InfoPlist.strings')['NSHumanReadableCopyright'] == 'Copyright © 2026 Zonz. 保留一切權利。'
 assert '\u2066⌘C\u2069' in catalogs['ar']['Help.05'], 'Arabic copy shortcut must stay in a single LTR isolate'
 for key in ['Left', 'Right', 'Center', 'Top', 'Bottom']:
     assert '합니다' not in catalogs['ko'][key], f'Korean {key} uses a tooltip sentence instead of a command title'

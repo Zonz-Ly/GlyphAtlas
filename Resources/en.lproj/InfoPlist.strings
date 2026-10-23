@@ -1,2 +1,5 @@
 /* Document type shown by Finder. */
 "Font File" = "Font File";
+
+/* Copyright line in the standard About panel. */
+"NSHumanReadableCopyright" = "Copyright © 2026 Zonz. All rights reserved.";

@@ -521,11 +521,17 @@
 }
 
 - (BOOL)validateMenuItem:(NSMenuItem *)item {
+    SEL action = item.action;
+    // Application-level commands do not require an open font window.
+    if (action == @selector(showAbout:) || action == @selector(showHelp:) ||
+        action == @selector(openFont:) || action == @selector(openRecentFont:) ||
+        action == @selector(clearRecentFonts:)) {
+        return YES;
+    }
     GAMainWindowController *controller = [self activeMainWindowController];
     if (controller == nil) {
         return NO;
     }
-    SEL action = item.action;
     if (action == @selector(switchViewMode:)) {
         item.state = controller.viewMode == (GAViewMode)item.tag
             ? NSControlStateValueOn : NSControlStateValueOff;
@@ -580,15 +586,10 @@
 }
 
 - (void)showAbout:(id)sender {
-    NSDictionary *options = @{
-        NSAboutPanelOptionApplicationName: @"Glyph Atlas",
-        NSAboutPanelOptionApplicationVersion:
-            [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"] ?: @"1.0",
-        NSAboutPanelOptionCredits: [NSString stringWithFormat:@"%@\n%@\n\n© 2026",
-            NSLocalizedString(@"Inspect every alternate glyph for each character in a font.", @"About description"),
-            NSLocalizedString(@"Built with native AppKit, CoreText, and system Unicode data.", @"About credits")],
-    };
-    [NSApp orderFrontStandardAboutPanelWithOptions:options];
+    // Let AppKit read the icon, version, and localized copyright from the
+    // bundle. No custom credits: passing a plain NSString there breaks the
+    // standard panel's first initialization (it requires NSAttributedString).
+    [NSApp orderFrontStandardAboutPanel:sender];
 }
 
 - (void)showHelp:(id)sender {

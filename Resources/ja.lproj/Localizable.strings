@@ -60,8 +60,6 @@
 "Text and alternate glyph list" = "テキストと代替グリフのリスト";
 "CONTROL CHARACTER" = "制御文字";
 "actual" = "実際の組版";
-"Inspect every alternate glyph for each character in a font." = "フォント内の各文字に対応するすべての代替グリフを確認できます。";
-"Built with native AppKit, CoreText, and system Unicode data." = "ネイティブの AppKit、CoreText、およびシステムの Unicode データを使用しています。";
 "Help.01" = "フォントを開くか、アプリのウインドウまたは Dock のアイコンにドラッグします。最近使ったフォントも開けます。";
 "Help.02" = "サイドバーに1文字以上入力すると、関連するすべてのグリフが表示されます。⌥⏎ で改行できます。";
 "Help.03" = "グリフをダブルクリックするか、選択して Return を押すと、デフォルトのグリフを置き換え、そのグリフの代替候補を表示します。";
