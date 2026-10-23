@@ -6,24 +6,13 @@ A native macOS font and alternate-glyph inspector. Type text to see every altern
 
 <img width="712" height="512" alt="圖片" src="https://github.com/user-attachments/assets/da0c8b0d-6379-4665-b72f-7e3c42c1bddf" />
 
-## Support
+## Requirements
 
 - macOS 12.0 or later
+
+## Support
+
 - .ttf .otf .ttc .otc .woff .woff2
-
-## Build
-
-```
-./build.sh
-open "dist/Glyph Atlas.app"
-```
-
-The default build is universal (`arm64` + `x86_64`). To build only one architecture:
-
-```
-ARCHS=arm64 ./build.sh
-ARCHS=x86_64 ./build.sh
-```
 
 ## Usage
 
@@ -51,10 +40,19 @@ ARCHS=x86_64 ./build.sh
 - When the sidebar holds a lot of items, clicking gets twitchy and items sometimes fly around, witch Apple did. Use the arrow keys instead.
 - Because of a system title-bar limitation, double-clicking the top of an All Glyphs window zooms the window; it can't be prevented, so don't be startled.
 
-## Special thanks
+## Build
 
-- The entire app was personally built by DeepSeek Flash 1013 Max, with me nitpicking the whole time, at a total cost of 2,484,237,676 tokens.
-- The English translation was also provided by DeepSeek Flash 1013.
+```
+./build.sh
+open "dist/Glyph Atlas.app"
+```
+
+The default build is universal (`arm64` + `x86_64`). To build only one architecture:
+
+```
+ARCHS=arm64 ./build.sh
+ARCHS=x86_64 ./build.sh
+```
 
 ---
 
@@ -62,9 +60,12 @@ ARCHS=x86_64 ./build.sh
 
 一個原生 macOS 字體和替換字形查看器。輸入文字，查看字體為該文字提供的所有替換字形、上下文替換和連字，以及排版效果和所有字形。
 
-## 支持
+## 需要
 
 - macOS 12.0 或更高版本
+
+## 支持
+
 - .ttf .otf .ttc .otc .woff .woff2
 
 ## 使用
@@ -95,4 +96,4 @@ ARCHS=x86_64 ./build.sh
 
 ## 特別鳴謝
 
-- 整個 app 由 DeepSeek Flash 1013 Max 親自打造，並由本人全程指手畫腳，共計花費 24,8423,7676 偷啃。
+- 整個 app 由 DeepSeek Flash 1013 親自打造，並由本人全程指手畫腳，共計花費 24,8423,7676 偷啃。
