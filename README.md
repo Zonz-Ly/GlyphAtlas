@@ -13,16 +13,13 @@ A native macOS font and alternate-glyph inspector. Type text to see every altern
 ## Support
 
 - .ttf .otf .ttc .otc .woff .woff2
-
-## Languages
-
-The interface supports English, Traditional Chinese (Taiwan and Hong Kong), Simplified Chinese, Japanese, Korean, German, French, Spanish, Italian, Brazilian Portuguese, Russian, and Arabic. It follows the macOS language preference, including per-app language settings. See [Localization](LOCALIZATION.md) for translation maintenance and validation.
+- English, Chinese, Japanese, Korean, German, French, Spanish, Italian, Brazilian Portuguese, Russian, Arabic.
 
 ## Usage
 
 - Open a font, or drag one onto the app's window or Dock icon. Recently used fonts are supported.
 - Type one or more characters in the sidebar to see all associated glyphs. Use `⌥⏎` to insert a line break.
-- Double-click a glyph, or select it and press `Return`, to replace the default glyph and show that glyph's substitution.
+- Double-click a glyph, or select it and press `Return`, to replace the default glyph and show that glyph's substitution. Press and hold `Shift` together to add that glyph.
 - Use `↑`/`↓` to move between glyphs, `⌘↑`/`⌘↓` to move between base glyphs, and `⌥↑`/`⌥↓` to jump to the first or last glyph in the list.
 - Use `⌘C` to copy all encoded characters of the selected glyph.
 - Hover over a Unicode badge to see the character name defined by the Unicode standard.
@@ -71,16 +68,13 @@ ARCHS=x86_64 ./build.sh
 ## 支持
 
 - .ttf .otf .ttc .otc .woff .woff2
-
-## 語言
-
-介面支援英文、繁體中文（台灣及香港）、簡體中文、日文、韓文、德文、法文、西班牙文、義大利文、巴西葡萄牙文、俄文和阿拉伯文，並依照 macOS 的語言偏好及個別 App 語言設定顯示。
+- 英文、中文、日文、韓文、德文、法文、西班牙文、義大利文、巴西葡萄牙文、俄文、阿拉伯文。
 
 ## 使用
 
 - 打開字體，也可以把字體拖到 app 的窗口或圖標上，支持最近使用的文件。
 - 在側邊欄中輸入單個或多個字符來查看所有關聯字形，可以用 `⌥⏎` 換行。
-- 按兩下字形或選中後按 `⏎`，可以取代默認字形，顯示該字形的替換字。
+- 按兩下字形或選中後按 `⏎`，可以取代默認字形，並顯示該字形的替換字；如果同時按住 `⇧` 就是添加這個字了。
 - 使用方向鍵 `↑`／`↓` 選擇上下字形，使用 `⌘↑`／`⌘↓` 選擇上下默認字形，使用 `⌥↑`／`⌥↓` 選擇字形列表中的第一個和最後一個字形。
 - 使用 `⌘C` 複製選中字形的所有編碼字符。
 - 鼠標在 Unicode 上靜置時顯示該 Unicode 標準規定的字符名稱。
