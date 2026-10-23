@@ -1,6 +1,23 @@
 #!/bin/bash
 set -euo pipefail
 
+CREATE_ZIP=false
+for ARG in "$@"; do
+  case "$ARG" in
+    --zip) CREATE_ZIP=true ;;
+    -h|--help)
+      echo "Usage: bash build.sh [--zip]"
+      echo "  --zip  Also package the app as dist/Glyph Atlas.zip"
+      exit 0
+      ;;
+    *)
+      echo "Unknown argument: $ARG" >&2
+      echo "Usage: bash build.sh [--zip]" >&2
+      exit 1
+      ;;
+  esac
+done
+
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 BUILD="$ROOT/.build"
 DIST="$ROOT/dist"
@@ -71,11 +88,9 @@ codesign --force --deep --sign - "$APP" >/dev/null 2>&1 || {
 }
 xattr -cr "$APP" 2>/dev/null || true
 
-rm -f "$ZIP"
-if command -v ditto >/dev/null 2>&1; then
+echo "Done: $APP"
+if "$CREATE_ZIP"; then
+  rm -f "$ZIP"
   ditto -c -k --norsrc --noextattr --keepParent "$APP" "$ZIP"
-  echo "Done: $APP"
   echo "Archive: $ZIP"
-else
-  echo "Done: $APP"
 fi
