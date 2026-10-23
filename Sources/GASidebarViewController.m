@@ -306,11 +306,9 @@ static NSAttributedString *GAFieldTextFromModelText(NSAttributedString *modelTex
 @end
 
 /// macOS 26+ search fields drop the leading text inset when the search button
-/// cell is removed; the text then starts at the bezel edge. Use fixed 9 pt
-/// leading and 7 pt trailing text insets without changing the field's frame,
-/// font or text.
+/// cell is removed; the text then starts at the bezel edge. Use a fixed 9 pt
+/// text inset on both edges without changing the field's frame, font or text.
 static const CGFloat GASearchFieldTextInset = 9.0;
-static const CGFloat GASearchFieldTextTrailingInset = 7.0;
 
 @interface GASearchFieldCell : NSSearchFieldCell
 @end
@@ -319,7 +317,7 @@ static const CGFloat GASearchFieldTextTrailingInset = 7.0;
 
 - (NSRect)rectByInsettingTextEdges:(NSRect)rect bounds:(NSRect)bounds {
     rect.origin.x = NSMinX(bounds) + GASearchFieldTextInset;
-    rect.size.width = MAX(0, NSMaxX(bounds) - GASearchFieldTextTrailingInset - NSMinX(rect));
+    rect.size.width = MAX(0, NSMaxX(bounds) - GASearchFieldTextInset - NSMinX(rect));
     return rect;
 }
 
