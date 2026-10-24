@@ -47,6 +47,34 @@
     return self;
 }
 
+- (GARawScanResult *)cachedResultForContent:(NSString *)content {
+    GARawScanResult *raw = _cache[content];
+    if (raw == nil) return nil;
+    GARawScanResult *rebound = [_fontDocument rebindResult:raw content:content];
+    _cache[content] = rebound;
+    return rebound;
+}
+
+- (void)updateFontDocument:(GAFontDocument *)document {
+    _fontDocument = document;
+    // Discoveries cover all conditional branches. Coordinates only rebind the
+    // literal GIDs and metrics; the content queue and cache remain resource-wide.
+    for (GACharacterGroup *group in _groups) {
+        NSMutableArray *variants = [NSMutableArray arrayWithCapacity:group.variants.count];
+        for (GAGlyphVariant *variant in group.variants) {
+            NSString *content = group.text;
+            NSRange range = variant.sourceTextRange;
+            if (variant.isLigature && range.location != NSNotFound && NSMaxRange(range) <= _text.length) content = [_text substringWithRange:range];
+            [variants addObject:[document rebindVariant:variant content:content]];
+        }
+        group.variants = variants;
+    }
+    for (GATextScanGroup *group in _scanGroups) for (GATextScanItem *item in group.items) for (GATextScanSubitem *subitem in item.subitems) {
+        if (subitem.state == GATextScanSubitemStateScanning) subitem.state = GATextScanSubitemStatePending;
+    }
+    [self notifyUpdate];
+}
+
 - (NSArray<GACharacterGroup *> *)groups {
     return _groups;
 }
@@ -198,7 +226,7 @@
             continue;
         }
         [seenSingleCharacters addObject:group.text];
-        GARawScanResult *cached = _cache[group.text];
+        GARawScanResult *cached = [self cachedResultForContent:group.text];
         if (cached != nil) {
             [self applySingleCharacterResult:cached content:group.text];
             continue;
@@ -252,7 +280,7 @@
                 if (subitem.state != GATextScanSubitemStatePending) {
                     continue;
                 }
-                GARawScanResult *cached = _cache[subitem.content];
+                GARawScanResult *cached = [self cachedResultForContent:subitem.content];
                 if (cached != nil) {
                     subitem.result = cached;
                     subitem.state = GATextScanSubitemStateCompleted;

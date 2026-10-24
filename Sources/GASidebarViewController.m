@@ -658,6 +658,13 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
     self.pendingSelectionScroll = scroll;
 }
 
+- (NSString *)selectedGlyphSourceText {
+    GARowItem *row = [self selectedVariantRow];
+    NSRange range = row.variant.sourceTextRange;
+    if (row.variant.isLigature && range.location != NSNotFound && NSMaxRange(range) <= self.text.length) return [self.text substringWithRange:range];
+    return row.group.text ?: @"";
+}
+
 - (GARowItem *)selectedVariantRow {
     NSInteger row = self.tableView.selectedRow;
     if (row < 0 || row >= (NSInteger)self.rows.count) return nil;
@@ -1030,6 +1037,35 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
         [self.tableView scrollRowToVisible:last];
     }
     // Otherwise both edges are visible: do nothing.
+}
+
+- (BOOL)updateCoordinateGroups:(NSArray<GACharacterGroup *> *)groups {
+    if (self.pendingSelectionGlyphKey != nil) return NO;
+    NSArray<GARowItem *> *rows = GARowsForGroups(groups);
+    if (rows.count != self.rows.count) return NO;
+    for (NSUInteger i = 0; i < rows.count; i++) {
+        GARowItem *old = self.rows[i], *updated = rows[i];
+        if (!NSEqualRanges(old.group.textRange, updated.group.textRange) ||
+            ![old.variant.glyphKey isEqualToString:updated.variant.glyphKey] ||
+            ![old.variant.featureSources isEqualToArray:updated.variant.featureSources] ||
+            ![old.variant.unicodeScalars isEqualToArray:updated.variant.unicodeScalars] ||
+            ![old.variant.glyphName isEqualToString:updated.variant.glyphName]) return NO;
+    }
+    _groups = [groups copy];
+    self.rows = rows;
+    NSInteger selected = self.tableView.selectedRow;
+    if (selected >= 0 && selected < (NSInteger)rows.count) {
+        self.selectedVariant = rows[(NSUInteger)selected].variant;
+        self.selectedVariantTextRange = rows[(NSUInteger)selected].group.textRange;
+    }
+    NSRange visible = [self.tableView rowsInRect:self.tableView.visibleRect];
+    if (visible.location != NSNotFound) {
+        for (NSUInteger i = visible.location; i < MIN(rows.count, NSMaxRange(visible)); i++) {
+            GAVariantCellView *cell = [self.tableView viewAtColumn:0 row:(NSInteger)i makeIfNecessary:NO];
+            [cell configureWithVariant:rows[i].variant];
+        }
+    }
+    return YES;
 }
 
 - (void)setGroups:(NSArray<GACharacterGroup *> *)groups {

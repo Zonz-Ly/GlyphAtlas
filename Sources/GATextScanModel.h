@@ -50,6 +50,10 @@ typedef NS_ENUM(NSInteger, GATextScanSubitemState) {
 - (instancetype)initWithFontDocument:(GAFontDocument *)fontDocument NS_DESIGNATED_INITIALIZER;
 - (instancetype)init NS_UNAVAILABLE;
 
+/// Switches coordinates while retaining the resource-wide union of discoveries.
+- (void)updateFontDocument:(GAFontDocument *)document;
+
+
 /// Rebuilds the desired subitem set, applies cached results, keeps still-valid
 /// pending work, and enqueues each group's new missing items at the group end.
 - (void)updateText:(NSString *)text;

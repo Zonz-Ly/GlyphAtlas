@@ -5,6 +5,8 @@
 #import "GATextScanModel.h"
 #import "GAUnicode.h"
 #import "GAFontTypes.h"
+#import "GAFontResource.h"
+#import "GAVariationViewController.h"
 #import <CoreText/CoreText.h>
 #import <math.h>
 
@@ -139,12 +141,22 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 
 #pragma mark - Main window
 
-@interface GAMainWindowController () <NSWindowDelegate, NSToolbarDelegate>
+@interface GAMainWindowController () <NSWindowDelegate, NSToolbarDelegate, NSPopoverDelegate>
 @property (nonatomic, strong) NSSplitViewController *splitViewController;
 @property (nonatomic, strong) GASidebarViewController *sidebarViewController;
 @property (nonatomic, strong) GADetailViewController *detailViewController;
 @property (nonatomic, strong, nullable) GAFontDocument *fontDocument;
 @property (nonatomic, strong) NSTextField *titleFontNameField;
+@property (nonatomic, strong) NSStackView *fontTitleView;
+@property (nonatomic, strong) NSButton *variationButton;
+@property (nonatomic, strong) NSPopover *variationPopover;
+@property (nonatomic) CGFloat attachedVariationWindowHeight;
+@property (nonatomic) CGFloat attachedVariationContentHeight;
+@property (nonatomic, strong, nullable) GAFontResource *fontResource;
+@property (nonatomic, copy) NSDictionary<NSNumber *, NSNumber *> *variationCoordinates;
+@property (nonatomic) NSUInteger fontLoadGeneration;
+/// Owned by analysisQueue, independently of the main-thread display document.
+@property (nonatomic, strong, nullable) GAFontDocument *workerFontDocument;
 @property (nonatomic, strong) dispatch_queue_t fontQueue;
 @property (nonatomic, strong) dispatch_queue_t analysisQueue;
 @property (nonatomic, strong, nullable) GATextScanModel *scanModel;
@@ -172,6 +184,7 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 @property (nonatomic, strong, nullable) GAGlyphVariant *lastSelectedVariant;
 /// Set by an all-glyph double-click append; consumed by the next reveal.
 @property (nonatomic) BOOL appendRevealPending;
+@property (nonatomic) BOOL coordinateRefresh;
 @property (nonatomic) BOOL didSetInitialSidebarWidth;
 @end
 
@@ -261,6 +274,21 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
         ?: [NSFont systemFontOfSize:13 weight:NSFontWeightMedium];
     self.titleFontNameField.textColor = [NSColor windowFrameTextColor];
 
+    self.variationButton = [NSButton buttonWithImage:
+        [NSImage imageWithSystemSymbolName:@"slider.horizontal.3" accessibilityDescription:nil]
+                                             target:self action:@selector(showVariations:)];
+    self.variationButton.bordered = NO;
+    self.variationButton.hidden = YES;
+    self.variationButton.contentTintColor = [NSColor secondaryLabelColor];
+    self.variationButton.toolTip = NSLocalizedString(@"Variable", @"Variable font controls");
+    self.variationButton.accessibilityLabel = self.variationButton.toolTip;
+    self.fontTitleView = [NSStackView stackViewWithViews:@[self.variationButton, self.titleFontNameField]];
+    self.fontTitleView.orientation = NSUserInterfaceLayoutOrientationHorizontal;
+    self.fontTitleView.alignment = NSLayoutAttributeCenterY;
+    self.fontTitleView.spacing = 5;
+    [self.titleFontNameField setContentCompressionResistancePriority:NSLayoutPriorityDefaultLow
+                                                     forOrientation:NSLayoutConstraintOrientationHorizontal];
+
     NSToolbar *toolbar = [[NSToolbar alloc] initWithIdentifier:@"GATitleToolbar"];
     toolbar.delegate = self;
     toolbar.displayMode = NSToolbarDisplayModeIconOnly;
@@ -269,6 +297,7 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 
     __weak typeof(self) weakSelf = self;
     self.sidebarViewController.onTextChanged = ^{
+        weakSelf.coordinateRefresh = NO;
         [weakSelf scheduleAnalysis];
     };
     self.sidebarViewController.onSelectionChanged = ^(GAGlyphVariant *variant) {
@@ -420,6 +449,7 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 }
 
 - (void)windowDidBecomeKey:(NSNotification *)notification {
+    if (notification.object != self.window) return;
     [self.sidebarViewController setGlyphListDimmed:NO];
     if (self.didFocusInitialField) {
         return;
@@ -433,6 +463,7 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 }
 
 - (void)windowDidResignKey:(NSNotification *)notification {
+    if (notification.object != self.window) return;
     [self.sidebarViewController setGlyphListDimmed:YES];
 }
 
@@ -465,8 +496,8 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
     NSToolbarItem *item = [[NSToolbarItem alloc] initWithItemIdentifier:itemIdentifier];
     item.label = NSLocalizedString(@"Font Name", @"Font Name");
     item.paletteLabel = NSLocalizedString(@"Font Name", @"Font Name");
-    item.view = self.titleFontNameField;
-    CGFloat titleHeight = self.titleFontNameField.fittingSize.height;
+    item.view = self.fontTitleView;
+    CGFloat titleHeight = MAX(22, self.titleFontNameField.fittingSize.height);
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
     item.minSize = NSMakeSize(0, titleHeight);
@@ -482,163 +513,184 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
     NSArray *descriptors = array ? CFBridgingRelease(array) : @[];
     if (descriptors.count == 0) {
         [self showErrorWithTitle:NSLocalizedString(@"Cannot Open Font", @"Cannot Open Font")
-                         message:NSLocalizedString(@"This file does not contain a font that CoreText can read.", @"This file does not contain a font that CoreText can read.")];
+                         message:NSLocalizedString(@"This file does not contain a font that CoreText can read.", @"Cannot read font file")];
         return;
     }
-
-    if (descriptors.count == 1) {
-        CTFontDescriptorRef descriptor =
-            (__bridge CTFontDescriptorRef)descriptors.firstObject;
-        [self loadDescriptor:descriptor url:url];
+    NSArray<GAFontResource *> *resources = [GAFontResource resourcesFromDescriptors:descriptors];
+    if (resources.count == 1) {
+        [self loadResource:resources.firstObject url:url];
         return;
     }
-
-    [self chooseDescriptorFromDescriptors:descriptors url:url];
-}
-
-
-- (void)chooseDescriptorFromDescriptors:(NSArray *)descriptors
-                                    url:(NSURL *)url {
     NSAlert *alert = [[NSAlert alloc] init];
     alert.messageText = NSLocalizedString(@"Choose Font Style", @"Choose Font Style");
     alert.informativeText = [NSString localizedStringWithFormat:
-        NSLocalizedString(@"“%@” contains %lu fonts. Choose a style to inspect.", @"“%@” contains %lu fonts. Choose a style to inspect."),
-        url.lastPathComponent, (unsigned long)descriptors.count];
+        NSLocalizedString(@"“%@” contains %lu fonts. Choose a style to inspect.", @"Font collection choice"),
+        url.lastPathComponent, (unsigned long)resources.count];
     [alert addButtonWithTitle:NSLocalizedString(@"Open", @"Open")];
     [alert addButtonWithTitle:NSLocalizedString(@"Cancel", @"Cancel")];
-
-    NSPopUpButton *popup = [[NSPopUpButton alloc] initWithFrame:NSMakeRect(0, 0, 290, 26)
-                                                       pullsDown:NO];
-    NSMutableArray<NSString *> *titles = [NSMutableArray array];
-    NSMutableDictionary<NSString *, NSNumber *> *titleCounts = [NSMutableDictionary dictionary];
-    NSNumber *weightAxisTag = @(0x77676874); // 'wght'
-    NSNumber *defaultWeight = nil;
-    CTFontDescriptorRef firstDescriptor = (__bridge CTFontDescriptorRef)descriptors.firstObject;
-    CTFontRef firstFont = CTFontCreateWithFontDescriptor(firstDescriptor, 16, NULL);
-    if (firstFont != NULL) {
-        NSArray<NSDictionary *> *axes =
-            CFBridgingRelease(CTFontCopyVariationAxes(firstFont));
-        for (NSDictionary *axis in axes) {
-            NSNumber *identifier = axis[(__bridge NSString *)kCTFontVariationAxisIdentifierKey];
-            if (identifier.unsignedIntValue == weightAxisTag.unsignedIntValue) {
-                defaultWeight = axis[(__bridge NSString *)kCTFontVariationAxisDefaultValueKey];
-                break;
-            }
-        }
-        CFRelease(firstFont);
-    }
-
-    BOOL foundDefaultWeight = NO;
-    NSInteger defaultWeightIndex = 0;
-    for (NSUInteger index = 0; index < descriptors.count; index++) {
-        CTFontDescriptorRef descriptor = (__bridge CTFontDescriptorRef)descriptors[index];
-        CTFontRef font = CTFontCreateWithFontDescriptor(descriptor, 16, NULL);
-        NSString *name = nil;
-        NSDictionary *variation = nil;
-        if (font != NULL) {
-            name = CFBridgingRelease(CTFontCopyFullName(font));
-            if (defaultWeight != nil) {
-                variation = CFBridgingRelease(CTFontCopyVariation(font));
-            }
-            CFRelease(font);
-        }
-        if (defaultWeight != nil && !foundDefaultWeight) {
-            NSNumber *weight = variation[weightAxisTag] ?: defaultWeight;
-            if (fabs(weight.doubleValue - defaultWeight.doubleValue) < 0.001) {
-                foundDefaultWeight = YES;
-                defaultWeightIndex = (NSInteger)index;
-            }
-        }
-        NSString *title = name.length > 0 ? name : NSLocalizedString(@"Untitled Font", @"Untitled Font");
-        [titles addObject:title];
-        titleCounts[title] = @([titleCounts[title] integerValue] + 1);
-    }
-
-    NSMutableDictionary<NSString *, NSNumber *> *seenCounts = [NSMutableDictionary dictionary];
-    for (NSUInteger index = 0; index < titles.count; index++) {
-        NSString *title = titles[index];
-        if (titleCounts[title].integerValue > 1) {
-            NSUInteger occurrence = (NSUInteger)seenCounts[title].integerValue + 1;
-            seenCounts[title] = @(occurrence);
+    NSPopUpButton *popup = [[NSPopUpButton alloc] initWithFrame:NSMakeRect(0, 0, 290, 26) pullsDown:NO];
+    NSMutableDictionary<NSString *, NSNumber *> *counts = [NSMutableDictionary dictionary];
+    for (GAFontResource *resource in resources) counts[resource.name] = @([counts[resource.name] integerValue] + 1);
+    NSMutableDictionary<NSString *, NSNumber *> *seen = [NSMutableDictionary dictionary];
+    for (GAFontResource *resource in resources) {
+        NSString *title = resource.name;
+        if (counts[title].integerValue > 1) {
+            NSUInteger occurrence = seen[title].unsignedIntegerValue + 1;
+            seen[title] = @(occurrence);
             title = [title stringByAppendingFormat:@"  (%lu)", (unsigned long)occurrence];
         }
-        NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:title
-                                                      action:nil
-                                               keyEquivalent:@""];
-        item.tag = (NSInteger)index;
-        [popup.menu addItem:item];
+        [popup.menu addItem:[[NSMenuItem alloc] initWithTitle:title action:nil keyEquivalent:@""]];
     }
-
-    if (foundDefaultWeight) {
-        NSInteger itemIndex = [popup indexOfItemWithTag:defaultWeightIndex];
-        if (itemIndex >= 0) {
-            [popup selectItemAtIndex:itemIndex];
-        }
-    }
-
     alert.accessoryView = popup;
-
     __weak typeof(self) weakSelf = self;
     [alert beginSheetModalForWindow:self.window completionHandler:^(NSModalResponse response) {
-        if (response != NSAlertFirstButtonReturn) {
-            [weakSelf.window close];
-            return;
+        if (response == NSAlertFirstButtonReturn) {
+            [weakSelf loadResource:resources[(NSUInteger)popup.indexOfSelectedItem] url:url];
         }
-        NSInteger index = popup.selectedItem.tag;
-        CTFontDescriptorRef descriptor =
-            (__bridge CTFontDescriptorRef)descriptors[(NSUInteger)index];
-        [weakSelf loadDescriptor:descriptor url:url];
     }];
 }
 
-- (void)loadDescriptor:(CTFontDescriptorRef)descriptor
-                    url:(NSURL *)url {
-    CTFontDescriptorRef retainedDescriptor = (CTFontDescriptorRef)CFRetain(descriptor);
-    NSURL *copiedURL = [url copy];
+- (void)loadResource:(GAFontResource *)resource url:(NSURL *)url {
+    [self.variationPopover close];
+    self.fontResource = resource;
+    self.variationCoordinates = resource.defaultCoordinates;
+    self.variationButton.hidden = resource.axes.count == 0;
+    [self loadDescriptor:resource.defaultDescriptor url:url preservingSelection:NO];
+}
+
+- (void)showVariations:(id)sender {
+    (void)sender;
+    if (self.variationPopover.detached) {
+        [self.variationPopover.contentViewController.view.window makeKeyAndOrderFront:nil];
+        return;
+    }
+    if (self.variationPopover.shown) {
+        [self.variationPopover close];
+        return;
+    }
+    if (self.fontDocument == nil || self.fontResource.axes.count == 0) return;
+    GAVariationViewController *controller = [[GAVariationViewController alloc]
+        initWithResource:self.fontResource coordinates:self.variationCoordinates];
     __weak typeof(self) weakSelf = self;
+    controller.onCoordinatesChanged = ^(NSDictionary *coordinates, BOOL committed) {
+        __strong typeof(weakSelf) self = weakSelf;
+        if (self == nil) return;
+        (void)committed;
+        if ([self.variationCoordinates isEqualToDictionary:coordinates]) return;
+        self.variationCoordinates = coordinates;
+        CTFontDescriptorRef descriptor = [self.fontResource copyDescriptorWithCoordinates:coordinates];
+        [self loadDescriptor:descriptor url:self.fontDocument.fontURL preservingSelection:YES];
+        CFRelease(descriptor);
+    };
+    self.variationPopover = [[NSPopover alloc] init];
+    controller.title = @"";
+    self.variationPopover.delegate = self;
+    self.variationPopover.behavior = NSPopoverBehaviorTransient;
+    self.variationPopover.contentViewController = controller;
+    [self.variationPopover showRelativeToRect:self.variationButton.bounds
+                                      ofView:self.variationButton preferredEdge:NSRectEdgeMinY];
+}
 
+- (BOOL)popoverShouldDetach:(NSPopover *)popover {
+    return popover == self.variationPopover;
+}
+
+- (void)popoverDidShow:(NSNotification *)notification {
+    if (notification.object != self.variationPopover) return;
+    NSView *content = self.variationPopover.contentViewController.view;
+    self.attachedVariationWindowHeight = NSHeight(content.window.frame);
+    self.attachedVariationContentHeight = NSHeight(content.bounds);
+}
+
+- (void)popoverDidDetach:(NSPopover *)popover {
+    if (popover != self.variationPopover) return;
+    NSWindow *window = popover.contentViewController.view.window;
+    NSRect frame = window.frame;
+    frame.origin.y += NSHeight(frame) - self.attachedVariationWindowHeight;
+    frame.size.height = self.attachedVariationWindowHeight;
+    [window setFrame:frame display:YES];
+    [(GAVariationViewController *)popover.contentViewController
+        didDetachWithPreviousContentHeight:self.attachedVariationContentHeight];
+}
+
+- (void)windowWillClose:(NSNotification *)notification {
+    if (notification.object == self.window) {
+        [self.variationPopover close];
+    }
+}
+
+- (void)loadDescriptor:(CTFontDescriptorRef)descriptor
+                   url:(NSURL *)url preservingSelection:(BOOL)preserve {
+    CTFontDescriptorRef retained = (CTFontDescriptorRef)CFRetain(descriptor);
+    NSUInteger request;
+    @synchronized (self) { request = ++self.fontLoadGeneration; }
+    GAFontDocument *source = preserve ? self.fontDocument : nil;
+    __weak typeof(self) weakSelf = self;
+    // Serial construction coalesces queued slider events without delaying live previews.
     dispatch_async(self.fontQueue, ^{
-        GAFontDocument *document = [[GAFontDocument alloc] initWithDescriptor:retainedDescriptor
-                                                                          URL:copiedURL];
-        CFRelease(retainedDescriptor);
-
+        __strong typeof(weakSelf) self = weakSelf;
+        if (self == nil) { CFRelease(retained); return; }
+        @synchronized (self) {
+            if (request != self.fontLoadGeneration) { CFRelease(retained); return; }
+        }
+        GAFontDocument *document = source != nil ? [source documentWithDescriptor:retained]
+            : [[GAFontDocument alloc] initWithDescriptor:retained URL:url];
+        CFRelease(retained);
         dispatch_async(dispatch_get_main_queue(), ^{
-            __strong typeof(weakSelf) self = weakSelf;
-            if (self == nil) {
-                return;
-            }
+            if (request != self.fontLoadGeneration) return;
             if (document == nil) {
                 [self showErrorWithTitle:NSLocalizedString(@"Cannot Read Font", @"Cannot Read Font")
-                                 message:NSLocalizedString(@"CoreText could not create this font.", @"CoreText could not create this font.")];
+                                 message:NSLocalizedString(@"CoreText could not create this font.", @"Cannot create font")];
                 return;
             }
-
+            GAGlyphVariant *selected = preserve ? self.lastSelectedVariant : nil;
             self.fontDocument = document;
-            self.scanModel = [[GATextScanModel alloc] initWithFontDocument:document];
-            self.scanDisplayPublished = NO;
-            self.pendingWorkerText = nil;
-            self.pendingWorkerSelections = nil;
-            self.workerGeneration += 1;
-            self.workerLastMultiText = nil;
-            self.workerLastMultiSeeds = nil;
-            self.multiScanInFlight = NO;
-            self.workerText = nil;
-            self.workerSelections = nil;
-            self.workerTextGeneration = 0;
-            [self.detailViewController setFontDocument:document];
-            if (self.onFontLoaded != nil) {
-                self.onFontLoaded(document.fontURL ?: url);
+            self.coordinateRefresh = preserve;
+            if (!preserve) self.scanDisplayPublished = NO;
+            @synchronized (self) {
+                self.pendingWorkerText = nil;
+                self.pendingWorkerSelections = nil;
+                self.workerGeneration += 1;
             }
+            // Swap all model-owned state on its queue. An old multi scan keeps
+            // its own document/model and cannot complete into the new cache.
+            dispatch_async(self.analysisQueue, ^{
+                self.workerFontDocument = document;
+                if (preserve && self.scanModel != nil) {
+                    [self.scanModel updateFontDocument:document];
+                } else {
+                    self.scanModel = [[GATextScanModel alloc] initWithFontDocument:document];
+                }
+                self.workerLastMultiText = nil;
+                self.workerLastMultiSeeds = nil;
+                self.multiScanInFlight = NO;
+                self.workerText = nil;
+                self.workerSelections = nil;
+                self.workerTextGeneration = 0;
+                // Schedule from the latest input only after the old worker has
+                // yielded and the new model is installed. Otherwise that old
+                // worker could consume the pending text before this reset.
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    if (request == self.fontLoadGeneration && self.fontDocument == document) {
+                        [self scheduleAnalysis];
+                    }
+                });
+            });
+            [self.detailViewController setFontDocument:document];
+            if (!preserve && self.onFontLoaded != nil) self.onFontLoaded(document.fontURL ?: url);
             self.window.title = document.fullName;
             self.window.subtitle = document.fontURL.lastPathComponent ?: @"";
             self.titleFontNameField.stringValue = document.fullName;
             self.titleFontNameField.toolTip = document.fullName;
             [self.titleFontNameField invalidateIntrinsicContentSize];
-            [self.sidebarViewController setGroups:@[]];
+            if (!preserve) [self.sidebarViewController setGroups:@[]];
+            if (selected != nil) {
+                GAGlyphVariant *updated = [document rebindVariant:selected content:self.sidebarViewController.selectedGlyphSourceText];
+                self.lastSelectedVariant = updated;
+                [self.detailViewController setVariant:updated];
+            }
             if (self.sidebarViewController.text.length == 0) {
                 [self.detailViewController setVariant:nil];
-            } else {
-                [self scheduleAnalysis];
             }
         });
     });
@@ -1096,7 +1148,7 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
     }
     NSString *text = attributedText.string;
 
-    if (self.fontDocument == nil || self.scanModel == nil) {
+    if (self.fontDocument == nil) {
         return;
     }
 
@@ -1134,7 +1186,7 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 #pragma mark - Worker (analysisQueue only)
 
 - (void)workerRun {
-    if (self.scanModel == nil || self.fontDocument == nil) {
+    if (self.scanModel == nil || self.workerFontDocument == nil) {
         return;
     }
     while (YES) {
@@ -1169,7 +1221,7 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
         // be lost and never dispatched.
         GATextScanSubitem *subitem = nil;
         while ((subitem = [self.scanModel startNextSubitemWithMaximumLength:1]) != nil) {
-            GARawScanResult *result = [self.fontDocument rawScanContent:subitem.content];
+            GARawScanResult *result = [self.workerFontDocument rawScanContent:subitem.content];
             [self.scanModel completeSubitem:subitem result:result];
             @synchronized (self) {
                 if (self.pendingWorkerText != nil) {
@@ -1192,10 +1244,12 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
         GATextScanSubitem *multiSubitem = [self.scanModel startNextSubitem];
         if (multiSubitem != nil) {
             self.multiScanInFlight = YES;
+            GAFontDocument *document = self.workerFontDocument;
+            GATextScanModel *model = self.scanModel;
             dispatch_async(self.multiScanQueue, ^{
-                GARawScanResult *result =
-                    [self.fontDocument rawScanContent:multiSubitem.content];
+                GARawScanResult *result = [document rawScanContent:multiSubitem.content];
                 dispatch_async(self.analysisQueue, ^{
+                    if (self.workerFontDocument != document || self.scanModel != model) return;
                     self.multiScanInFlight = NO;
                     [self.scanModel completeSubitem:multiSubitem result:result];
                     [self workerRun];
@@ -1227,7 +1281,7 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
         [self buildDisplayGroupsFromBaseGroups:self.scanModel.groups
                                           text:text
                                     selections:selections
-                                      document:self.fontDocument];
+                                      document:self.workerFontDocument];
     NSArray<NSString *> *seeds = [self multiSeedSignatureForDisplay:display];
     BOOL textChanged = self.workerLastMultiText == nil ||
                        ![self.workerLastMultiText isEqualToString:text];
@@ -1272,7 +1326,10 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
     }
     self.displayGroups = snapshot.display;
     self.analysisText = snapshot.text;
-    if (!self.scanDisplayPublished) {
+    BOOL updatedInPlace = self.coordinateRefresh && [self.sidebarViewController updateCoordinateGroups:snapshot.display];
+    if (updatedInPlace) {
+        self.scanDisplayPublished = YES;
+    } else if (!self.scanDisplayPublished) {
         self.scanDisplayPublished = YES;
         [self.sidebarViewController setGroups:snapshot.display];
     } else {

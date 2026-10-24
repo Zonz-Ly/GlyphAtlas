@@ -17,12 +17,16 @@ typedef NS_ENUM(NSInteger, GAPendingSelectionScroll) {
 /// own source range instead of replacing the glyph already there.
 @property (nonatomic, copy, nullable) void (^onGlyphShiftActivated)(GACharacterGroup *group, GAGlyphVariant *variant);
 @property (nonatomic, readonly) NSString *text;
+@property (nonatomic, readonly) NSString *selectedGlyphSourceText;
 @property (nonatomic, readonly) NSAttributedString *attributedText;
 /// Selected range in the field editor, or NSNotFound when the field is not
 /// being edited.
 @property (nonatomic, readonly) NSRange inputSelectionRange;
 
 - (void)setAttributedText:(NSAttributedString *)attributedText;
+/// Rebinds existing rows without reloading the table, changing selection or scrolling.
+/// Returns NO if the inventory changed or a normal activation is pending.
+- (BOOL)updateCoordinateGroups:(NSArray<GACharacterGroup *> *)groups;
 - (void)setGroups:(NSArray<GACharacterGroup *> *)groups;
 /// Replaces the list with an intermediate analysis result. A normal restore
 /// keeps the selected row without notifying the delegate. A pending selection

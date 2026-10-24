@@ -16,6 +16,8 @@ static const CGFloat GACodeLineHeight = 13.0;
 
 @implementation GAGlyphView {
     NSBackgroundStyle _backgroundStyle;
+    GAGlyphPage _glyphPage;
+    BOOL _hasGlyphPage;
 }
 
 - (instancetype)initWithFrame:(NSRect)frameRect {
@@ -32,6 +34,11 @@ static const CGFloat GACodeLineHeight = 13.0;
 
 - (void)setVariant:(GAGlyphVariant *)variant {
     _variant = variant;
+    _hasGlyphPage = variant != nil;
+    if (variant != nil) {
+        _glyphPage = [GAFontDocument pageForVariant:variant
+                                 usesVerticalMetrics:NO];
+    }
     [self setNeedsDisplay:YES];
 }
 
@@ -41,7 +48,7 @@ static const CGFloat GACodeLineHeight = 13.0;
 }
 
 - (void)drawRect:(NSRect)dirtyRect {
-    if (self.variant == nil) {
+    if (!_hasGlyphPage || self.variant == nil) {
         return;
     }
     NSColor *color = _backgroundStyle == NSBackgroundStyleEmphasized
@@ -50,20 +57,20 @@ static const CGFloat GACodeLineHeight = 13.0;
 
     GAGlyphVariant *variant = self.variant;
     NSUInteger count = variant.glyphIDs.count;
-    if (count == 0) {
-        return;
-    }
-    CGRect ink = [GAFontDocument inkBoundsForVariant:variant];
-    if (CGRectIsEmpty(ink)) {
+    if (count == 0 || CGRectIsEmpty(_glyphPage.ink)) {
         return;
     }
 
     CGFloat side = MAX(1.0, MIN(NSWidth(self.bounds), NSHeight(self.bounds)) - 2.0);
-    // The variant is shaped at 200 pt. Using side/200 keeps the glyph's real
-    // size relative to the em instead of stretching every glyph to fill.
+    // The glyph size stays real relative to the em; the page metric only
+    // decides where the advance box and baseline sit inside the icon.
     CGFloat scale = side / GAFontShapingSize;
-    CGFloat originX = NSMidX(self.bounds) - CGRectGetMidX(ink) * scale;
-    CGFloat originY = NSMidY(self.bounds) - CGRectGetMidY(ink) * scale;
+    CGFloat unitScale = side / MAX(1.0, CTFontGetUnitsPerEm(variant.fontBox.font));
+    CGFloat pageWidth = _glyphPage.size.width * unitScale;
+    CGFloat pageHeight = _glyphPage.size.height * unitScale;
+    CGFloat originX = NSMidX(self.bounds) - pageWidth * 0.5;
+    CGFloat originY = NSMidY(self.bounds) - pageHeight * 0.5 +
+        _glyphPage.baseline * unitScale;
 
     CGGlyph *glyphs = calloc(count, sizeof(CGGlyph));
     CGPoint *positions = calloc(count, sizeof(CGPoint));

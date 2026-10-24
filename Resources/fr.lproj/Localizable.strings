@@ -72,3 +72,9 @@
 "Help.10" = "Utilisez ⌘+/⌘- pour agrandir ou réduire les glyphes, et ⌥⌘+/⌥⌘- pour ajuster les marges dans « Plusieurs caractères ». Le pincement sur le trackpad fonctionne également.";
 "Help.11" = "L’ombre de la page indique la largeur et la hauteur du glyphe, ainsi que la hauteur de ligne et l’interligne de la composition. Appuyez sur ⌘4 pour la masquer.";
 "Help.12" = "Le mode sombre est pris en charge. Mais attention : cliquer sur un glyphe plein peut vous éblouir.";
+
+/* Variable font controls. */
+"Variable" = "Variable";
+"Named Instance" = "Instance nommée";
+"Default" = "Par défaut";
+"Custom" = "Personnalisé";

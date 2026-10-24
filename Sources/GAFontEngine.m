@@ -60,11 +60,261 @@ static BOOL GAFontsMatch(CTFontRef runFont, CTFontRef font) {
 @implementation GAFeatureSetting
 @end
 
+#pragma mark - Feature variation conditions
+
+/// Parsed once per resource. Lookup offsets remain relative to the original
+/// GSUB bytes; the existing feature/lookup parser consumes the selected overrides.
+/// Subtract one inclusive condition box from another, retaining disjoint pieces.
+static NSArray *GASubtractConditionBox(NSArray *box, NSArray *cut) {
+    NSMutableArray *intersection = [NSMutableArray array];
+    for (NSUInteger i = 0; i < box.count; i++) {
+        NSInteger low = MAX([box[i][0] integerValue], [cut[i][0] integerValue]);
+        NSInteger high = MIN([box[i][1] integerValue], [cut[i][1] integerValue]);
+        if (low > high) return @[box];
+        [intersection addObject:@[@(low), @(high)]];
+    }
+    NSMutableArray *pieces = [NSMutableArray array];
+    NSMutableArray *rest = [box mutableCopy];
+    for (NSUInteger i = 0; i < box.count; i++) {
+        NSInteger low = [rest[i][0] integerValue], high = [rest[i][1] integerValue];
+        NSInteger innerLow = [intersection[i][0] integerValue], innerHigh = [intersection[i][1] integerValue];
+        if (low < innerLow) {
+            NSMutableArray *piece = [rest mutableCopy];
+            piece[i] = @[@(low), @(innerLow - 1)];
+            [pieces addObject:piece];
+        }
+        if (high > innerHigh) {
+            NSMutableArray *piece = [rest mutableCopy];
+            piece[i] = @[@(innerHigh + 1), @(high)];
+            [pieces addObject:piece];
+        }
+        rest[i] = intersection[i];
+    }
+    return pieces;
+}
+
+@interface GAFeatureVariations : NSObject
+@property (nonatomic, copy) NSArray<NSDictionary *> *axes;
+@property (nonatomic, copy) NSArray<NSArray<NSArray<NSNumber *> *> *> *maps;
+@property (nonatomic, copy) NSArray<NSDictionary *> *records;
+@property (nonatomic) BOOL supported;
+- (instancetype)initWithGSUB:(NSData *)gsub font:(CTFontRef)font;
+- (NSDictionary *)selectionForFont:(CTFontRef)font coordinates:(NSDictionary *)requested;
+- (NSArray<NSDictionary *> *)discoveryCoordinates;
+@end
+
+@implementation GAFeatureVariations
+- (instancetype)initWithGSUB:(NSData *)gsub font:(CTFontRef)font {
+    self = [super init];
+    if (!self) return nil;
+    _supported = YES;
+    _records = @[];
+    _axes = @[];
+    _maps = @[];
+    const uint8_t *b = gsub.bytes;
+    NSUInteger length = gsub.length;
+    if (length < 14 || GAU32(b, length, 0) != 0x00010001) return self;
+    NSUInteger start = GAU32(b, length, 10);
+    if (start == 0) return self;
+    if (start + 8 > length || GAU16(b, length, start) != 1) {
+        _supported = NO;
+        return self;
+    }
+    NSData *fvar = CFBridgingRelease(CTFontCopyTable(font, kCTFontTableFvar, 0));
+    const uint8_t *fb = fvar.bytes;
+    NSUInteger axisStart = GAU16(fb, fvar.length, 4);
+    NSUInteger axisCount = GAU16(fb, fvar.length, 8);
+    NSUInteger axisSize = GAU16(fb, fvar.length, 10);
+    if (fvar.length < 16 || axisSize < 20 || axisStart + axisSize * axisCount > fvar.length) {
+        _supported = NO;
+        return self;
+    }
+    NSMutableArray *axes = [NSMutableArray array];
+    for (NSUInteger i = 0; i < axisCount; i++) {
+        NSUInteger p = axisStart + i * axisSize;
+        [axes addObject:@{
+            @"tag": @(GAU32(fb, fvar.length, p)),
+            @"min": @((int32_t)GAU32(fb, fvar.length, p + 4) / 65536.0),
+            @"default": @((int32_t)GAU32(fb, fvar.length, p + 8) / 65536.0),
+            @"max": @((int32_t)GAU32(fb, fvar.length, p + 12) / 65536.0),
+        }];
+    }
+    _axes = axes;
+    NSData *avar = CFBridgingRelease(CTFontCopyTable(font, kCTFontTableAvar, 0));
+    NSMutableArray *maps = [NSMutableArray array];
+    if (avar.length > 0) {
+        const uint8_t *ab = avar.bytes;
+        if (avar.length < 8 || GAU16(ab, avar.length, 0) != 1 || GAU16(ab, avar.length, 6) != axisCount) {
+            // Unimplemented coordinate mappings must never share scan results
+            // across distinct coordinates. CoreText still performs the shaping.
+            _supported = NO;
+        } else {
+            NSUInteger p = 8;
+            for (NSUInteger i = 0; i < axisCount; i++) {
+                NSUInteger count = GAU16(ab, avar.length, p);
+                p += 2;
+                if (p + count * 4 > avar.length) { _supported = NO; break; }
+                NSMutableArray *map = [NSMutableArray array];
+                for (NSUInteger j = 0; j < count; j++, p += 4) {
+                    double from = (int16_t)GAU16(ab, avar.length, p) / 16384.0;
+                    double to = (int16_t)GAU16(ab, avar.length, p + 2) / 16384.0;
+                    if (map.count && (from <= [map.lastObject[0] doubleValue] || to < [map.lastObject[1] doubleValue])) _supported = NO;
+                    [map addObject:@[@(from), @(to)]];
+                }
+                if (map.count && (![map containsObject:@[@(-1), @(-1)]] ||
+                                  ![map containsObject:@[@0, @0]] || ![map containsObject:@[@1, @1]])) _supported = NO;
+                [maps addObject:map];
+            }
+        }
+    }
+    _maps = maps;
+    NSUInteger recordCount = GAU32(b, length, start + 4);
+    if (start + 8 + recordCount * 8 > length) { _supported = NO; return self; }
+    NSMutableArray *records = [NSMutableArray array];
+    NSUInteger featureCount = GAU16(b, length, GAU16(b, length, 6));
+    for (NSUInteger i = 0; i < recordCount; i++) {
+        NSUInteger p = start + 8 + i * 8;
+        NSUInteger conditions = start + GAU32(b, length, p);
+        NSUInteger substitutions = start + GAU32(b, length, p + 4);
+        if (conditions + 2 > length || substitutions + 6 > length ||
+            GAU16(b, length, substitutions) != 1) { _supported = NO; continue; }
+        NSUInteger count = GAU16(b, length, conditions);
+        if (conditions + 2 + count * 4 > length) { _supported = NO; continue; }
+        NSMutableArray *tests = [NSMutableArray array];
+        for (NSUInteger j = 0; j < count; j++) {
+            NSUInteger c = conditions + GAU32(b, length, conditions + 2 + j * 4);
+            if (c + 8 > length || GAU16(b, length, c) != 1 || GAU16(b, length, c + 2) >= axisCount) {
+                _supported = NO;
+                continue;
+            }
+            [tests addObject:@{
+                @"axis": @(GAU16(b, length, c + 2)),
+                @"min": @((int16_t)GAU16(b, length, c + 4)),
+                @"max": @((int16_t)GAU16(b, length, c + 6)),
+            }];
+        }
+        NSUInteger substitutionCount = GAU16(b, length, substitutions + 4);
+        if (substitutions + 6 + substitutionCount * 6 > length) { _supported = NO; continue; }
+        NSMutableDictionary *overrides = [NSMutableDictionary dictionary];
+        for (NSUInteger j = 0; j < substitutionCount; j++) {
+            NSUInteger sub = substitutions + 6 + j * 6;
+            NSUInteger feature = GAU16(b, length, sub);
+            NSUInteger alternate = substitutions + GAU32(b, length, sub + 2);
+            if (feature >= featureCount || alternate + 4 > length ||
+                alternate + 4 + GAU16(b, length, alternate + 2) * 2 > length) {
+                _supported = NO;
+                continue;
+            }
+            overrides[@(feature)] = @(alternate);
+        }
+        [records addObject:@{@"index": @(i), @"conditions": tests, @"overrides": overrides}];
+    }
+    _records = records;
+    return self;
+}
+
+- (NSArray<NSDictionary *> *)discoveryCoordinates {
+    if (!self.supported) return @[];
+    NSMutableArray *previous = [NSMutableArray array];
+    NSMutableArray *result = [NSMutableArray array];
+    for (NSDictionary *record in self.records) {
+        NSMutableArray *box = [NSMutableArray array];
+        for (NSUInteger i = 0; i < self.axes.count; i++) [box addObject:@[@(-16384), @16384]];
+        BOOL valid = YES;
+        for (NSDictionary *test in record[@"conditions"]) {
+            NSUInteger i = [test[@"axis"] unsignedIntegerValue];
+            NSInteger low = MAX([box[i][0] integerValue], [test[@"min"] integerValue]);
+            NSInteger high = MIN([box[i][1] integerValue], [test[@"max"] integerValue]);
+            if (low > high) { valid = NO; break; }
+            box[i] = @[@(low), @(high)];
+        }
+        if (!valid) continue;
+        NSArray *pieces = @[box];
+        // Only the first matching record takes effect. Remove regions already
+        // claimed by an earlier record before selecting a representative point.
+        for (NSArray *earlier in previous) {
+            NSMutableArray *remaining = [NSMutableArray array];
+            for (NSArray *piece in pieces) [remaining addObjectsFromArray:GASubtractConditionBox(piece, earlier)];
+            pieces = remaining;
+            if (pieces.count == 0) break;
+        }
+        [previous addObject:box];
+        if (pieces.count == 0) continue;
+        NSArray *piece = pieces.firstObject;
+        NSMutableDictionary *coordinates = [NSMutableDictionary dictionary];
+        for (NSUInteger i = 0; i < self.axes.count; i++) {
+            double normalized = floor(([piece[i][0] doubleValue] + [piece[i][1] doubleValue]) * 0.5) / 16384.0;
+            NSArray *map = i < self.maps.count ? self.maps[i] : @[];
+            for (NSUInteger j = 1; j < map.count; j++) {
+                double y0 = [map[j - 1][1] doubleValue], y1 = [map[j][1] doubleValue];
+                if (normalized >= y0 && normalized <= y1) {
+                    double x0 = [map[j - 1][0] doubleValue], x1 = [map[j][0] doubleValue];
+                    normalized = y0 == y1 ? (x0 + x1) * 0.5 : x0 + (normalized - y0) * (x1 - x0) / (y1 - y0);
+                    break;
+                }
+            }
+            NSDictionary *axis = self.axes[i];
+            double def = [axis[@"default"] doubleValue];
+            double value = def + normalized * (normalized < 0 ? def - [axis[@"min"] doubleValue] : [axis[@"max"] doubleValue] - def);
+            coordinates[axis[@"tag"]] = @(value);
+        }
+        [result addObject:@{@"key": [record[@"index"] stringValue], @"coordinates": coordinates}];
+    }
+    return result;
+}
+
+- (NSDictionary *)selectionForFont:(CTFontRef)font coordinates:(NSDictionary *)requested {
+    NSMutableDictionary *coordinates = [CFBridgingRelease(CTFontCopyVariation(font)) mutableCopy] ?: [NSMutableDictionary dictionary];
+    // CTFontCopyVariation may truncate decimals. Explicit descriptor values
+    // preserve the coordinates actually requested by the slider/number field.
+    if (requested != nil) [coordinates addEntriesFromDictionary:requested];
+    if (!self.supported) {
+        NSMutableArray *values = [NSMutableArray array];
+        for (NSDictionary *axis in self.axes) [values addObject:coordinates[axis[@"tag"]] ?: axis[@"default"]];
+        return @{@"key": [NSString stringWithFormat:@"coordinates:%@:%@", values, coordinates], @"overrides": @{}};
+    }
+    NSMutableArray<NSNumber *> *normalized = [NSMutableArray array];
+    for (NSUInteger i = 0; i < self.axes.count; i++) {
+        NSDictionary *axis = self.axes[i];
+        double minimum = [axis[@"min"] doubleValue], maximum = [axis[@"max"] doubleValue];
+        double def = [axis[@"default"] doubleValue];
+        double value = [coordinates[axis[@"tag"]] ?: axis[@"default"] doubleValue];
+        value = MIN(maximum, MAX(minimum, trunc(value * 65536.0) / 65536.0));
+        double n = value < def ? (value - def) / (def - minimum)
+                 : value > def ? (value - def) / (maximum - def) : 0;
+        n = trunc(n * 65536.0) / 65536.0;
+        NSArray<NSArray<NSNumber *> *> *map = i < self.maps.count ? self.maps[i] : @[];
+        for (NSUInteger j = 1; j < map.count; j++) {
+            double x0 = map[j - 1][0].doubleValue, x1 = map[j][0].doubleValue;
+            if (n >= x0 && n <= x1) {
+                double ratio = floor(((n - x0) / (x1 - x0)) * 65536.0 + 0.5) / 65536.0;
+                // Fixed-point multiplication discards the low product word
+                // before the final 2.14 rounding used by condition comparisons.
+                double delta = map[j][1].doubleValue - map[j - 1][1].doubleValue;
+                n = map[j - 1][1].doubleValue + floor(ratio * delta * 65536.0) / 65536.0;
+                break;
+            }
+        }
+        int32_t fixed = (int32_t)floor(MIN(1, MAX(-1, n)) * 65536.0 + 0.5);
+        [normalized addObject:@((fixed + 2) >> 2)];
+    }
+    for (NSDictionary *record in self.records) {
+        BOOL matches = YES;
+        for (NSDictionary *test in record[@"conditions"]) {
+            NSInteger n = normalized[[test[@"axis"] unsignedIntegerValue]].integerValue;
+            if (n < [test[@"min"] integerValue] || n > [test[@"max"] integerValue]) { matches = NO; break; }
+        }
+        if (matches) return @{@"key": [record[@"index"] stringValue], @"overrides": record[@"overrides"]};
+    }
+    return @{@"key": @"default", @"overrides": @{}};
+}
+@end
+
 #pragma mark - GSUB parser
 
 /// Reads the GSUB FeatureList once. Features with the same tag are merged in
 /// first-occurrence order, and lookup indices are deduplicated.
-static NSArray<NSDictionary<NSString *, id> *> *GAGSUBFeatures(NSData *table) {
+static NSArray<NSDictionary<NSString *, id> *> *GAGSUBFeatures(NSData *table, NSDictionary *overrides) {
     if (table.length < 10) {
         return @[];
     }
@@ -100,6 +350,8 @@ static NSArray<NSDictionary<NSString *, id> *> *GAGSUBFeatures(NSData *table) {
 
         NSUInteger featureOffset = (NSUInteger)featureListOffset +
                                    GAU16(bytes, length, recordOffset + 4);
+        NSNumber *alternateOffset = overrides[@(featureIndex)];
+        if (alternateOffset != nil) featureOffset = alternateOffset.unsignedIntegerValue;
         if (featureOffset + 4 > length) {
             continue;
         }
@@ -132,7 +384,7 @@ static NSArray<NSDictionary<NSString *, id> *> *GAGSUBFeatures(NSData *table) {
 /// Returns dictionaries with "tag" and "max" keys, preserving the font's
 /// feature order. Only AlternateSubst lookups can expose multiple alternates
 /// through a feature value; everything else has one selectable state.
-static NSArray<NSDictionary *> *GAParseGSUBFeatures(NSData *table) {
+static NSArray<NSDictionary *> *GAParseGSUBFeatures(NSData *table, NSDictionary *overrides) {
     if (table.length < 10) {
         return @[];
     }
@@ -197,7 +449,7 @@ static NSArray<NSDictionary *> *GAParseGSUBFeatures(NSData *table) {
     }
 
     NSMutableArray<NSDictionary *> *features = [NSMutableArray array];
-    for (NSDictionary<NSString *, id> *feature in GAGSUBFeatures(table)) {
+    for (NSDictionary<NSString *, id> *feature in GAGSUBFeatures(table, overrides)) {
         NSInteger maximum = 0;
         for (NSNumber *lookupIndex in feature[@"lookups"]) {
             NSNumber *count = alternateCounts[lookupIndex];
@@ -272,9 +524,9 @@ static NSNumber *GASingleSubstitution(const uint8_t *bytes, NSUInteger length,
 }
 
 /// Lookup indices belonging to the OpenType `vert` feature.
-static NSIndexSet *GAVerticalLookupIndices(NSData *table) {
+static NSIndexSet *GAVerticalLookupIndices(NSData *table, NSDictionary *overrides) {
     NSMutableIndexSet *indices = [NSMutableIndexSet indexSet];
-    for (NSDictionary<NSString *, id> *feature in GAGSUBFeatures(table)) {
+    for (NSDictionary<NSString *, id> *feature in GAGSUBFeatures(table, overrides)) {
         if (![feature[@"tag"] isEqualToString:@"vert"]) {
             continue;
         }
@@ -288,11 +540,11 @@ static NSIndexSet *GAVerticalLookupIndices(NSData *table) {
 /// Returns the GSUB single-substitution target of the `vert` feature, if it
 /// covers this glyph. Only type 1 lookups (and type 7 extensions of them) can
 /// supply a vertical form; alternate substitutions are left alone.
-static NSNumber *GAVerticalSubstituteForGlyph(NSData *table, uint16_t glyph) {
+static NSNumber *GAVerticalSubstituteForGlyph(NSData *table, uint16_t glyph, NSDictionary *overrides) {
     if (table.length < 10) {
         return nil;
     }
-    NSIndexSet *lookupIndices = GAVerticalLookupIndices(table);
+    NSIndexSet *lookupIndices = GAVerticalLookupIndices(table, overrides);
     if (lookupIndices.count == 0) {
         return nil;
     }
@@ -435,7 +687,7 @@ static void GAGSUBProcessSubtable(const uint8_t *bytes, NSUInteger length,
 /// Enumerates GSUB outputs (single/alternate substitutions) associated with a
 /// seed glyph. Alternate sets are also scanned in reverse, so a glyph that is
 /// only an alternate output can still reveal its alternate family.
-static NSDictionary<NSString *, id> *GAGSUBAlternatesForSeed(NSData *gsub, uint16_t seed) {
+static NSDictionary<NSString *, id> *GAGSUBAlternatesForSeed(NSData *gsub, uint16_t seed, NSDictionary *overrides) {
     if (gsub.length < 10) return nil;
     const uint8_t *bytes = gsub.bytes;
     NSUInteger length = gsub.length;
@@ -449,7 +701,7 @@ static NSDictionary<NSString *, id> *GAGSUBAlternatesForSeed(NSData *gsub, uint1
         [NSMutableDictionary dictionary];
     NSMutableArray<NSNumber *> *order = [NSMutableArray array];
 
-    for (NSDictionary<NSString *, id> *feature in GAGSUBFeatures(gsub)) {
+    for (NSDictionary<NSString *, id> *feature in GAGSUBFeatures(gsub, overrides)) {
         NSString *tag = feature[@"tag"];
         for (NSNumber *lookupIndex in feature[@"lookups"]) {
             if (lookupIndex.unsignedIntValue >= lookupCount) continue;
@@ -632,18 +884,41 @@ NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text) {
     return groups;
 }
 
+/// Resource-owned discovery fonts do not reference this owner, avoiding a cycle.
+@interface GADiscoveryFonts : NSObject
+@property (nonatomic, copy) NSArray<GAFontDocument *> *documents;
+@end
+@implementation GADiscoveryFonts
+@end
+
+@interface GAFontDocument ()
+- (instancetype)initWithDescriptor:(CTFontDescriptorRef)descriptor URL:(NSURL *)url
+                    sourceDocument:(GAFontDocument *)source discoveryFont:(BOOL)discovery NS_DESIGNATED_INITIALIZER;
+@end
+
 @implementation GAFontDocument {
     CTFontDescriptorRef _descriptor;
     CTFontRef _font;
     GAFontBox *_fontBox;
     NSArray<GAFeatureSetting *> *_settings;
     NSData *_gsub;
+    GAFeatureVariations *_variations;
+    GADiscoveryFonts *_discoveryFonts;
+    BOOL _discoveryFont;
+    NSString *_effectiveVariationKey;
+    NSDictionary *_variationFeatureOffsets;
+    NSMapTable<GAFontBox *, GAFontBox *> *_reboundFontBoxes;
     NSDictionary<NSNumber *, NSArray<NSNumber *> *> *_unicodeMap;
     NSArray<GAAllGlyphEntry *> *_allGlyphEntries;
 }
 
 - (instancetype)initWithDescriptor:(CTFontDescriptorRef)descriptor
                                URL:(NSURL *)url {
+    return [self initWithDescriptor:descriptor URL:url sourceDocument:nil discoveryFont:NO];
+}
+
+- (instancetype)initWithDescriptor:(CTFontDescriptorRef)descriptor URL:(NSURL *)url
+                    sourceDocument:(GAFontDocument *)source discoveryFont:(BOOL)discovery {
     self = [super init];
     if (!self) {
         return nil;
@@ -668,9 +943,26 @@ NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text) {
         _fullName = postScriptName.length > 0 ? postScriptName : NSLocalizedString(@"Untitled Font", @"Untitled Font");
     }
 
-    NSData *gsub = CFBridgingRelease(CTFontCopyTable(_font, kCTFontTableGSUB, 0));
-    _gsub = gsub;
-    _settings = [self buildSettingsWithGSUB:gsub];
+    _gsub = source != nil ? source->_gsub : CFBridgingRelease(CTFontCopyTable(_font, kCTFontTableGSUB, 0));
+    _variations = source != nil ? source->_variations : [[GAFeatureVariations alloc] initWithGSUB:_gsub font:_font];
+    NSDictionary *requestedCoordinates = CFBridgingRelease(CTFontDescriptorCopyAttribute(descriptor, kCTFontVariationAttribute));
+    NSDictionary *selection = [_variations selectionForFont:_font coordinates:requestedCoordinates];
+    _effectiveVariationKey = selection[@"key"];
+    _discoveryFont = discovery;
+    _discoveryFonts = discovery ? nil : (source != nil ? source->_discoveryFonts : [[GADiscoveryFonts alloc] init]);
+    _variationFeatureOffsets = selection[@"overrides"];
+    _hasFeatureVariations = _variations.records.count > 0 || !_variations.supported;
+    _settings = [self buildSettingsWithGSUB:_gsub];
+    _reboundFontBoxes = [NSMapTable mapTableWithKeyOptions:NSPointerFunctionsStrongMemory | NSPointerFunctionsObjectPointerPersonality
+                                           valueOptions:NSPointerFunctionsStrongMemory];
+    [_reboundFontBoxes setObject:_fontBox forKey:_fontBox];
+    for (GAFeatureSetting *setting in _settings) [_reboundFontBoxes setObject:setting.fontBox forKey:setting.fontBox];
+    if (source != nil) {
+        @synchronized (source) {
+            _unicodeMap = source->_unicodeMap;
+            _allGlyphEntries = source->_allGlyphEntries;
+        }
+    }
 
     return self;
 }
@@ -678,6 +970,73 @@ NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text) {
 - (void)dealloc {
     if (_font) CFRelease(_font);
     if (_descriptor) CFRelease(_descriptor);
+}
+
+- (GAFontDocument *)documentWithDescriptor:(CTFontDescriptorRef)descriptor {
+    return [[GAFontDocument alloc] initWithDescriptor:descriptor URL:_fontURL sourceDocument:self discoveryFont:NO];
+}
+
+- (GAFontBox *)rebindFontBox:(GAFontBox *)old {
+    @synchronized (self) {
+        GAFontBox *box = [_reboundFontBoxes objectForKey:old];
+        if (box != nil) return box;
+        NSDictionary *coordinates = CFBridgingRelease(CTFontDescriptorCopyAttribute(_descriptor, kCTFontVariationAttribute)) ?: @{};
+        CTFontDescriptorRef attributes = CTFontDescriptorCreateWithAttributes((__bridge CFDictionaryRef)@{
+            (__bridge NSString *)kCTFontVariationAttribute: coordinates,
+            (__bridge NSString *)kCTFontOpticalSizeAttribute: @"none",
+        });
+        CTFontRef font = CTFontCreateCopyWithAttributes(old.font, GAFontShapingSize, NULL, attributes);
+        CFRelease(attributes);
+        box = [[GAFontBox alloc] initWithFont:font];
+        CFRelease(font);
+        [_reboundFontBoxes setObject:box forKey:old];
+        [_reboundFontBoxes setObject:box forKey:box];
+        return box;
+    }
+}
+
+/// Single zero origins and empty origins are coordinate-independent. Only
+/// positioned multi-glyph/mark results need layout refreshed; this does not
+/// enumerate feature settings or discover substitutions again.
+- (NSArray<NSValue *> *)rebindPositions:(NSArray<NSValue *> *)positions
+                                content:(NSString *)content fontBox:(GAFontBox *)box {
+    if (positions.count == 0 || (positions.count == 1 && NSEqualPoints(positions.firstObject.pointValue, NSZeroPoint))) return positions;
+    return [self shapeString:content fontBox:box base:NO].positions ?: @[];
+}
+
+- (GARawScanResult *)rebindResult:(GARawScanResult *)result content:(NSString *)content {
+    NSMutableArray *candidates = [NSMutableArray arrayWithCapacity:result.candidates.count];
+    for (GAScanCandidate *old in result.candidates) {
+        GAFontBox *box = [self rebindFontBox:old.fontBox];
+        if (box == old.fontBox) { [candidates addObject:old]; continue; }
+        GAScanCandidate *candidate = [[GAScanCandidate alloc] init];
+        candidate.glyphIDs = old.glyphIDs;
+        candidate.positions = [self rebindPositions:old.positions content:content fontBox:box];
+        candidate.fontBox = box;
+        candidate.sources = old.sources;
+        candidate.base = old.base;
+        candidate.ligature = old.ligature;
+        candidate.sourceRange = old.sourceRange;
+        candidate.targetOffset = old.targetOffset;
+        [candidates addObject:candidate];
+    }
+    GARawScanResult *rebound = [[GARawScanResult alloc] init];
+    rebound.candidates = candidates;
+    return rebound;
+}
+
+- (GAGlyphVariant *)rebindVariant:(GAGlyphVariant *)old content:(NSString *)content {
+    GAGlyphVariant *variant = [[GAGlyphVariant alloc] init];
+    variant.fontBox = [self rebindFontBox:old.fontBox];
+    variant.glyphIDs = old.glyphIDs;
+    variant.positions = [self rebindPositions:old.positions content:content fontBox:variant.fontBox];
+    [variant addFeatureSources:old.featureSources];
+    variant.base = old.base;
+    variant.unicodeScalars = old.unicodeScalars;
+    variant.glyphName = old.glyphName;
+    variant.ligature = old.ligature;
+    variant.sourceTextRange = old.sourceTextRange;
+    return variant;
 }
 
 - (NSArray<GAFeatureSetting *> *)buildSettingsWithGSUB:(NSData *)gsub {
@@ -729,7 +1088,7 @@ NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text) {
         }
     }
 
-    NSArray<NSDictionary *> *openTypeFeatures = GAParseGSUBFeatures(gsub);
+    NSArray<NSDictionary *> *openTypeFeatures = GAParseGSUBFeatures(gsub, _variationFeatureOffsets);
     for (NSDictionary *feature in openTypeFeatures) {
         NSString *tag = feature[@"tag"];
         NSInteger maximum = MAX(1, [feature[@"max"] integerValue]);
@@ -1108,7 +1467,7 @@ static NSRange GAGroupSpanForCluster(NSArray<GACharacterGroup *> *groups,
     NSNumber *baseGlyph = baseVariant.glyphIDs.firstObject;
     if (baseGlyph != nil && _gsub.length > 0) {
         NSDictionary<NSString *, id> *directInfo = GAGSUBAlternatesForSeed(
-            _gsub, (uint16_t)baseGlyph.unsignedShortValue);
+            _gsub, (uint16_t)baseGlyph.unsignedShortValue, _variationFeatureOffsets);
         NSDictionary<NSNumber *, NSMutableOrderedSet<NSString *> *> *directSources =
             directInfo[@"sources"];
         NSArray<NSNumber *> *directOrder = directInfo[@"order"] ?: @[];
@@ -1286,7 +1645,128 @@ static NSRange GAGroupSpanForCluster(NSArray<GACharacterGroup *> *groups,
     return result;
 }
 
+- (NSDictionary *)directAlternatesForSeed:(uint16_t)seed {
+    if (_discoveryFont || _variations.records.count == 0) return GAGSUBAlternatesForSeed(_gsub, seed, _variationFeatureOffsets);
+    NSMutableArray *configurations = [NSMutableArray arrayWithObject:@{}];
+    for (NSDictionary *record in _variations.records) [configurations addObject:record[@"overrides"]];
+    NSMutableDictionary *sources = [NSMutableDictionary dictionary];
+    NSMutableArray *order = [NSMutableArray array];
+    for (NSDictionary *overrides in configurations) {
+        NSDictionary *info = GAGSUBAlternatesForSeed(_gsub, seed, overrides);
+        for (NSNumber *glyph in info[@"order"]) {
+            NSMutableOrderedSet *tags = sources[glyph];
+            if (tags == nil) { tags = [NSMutableOrderedSet orderedSet]; sources[glyph] = tags; [order addObject:glyph]; }
+            [tags unionOrderedSet:info[@"sources"][glyph]];
+        }
+    }
+    return @{@"sources": sources, @"order": order};
+}
+
+- (NSArray<GAFontDocument *> *)discoveryDocuments {
+    @synchronized (_discoveryFonts) {
+        if (_discoveryFonts.documents != nil) return _discoveryFonts.documents;
+        NSMutableDictionary *defaults = [NSMutableDictionary dictionary];
+        NSArray *axes = CFBridgingRelease(CTFontCopyVariationAxes(_font));
+        for (NSDictionary *axis in axes) defaults[axis[(__bridge NSString *)kCTFontVariationAxisIdentifierKey]] = axis[(__bridge NSString *)kCTFontVariationAxisDefaultValueKey];
+        NSMutableArray *configurations = [NSMutableArray arrayWithObject:@{@"coordinates": defaults}];
+        [configurations addObjectsFromArray:[_variations discoveryCoordinates]];
+        NSMutableArray *documents = [NSMutableArray array];
+        NSMutableSet *seen = [NSMutableSet set];
+        for (NSDictionary *configuration in configurations) {
+            CTFontDescriptorRef descriptor = CTFontDescriptorCreateCopyWithAttributes(_descriptor, (__bridge CFDictionaryRef)@{
+                (__bridge NSString *)kCTFontVariationAttribute: configuration[@"coordinates"],
+                (__bridge NSString *)kCTFontOpticalSizeAttribute: @"none",
+            });
+            GAFontDocument *document = [[GAFontDocument alloc] initWithDescriptor:descriptor URL:_fontURL sourceDocument:self discoveryFont:YES];
+            CFRelease(descriptor);
+            NSString *key = document->_effectiveVariationKey;
+            if (configuration[@"key"] != nil && ![key isEqualToString:configuration[@"key"]]) continue;
+            if ([seen containsObject:key]) continue;
+            [seen addObject:key];
+            [documents addObject:document];
+        }
+        _discoveryFonts.documents = documents;
+        return _discoveryFonts.documents;
+    }
+}
+
 - (GARawScanResult *)rawScanContent:(NSString *)content {
+    if (!self.hasFeatureVariations || _discoveryFont) return [self rawScanAtCurrentCoordinates:content];
+    NSMutableArray<GAScanCandidate *> *candidates = [NSMutableArray array];
+    NSMutableDictionary<NSString *, GAScanCandidate *> *seen = [NSMutableDictionary dictionary];
+    NSMutableDictionary<NSNumber *, NSNumber *> *baseGlyphs = [NSMutableDictionary dictionary];
+    NSArray<GAFontDocument *> *documents = [self discoveryDocuments];
+    for (NSUInteger i = 0; i < documents.count; i++) {
+        GAFontDocument *discovery = documents[i];
+        GARawScanResult *raw = [discovery rawScanAtCurrentCoordinates:content];
+        for (GAScanCandidate *source in raw.candidates) {
+            if (i == 0 && source.isBase && source.glyphIDs.count == 1) baseGlyphs[@(source.targetOffset)] = source.glyphIDs.firstObject;
+            NSArray *tags = source.sources ?: @[];
+            if (i > 0 && source.isBase && tags.count == 0) {
+                NSNumber *base = baseGlyphs[@(source.targetOffset)];
+                NSDictionary *direct = base != nil ? GAGSUBAlternatesForSeed(_gsub, base.unsignedShortValue, discovery->_variationFeatureOffsets) : nil;
+                NSOrderedSet *known = source.glyphIDs.count == 1 ? direct[@"sources"][source.glyphIDs.firstObject] : nil;
+                tags = known.count > 0 ? known.array : @[@"actual"];
+            }
+            NSString *key = [NSString stringWithFormat:@"%lu:%@", (unsigned long)source.targetOffset, source.glyphIDs];
+            GAScanCandidate *existing = seen[key];
+            if (existing != nil) {
+                if (!existing.isBase) {
+                    NSMutableOrderedSet *merged = [NSMutableOrderedSet orderedSetWithArray:existing.sources];
+                    [merged addObjectsFromArray:tags];
+                    existing.sources = merged.array;
+                    if (source.isLigature) { existing.ligature = YES; existing.sourceRange = source.sourceRange; }
+                }
+                continue;
+            }
+            GAScanCandidate *candidate = [[GAScanCandidate alloc] init];
+            candidate.glyphIDs = source.glyphIDs;
+            candidate.positions = source.positions;
+            candidate.fontBox = source.fontBox;
+            candidate.sources = tags;
+            candidate.base = i == 0 && source.isBase;
+            candidate.ligature = source.isLigature;
+            candidate.sourceRange = source.sourceRange;
+            candidate.targetOffset = source.targetOffset;
+            seen[key] = candidate;
+            [candidates addObject:candidate];
+        }
+    }
+    // Single/alternate lookups remain enumerable even when no representative
+    // coordinate can be constructed for a newer condition or axis-map format.
+    if (GAGroupsForText(content).count == 1) {
+        NSNumber *base = baseGlyphs[@0];
+        if (base != nil) {
+            NSDictionary *direct = [self directAlternatesForSeed:base.unsignedShortValue];
+            for (NSNumber *glyph in direct[@"order"]) {
+                NSString *key = [NSString stringWithFormat:@"0:%@", @[glyph]];
+                NSOrderedSet *tags = direct[@"sources"][glyph];
+                GAScanCandidate *candidate = seen[key];
+                if (candidate != nil) {
+                    if (!candidate.isBase) {
+                        NSMutableOrderedSet *merged = [NSMutableOrderedSet orderedSetWithArray:candidate.sources];
+                        [merged unionOrderedSet:tags];
+                        candidate.sources = merged.array;
+                    }
+                    continue;
+                }
+                candidate = [[GAScanCandidate alloc] init];
+                candidate.glyphIDs = @[glyph];
+                candidate.positions = @[];
+                candidate.fontBox = _fontBox;
+                candidate.sources = tags.array;
+                candidate.sourceRange = NSMakeRange(0, content.length);
+                candidate.targetOffset = 0;
+                [candidates addObject:candidate];
+            }
+        }
+    }
+    GARawScanResult *result = [[GARawScanResult alloc] init];
+    result.candidates = candidates;
+    return [self rebindResult:result content:content];
+}
+
+- (GARawScanResult *)rawScanAtCurrentCoordinates:(NSString *)content {
     NSArray<GACharacterGroup *> *groups = GAGroupsForText(content);
     if (groups.count <= 1) {
         return [self rawSingleCharacterResultForContent:content];
@@ -1375,15 +1855,14 @@ static NSRange GAGroupSpanForCluster(NSArray<GACharacterGroup *> *groups,
 }
 
 - (NSNumber *)verticalSubstituteForGlyph:(CGGlyph)glyph {
-    return GAVerticalSubstituteForGlyph(_gsub, glyph);
+    return GAVerticalSubstituteForGlyph(_gsub, glyph, _variationFeatureOffsets);
 }
 
 - (NSArray<GACharacterGroup *> *)analyzeGlyphIDs:(NSArray<NSNumber *> *)glyphIDs {
     if (glyphIDs.count == 0) {
         return @[];
     }
-    NSDictionary<NSString *, id> *info = GAGSUBAlternatesForSeed(
-        _gsub, (uint16_t)glyphIDs.firstObject.unsignedShortValue);
+    NSDictionary<NSString *, id> *info = [self directAlternatesForSeed:(uint16_t)glyphIDs.firstObject.unsignedShortValue];
     NSDictionary<NSNumber *, NSArray<NSNumber *> *> *unicodeMap = [self unicodeMap];
     GAFontBox *fontBox = _fontBox;
 
@@ -1455,6 +1934,90 @@ static NSRange GAGroupSpanForCluster(NSArray<GACharacterGroup *> *groups,
     return unionRect;
 }
 
+/// Sum of the horizontal advances in font units. CGFont advances are raw font
+/// units and do not include the trak table's size-dependent tracking.
+static CGFloat GAAdvanceWidthInFontUnits(CTFontRef font,
+                                         NSArray<NSNumber *> *glyphIDs) {
+    NSUInteger count = glyphIDs.count;
+    if (count == 0 || font == NULL) {
+        return 0;
+    }
+    CGGlyph *glyphs = calloc(count, sizeof(CGGlyph));
+    for (NSUInteger index = 0; index < count; index++) {
+        glyphs[index] = (CGGlyph)glyphIDs[index].unsignedShortValue;
+    }
+    int *advances = calloc(count, sizeof(int));
+    CGFontRef cgFont = CTFontCopyGraphicsFont(font, NULL);
+    if (cgFont != NULL) {
+        CGFontGetGlyphAdvances(cgFont, glyphs, count, advances);
+        CFRelease(cgFont);
+    }
+    CGFloat width = 0;
+    for (NSUInteger index = 0; index < count; index++) {
+        width += advances[index];
+    }
+    free(advances);
+    free(glyphs);
+    return width;
+}
+
++ (GAGlyphPage)pageForVariant:(GAGlyphVariant *)variant
+           usesVerticalMetrics:(BOOL)usesVerticalMetrics {
+    GAGlyphPage page = { CGSizeZero, 0, CGRectZero };
+    if (variant.glyphIDs.count == 0) {
+        return page;
+    }
+    CTFontRef font = variant.fontBox.font;
+    CGFloat unitsPerEm = CTFontGetUnitsPerEm(font);
+    CGFloat shapeToUnits = unitsPerEm / GAFontShapingSize;
+
+    // inkBoundsForVariant works in shaping points; the page is in font units.
+    CGRect ink = [self inkBoundsForVariant:variant];
+    if (CGRectIsNull(ink) || CGRectIsEmpty(ink)) {
+        ink = CGRectZero;
+    } else {
+        ink = CGRectMake(CGRectGetMinX(ink) * shapeToUnits,
+                         CGRectGetMinY(ink) * shapeToUnits,
+                         CGRectGetWidth(ink) * shapeToUnits,
+                         CGRectGetHeight(ink) * shapeToUnits);
+    }
+    BOOL hasInk = !CGRectIsEmpty(ink);
+
+    BOOL hasVertical = usesVerticalMetrics &&
+        [self variantHasVerticalMetrics:variant];
+    CGFloat width;
+    CGFloat height;
+    if (hasVertical) {
+        CGSize advance = [self advanceInFontUnitsForVariant:variant];
+        width = advance.width;
+        height = advance.height;
+    } else {
+        // The width-only page: advance width × ascent + descent. It must not
+        // read vmtx, so the grid and sidebar do not pay for vertical metrics.
+        width = GAAdvanceWidthInFontUnits(font, variant.glyphIDs);
+        height = (CTFontGetAscent(font) + CTFontGetDescent(font)) * shapeToUnits;
+    }
+    if (width <= 0) {
+        width = hasInk ? CGRectGetWidth(ink) : unitsPerEm * 0.01;
+    }
+    if (height <= 0) {
+        height = hasInk ? CGRectGetHeight(ink) : unitsPerEm;
+    }
+
+    CGFloat baseline;
+    if (hasVertical) {
+        CGFloat topSideBearing = [self verticalTopSideBearingForVariant:variant];
+        baseline = height - topSideBearing - CGRectGetMaxY(ink);
+    } else {
+        baseline = CTFontGetDescent(font) * shapeToUnits;
+    }
+
+    page.size = CGSizeMake(width, height);
+    page.baseline = baseline;
+    page.ink = ink;
+    return page;
+}
+
 + (BOOL)variantHasVerticalMetrics:(GAGlyphVariant *)variant {
     NSData *vmtx = CFBridgingRelease(CTFontCopyTable(variant.fontBox.font,
                                                      kCTFontTableVmtx, 0));
@@ -1500,41 +2063,28 @@ static NSRange GAGroupSpanForCluster(NSArray<GACharacterGroup *> *groups,
     if (count == 0) {
         return CGSizeZero;
     }
-    CGFloat factor = CTFontGetUnitsPerEm(variant.fontBox.font) / GAFontShapingSize;
-    CGGlyph *glyphs = calloc(count, sizeof(CGGlyph));
-    for (NSUInteger index = 0; index < count; index++) {
-        glyphs[index] = (CGGlyph)variant.glyphIDs[index].unsignedShortValue;
-    }
-    // CGFont advances are raw font units and do not include the trak table's
-    // size-dependent tracking that CTFontGetAdvancesForGlyphs applies.
-    CGFontRef cgFont = CTFontCopyGraphicsFont(variant.fontBox.font, NULL);
-    int *advances = calloc(count, sizeof(int));
-    if (cgFont != NULL) {
-        CGFontGetGlyphAdvances(cgFont, glyphs, count, advances);
-        CFRelease(cgFont);
-    }
-    CGFloat width = 0;
-    for (NSUInteger index = 0; index < count; index++) {
-        width += advances[index];
-    }
-    free(advances);
+    CTFontRef font = variant.fontBox.font;
+    CGFloat factor = CTFontGetUnitsPerEm(font) / GAFontShapingSize;
+    CGFloat width = GAAdvanceWidthInFontUnits(font, variant.glyphIDs);
 
     CGFloat height = 0;
     if ([self variantHasVerticalMetrics:variant]) {
+        CGGlyph *glyphs = calloc(count, sizeof(CGGlyph));
+        for (NSUInteger index = 0; index < count; index++) {
+            glyphs[index] = (CGGlyph)variant.glyphIDs[index].unsignedShortValue;
+        }
         CGSize *vAdvances = calloc(count, sizeof(CGSize));
-        CTFontGetAdvancesForGlyphs(variant.fontBox.font,
-                                   kCTFontOrientationVertical,
+        CTFontGetAdvancesForGlyphs(font, kCTFontOrientationVertical,
                                    glyphs, vAdvances, (CFIndex)count);
         for (NSUInteger index = 0; index < count; index++) {
             // CoreText puts the vertical advance in CGSize.width.
             height += MAX(vAdvances[index].width, vAdvances[index].height);
         }
         free(vAdvances);
+        free(glyphs);
     } else {
-        height = CTFontGetAscent(variant.fontBox.font) +
-                 CTFontGetDescent(variant.fontBox.font);
+        height = CTFontGetAscent(font) + CTFontGetDescent(font);
     }
-    free(glyphs);
     return CGSizeMake(width, height * factor);
 }
 

@@ -72,3 +72,9 @@
 "Help.10" = "Use ⌘+/⌘- to zoom the glyphs, and ⌥⌘+/⌥⌘- to resize the margins in Multi-Character. Trackpad pinch also works.";
 "Help.11" = "The page shadow shows the glyph's width and height, as well as the layout's line height and leading; press ⌘4 to hide it.";
 "Help.12" = "Dark mode is supported. but be careful: clicking a solid glyph can blind you.";
+
+/* Variable font controls. */
+"Variable" = "Variable";
+"Named Instance" = "Named Instance";
+"Default" = "Default";
+"Custom" = "Custom";

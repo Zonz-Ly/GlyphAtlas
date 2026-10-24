@@ -72,3 +72,9 @@
 "Help.10" = "Usa ⌘+/⌘- per ingrandire o ridurre i glifi e ⌥⌘+/⌥⌘- per regolare i margini in “Più caratteri”. Puoi anche usare il gesto di apertura o chiusura delle dita sul trackpad.";
 "Help.11" = "L’ombra della pagina indica la larghezza e l’altezza del glifo, oltre all’altezza della riga e all’interlinea della composizione. Premi ⌘4 per nasconderla.";
 "Help.12" = "È supportata la modalità scura. Ma attenzione: facendo clic su un glifo pieno potresti rimanere abbagliato.";
+
+/* Variable font controls. */
+"Variable" = "Variabile";
+"Named Instance" = "Istanza con nome";
+"Default" = "Predefinito";
+"Custom" = "Personalizzato";

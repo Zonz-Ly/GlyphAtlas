@@ -57,6 +57,16 @@ FOUNDATION_EXPORT NSString * const GAGlyphSelectionAttributeName;
 @property (nonatomic, readonly) NSString *glyphKey;
 @end
 
+/// The page used to place a glyph, in font units. `size` is the horizontal
+/// advance × the page height; `baseline` is measured up from the page's bottom
+/// edge; `ink` is the glyph's outline bounds. The height and baseline depend on
+/// `usesVerticalMetrics`.
+typedef struct {
+    CGSize size;
+    CGFloat baseline;
+    CGRect ink;
+} GAGlyphPage;
+
 @interface GACharacterGroup : NSObject
 @property (nonatomic, copy) NSString *text;
 @property (nonatomic) NSRange textRange;
@@ -94,12 +104,19 @@ FOUNDATION_EXPORT NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text);
 
 @interface GAFontDocument : NSObject
 - (instancetype)initWithDescriptor:(CTFontDescriptorRef)descriptor
-                               URL:(nullable NSURL *)url NS_DESIGNATED_INITIALIZER;
+                               URL:(nullable NSURL *)url;
 - (instancetype)init NS_UNAVAILABLE;
 
 @property (nonatomic, readonly, nullable) NSURL *fontURL;
 @property (nonatomic, readonly) NSString *fullName;
 @property (nonatomic, readonly) GAFontBox *fontBox;
+@property (nonatomic, readonly) BOOL hasFeatureVariations;
+/// Same resource, new coordinates; shares parsed tables and immutable inventory.
+- (GAFontDocument *)documentWithDescriptor:(CTFontDescriptorRef)descriptor;
+/// Rebind existing discoveries without enumerating substitutions again.
+- (GARawScanResult *)rebindResult:(GARawScanResult *)result content:(NSString *)content;
+- (GAGlyphVariant *)rebindVariant:(GAGlyphVariant *)variant content:(NSString *)content;
+
 
 /// All GIDs in the font, including glyphs without Unicode mappings.
 - (NSArray<GAAllGlyphEntry *> *)allGlyphEntries;
@@ -124,6 +141,14 @@ FOUNDATION_EXPORT NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text);
 /// Raw ink bounding box of a variant, from glyf/CFF through
 /// CTFontGetBoundingRectsForGlyphs. Returns CGRectZero for zero-ink glyphs.
 + (CGRect)inkBoundsForVariant:(GAGlyphVariant *)variant;
+
+/// Page, baseline and ink for a variant, in font units. With
+/// `usesVerticalMetrics` YES the height is the vmtx/vhea vertical advance and
+/// the baseline comes from the top side bearing (single-glyph canvas). With NO
+/// the height is ascent + descent and the baseline is descent (all-glyphs grid
+/// and sidebar thumbnails).
++ (GAGlyphPage)pageForVariant:(GAGlyphVariant *)variant
+           usesVerticalMetrics:(BOOL)usesVerticalMetrics;
 
 /// Advance width/height in font units. Width is the horizontal advance.
 /// Height is the vmtx/vhea vertical advance, with ascent + descent as fallback.
