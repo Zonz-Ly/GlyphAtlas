@@ -19,7 +19,7 @@ A native macOS font and alternate-glyph inspector. Type text to see every altern
 
 - Open a font, or drag one onto the app's window or Dock icon. Recently used fonts are supported.
 - Type one or more characters in the sidebar to see all associated glyphs. Use `⌥⏎` to insert a line break.
-- Double-click a glyph, or select it and press `Return`, to replace the default glyph and show that glyph's substitution. Press and hold `Shift` together to add that glyph.
+- Double-click a glyph, or select it and press `⏎`, to replace the default glyph and show that glyph's substitution. Press and hold `⇧` together to add that glyph.
 - Use `↑`/`↓` to move between glyphs, `⌘↑`/`⌘↓` to move between base glyphs, and `⌥↑`/`⌥↓` to jump to the first or last glyph in the list.
 - Use `⌘C` to copy all encoded characters of the selected glyph.
 - Hover over a Unicode badge to see the character name defined by the Unicode standard.
