@@ -205,30 +205,14 @@ NSColor *GAGlyphForegroundColor(void) {
     }
 
     CTFontRef font = variant.fontBox.font;
-    CGFloat unitsPerEm = CTFontGetUnitsPerEm(font);
-    CGFloat shapeToUnits = unitsPerEm / GAFontShapingSize;
+    CGFloat shapeToUnits = CTFontGetUnitsPerEm(font) / GAFontShapingSize;
 
-    CGRect ink = [GAFontDocument inkBoundsForVariant:variant];
+    GAGlyphPage glyphPage = [GAFontDocument pageForVariant:variant];
+    CGRect ink = glyphPage.ink;
     BOOL hasInk = !CGRectIsEmpty(ink);
-
-    CGSize advance = [GAFontDocument advanceInFontUnitsForVariant:variant];
-    CGFloat widthUnits = advance.width;
-    CGFloat heightUnits = advance.height;
-    if (widthUnits <= 0) {
-        widthUnits = hasInk ? CGRectGetWidth(ink) * shapeToUnits : unitsPerEm * 0.01;
-    }
-    if (heightUnits <= 0) {
-        heightUnits = hasInk ? CGRectGetHeight(ink) * shapeToUnits : unitsPerEm;
-    }
-
-    CGFloat baselineUnits;
-    if ([GAFontDocument variantHasVerticalMetrics:variant]) {
-        CGFloat inkTopUnits = hasInk ? CGRectGetMaxY(ink) * shapeToUnits : 0;
-        CGFloat tsb = [GAFontDocument verticalTopSideBearingForVariant:variant];
-        baselineUnits = heightUnits - tsb - inkTopUnits;
-    } else {
-        baselineUnits = CTFontGetDescent(font) * shapeToUnits;
-    }
+    CGFloat widthUnits = glyphPage.size.width;
+    CGFloat heightUnits = glyphPage.size.height;
+    CGFloat baselineUnits = glyphPage.baseline;
 
     NSRect contentRect = GAInsetRectByFraction(self.bounds, self.sideInsetFraction);
     if (NSIsEmptyRect(contentRect)) {
@@ -258,7 +242,6 @@ NSColor *GAGlyphForegroundColor(void) {
 
     BOOL (^translationForScale)(CGFloat, CGFloat *, CGFloat *) =
         ^BOOL(CGFloat candidateScale, CGFloat *outX, CGFloat *outY) {
-        CGFloat candidateGlyphScale = candidateScale * shapeToUnits;
         CGFloat candidatePageWidth = widthUnits * candidateScale;
         CGFloat candidatePageHeight = heightUnits * candidateScale;
         CGFloat candidatePageX = NSMidX(contentRect) - candidatePageWidth * 0.5;
@@ -275,11 +258,11 @@ NSColor *GAGlyphForegroundColor(void) {
 
         if (hasInk) {
             NSRect candidateInk = NSMakeRect(
-                candidatePageX + CGRectGetMinX(ink) * candidateGlyphScale,
+                candidatePageX + CGRectGetMinX(ink) * candidateScale,
                 candidatePageY + baselineUnits * candidateScale +
-                    CGRectGetMinY(ink) * candidateGlyphScale,
-                CGRectGetWidth(ink) * candidateGlyphScale,
-                CGRectGetHeight(ink) * candidateGlyphScale);
+                    CGRectGetMinY(ink) * candidateScale,
+                CGRectGetWidth(ink) * candidateScale,
+                CGRectGetHeight(ink) * candidateScale);
             minX = MAX(minX, NSMinX(glyphLimit) - NSMinX(candidateInk));
             maxX = MIN(maxX, NSMaxX(glyphLimit) - NSMaxX(candidateInk));
             minY = MAX(minY, NSMinY(glyphLimit) - NSMinY(candidateInk));
@@ -309,13 +292,13 @@ NSColor *GAGlyphForegroundColor(void) {
     if (hasInk) {
         CGFloat constrainedScale = MIN(scale, GAMaxScaleForAxis(
             widthUnits, NSMinX(contentRect), NSMaxX(contentRect),
-            CGRectGetMinX(ink) * shapeToUnits,
-            CGRectGetWidth(ink) * shapeToUnits,
+            CGRectGetMinX(ink),
+            CGRectGetWidth(ink),
             NSMinX(glyphLimit), NSMaxX(glyphLimit)));
         constrainedScale = MIN(constrainedScale, GAMaxScaleForAxis(
             heightUnits, NSMinY(contentRect), NSMaxY(contentRect),
-            baselineUnits + CGRectGetMinY(ink) * shapeToUnits,
-            CGRectGetHeight(ink) * shapeToUnits,
+            baselineUnits + CGRectGetMinY(ink),
+            CGRectGetHeight(ink),
             NSMinY(glyphLimit), NSMaxY(glyphLimit)));
         if (constrainedScale <= 0) {
             return;

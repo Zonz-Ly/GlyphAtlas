@@ -1455,6 +1455,51 @@ static NSRange GAGroupSpanForCluster(NSArray<GACharacterGroup *> *groups,
     return unionRect;
 }
 
++ (GAGlyphPage)pageForVariant:(GAGlyphVariant *)variant {
+    GAGlyphPage page = { CGSizeZero, 0, CGRectZero };
+    if (variant.glyphIDs.count == 0) {
+        return page;
+    }
+    CTFontRef font = variant.fontBox.font;
+    CGFloat unitsPerEm = CTFontGetUnitsPerEm(font);
+    CGFloat shapeToUnits = unitsPerEm / GAFontShapingSize;
+
+    // inkBoundsForVariant works in shaping points; the page is in font units.
+    CGRect ink = [self inkBoundsForVariant:variant];
+    if (CGRectIsNull(ink) || CGRectIsEmpty(ink)) {
+        ink = CGRectZero;
+    } else {
+        ink = CGRectMake(CGRectGetMinX(ink) * shapeToUnits,
+                         CGRectGetMinY(ink) * shapeToUnits,
+                         CGRectGetWidth(ink) * shapeToUnits,
+                         CGRectGetHeight(ink) * shapeToUnits);
+    }
+    BOOL hasInk = !CGRectIsEmpty(ink);
+
+    CGSize advance = [self advanceInFontUnitsForVariant:variant];
+    CGFloat width = advance.width;
+    CGFloat height = advance.height;
+    if (width <= 0) {
+        width = hasInk ? CGRectGetWidth(ink) : unitsPerEm * 0.01;
+    }
+    if (height <= 0) {
+        height = hasInk ? CGRectGetHeight(ink) : unitsPerEm;
+    }
+
+    CGFloat baseline;
+    if ([self variantHasVerticalMetrics:variant]) {
+        CGFloat topSideBearing = [self verticalTopSideBearingForVariant:variant];
+        baseline = height - topSideBearing - CGRectGetMaxY(ink);
+    } else {
+        baseline = CTFontGetDescent(font) * shapeToUnits;
+    }
+
+    page.size = CGSizeMake(width, height);
+    page.baseline = baseline;
+    page.ink = ink;
+    return page;
+}
+
 + (BOOL)variantHasVerticalMetrics:(GAGlyphVariant *)variant {
     NSData *vmtx = CFBridgingRelease(CTFontCopyTable(variant.fontBox.font,
                                                      kCTFontTableVmtx, 0));

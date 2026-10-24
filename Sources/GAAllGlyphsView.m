@@ -20,6 +20,9 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
 @interface GAAllGlyphsGrid : NSView
 @property (nonatomic, copy) NSArray<GAAllGlyphEntry *> *entries;
 @property (nonatomic, strong, nullable) GAFontBox *fontBox;
+/// Lazily computed GAGlyphPage per entry, and one validity byte per entry.
+@property (nonatomic, strong) NSMutableData *pageMetrics;
+@property (nonatomic, strong) NSMutableData *pageMetricsValid;
 @property (nonatomic) CGFloat cellScale;
 @property (nonatomic) NSUInteger columns;
 /// Extra space above the first row so it clears the window titlebar.
@@ -36,6 +39,9 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
 
 @implementation GAAllGlyphsGrid
 
+@synthesize entries = _entries;
+@synthesize fontBox = _fontBox;
+
 - (instancetype)initWithFrame:(NSRect)frameRect {
     self = [super initWithFrame:frameRect];
     if (self) {
@@ -43,8 +49,26 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
         _cellScale = 1.0;
         _columns = 1;
         _highlightIndex = NSNotFound;
+        _pageMetrics = [NSMutableData dataWithLength:0];
+        _pageMetricsValid = [NSMutableData dataWithLength:0];
     }
     return self;
+}
+
+- (void)setEntries:(NSArray<GAAllGlyphEntry *> *)entries {
+    _entries = [entries copy];
+    _pageMetrics = [NSMutableData dataWithLength:_entries.count * sizeof(GAGlyphPage)];
+    _pageMetricsValid = [NSMutableData dataWithLength:_entries.count];
+    [self setNeedsDisplay:YES];
+}
+
+- (void)setFontBox:(GAFontBox *)fontBox {
+    _fontBox = fontBox;
+    // The page metrics depend on the font, not just on the glyph ID.
+    if (_pageMetricsValid.length > 0) {
+        [_pageMetricsValid resetBytesInRange:NSMakeRange(0, _pageMetricsValid.length)];
+    }
+    [self setNeedsDisplay:YES];
 }
 
 - (BOOL)isFlipped {
@@ -241,7 +265,11 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
     }
     CTFontRef font = self.fontBox.font;
     CGFloat cell = self.cellSide;
+    CGFloat upem = CTFontGetUnitsPerEm(font);
+    CGFloat unitScale = cell * 0.85 / upem;
     CGFloat glyphScale = cell * 0.85 / GAFontShapingSize;
+    GAGlyphPage *pageMetrics = self.pageMetrics.mutableBytes;
+    uint8_t *pageMetricsValid = self.pageMetricsValid.mutableBytes;
     NSRect visible = self.visibleRect;
     CGFloat stride = cell + GAAllGlyphsGap;
     CGFloat contentTop = self.topInset + GAAllGlyphsMargin;
@@ -265,16 +293,31 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
         } else {
             CGContextSetFillColorWithColor(context, glyphColor.CGColor);
         }
-        CGGlyph glyph = (CGGlyph)self.entries[index].glyphID.unsignedShortValue;
-        CGRect ink = CGRectNull;
-        CTFontGetBoundingRectsForGlyphs(font, kCTFontOrientationHorizontal,
-                                        &glyph, &ink, 1);
-        if (CGRectIsNull(ink) || CGRectIsEmpty(ink)) {
+        GAAllGlyphEntry *entry = self.entries[index];
+        if (!pageMetricsValid[index]) {
+            // Reuse the single-glyph page metric for one GID. It is cached per
+            // entry because the table reads are not free.
+            GAGlyphVariant *probe = [[GAGlyphVariant alloc] init];
+            probe.fontBox = self.fontBox;
+            probe.glyphIDs = @[entry.glyphID];
+            pageMetrics[index] = [GAFontDocument pageForVariant:probe];
+            pageMetricsValid[index] = 1;
+        }
+        GAGlyphPage page = pageMetrics[index];
+        if (CGRectIsEmpty(page.ink)) {
             continue;
         }
+        CGGlyph glyph = (CGGlyph)entry.glyphID.unsignedShortValue;
         NSRect cellRect = [self rectForIndex:index];
-        CGPoint origin = CGPointMake(NSMidX(cellRect) - CGRectGetMidX(ink) * glyphScale,
-                                     NSMidY(cellRect) + CGRectGetMidY(ink) * glyphScale);
+        // Centre the definition page (advance width × page height), not the
+        // ink. The baseline then follows the same metrics as the single-glyph
+        // canvas.
+        CGFloat pageWidth = page.size.width * unitScale;
+        CGFloat pageHeight = page.size.height * unitScale;
+        CGFloat pageX = NSMidX(cellRect) - pageWidth * 0.5;
+        CGFloat pageY = NSMidY(cellRect) - pageHeight * 0.5;
+        CGFloat baselineY = pageY + (page.size.height - page.baseline) * unitScale;
+        CGPoint origin = CGPointMake(pageX, baselineY);
         CGContextSaveGState(context);
         CGContextTranslateCTM(context, origin.x, origin.y);
         CGContextScaleCTM(context, glyphScale, -glyphScale);

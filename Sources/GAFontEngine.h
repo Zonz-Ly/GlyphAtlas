@@ -57,6 +57,17 @@ FOUNDATION_EXPORT NSString * const GAGlyphSelectionAttributeName;
 @property (nonatomic, readonly) NSString *glyphKey;
 @end
 
+/// The definition page for a glyph, in font units. `size` is the horizontal
+/// advance × the vertical advance (ascent + descent when the font has no
+/// vmtx/vhea); `baseline` is measured up from the page's bottom edge; `ink` is
+/// the glyph's outline bounds. The single-glyph canvas and the all-glyphs grid
+/// use this one definition.
+typedef struct {
+    CGSize size;
+    CGFloat baseline;
+    CGRect ink;
+} GAGlyphPage;
+
 @interface GACharacterGroup : NSObject
 @property (nonatomic, copy) NSString *text;
 @property (nonatomic) NSRange textRange;
@@ -124,6 +135,10 @@ FOUNDATION_EXPORT NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text);
 /// Raw ink bounding box of a variant, from glyf/CFF through
 /// CTFontGetBoundingRectsForGlyphs. Returns CGRectZero for zero-ink glyphs.
 + (CGRect)inkBoundsForVariant:(GAGlyphVariant *)variant;
+
+/// Definition page, baseline and ink for a variant, in font units. This is the
+/// single definition used by the single-glyph canvas and the all-glyphs grid.
++ (GAGlyphPage)pageForVariant:(GAGlyphVariant *)variant;
 
 /// Advance width/height in font units. Width is the horizontal advance.
 /// Height is the vmtx/vhea vertical advance, with ascent + descent as fallback.
