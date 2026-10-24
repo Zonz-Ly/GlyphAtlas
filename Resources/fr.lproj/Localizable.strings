@@ -62,7 +62,7 @@
 "actual" = "composition effective";
 "Help.01" = "Ouvrez une police ou faites-la glisser sur la fenêtre de l’app ou son icône dans le Dock. Les polices récemment utilisées sont également prises en charge.";
 "Help.02" = "Saisissez un ou plusieurs caractères dans la barre latérale pour voir tous les glyphes associés. Utilisez ⌥⏎ pour insérer un saut de ligne.";
-"Help.03" = "Cliquez deux fois sur un glyphe, ou sélectionnez-le et appuyez sur Retour, pour remplacer le glyphe par défaut et afficher ses variantes.";
+"Help.03" = "Cliquez deux fois sur un glyphe, ou sélectionnez-le et appuyez sur Retour, pour remplacer le glyphe par défaut et afficher ses variantes. Maintenez la touche Maj pendant cette action pour ajouter le glyphe.";
 "Help.04" = "Utilisez ↑/↓ pour passer d’un glyphe à l’autre, ⌘↑/⌘↓ pour passer d’un glyphe de base à l’autre et ⌥↑/⌥↓ pour atteindre le premier ou le dernier glyphe de la liste.";
 "Help.05" = "Utilisez ⌘C pour copier tous les caractères encodés du glyphe sélectionné.";
 "Help.06" = "Survolez une étiquette Unicode pour voir le nom du caractère défini par la norme Unicode.";
@@ -72,3 +72,6 @@
 "Help.10" = "Utilisez ⌘+/⌘- pour agrandir ou réduire les glyphes, et ⌥⌘+/⌥⌘- pour ajuster les marges dans « Plusieurs caractères ». Le pincement sur le trackpad fonctionne également.";
 "Help.11" = "L’ombre de la page indique la largeur et la hauteur du glyphe, ainsi que la hauteur de ligne et l’interligne de la composition. Appuyez sur ⌘4 pour la masquer.";
 "Help.12" = "Le mode sombre est pris en charge. Mais attention : cliquer sur un glyphe plein peut vous éblouir.";
+
+/* Usage list marker, including trailing space. */
+"Help.Bullet" = "• ";

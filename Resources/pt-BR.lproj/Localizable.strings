@@ -62,7 +62,7 @@
 "actual" = "composição real";
 "Help.01" = "Abra uma fonte ou arraste-a para a janela do app ou seu ícone no Dock. Fontes usadas recentemente também são compatíveis.";
 "Help.02" = "Digite um ou mais caracteres na barra lateral para ver todos os glifos associados. Use ⌥⏎ para inserir uma quebra de linha.";
-"Help.03" = "Clique duas vezes em um glifo, ou selecione-o e pressione Return, para substituir o glifo padrão e mostrar suas alternativas.";
+"Help.03" = "Clique duas vezes em um glifo, ou selecione-o e pressione Return, para substituir o glifo padrão e mostrar suas alternativas. Mantenha Shift pressionado ao fazer isso para adicionar o glifo.";
 "Help.04" = "Use ↑/↓ para navegar entre glifos, ⌘↑/⌘↓ entre glifos de base e ⌥↑/⌥↓ para ir ao primeiro ou ao último glifo da lista.";
 "Help.05" = "Use ⌘C para copiar todos os caracteres codificados do glifo selecionado.";
 "Help.06" = "Mantenha o cursor sobre uma etiqueta Unicode para ver o nome do caractere definido pelo padrão Unicode.";
@@ -72,3 +72,6 @@
 "Help.10" = "Use ⌘+/⌘- para ampliar ou reduzir os glifos e ⌥⌘+/⌥⌘- para ajustar as margens em “Vários Caracteres”. O gesto de pinça no trackpad também funciona.";
 "Help.11" = "A sombra da página mostra a largura e a altura do glifo, além da altura da linha e da entrelinha da composição. Pressione ⌘4 para ocultá-la.";
 "Help.12" = "O Modo Escuro é compatível. Mas cuidado: clicar em um glifo sólido pode ofuscar seus olhos.";
+
+/* Usage list marker, including trailing space. */
+"Help.Bullet" = "• ";
