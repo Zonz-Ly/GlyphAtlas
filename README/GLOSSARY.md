@@ -1,6 +1,6 @@
 # Glyph Atlas — GLOSSARY
 
-> **活文档。**继任者可以直接修改，不需要先汇报；保持它和当前 `Sources/` 一致即可。文档修改不需要弹窗，**代码修改必须弹窗确认**。
+> **活文档。**本副本是 2026-10-25 的独立 GSUB/AAT 实验；用户已授权完整重构与 CLI 验证，无需逐次弹窗。下方历史段落若与文末实验记录冲突，以实验记录为准。
 
 > 产品行为、决策和测量看 `PRODUCT-LOG.md`；协作方式看 `COLLABORATION-NOTES.md`。
 
@@ -45,7 +45,7 @@
 
 要点：
 
-1. **content 缓存与 range 无关**：`GARawScanResult` / `GAScanCandidate` 不带 range。
+1. **content 缓存与 range 无关**：`GAScanCandidate.sourceRange` 只带相对 content 的 UTF-16 range，不带输入框绝对位置。
 2. **`GAGlyphVariant` 与 range 绑定**：只在 `applyRawResult:` 时按当前 range 创建；同一 content 可在多个位置各 apply 一次。
 3. **显示组 = 模型组 + 选择组 + 组合组**；组合组按“最后一个源字符之后”插入。
 4. **扫描只处理缺失 content**：旧 pending 保留，新缺失项追加；不重扫缓存内容。
@@ -110,7 +110,7 @@
 | Unicode 标量      | Unicode scalar            | 码位；一个字形可映射多个                           | `GAGlyphVariant.unicodeScalars`、`GAStringFromUnicodeScalars()`            |
 | 码位名称            | Unicode name              | 系统 ICU 名称                              | `GAUnicodeNameForScalar()`                                                |
 | GSUB            | Glyph Substitution Table  | 字形替代表                                  | `CTFontCopyTable(kCTFontTableGSUB)`                                       |
-| FeatureList     | feature list              | 特性 tag 和 lookup 索引                     | `GAGSUBFeatures`（private）                                                 |
+| FeatureList     | feature list              | 特性 tag 和 lookup 索引                     | `GAOTProgram.branchFeatures`（private）                                                 |
 | AAT             | Apple Advanced Typography | feature type/selector                  | `CTFontCopyFeatures`、`kCTFontFeatureTypeIdentifierKey`                    |
 | `vert` / `vrt2` | vertical forms            | 竖排字形替换                                 | `GAVerticalSubstituteForGlyph`（private）                                   |
 | `hmtx`          | horizontal metrics        | 水平 advance / LSB                       | `CTFontCopyTable`、`CGFontGetGlyphAdvances`                                |
@@ -168,9 +168,9 @@
 | shaping    | shaping               | 文本 + 字体 → CTRun → GID 序列                          | `CTLineCreateWithAttributedString`、`CTLineGetGlyphRuns`              |
 | 单字扫描       | per-character scan    | 单字 content → base + GSUB alternates + settings    | `characterVariantsForContent:`、`rawSingleCharacterResultForContent:` |
 | 上下文扫描      | context scan          | 多字 content → base/feature clusters，按 cluster 目标归组 | `rawContextResultForContent:groups:`、`addRawClusters:...`            |
-| GSUB 直接替换  | direct GSUB alternate | 从 GSUB 表直接取 single/alternate                      | `GAGSUBAlternatesForSeed`（private）                                   |
-| 单字形替换      | SingleSubst           | GSUB lookup type 1，format 1/2                     | `GASingleSubstitution`（private）                                      |
-| 备用字形替换     | AlternateSubst        | GSUB lookup type 3                                | `GAGSUBProcessSubtable`（private）                                     |
+| GSUB 直接替换  | direct GSUB alternate | 从 GSUB 表直接取 single/alternate                      | `GASubstitutionEngine.discoverText:/discoverGlyphIDs:`                                   |
+| 单字形替换      | SingleSubst           | GSUB lookup type 1，format 1/2                     | HarfBuzz GSUB execution + family index                                      |
+| 备用字形替换     | AlternateSubst        | GSUB lookup type 3                                | HarfBuzz GSUB execution + family index                                     |
 | 整串 cluster | whole-text cluster    | 一次 shaping 的连续 cluster；start/end/glyphs           | `GAWholeTextClusters`（private）                                       |
 | 组跨度        | group span            | cluster 覆盖的合成字符组范围                                | `GAGroupSpanForCluster`（private）                                     |
 | 特性设置       | feature setting       | 一个 AAT/OpenType feature 的字体箱和来源                   | `GAFeatureSetting`（private）                                          |
@@ -409,7 +409,7 @@ buildDisplayGroupsFromBaseGroups:
 
 | 主术语   | 也常被说成                      | 准确含义                               | 不要混淆                 |
 | ----- | -------------------------- | ---------------------------------- | -------------------- |
-| 扫描    | scan、raw scan、重新读字         | `rawScanContent:`/CoreText shaping | 不是内存 apply           |
+| 扫描    | scan、raw scan、重新读字         | `rawScanContent:`/`GASubstitutionEngine` | 不是内存 apply           |
 | 遍历    | loop、遍历组                   | 遍历内存数组                             | 不是重新 shaping         |
 | 分发    | apply、应用、合并                | 把已算好的 candidate 合并进组               | 不是重新扫描               |
 | cache | 缓存、content cache           | `content → GARawScanResult`        | 不是 desired set       |
@@ -458,7 +458,7 @@ buildDisplayGroupsFromBaseGroups:
 - 全字视图的页面度量缓存按 GID 分配（约 56B/字；62k 字形约 3.5MB），换字体时释放。
 - 多字视图竖排墨迹越出页面会被裁切；横排保留外扩。
 - 多字视图组合组只浏览，不替换源文本。
-- 种子多 GID 变体只取第一个 GID。
+- 多 GID 种子已在本实验中修复：显示副本展开所有组件，UTF-16 点击索引映射回原文。
 - 侧栏整组滚动在组比可视区高时只保证顶部。
 - `setGroups:` / `applyStreamedGroups:` 未合并：fallback、notify、pending 行为不同。
 - `setTextScale:` 在值未变时仍会 rebuild；当前未加保护（用户暂不动）。
@@ -504,3 +504,25 @@ buildDisplayGroupsFromBaseGroups:
 - 继任者可以直接修改文档，不需要先汇报；**改代码必须先弹窗确认**。
 - 旧架构、旧符号、旧版本对比不要留在正文；如果确实需要历史，放在明确的“已废弃”小节并标注，不要和当前事实混在一起。
 
+
+
+## GSUB/AAT 实验架构（2026-10-25，当前有效）
+
+| 术语 | 当前实现与边界 |
+| --- | --- |
+| 替换引擎 | `GASubstitutionEngine`；静态 HarfBuzz 14.5.0 执行 GSUB 1–8、morx/mort、Unicode 预处理和定位，禁用 HarfBuzz 的 CoreText shaper；无 CoreText 扫描 fallback |
+| 资源程序 | `GAOTProgram`；有界读取 FeatureList、lookup 宽度/引用、GDEF、FeatureVariations 与 AAT chain feature masks；不可变 face/index 由同资源新坐标文档共享 |
+| 表回调所有权 | `CreateFace` 为 HarfBuzz 回调保留独立 table owner；它不持有 hb_face，避免循环与临时 face 的释放后使用 |
+| 条件并集 | 默认 GSUB + 每条 FeatureVariations 的完整 feature-table replacement；强制该记录无条件生效，避免以抽样轴坐标猜测条件范围 |
+| AAT 选择器 | 从 chain records 枚举 type/setting，按 `(defaultFlags & disableFlags) | enableFlags` 冻结各 chain；标签如 `morx:18:1`；morx 优先于 mort |
+| 文字查询 | 模型只排队不同单字与每段一个多字查询；引擎按 GSUB lookup 的输入/前文/后文宽度与过滤标志扩展窗口，AAT 则使用 unsafe-to-break 相依岛 |
+| AAT 相依岛 | 状态机上下文可无界；只在引擎标记的相依岛中列举原文 grapheme 窗口，不设任意长度上限。病理字体现有状态机仍可能使整段相依 |
+| 来源范围 | HarfBuzz cluster → content UTF-16 range → composed-character group；组合候选挂到源范围最后一组，应用时转成输入绝对范围 |
+| 去重身份 | GID 序列 + 是否组合 + 组合来源范围；不同范围即使输出相同 GID 也保留，避免与最后一字的 base 合并 |
+| GID 种子 | identity cmap 让全部 GID 进入同一 GSUB/AAT 执行路径；单/备用字形反向 family index 另外保留兄弟选项，不尝试一般性逆执行 GSUB |
+| 字面定位 | `positionsForGlyphIDs:content:` 禁用全部替换表，保留 GPOS/kern/kerx 与变量度量；校验定位前后 GID 序列不变，RTL 在输入/输出之间维持选择顺序 |
+| 删除 | GSUB 零输出保留为 `∅` 行；普通激活移除来源文字。多 GID 激活保留完整 selection run，不退化为第一个编码 |
+| 多 GID 显示 | `GASeedDisplay` 展开私有显示副本，为每个 GID 建立 NSGlyphInfo；`displaySourceIndices` 将展开后的点击位置映射回输入 UTF-16 字组，不修改输入文字 |
+| 缓存 | 文档 raw cache 保持原有资源级语义；引擎窗口 cache 为 NSCache，2048 项/32 MiB 软限制。切轴仅重绑当前字形与定位 |
+
+旧的 `shapeString:`、`rawSingleCharacterResultForContent:`、`rawContextResultForContent:`、`GAGSUBFeatures`、`GAGSUBProcessSubtable`、`GAFeatureVariations` 和 CoreText feature-font 扫描均已删除；历史表格中的这些符号仅作旧版阅读线索。

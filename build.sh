@@ -21,7 +21,11 @@ done
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 BUILD="$ROOT/.build"
 DIST="$ROOT/dist"
-APP="$DIST/Glyph Atlas.app"
+OUTPUT_APP="$DIST/Glyph Atlas.app"
+# Sign and archive away from file-provider metadata that can race xattr removal.
+STAGE_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/glyph-atlas-build.XXXXXX")"
+trap 'rm -rf "$STAGE_ROOT"' EXIT
+APP="$STAGE_ROOT/Glyph Atlas.app"
 ZIP="$DIST/Glyph Atlas.zip"
 BUNDLE="$APP/Contents"
 ARCHS="${ARCHS:-arm64 x86_64}"
@@ -33,6 +37,8 @@ for ARCH in $ARCHS; do
   ARCH_BIN="$BUILD/bin/GlyphAtlas-$ARCH"
   MODULE_CACHE="$BUILD/modulecache-clang-$ARCH"
   mkdir -p "$MODULE_CACHE"
+  HB_OBJECT="$BUILD/bin/harfbuzz-$ARCH.o"
+  bash "$ROOT/scripts/compile-harfbuzz.sh" "$ARCH" "$HB_OBJECT"
   echo "→ Compiling Glyph Atlas ($ARCH)"
   clang \
     -fobjc-arc -fmodules \
@@ -46,7 +52,7 @@ for ARCH in $ARCHS; do
     -framework CoreText \
     -framework UniformTypeIdentifiers \
     -licucore \
-    "$ROOT/Sources"/*.m \
+    "$ROOT/Sources"/*.m "$HB_OBJECT" -lc++ \
     -o "$ARCH_BIN"
   ARCH_BINARIES+=("$ARCH_BIN")
 done
@@ -54,17 +60,19 @@ done
 lipo -create "${ARCH_BINARIES[@]}" -output "$BUILD/bin/GlyphAtlas"
 echo "→ Architectures: $(lipo -archs "$BUILD/bin/GlyphAtlas")"
 
-echo "→ Assembling $APP"
+echo "→ Assembling $OUTPUT_APP"
 rm -rf "$APP"
 mkdir -p "$BUNDLE/MacOS" "$BUNDLE/Resources"
 cp "$BUILD/bin/GlyphAtlas" "$BUNDLE/MacOS/GlyphAtlas"
 cp "$ROOT/Resources/Info.plist" "$BUNDLE/Info.plist"
+cp "$ROOT/Vendor/harfbuzz/COPYING" "$BUNDLE/Resources/HarfBuzz-LICENSE.txt"
+cp "$ROOT/Vendor/harfbuzz/src/ms-use/COPYING" "$BUNDLE/Resources/HarfBuzz-USE-LICENSE.txt"
 for LOCALIZATION in "$ROOT"/Resources/*.lproj; do
   cp -R "$LOCALIZATION" "$BUNDLE/Resources/"
 done
 
 echo "→ Generating AppIcon.icns"
-ICONSET="$BUILD/AppIcon.iconset"
+ICONSET="$STAGE_ROOT/AppIcon.iconset"
 mkdir -p "$ICONSET"
 for SIZE in 16 32 128 256 512; do
   sips -z "$SIZE" "$SIZE" "$ROOT/Resources/AppIcon.png" \
@@ -82,13 +90,20 @@ plutil -lint "$BUNDLE/Info.plist" \
 # The workspace may live on a file-provider volume that attaches Finder
 # metadata to folders. Strip it before sealing the bundle.
 xattr -cr "$APP" 2>/dev/null || true
+xattr -d com.apple.FinderInfo "$APP" 2>/dev/null || true
+xattr -d com.apple.fileprovider.fpfs#P "$APP" 2>/dev/null || true
 codesign --force --deep --sign - "$APP" >/dev/null 2>&1 || {
   echo "Code signing failed" >&2
   exit 1
 }
 xattr -cr "$APP" 2>/dev/null || true
+xattr -d com.apple.FinderInfo "$APP" 2>/dev/null || true
+xattr -d com.apple.fileprovider.fpfs#P "$APP" 2>/dev/null || true
+codesign --verify --deep --strict "$APP"
 
-echo "Done: $APP"
+rm -rf "$OUTPUT_APP"
+ditto --norsrc --noextattr "$APP" "$OUTPUT_APP"
+echo "Done: $OUTPUT_APP"
 if "$CREATE_ZIP"; then
   rm -f "$ZIP"
   ditto -c -k --norsrc --noextattr --keepParent "$APP" "$ZIP"

@@ -1,6 +1,7 @@
 #import "GAMultiGlyphView.h"
 #import "GAGlyphCanvasView.h"
 #import "GAUnicode.h"
+#import "GASeedDisplay.h"
 #import <CoreText/CoreText.h>
 #import <math.h>
 
@@ -56,6 +57,7 @@ static NSColor *GAResolvedColor(NSColor *color, NSAppearance *appearance) {
 @interface GAMultiGlyphView ()
 @property (nonatomic, strong) GAMultiTextView *textView;
 @property (nonatomic, copy) NSString *text;
+@property (nonatomic, copy) NSArray<NSNumber *> *displaySourceIndices;
 @property (nonatomic, copy) NSArray<GACharacterGroup *> *groups;
 @property (nonatomic) NSSize pageContentSize;
 @property (nonatomic) CGFloat textScale;
@@ -347,7 +349,7 @@ static NSColor *GAResolvedColor(NSColor *color, NSAppearance *appearance) {
         if (![self groupHasVisibleRange:group inLength:self.text.length]) {
             continue;
         }
-        result[@(group.textRange.location)] = group;
+        for(NSUInteger i=group.textRange.location;i<NSMaxRange(group.textRange);i++)result[@(i)] = group;
     }
     return result;
 }
@@ -356,51 +358,69 @@ static NSColor *GAResolvedColor(NSColor *color, NSAppearance *appearance) {
     NSMutableParagraphStyle *paragraph = [[NSMutableParagraphStyle alloc] init];
     paragraph.alignment = self.textAlignment;
     NSDictionary<NSAttributedStringKey, id> *attributes = @{
-        NSFontAttributeName: font,
-        NSForegroundColorAttributeName:
+        NSFontAttributeName : font,
+        NSForegroundColorAttributeName :
             GAResolvedColor(GAGlyphForegroundColor(), self.effectiveAppearance),
-        NSParagraphStyleAttributeName: paragraph,
+        NSParagraphStyleAttributeName : paragraph,
         // Show the source characters as shaped, not as the font's optional
         // common/rare ligatures. NSLigatureAttributeName 0 disables both.
-        NSLigatureAttributeName: @0,
+        NSLigatureAttributeName : @0,
     };
 
     NSMutableAttributedString *display =
-        [[NSMutableAttributedString alloc] initWithString:self.text
-                                                attributes:attributes];
-    for (GACharacterGroup *group in self.groups) {
-        if (![self groupHasVisibleRange:group inLength:display.length]) {
+        [[NSMutableAttributedString alloc] initWithString:self.text attributes:attributes];
+    NSMutableArray<NSNumber *> *sourceIndices = [NSMutableArray arrayWithCapacity:self.text.length];
+    for (NSUInteger i = 0; i < self.text.length; i++)
+        [sourceIndices addObject:@(i)];
+    // Descending replacements leave earlier source ranges valid even when a
+    // multiple substitution expands one source character into several glyphs.
+    NSArray *ordered = [self.groups
+        sortedArrayUsingComparator:^NSComparisonResult(GACharacterGroup *a, GACharacterGroup *b) {
+          return a.textRange.location > b.textRange.location   ? NSOrderedAscending
+                 : a.textRange.location < b.textRange.location ? NSOrderedDescending
+                                                               : NSOrderedSame;
+        }];
+    for (GACharacterGroup *group in ordered) {
+        if (![self groupHasVisibleRange:group inLength:self.text.length]) {
             continue;
         }
         GAGlyphVariant *variant = group.variants.firstObject;
         if (variant.glyphIDs.count == 0) {
             continue;
         }
+        if (group.seeded && variant.glyphIDs.count > 1) {
+            NSString *source = [self.text substringWithRange:group.textRange];
+            NSString *base =
+                [source substringWithRange:[source rangeOfComposedCharacterSequenceAtIndex:0]];
+            NSAttributedString *sequence = GACreateSeedDisplayString(
+                variant.glyphIDs, base, font, attributes, ^NSString *(CGGlyph glyph) {
+                  return [self replacementBaseForOriginal:base glyph:glyph font:font];
+                });
+            if (sequence)
+                GAReplaceSeedDisplayRange(display, sourceIndices, group.textRange, sequence);
+            continue;
+        }
         // A seed affects only its own group; other quote groups still use vert.
-        NSNumber *displayGlyph = group.seeded
-            ? variant.glyphIDs.firstObject
-            : [self verticalQuoteGlyphForGroup:group font:font];
+        NSNumber *displayGlyph = group.seeded ? variant.glyphIDs.firstObject
+                                              : [self verticalQuoteGlyphForGroup:group font:font];
         if (displayGlyph == nil) {
             continue;
         }
         CGGlyph glyph = (CGGlyph)displayGlyph.unsignedShortValue;
         NSString *original = [self.text substringWithRange:group.textRange];
-        NSString *baseString = [self replacementBaseForOriginal:original
-                                                         glyph:glyph
-                                                          font:font] ?: original;
+        NSString *baseString =
+            [self replacementBaseForOriginal:original glyph:glyph font:font] ?: original;
         if (![baseString isEqualToString:original]) {
-            [display replaceCharactersInRange:group.textRange
-                                    withString:baseString];
+            [display replaceCharactersInRange:group.textRange withString:baseString];
         }
         NSGlyphInfo *info = [NSGlyphInfo glyphInfoWithGlyph:glyph
                                                     forFont:font
                                                  baseString:baseString];
         if (info != nil) {
-            [display addAttribute:NSGlyphInfoAttributeName
-                            value:info
-                            range:group.textRange];
+            [display addAttribute:NSGlyphInfoAttributeName value:info range:group.textRange];
         }
     }
+    self.displaySourceIndices = sourceIndices;
     return display;
 }
 
@@ -567,10 +587,11 @@ static NSColor *GAResolvedColor(NSColor *color, NSAppearance *appearance) {
         }
         return YES;
     }];
-    if (hitIndex == NSNotFound || hitIndex >= (NSInteger)self.text.length) {
+    if (hitIndex == NSNotFound || hitIndex < 0 || hitIndex >= (NSInteger)self.displaySourceIndices.count) {
         return;
     }
-    GACharacterGroup *group = [self groupsByTextLocation][@(hitIndex)];
+    NSNumber *sourceIndex=self.displaySourceIndices[(NSUInteger)hitIndex];
+    GACharacterGroup *group = [self groupsByTextLocation][sourceIndex];
     if (group == nil) {
         return;
     }

@@ -1,0 +1,78 @@
+[
+  {
+    "font": "morx0.ttf",
+    "text": "ab",
+    "want": [
+      "b",
+      "a"
+    ]
+  },
+  {
+    "font": "morx1.ttf",
+    "text": "ab",
+    "want": [
+      "a.alt",
+      "b"
+    ]
+  },
+  {
+    "font": "morx2.ttf",
+    "text": "fi",
+    "want": [
+      "f_i"
+    ]
+  },
+  {
+    "font": "morx4.ttf",
+    "text": "a",
+    "want": [
+      "a.alt"
+    ]
+  },
+  {
+    "font": "morx5.ttf",
+    "text": "a",
+    "want": [
+      "a",
+      "a.alt"
+    ]
+  },
+  {
+    "font": "mort0.ttf",
+    "text": "ab",
+    "want": [
+      "b",
+      "a"
+    ]
+  },
+  {
+    "font": "mort1.ttf",
+    "text": "ab",
+    "want": [
+      "a.alt",
+      "b"
+    ]
+  },
+  {
+    "font": "mort2.ttf",
+    "text": "fi",
+    "want": [
+      "f_i"
+    ]
+  },
+  {
+    "font": "mort4.ttf",
+    "text": "a",
+    "want": [
+      "a.alt"
+    ]
+  },
+  {
+    "font": "mort5.ttf",
+    "text": "a",
+    "want": [
+      "a",
+      "a.alt"
+    ]
+  }
+]

@@ -1023,7 +1023,7 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
                                sourceText:(NSString *)sourceText
                                 selection:(GAGlyphSelection **)outSelection {
     NSArray<NSNumber *> *scalars = variant.unicodeScalars;
-    if (scalars.count > 0) {
+    if (variant.glyphIDs.count == 1 && scalars.count > 0) {
         NSString *replacement =
             GAStringFromUnicodeScalars(@[scalars.firstObject]);
         if (replacement.length == 0) {
@@ -1035,7 +1035,8 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
         return replacement;
     }
     if (variant.glyphIDs.count == 0) {
-        return nil;
+        if (outSelection != NULL) *outSelection = nil;
+        return @""; // A multiple-substitution deletion removes its source.
     }
     GAGlyphSelection *selection = [[GAGlyphSelection alloc]
         initWithSourceText:sourceText

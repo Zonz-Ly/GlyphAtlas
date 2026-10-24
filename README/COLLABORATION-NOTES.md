@@ -305,3 +305,41 @@ bash build.sh
 - 用户最新要求（2026-10-25）：之后代码改完不需要代理跑测试或操作界面验证，由用户自行测试；仅做必要的构建与打包。不要继续沿用本次之前的自动验证范围。
 
 - 用户最新视觉决定：可变按钮恢复最初的无边框原生样式，不再强制方形宽度；撤掉用于调整宽度的容器和 bezel。实数字段固定 66pt；预设名称用非本地化 style name。
+
+
+## 独立 GSUB/AAT 实验交接（2026-10-25，优先于上方历史约定）
+
+- 用户授权在 `Glyph Atlas GSUB` 完整取代 CoreText 的单字、上下文与连字扫描，并可重构相关组件；**无需再逐逻辑确认**。用户先排除 AAT，随后明确要求一并支持 **morx/mort**，以此最后决定为准。
+- 用户继续编辑原工作目录；本次只写入本实验副本。相邻 `Glyph Atlas Old` 是复制时的 81 个源码/资源/文档文件的未修改参照；不得把实验整目录覆盖回原目录。
+- 本副本 Git 基线为 `f6c4912a842ba4dae8a1881078b4acc4c60b79ce`，包含复制时原目录尚未提交的 VF 工作。后续应以 Old/该提交作三方合并基线，保留用户随后在原目录的修改。
+- 合并重点：替换 `GAFontEngine.m` 的扫描部分；合并 `GATextScanModel.m` 的段落查询；主窗口仅有多 GID/删除激活的改动；多字视图仅有多 GID 展开与点击索引映射的改动。加入 `GASubstitutionEngine.*`、`GASeedDisplay.*`、`Vendor/harfbuzz/`、`scripts/compile-harfbuzz.sh` 与构建链接/许可证复制。不要回退原目录后续的 VF 面板视觉调整。
+- `Tests/Fixtures` 是自建测试字体，没有打包用户安装的商业字体。通常测试不需 fontTools；只有重新生成 fixture 需要 fontTools >= 4.60.2。本机旧 `ttx` 的 fontTools 3.0 不适合生成这些 FV 测试。
+- 验证只用命令行，**没有启动/操作 GUI**。用户自行验证 TextKit 实际布局、竖排、点击、选择保留和 Popover；不要把数据测试说成视觉验收。
+- 构建：`bash build.sh --zip`。沙盒内 iconutil 会把尺寸正确的 iconset 报成 Invalid Iconset，沙盒外同一命令成功；这不是图示文件损坏。构建输出不安装、不自动启动 app。
+- 依赖：HarfBuzz 14.5.0 原版源码静态编入，CoreText shaper 禁用，AAT 启用。`UPSTREAM.md` 记录来源与 SHA-256；app 包含主许可证与 USE 许可证。
+
+CLI 复核：
+
+```sh
+bash Tests/build-gsub-cli.sh
+python3 Tests/check-substitutions.py
+.build/gsub-model-tests Tests/Fixtures
+.build/seed-display-tests
+bash Tests/check-sanitizers.sh
+python3 Tests/check-catalogs.py
+# 可选：只读取相邻 Old，生成比较程序/报告到本副本 .build
+bash Tests/compare-old.sh
+```
+
+机器字体路径可由 `GA_HIRAGINO`、`GA_LUCIDA`、`GA_ZAPFINO`、`GA_FUTURA` 覆盖。报告：`.build/substitution-results.json`、`.build/legacy-comparison.json`、`.build/sanitizers.log`、`.build/universal-build.log`。
+
+用户可直接试验 `Tests/Fixtures/multiple.ttf`：输入 `a`，选择 `test` 行 `a.alt / b.alt`，应在单字及多字视图看到两个并排矩形。该字体专门重现一对多替换，所有 glyph 都是测试矩形。
+
+
+补充验证注意事项：
+
+- HarfBuzz message callback 用于记录实际 lookup/chain 输出；依赖锁定版本的消息格式。升级 HarfBuzz 必须运行完整格式矩阵与真实字体比较，不能只看构建成功。
+- 本机 macOS 的 NSGlyphInfo.glyphID 对有效 override 也回传 0；检查实际 CTLine GID 输出可确认 override 正确，不能据该属性误判失败。
+- File Provider 会在工作目录给 `.app` 根目录重新加 FinderInfo/fpfs 属性，甚至与签名竞争。构建现在在 mktemp 的独立暂存目录生成图示、组装、签名、严格校验并压缩，再复制 app 到 dist；ZIP 明确不带扩展属性。用户最新要求：不要增加 ZIP 解压后的签名校验，脚本不做这一步。直接使用 ZIP 更方便；若校验 dist 内 app，需显式移除被重新注入的两个根属性。
+
+- 实验保存在本副本的本地 `experiment/gsub-aat` 分支，未推送；与上述基线比较可看到完整实现及新增文件。`.gitattributes` 只把上游原版 Vendor 标记为 vendored 并忽略其原有空白，不修改第三方源码。

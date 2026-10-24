@@ -32,9 +32,9 @@ A native macOS font and alternate-glyph inspector. Type text to see every altern
 
 ## Limitations
 
-- Direct GSUB parsing covers single and alternate substitutions only; ligatures and contextual substitutions are discovered through CoreText shaping.
+- This experimental copy discovers GSUB types 1–8 and AAT `morx`/`mort` substitutions through statically linked HarfBuzz. CoreText supplies font tables and drawing; TextKit still lays out the multi-character view.
 - Refreshing after entering long text can be a little slow, because of how alternates are discovered.
-- Features or substitutions available only through private font tables, or not exposed by CoreText, cannot be enumerated.
+- Discovery covers default execution plus individual feature/selector values and all FeatureVariations records. Arbitrary combinations of optional settings and private shaping systems are not exhaustively enumerated.
 - Glyph names depend on the font's glyph-name data (`post` table or CFF charset); when CoreText returns no usable name, the app shows `GID n`.
 - Glyph width comes from the horizontal advance. When `vmtx`/`vhea` is present, glyph height comes from the vertical advance; otherwise it uses `ascent + descent`.
 - Multi-Character layout and its metrics are provided by the system NSTextView; some effects are out of our control, yet it reflects the true rendering behavior of macOS.
@@ -60,6 +60,8 @@ ARCHS=x86_64 ./build.sh
 # Glyph Atlas
 
 一個原生 macOS 字體和替換字形查看器。輸入文字，查看字體為該文字提供的所有替換字形、上下文替換和連字，以及排版效果和所有字形。
+
+The build assembles icons and the app in a temporary directory, removes metadata, signs and verifies the app, then writes the results to `dist`. Temporary files are removed automatically. `--zip` creates the archive without unpacking it for another signature check.
 
 ## 需要
 
@@ -87,9 +89,9 @@ ARCHS=x86_64 ./build.sh
 
 ## 限制
 
-- GSUB 直接解析只覆蓋 single/alternate；連字和上下文替換通過 CoreText 排版發現。
+- 此實驗副本使用靜態編入的 HarfBuzz 發現 GSUB 1–8 類及 AAT `morx`／`mort` 替換。CoreText 提供字體表與繪製，多字視圖仍由 TextKit 排版。
 - 由於替換字發現原理限制，輸入長文本後刷新可能會有點卡。
-- 只存在於字體私有表、或 CoreText 未暴露的特性無法枚舉。
+- 發現範圍包括預設執行、各個特性／選擇器值，以及所有 FeatureVariations 記錄；不窮舉可選設定的任意組合或私有排版系統。
 - 字形名稱取決於字體的 glyph name 數據（post 表或 CFF charset）；CoreText 沒有可用名稱時顯示 GID。
 - 字寬來自水平 advance。字高有 `vmtx`/`vhea` 時來自垂直 advance；無則使用 `ascent + descent`。
 - 多字符排版及其度量由系統 NSTextView 提供，部分效果不可控但卻能反映真實的 macOS 渲染效果。

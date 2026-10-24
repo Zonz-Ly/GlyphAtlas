@@ -213,7 +213,7 @@
 }
 
 - (BOOL)groupIsLineBreak:(GACharacterGroup *)group {
-    return [group.text isEqualToString:@"\n"] || [group.text isEqualToString:@"\r"];
+    return [group.text rangeOfCharacterFromSet:NSCharacterSet.newlineCharacterSet].location != NSNotFound;
 }
 
 - (NSArray<GATextScanSubitem *> *)desiredSubitems {
@@ -238,28 +238,25 @@
         subitem.length = 1;
         [result addObject:subitem];
     }
-    for (NSUInteger length = 2; length <= count; length++) {
-        for (NSUInteger start = 0; start + length <= count; start++) {
-            BOOL hasBreak = NO;
-            for (NSUInteger index = start; index < start + length; index++) {
-                if ([self groupIsLineBreak:_groups[index]]) {
-                    hasBreak = YES;
-                    break;
-                }
-            }
-            if (hasBreak) {
-                continue;
-            }
-            NSRange first = _groups[start].textRange;
-            NSRange last = _groups[start + length - 1].textRange;
+    // A paragraph is one query. The substitution engine derives windows
+    // from GSUB context widths or AAT dependency boundaries; no unconditional all-substrings
+    // enumeration.
+    for (NSUInteger start = 0; start < count;) {
+        while (start < count && [self groupIsLineBreak:_groups[start]])
+            start++;
+        NSUInteger end = start;
+        while (end < count && ![self groupIsLineBreak:_groups[end]])
+            end++;
+        if (end - start > 1) {
+            NSRange first = _groups[start].textRange, last = _groups[end - 1].textRange;
             GATextScanSubitem *subitem = [[GATextScanSubitem alloc] init];
-            subitem.content = [_text substringWithRange:
-                NSMakeRange(first.location, NSMaxRange(last) - first.location)];
             subitem.range = NSMakeRange(first.location, NSMaxRange(last) - first.location);
+            subitem.content = [_text substringWithRange:subitem.range];
             subitem.startGroup = start;
-            subitem.length = length;
+            subitem.length = end - start;
             [result addObject:subitem];
         }
+        start = end;
     }
     return result;
 }

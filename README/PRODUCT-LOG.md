@@ -366,3 +366,25 @@ Per the user's instruction, this follow-up is built and packaged only; no tests 
 At the user's request, the Variable button returns to its original borderless native appearance. The fixed square wrapper, explicit toolbar bezel, and forced button dimensions are removed. The numeric field width changes from 64pt to 66pt. Presets use CTFontCopyName with kCTFontStyleNameKey rather than CTFontCopyLocalizedName, so the app does not request system-localized style names. The space above the preset popup is reduced by 18pt in the attached and native detached layouts.
 
 This change is built and packaged without tests or UI verification, as requested.
+
+
+## 2026-10-25 — Isolated GSUB and AAT discovery replacement
+
+The experimental copy replaces CoreText feature-font scanning with statically linked HarfBuzz 14.5.0. The resource index reads GSUB lookup widths, nested lookup references, GDEF filtering data, FeatureVariations replacements and AAT chain feature masks. Execution covers all GSUB lookup types and morx/mort state machines; Unicode preparation, clusters and positioning come from the same engine. CoreText remains the font-table and drawing API; native TextKit remains responsible for the multi-character layout.
+
+Each paragraph is one model query. Additional GSUB windows are derived from lookup context; AAT windows stay inside unsafe-to-break dependency islands. Default execution, each feature/selector value and every FeatureVariations record contribute options. Optional setting combinations are not exhaustively enumerated. Axis changes preserve the discovered GIDs and order, only rebinding fonts and literal positions. Literal layout removes substitution tables and verifies that positioning does not change the selected sequence.
+
+The replacement also fixes related data loss: multi-GID seeds now execute as complete sequences and expand into per-GID NSGlyphInfo runs in the private display string; their hit map still points to the original input. Activating a multi-GID result preserves the sequence. Zero-output substitutions have an explicit empty row. Equal output GIDs with different ligature source spans remain distinct from each other and from the final character's base.
+
+CLI verification includes explicit-format original fixtures for GSUB 1/2/3/4/5/6/7/8, nested alternate values, filtering flags, mark sets, mark attachment classes, three FeatureVariations records, variable advances, both static and multi-VF TTC resources, and malformed tables. morx/mort each exercise rearrangement, contextual substitution, ligature, noncontextual substitution and insertion. Model checks cover repeated text, supplementary UTF-16, combining marks, edits, clear/restore, axis rebinding and shared output GIDs. Display-data checks inspect actual CoreText output and the source map without creating a window or NSApplication.
+
+The requested installed fonts are checked directly: ThemeX Hiragino Sans alternates, LucidaSubmono contexts, and Zapfino's morx ligatures. Representative whole-sequence GIDs agree with the independent CoreText CLI oracle. Actual Futura100CHI-Var FeatureVariations are additionally checked. Old-vs-new per-group GID/range comparison on Hiragino `邊`, Lucida `Objective-C`, Zapfino `ffi fi st`, and a plain 26-letter fixture loses no options. Model query counts change 65→11, 38→6 and 351→27 respectively. Query reduction does not imply every short case is faster: an early cold Zapfino run took roughly 34 ms versus 17 ms in Old.
+
+Measured CLI examples before GUI validation: 1000 distinct characters in a plain fixture completed in about 80 ms; 190 Lucida characters about 1.3 s; 105 Zapfino characters about 0.2 s. These are model/engine measurements, not app end-to-end timings, and remain font dependent. Pathological AAT state machines can make an entire run interdependent; there is no arbitrary context cutoff.
+
+All GUI/visual acceptance remains with the user. Horizontal/vertical TextKit rendering, wrapping, click selection, VF selection retention and Popover interactions were not exercised by automation.
+
+**本次决策：** 用户保留原 Glyph Atlas 工作目录自行修改，实验只在 GSUB 副本进行；Old 保持复制时状态供后续三方合并。后来明确加入 morx/mort 支持。没有对原目录回写，也没有推送远端。
+
+
+Final CLI record for this experiment: 331 engine/resource assertions, 27 model assertions and 7 seed-display data assertions passed. Forty original fixture fonts passed AddressSanitizer and UndefinedBehaviorSanitizer. Thirteen localization catalogs and README Help remained consistent. Universal arm64/x86_64 compilation produced no warnings, minimum deployment target is macOS 12.0, and the clean ZIP extraction passed strict code-signature verification. Runtime CLI checks ran on arm64; x86_64 was compiled but not executed. Old's 81 baseline files were checked byte-for-byte unchanged.
