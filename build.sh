@@ -44,8 +44,9 @@ for ARCH in $ARCHS; do
     -fobjc-arc -fmodules \
     -fmodules-cache-path="$MODULE_CACHE" \
     -mmacosx-version-min=12.0 \
-    -O2 \
+    -Oz -flto \
     -Wall -Wextra \
+    -Wl,-dead_strip -Wl,-x -Wl,-map,"$ARCH_BIN.map" \
     -arch "$ARCH" \
     -I "$ROOT/Sources" \
     -framework Cocoa \

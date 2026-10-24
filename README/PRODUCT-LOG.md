@@ -388,3 +388,12 @@ All GUI/visual acceptance remains with the user. Horizontal/vertical TextKit ren
 
 
 Final CLI record for this experiment: 331 engine/resource assertions, 27 model assertions and 7 seed-display data assertions passed. Forty original fixture fonts passed AddressSanitizer and UndefinedBehaviorSanitizer. Thirteen localization catalogs and README Help remained consistent. Universal arm64/x86_64 compilation produced no warnings, minimum deployment target is macOS 12.0, and the clean ZIP extraction passed strict code-signature verification. Runtime CLI checks ran on arm64; x86_64 was compiled but not executed. Old's 81 baseline files were checked byte-for-byte unchanged.
+
+
+## 2026-10-25 — Strip unused HarfBuzz code from the release
+
+Keep HarfBuzz in its upstream single-translation-unit amalgamation and compile it with size optimization, full LTO, function/data sections and hidden inline visibility. The app participates in LTO and links with dead stripping; release local symbols are removed. The shaping configuration is unchanged. This reduces the unsigned universal link output from 3,766,992 to 1,899,136 bytes (49.6%) and the ZIP from 1,727,167 to 1,173,542 bytes (32.1%). The two native executables are 883,328 bytes for arm64 and 1,000,112 bytes for x86_64. Before local-symbol removal, unused Math, Meta, buffer-serialization, face-builder and style entry points were already absent, confirming actual unused implementation removal. Link maps and before/after measurements remain under `.build/`.
+
+The use of HarfBuzz is an implementation choice, not a requirement for Glyph Atlas. The old parser can be extended into a dedicated GSUB/AAT interpreter; doing so transfers lookup execution, state-machine handling, source tracking, malformed-table handling and compatibility maintenance to this project. Our own discovery policy, range/index/cache logic and FeatureVariations union remain separate from HarfBuzz's shaping execution.
+
+The signed executable in the delivered app is 1,950,048 bytes; this includes the final signing data. All 331 engine/resource, 27 model and 7 display-data assertions passed with the optimized CLI build. Both release architectures compiled without warnings; no GUI or ZIP extraction checks were performed for this change.

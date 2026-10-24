@@ -343,3 +343,13 @@ bash Tests/compare-old.sh
 - File Provider 会在工作目录给 `.app` 根目录重新加 FinderInfo/fpfs 属性，甚至与签名竞争。构建现在在 mktemp 的独立暂存目录生成图示、组装、签名、严格校验并压缩，再复制 app 到 dist；ZIP 明确不带扩展属性。用户最新要求：不要增加 ZIP 解压后的签名校验，脚本不做这一步。直接使用 ZIP 更方便；若校验 dist 内 app，需显式移除被重新注入的两个根属性。
 
 - 实验保存在本副本的本地 `experiment/gsub-aat` 分支，未推送；与上述基线比较可看到完整实现及新增文件。`.gitattributes` 只把上游原版 Vendor 标记为 vendored 并忽略其原有空白，不修改第三方源码。
+
+
+### Release 体积（2026-10-25）
+
+- 用户要求 HarfBuzz 单一编译单元与 dead code stripping。仍编译 upstream `harfbuzz.cc` amalgamation；新增 `-Oz`、full LTO、function/data sections、hidden inline visibility，app 也以 LTO 参与链接；ld 使用 `-dead_strip` 与 `-x`，移除未使用实现与本地符号。
+- 先只做代码优化/剔除时，universal 从 3,766,992 降为 2,532,576 bytes，HarfBuzz C 符号从每架构 629 降为 68；未用的 Math/Meta/serialization/face-builder/style API 已消失。之后移除本地符号，最终链接产物 universal 为 **1,899,136 bytes（-49.6%）**：arm64 883,328，x86_64 1,000,112。ZIP 1,727,167 → **1,173,542 bytes（-32.1%）**。
+- 本次没有用 HB_TINY/HB_LEAN 或关闭 DRAW/CFF/VAR/AAT 等功能换体积；字体格式与执行范围保持不变。特别注意 `HB_NO_DRAW` 会连带关闭 OT CFF 字形度量支持，不能只按“我们不让 HarfBuzz 绘图”就设这个宏。
+- CLI 构建脚本同步 LTO 与剔除，避免验证路径和 release 链接策略不同；保留 linker map 供审阅。大小原始记录在 `.build/binary-size-before.json`、`binary-size-code-stripping.json`、`binary-size-after.json`。没有做 GUI 或 ZIP 解压校验。
+
+- 签名封装后的 app 主程式为 **1,950,048 bytes**；上述 1,899,136 指签名前的 universal 链接产物，二者不要混称。本轮 331 引擎/资源、27 模型、7 显示数据断言均通过；两架构构建无警告，未操作 GUI，也未解压 ZIP。

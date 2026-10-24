@@ -16,7 +16,7 @@ for SOURCE in "$ROOT"/Sources/*.m; do
 done
 HB="$ROOT/.build/harfbuzz-$(uname -m).o"
 bash "$ROOT/scripts/compile-harfbuzz.sh" "$(uname -m)" "$HB"
-clang -fobjc-arc -mmacosx-version-min=12.0 -Wall -Wextra \
+clang -fobjc-arc -flto -Wl,-dead_strip -mmacosx-version-min=12.0 -Wall -Wextra \
   -I "$ROOT/Sources" -framework Cocoa -framework CoreText \
   -framework UniformTypeIdentifiers -licucore \
   "${SOURCES[@]}" "$ROOT/Tests/LocalizationSmoke.m" "$HB" -lc++ \
