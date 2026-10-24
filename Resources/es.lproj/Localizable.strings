@@ -72,6 +72,3 @@
 "Help.10" = "Usa ⌘+/⌘- para ampliar o reducir los glifos y ⌥⌘+/⌥⌘- para ajustar los márgenes en «Varios caracteres». También puedes usar el gesto de pellizco en el trackpad.";
 "Help.11" = "La sombra de la página indica la anchura y altura del glifo, así como la altura de línea y el interlineado de la composición. Pulsa ⌘4 para ocultarla.";
 "Help.12" = "Se admite el modo oscuro. Pero ten cuidado: hacer clic en un glifo sólido puede deslumbrarte.";
-
-/* Usage list marker, including trailing space. */
-"Help.Bullet" = "• ";

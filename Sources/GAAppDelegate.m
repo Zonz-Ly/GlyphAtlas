@@ -609,9 +609,7 @@
         NSLocalizedString(@"Help.11", @"Usage paragraph 11"),
         NSLocalizedString(@"Help.12", @"Usage paragraph 12")
     ];
-    NSString *bullet = NSLocalizedString(@"Help.Bullet", @"Usage list marker, including trailing space");
-    NSString *separator = [@"\n" stringByAppendingString:bullet];
-    alert.informativeText = [bullet stringByAppendingString:[paragraphs componentsJoinedByString:separator]];
+    alert.informativeText = [@"· " stringByAppendingString:[paragraphs componentsJoinedByString:@"\n· "]];
     [alert addButtonWithTitle:NSLocalizedString(@"OK", @"OK")];
 
     NSWindow *window = NSApp.keyWindow ?: self.windowControllers.lastObject.window;

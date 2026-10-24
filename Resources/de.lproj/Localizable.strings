@@ -72,6 +72,3 @@
 "Help.10" = "Mit ⌘+/⌘- vergrößerst oder verkleinerst du Glyphen; mit ⌥⌘+/⌥⌘- änderst du die Ränder in „Mehrere Zeichen“. Auch die Zoomgeste auf dem Trackpad funktioniert.";
 "Help.11" = "Der Seitenschatten zeigt Breite und Höhe der Glyphe sowie Zeilenhöhe und Durchschuss des Satzes. Mit ⌘4 blendest du ihn aus.";
 "Help.12" = "Der Dunkelmodus wird unterstützt. Aber Vorsicht: Ein Klick auf eine vollständig ausgefüllte Glyphe kann blenden.";
-
-/* Usage list marker, including trailing space. */
-"Help.Bullet" = "• ";
