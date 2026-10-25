@@ -506,3 +506,8 @@ Sources 全部平铺，原 FontLayout 的核心文件也已移到同一层。二
 ### vrt2 本机判别实测（2026-10-25）
 
 已在 macOS 14.8.7（23J520）用离屏 NSTextView、initUsingTextLayoutManager:YES、setLayoutOrientation:Vertical 验证。临时 TTF 令 U+3001 默认为矩形，vert 为三角形，vrt2 为双竖条；U+4E00/U+4E8C 分别编码两个输出作同路径渲染参照。直接渲染 TextKit 2 原生 line fragment 并比较裁切后的 alpha mask，不调用 CTLine/CTRun 辅助。两特性都存在时输出严格匹配 vrt2，只有 vert 时匹配 vert；横排维持矩形。证据仅覆盖本机与此 TTF 样本，不扩称所有系统/格式。脚本、字体与结果在 .build/vrt2-probe；产品源码及 App/ZIP 未变。
+
+
+### 逐字 fallback 补测与彎引号界限（2026-10-26）
+
+用户追问后补测：字体现有 vrt2 在另一个已编码字符 U+3002 上生效，但不覆盖 U+3001；vert 覆盖 U+3001。离屏 NSTextView/TextKit 2 对 U+3001 保留默认矩形，不回退到 vert 三角形；移除 vrt2 的对照字体则用 vert。四个弯引号在这组字体中即使有覆盖它们 GID 的 vert/vrt2，也均与无 GSUB 对照相同，因此不能把顿号的特性优先级推成弯引号实际替换规律。此前“弯引号必须取消 fallback”的建议证据不足，当前保留已有的 App 补偿逻辑。数据/临时探针在 .build/vrt2-probe/quote-fallback-results.json / QuoteFallbackProbe.m；未改产品源码。

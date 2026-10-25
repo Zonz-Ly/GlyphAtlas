@@ -540,3 +540,8 @@ Research on vrt2 found the current OpenType definition and first-hand 2019 repor
 ## Local NSTextView vrt2 discrimination — 2026-10-25
 
 At the user's request, ran one small offscreen NSTextView/TextKit 2 probe on macOS 14.8.7 (23J520). Two original TTFs distinguish default rectangle, vert triangle and vrt2 double bars. Native line-fragment alpha masks match vrt2 when both features exist and vert when only vert exists; horizontal control retains the default. References are encoded output glyphs rendered through the same TextView path, not CoreText reconstruction. Probe/results: .build/vrt2-probe. No product source change or App/ZIP build; the earlier source-only trial still awaits its next-round validation.
+
+
+## Per-glyph vertical fallback follow-up — 2026-10-26
+
+Added a distinct-glyph control: vrt2 actively substitutes U+3002 but does not cover U+3001; vert covers U+3001. Native offscreen NSTextView/TextKit 2 leaves U+3001 at its default shape when vrt2 exists, whereas the vert-only control substitutes it. This disproves automatic per-glyph vert fallback for this local TTF case. The four curly quotes remain identical to a no-GSUB control in all font variants, so this probe does not justify imposing the upright-punctuation behavior on the app's manual quote compensation. No product code change; retain the existing quote rule. Raw results: .build/vrt2-probe/quote-fallback-results.json.
