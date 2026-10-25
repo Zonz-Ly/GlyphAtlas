@@ -254,6 +254,27 @@ int main(void) {
               table.selectedRow == 2 && table.reloads == priorReloads,
           "native hit chooses exact consumed span when overlapping ligatures "
           "share a GID");
+    [sidebar setGroups:@[
+        Group(NSMakeRange(0, 1), @[ @100, @101, @102, @103, @104, @105, @106, @107 ]),
+        Group(NSMakeRange(1, 1), @[ @200, @201, @202, @203 ])
+    ]];
+    clip.bounds = NSMakeRect(0, 0, 200, 88);
+    Check([sidebar selectGlyphIDs:@[ @106 ] textRange:NSMakeRange(0, 1)] &&
+              table.selectedRow == 6 && clip.bounds.origin.y == 220,
+          "TextView link in a tall group places selected row at viewport bottom");
+    [sidebar selectGlyphKeyAfterNextReload:@"106" textRange:NSMakeRange(0, 1)];
+    [sidebar setGroups:[sidebar valueForKey:@"groups"]];
+    Check(clip.bounds.origin.y == 0,
+          "existing group navigation still aligns an oversized group to its top");
+    [sidebar selectGlyphKeyAfterNextReload:@"106" textRange:NSMakeRange(0, 1)
+                                   scroll:GAPendingSelectionScrollSelectedToTopIfNeeded];
+    [sidebar setGroups:[sidebar valueForKey:@"groups"]];
+    Check(clip.bounds.origin.y == 264,
+          "existing activation still aligns an invisible selected row to the top");
+    clip.bounds = NSMakeRect(0, 0, 200, 88);
+    Check([sidebar selectGlyphIDs:@[ @101 ] textRange:NSMakeRange(0, 1)] &&
+              clip.bounds.origin.y == 0,
+          "TextView link near the group top keeps original group positioning");
     MenuChecks();
     NSAttributedString *modelText =
         [[NSAttributedString alloc] initWithString:@"a\n⏎b"];

@@ -28,7 +28,8 @@ typedef NS_ENUM(NSInteger, GAPendingSelectionScroll) {
 /// Returns NO if the inventory changed or a normal activation is pending.
 - (BOOL)updateGroupsWithSameRows:(NSArray<GACharacterGroup *> *)groups;
 - (void)setGroups:(NSArray<GACharacterGroup *> *)groups;
-/// Selects an exact native glyph sequence and source span without reloading.
+/// Selects an exact layout glyph sequence and source span without reloading.
+/// After existing group scrolling, reveals the selected row bottom if it is below the viewport.
 - (BOOL)selectGlyphIDs:(NSArray<NSNumber *> *)glyphIDs textRange:(NSRange)range;
 - (void)selectGlyphKeyAfterNextReload:(NSString *)glyphKey
                             textRange:(NSRange)textRange;

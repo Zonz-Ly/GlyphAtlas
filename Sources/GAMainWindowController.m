@@ -193,8 +193,8 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 
     self = [super initWithWindow:window];
     if (self) {
-        _usesContextualAlternates = NO;
-        _usesLigatures = NO;
+        _usesContextualAlternates = YES;
+        _usesLigatures = YES;
         window.delegate = self;
         [self configureInterfaceWithWindow:window];
 

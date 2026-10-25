@@ -744,6 +744,12 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
         self.selectedVariant = row.variant;
         self.selectedVariantTextRange = range;
         [self scrollGroupContainingRow:index];
+        // Preserve group scrolling; only reveal a selected row below the viewport.
+        NSRect selectedRect = [self.tableView rectOfRow:(NSInteger)index];
+        NSRect visibleRect = self.tableView.visibleRect;
+        if (NSMaxY(selectedRect) > NSMaxY(visibleRect)) {
+            [self scrollClipViewToY:NSMaxY(selectedRect) - NSHeight(visibleRect)];
+        }
         self.suppressSelectionCallback = NO;
         [self notifySelection];
         return YES;

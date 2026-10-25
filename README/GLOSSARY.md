@@ -472,7 +472,7 @@ Sources 全部平铺，原 FontLayout 的核心文件也已移到同一层。二
 - `GATextHitMap.h/.m`：TextKit 行范围与显示别名的原文投影；自己的规则匹配选定 GID。与显示绘制和候选发现分开。
 - `GATextQueryModel.h/.m`：替代旧 `GATextScanModel`，只有当前完整请求/结果及取消机制。
 
-「使用上下文替换」和「使用连字」默认关闭，分别 ⌘5/⌘6；竖排 ⌘7。不支持 TextKit 控制的主视图右键菜单隐藏这些项及对齐；菜单栏保留禁用状态。关闭两项时普通点击走基础/明确 GID 快路；开启任一时用自己的执行器选定序列，再以 GID + 完整来源范围选侧栏行。
+「使用上下文替换」和「使用连字」默认开启，分别 ⌘5/⌘6；竖排 ⌘7。不支持 TextKit 控制的主视图右键菜单隐藏这些项及对齐；菜单栏保留禁用状态。横排且关闭两项时普通点击走基础/明确 GID 快路；竖排或开启任一时用自己的执行器选定序列，再以 GID + 完整来源范围选侧栏行。竖排 vert/vrt2 不依赖两个可选开关。
 
 已测样本的软换行会重置行首前文状态，但保留行尾后方 lookahead，因此预测按当前行首到段尾执行、只取该行范围。固定 NSGlyphInfo seed 是显示原子，不再投入第二轮 GSUB。竖排 “ ” ‘ ’ 继续走既有 `verticalQuoteGlyphForGroup:`；测试验证新投影保留指定 GID 与原文范围，未声称独立 CTTypesetter 能重现竖排 NSTextView 绘制。GUI 由用户验收。
 
@@ -480,3 +480,12 @@ Sources 全部平铺，原 FontLayout 的核心文件也已移到同一层。二
 ### 当前语言与备份（2026-10-25，最新）
 
 用户在性能实测后选择恢复 C++ 核心。当前 Sources 平铺，核心为 C++17 .cpp/.h，GASubstitutionEngine.mm / GATextPreparation.mm 作 Objective-C++ 适配，App/UI 为 Objective-C；重新链接 libc++。解析、缓冲区、GSUB/AAT、定位与共享程序边界仍按上述自写架构。没有 HarfBuzz。完整 Objective-C 版本在 outputs/Glyph Atlas ObjC Backup（含原 ZIP）及本地 backup/objective-c-core-2026-10-25 分支 c9788b5，不能误将该备份的构建方式用于当前版本。
+
+
+### 排版开关与侧栏捲动边界（2026-10-25，最新）
+
+- 上下文开关通过 GACopyTextDisplayFont 设置 font descriptor 的 kCTFontFeatureSettingsAttribute（OpenType tag calt，value 0/1），作为 TextView 的 NSFontAttributeName；不是打开所有 contextual lookup。
+- 连字开关设置 attributed text 的 NSLigatureAttributeName 为 0/1。两个开关的新窗口默认值均为 YES，多字 view 自身默认值也一致。
+- TextView 竖排通过原有 setLayoutOrientation:Vertical 交给 TextKit；点击预测在竖排下始终执行对应 vert/vrt2/AAT 选择。原有弯引号显示 override 与固定 seed 不变。
+- 用户最终要求第三点仅做追加检查，不统一/替换旧规则。selectGlyphIDs:textRange: 仍先调用原 scrollGroupContainingRow:；若选中行 bottom 超过可视 bottom，最后补一次 bottom 对齐。既有大组对齐组顶、能放下整组时显示整组、激活后 SelectedToTopIfNeeded 策略全部保留。
+- Option+Enter 只诊断未修复：插入换行使后方组的原文范围 +1，即使行成员/文字元数据相同，也会令 updateGroupsWithSameRows: 拒绝重绑。restoreScrollAnchor: 用旧范围找组，可能找到上一组，并 fallback 到它的基础行；于是可视位置改变。真实 Hiragino 10 字 49 行测例的非范围元数据全部不变，开头/中间插入分别有 10/5 组范围变化，末尾为 0；测试替身重现前两种可视 y 从 1638 到 1330，末尾不动。该证据只覆盖前面/中间插入，不可冒称已经重现末尾追加时的 GUI 问题。

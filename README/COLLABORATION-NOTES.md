@@ -428,3 +428,12 @@ bash Tests/compare-old.sh
 - 此次恢复解决语言转写回归，不等于解决所有长文本算法成本。Zapfino 105 字实测 C++ 549.5ms / ObjC 4379.4ms；420 字两者都超过 12 秒。不要把恢复后的 C++ 说成所有长输入即时完成。
 - 编译配置切换时清理原目录旧 .o，避免两种语言实现的翻译单元列表不同，误链接遗留的 Objective-C GAFontProgram.o/GABinary.o。
 - 用户继续要求最必要的 CLI 核对与构建；不恢复 GUI、全量 native-shaper 比对或 mutation 扫描。
+
+
+### 开关、竖排点击与第三点最终范围（2026-10-25）
+
+- 用户要求上下文/连字默认打开，已将主窗口与多字 view 默认值都改为 YES。使用的原生参数分别为字体现有 calt feature 设置与 NSLigatureAttributeName，TextView 引擎未更换。
+- 竖排的 vert 始终开启。两开关都关闭时旧点击快路漏过普通 vert/vrt2；现在快路仅用于横排且两个开关都关闭，竖排使用已有的实际 GID 预测与来源投影。
+- 用户先同意统一捲动，随后明确要保留原有规则，再明确「第三点只在最后面追加一个：如果选择的字在可视范围下方，就把选中那一行拉到可视范围最底下」。以后者为准：只在 TextView 精确 GID 选中入口原 group reveal 后追加 bottom 检查；不删除 pending scroll enum、SelectedToTopIfNeeded 或更换整组规则。
+- 「激活后不可见置顶」是侧栏 Enter/双击把变体套用到输入后、重选时的一条旧策略，并非 TextView 点击；已向用户说明并保留。
+- Option+Enter 暂不修，只查原因；.build/OptionEnterProbe.m 与 NewlineInventoryProbe.m 为只读诊断，记录真实字体行元数据和控制器替身。已重现插入点之前/之后范围变化导致旧锚点找错组；末尾追加的测例没有跳；用户随后确认是在前面或中间插入，与上述复现条件一致。不要把这一条说成已修好。

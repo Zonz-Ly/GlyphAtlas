@@ -77,8 +77,8 @@ static NSColor *GAResolvedColor(NSColor *color, NSAppearance *appearance) {
         _sideInsetFraction = GACanvasDefaultSideInsetFraction;
         _showsMetrics = YES;
         _textScale = 1.0;
-        _usesContextualAlternates = NO;
-        _usesLigatures = NO;
+        _usesContextualAlternates = YES;
+        _usesLigatures = YES;
 
         GAMultiTextView *textView =
             [[GAMultiTextView alloc] initUsingTextLayoutManager:YES];
@@ -616,18 +616,11 @@ static NSColor *GAResolvedColor(NSColor *color, NSAppearance *appearance) {
         return;
     }
     NSUInteger sourceIndex = self.displaySourceIndices[(NSUInteger)hitIndex].unsignedIntegerValue;
-    if (!self.usesContextualAlternates && !self.usesLigatures) {
+    // Vertical substitutions are active independently of the optional switches.
+    if (!self.vertical && !self.usesContextualAlternates && !self.usesLigatures) {
         for (GACharacterGroup *group in self.groups)
             if (NSLocationInRange(sourceIndex, group.textRange)) {
                 NSArray *ids = group.variants.firstObject.glyphIDs;
-                NSNumber *quote =
-                    self.vertical
-                        ? [self verticalQuoteGlyphForGroup:group
-                                                      font:[self fontAtSize:GAMultiBaseFontSize *
-                                                                            self.textScale]]
-                        : nil;
-                if (quote)
-                    ids = @[ quote ];
                 if (self.onGlyphSelected)
                     self.onGlyphSelected(ids, group.textRange);
                 return;
