@@ -93,14 +93,10 @@ class Catalogue {
                 } else
                     append(outputs, 0, std::move(glyphs), 1, sub.type == 1);
             } else if (sub.type == 4) {
-                if (!gdef_.included(seed_, program.flags, program.markSet))
-                    continue;
-                for (const auto &pattern : sub.patterns)
-                    for (unsigned i = 0; i < pattern.input.size(); i++) {
-                        budget_.step();
-                        if (pattern.input[i].matches(seed_))
-                            append(outputs, i, pattern.replacement);
-                    }
+                // Ligatures require their complete input sequence. This also
+                // excludes type 4 called by a contextual lookup; the actual
+                // executor discovers those combinations with source ranges.
+                continue;
             } else if (sub.type == 8) {
                 if (!gdef_.included(seed_, program.flags, program.markSet))
                     continue;

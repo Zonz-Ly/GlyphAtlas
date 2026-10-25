@@ -396,3 +396,11 @@ bash Tests/compare-old.sh
 - `compile-font-layout.sh arch out [release|test]` 默认 release，CLI/sanitizer 用 test 和不同输出目录。配置签名纳入模式、架构、优化/检测 flags；模式切换失败时签名无效，避免旧配置误用半更新物件。
 - 测试接口由 GA_FONT_LAYOUT_TESTING 条件编译；CLI 的 .m 也必须显式传 1。`Tests/check-release.py` 检查实际两架构产物无测试 selectors、CLI 有这些接口。release 的共享解析/执行/定位核心仍完整保留。
 - 129 组清理前后比较没有丢结果/来源；一组多 GID 文本种子新增原来漏掉的兄弟候选，记录见审查文件。GUI 和 ZIP 解压仍留空，不把源码/数值测试冒充视觉验收。
+
+
+### 上下文与连字的最新区分（2026-10-25，用户明确纠正）
+
+- 无需输入上下文就应列全的是字符自身的上下文替换，例如 Submono 的 W.w0/W.w1、i.t1。不是把连字也放进每个组件的候选。
+- 连字必须实际输入/选中全部被消耗的组件；单独 f 或 i 不列 fi，完整 fi 才列。未编码 GID 与多 GID 种子同理，不能恢复仅匹配任一组件就展示连字的旧目录分支。
+- `GARelatedSubstitutions` 不再读取 type 4 输出；extension 已解包，嵌套 contextual 调用 type 4 同样排除。实际 GSUB/AAT 执行器和完整来源范围保留，并不按 feature tag 名称猜测是否连字。
+- 回归覆盖直接/extension/嵌套 contextual 连字、morx/mort、字面 GID、不完整/完整序列，以及原有 Lucida W/Wi 上下文与 VF 并集。

@@ -53,6 +53,20 @@ r=run(F/'nested-alternate.ttf','a')
 check(any(m['glyphs']==[19] and m['sources']==['test 2'] for m in r['matches']),'nested alternate without neighboring text')
 r=run(F/'reverse.ttf','a')
 check(any(m['glyphs']==[18] and m['sources']==['test'] for m in r['matches']),'reverse context without neighboring text')
+# Ligatures, unlike per-glyph contextual forms, require every consumed input.
+for name in ('ligature','extension'):
+    for text in ('f','i','ff','fi'):
+        check(not any(m['glyphs']==[23] for m in run(F/(name+'.ttf'),text)['matches']),name+' incomplete ligature '+text)
+    r=run(F/(name+'.ttf'),'ffi')
+    check(any(m['glyphs']==[23] and m['range']==[0,3] for m in r['matches']),name+' complete ligature input')
+    check(not any(m['glyphs']==[23] and m['range'][1]<3 for m in r['matches']),name+' no ligature on an individual component')
+for name in ('morx2','mort2'):
+    for text in ('f','i'):
+        check(not any(m['glyphs']==[22] for m in run(F/(name+'.ttf'),text)['matches']),name+' incomplete ligature '+text)
+    check(any(m['glyphs']==[22] and m['range']==[0,2] for m in run(F/(name+'.ttf'),'fi')['matches']),name+' full ligature input')
+for ids in ('7','8','7,7','7,8'):
+    check(not any(m['glyphs']==[23] for m in run(F/'ligature.ttf','','--gids',ids)['matches']),'literal ligature requires full sequence '+ids)
+check(any(m['glyphs']==[23] for m in run(F/'ligature.ttf','','--gids','7,7,8')['matches']),'full literal sequence yields ligature')
 r=run(F/'unencoded-neighbor.ttf','ab','--seed','0:1=19')
 check(any(m['glyphs']==[22] and m['range']==[0,2] and m['sources']==['liga'] for m in r['matches']),'default ligature retains actual feature provenance')
 r=run(F/'ignore-base.ttf','a');check(not any(x['glyphs']==[18] for x in r['matches']),'family index respects GDEF flags')
@@ -102,6 +116,9 @@ for name,path,cases in fonts:
     if name=='Zapfino':
         scan=run(path,'ffi');found={(tuple(x['range']),tuple(x['names'])) for x in scan['matches']}
         check(((0,3),('ffi',)) in found and ((0,2),('ff',)) in found and ((1,2),('fi',)) in found,'Zapfino overlapping ligatures')
+        for text in ('f','i'):
+            check(not any(m['names']==['fi'] for m in run(path,text)['matches']),'Zapfino fi needs both components '+text)
+        check(any(m['names']==['fi'] and m['range']==[0,2] for m in run(path,'fi')['matches']),'Zapfino fi appears for the complete input')
     text=('Objective-C IlMWrt '*10 if name=='LucidaSubmono' else 'office affine flower '*5 if name=='Zapfino' else '漢字邊骨令零'*10)
     model=run(path,text,'--model');report['benchmarks'].append({'font':name,'characters':len(text),'tasks':model['tasks'],'milliseconds':model['milliseconds']})
     report['real_fonts'].append({'font':name,'path':path,'cases':results});print('OK:',name,'reference, discovery and paragraph model',flush=True)

@@ -261,6 +261,49 @@ void relatedTests(const std::filesystem::path &directory) {
           "nested output is contextual, not a standalone family");
     check(context.relatedSubstitutions(18, GDEF{}).empty(),
           "alternate siblings are not invented through inverse context");
+    for (const char *name : {"ligature.ttf", "extension.ttf"}) {
+        auto ligature = fixtureTable(directory / name, tag('G', 'S', 'U', 'B'));
+        OpenType ligatureProgram{View(ligature)};
+        check(ligatureProgram.relatedSubstitutions(7, GDEF{}).empty() &&
+                  ligatureProgram.relatedSubstitutions(8, GDEF{}).empty(),
+              "direct and extension ligatures are excluded from per-glyph catalogue");
+    }
+    // A contextual root may call a ligature lookup: classify the action by
+    // what it consumes, not by the root's lookup type or feature label.
+    auto nestedLigature = fixtureTable(directory / "context3.ttf", tag('G', 'S', 'U', 'B'));
+    View nestedTable(nestedLigature);
+    size_t nestedList = nestedTable.u16(8);
+    size_t root = nestedList + nestedTable.u16(nestedList + 2);
+    size_t sub = root + nestedTable.u16(root + 6);
+    auto set = [&](size_t at, unsigned value) {
+        nestedLigature.at(at) = uint8_t(value >> 8);
+        nestedLigature.at(at + 1) = uint8_t(value);
+    };
+    set(sub + 10, 0); // first input is the nested action's target
+    set(sub + nestedTable.u16(sub + 6) + 4, 7);
+    set(sub + nestedTable.u16(sub + 8) + 4, 7);
+    size_t child = nestedList + nestedTable.u16(nestedList + 4);
+    auto ligature = fixtureTable(directory / "ligature.ttf", tag('G', 'S', 'U', 'B'));
+    View ligatureTable(ligature);
+    size_t ligatureList = ligatureTable.u16(8);
+    size_t lookupStart = ligatureList + ligatureTable.u16(ligatureList + 2);
+    nestedLigature.resize(child);
+    nestedLigature.insert(nestedLigature.end(), ligature.begin() + lookupStart, ligature.end());
+    OpenType nestedProgram{View(nestedLigature)};
+    check(nestedProgram.relatedSubstitutions(7, GDEF{}).empty(),
+          "context root cannot expose a nested ligature on one component");
+    Buffer complete;
+    for (Glyph glyph : {7, 7, 8}) {
+        Item item;
+        item.glyph = glyph;
+        item.source = {uint32_t(complete.size()), uint32_t(complete.size() + 1)};
+        complete.push_back(item);
+    }
+    Settings settings;
+    settings.features[tag('t', 'e', 's', 't')] = 1;
+    nestedProgram.substitute(complete, GDEF{}, settings, 0);
+    check(complete.size() == 1 && complete[0].glyph == 23,
+          "nested contextual ligature still executes on the complete input");
     // IgnoreBaseGlyphs must filter the original encoded alternate input, even
     // when the queried unencoded output itself has no GDEF class.
     View table(bytes);

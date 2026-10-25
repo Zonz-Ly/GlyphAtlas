@@ -36,13 +36,6 @@ static BOOL Has(GACharacterGroup *group, NSArray *gids) {
             return YES;
     return NO;
 }
-static BOOL HasCombination(GACharacterGroup *group, NSRange range, NSArray *gids) {
-    for (GAGlyphVariant *variant in group.variants)
-        if (variant.isLigature && NSEqualRanges(variant.sourceTextRange, range) &&
-            [variant.glyphIDs isEqual:gids])
-            return YES;
-    return NO;
-}
 static NSArray *Keys(GATextScanModel *m) {
     NSMutableArray *keys = [NSMutableArray array];
     for (GACharacterGroup *g in m.groups) {
@@ -205,8 +198,8 @@ int main(int argc, const char **argv) {
         m = [[GATextScanModel alloc] initWithFontDocument:d];
         [m updateText:@"ab"];
         Drain(m, d);
-        Check(!HasCombination(m.groups.lastObject, NSMakeRange(0, 2), @[ @22 ]),
-              @"catalogue candidate does not invent an actual text combination");
+        Check(!Has(m.groups.lastObject, @[ @22 ]),
+              @"ligature is absent until its unencoded input is selected");
         GAGlyphSelectionRun *seed = Seed(@"ab", NSMakeRange(0, 1), @[ @19 ]);
         [m updateText:@"ab" selections:@[ seed ]];
         Check(Drain(m, d) == 1, @"changing only the GID schedules one paragraph query");
@@ -217,7 +210,7 @@ int main(int argc, const char **argv) {
         Check(Drain(m, d) == 0, @"identical literal query is cached");
         seed = Seed(@"ab", NSMakeRange(0, 1), @[ @20 ]);
         [m updateText:@"ab" selections:@[ seed ]];
-        Check(Drain(m, d) == 1 && !HasCombination(m.groups.lastObject, NSMakeRange(0, 2), @[ @22 ]),
+        Check(Drain(m, d) == 1 && !Has(m.groups.lastObject, @[ @22 ]),
               @"different literal GID cannot reuse the same text cache");
         seed = Seed(@"ab", NSMakeRange(0, 1), @[ @9, @19 ]);
         [m updateText:@"ab" selections:@[ seed ]];
@@ -269,7 +262,7 @@ int main(int argc, const char **argv) {
         [m completeSubitem:oldSeed
                     result:[d rawScanContent:oldSeed.content selections:oldSeed.selections]];
         Drain(m, d);
-        Check(!HasCombination(m.groups.lastObject, NSMakeRange(0, 2), @[ @22 ]),
+        Check(!Has(m.groups.lastObject, @[ @22 ]),
               @"old selected-GID result cannot leak into a newer selection");
         for (NSString *name in
              @[ @"morx-unencoded-neighbor.ttf", @"mort-unencoded-neighbor.ttf" ]) {
