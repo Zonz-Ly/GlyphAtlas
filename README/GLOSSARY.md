@@ -511,3 +511,8 @@ Sources 全部平铺，原 FontLayout 的核心文件也已移到同一层。二
 ### 逐字 fallback 补测与彎引号界限（2026-10-26）
 
 用户追问后补测：字体现有 vrt2 在另一个已编码字符 U+3002 上生效，但不覆盖 U+3001；vert 覆盖 U+3001。离屏 NSTextView/TextKit 2 对 U+3001 保留默认矩形，不回退到 vert 三角形；移除 vrt2 的对照字体则用 vert。四个弯引号在这组字体中即使有覆盖它们 GID 的 vert/vrt2，也均与无 GSUB 对照相同，因此不能把顿号的特性优先级推成弯引号实际替换规律。此前“弯引号必须取消 fallback”的建议证据不足，当前保留已有的 App 补偿逻辑。数据/临时探针在 .build/vrt2-probe/quote-fallback-results.json / QuoteFallbackProbe.m；未改产品源码。
+
+
+### 彎引號統一豎排特性選擇（2026-10-26）
+
+使用者確認理解逐字 fallback 的差別後，授權將彎引號補償與一般匹配統一。Resource::verticalFeature(branch) 共用選擇規則：存在 vrt2 就只選 vrt2，否則選 vert；所選特性沒有覆蓋該 GID 時，不再改查 vert。保留既有 AAT 路徑和彎引號顯示補償機制。使用前輪四份臨時 TTF，對頓號及四個彎引號核對一般排版預測與單字豎排 helper，共 40 項通過（兩特性都有、只有 vert、vrt2 不覆蓋該字、沒有特性）。僅編譯此次 engine adapter 與命令行探針，沒有構建 App/ZIP；先前特性開關與換行修正的整體驗證仍待下一輪。

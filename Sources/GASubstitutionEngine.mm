@@ -71,6 +71,13 @@ struct Resource {
     const std::vector<Feature> &specifications() const {
         return featureSpecs;
     }
+    Tag verticalFeature(size_t branch) const {
+        // Select by feature presence, never by whether this glyph is covered.
+        for (const auto &feature : gsub.features(branch))
+            if (feature.name == tag('v', 'r', 't', '2'))
+                return feature.name;
+        return tag('v', 'e', 'r', 't');
+    }
     std::vector<Feature> collectFeatures() const {
         std::vector<Feature> result;
         for (size_t branch = 0; branch < gsub.branchCount(); branch++)
@@ -469,10 +476,9 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
             settings.features[tag('c','a','l','t')] = contextual;
             settings.features[tag('l','i','g','a')] = ligatures;
             settings.features[tag('c','l','i','g')] = ligatures;
-            bool vrt2 = false;
-            for (const auto &feature : r.gsub.features(branch)) vrt2 |= feature.name == tag('v','r','t','2');
-            settings.features[tag('v','r','t','2')] = vertical && vrt2;
-            settings.features[tag('v','e','r','t')] = vertical && !vrt2;
+            Tag verticalFeature = r.verticalFeature(branch);
+            settings.features[tag('v','r','t','2')] = vertical && verticalFeature == tag('v','r','t','2');
+            settings.features[tag('v','e','r','t')] = vertical && verticalFeature == tag('v','e','r','t');
             Buffer items = run.glyphs;
             if (!r.aat.empty()) {
                 std::vector<AATSelector> options{{36,contextual ? 0u:1u},{1,ligatures ? 2u:3u},{4,vertical ? 0u:1u}};
@@ -657,19 +663,20 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
                 r.aat.substitute(items, domain.selector, false, true, nullptr, true);
                 if (items.size() == 1 && items.front().glyph != glyph)
                     return @(items.front().glyph);
-            } else
-                for (Tag name : {tag('v', 'r', 't', '2'), tag('v', 'e', 'r', 't')})
-                    for (const auto &feature : r.gsub.features(domain.branch)) {
-                        if (feature.name != name)
-                            continue;
-                        std::vector<LookupStep> steps;
-                        for (unsigned lookup : feature.lookups)
-                            steps.push_back({lookup, 1, name, true});
-                        Buffer items = literalBuffer({glyph});
-                        r.gsub.substituteLookups(items, r.gdef, steps);
-                        if (items.size() == 1 && items.front().glyph != glyph)
-                            return @(items.front().glyph);
-                    }
+            } else {
+                Tag name = r.verticalFeature(domain.branch);
+                for (const auto &feature : r.gsub.features(domain.branch)) {
+                    if (feature.name != name)
+                        continue;
+                    std::vector<LookupStep> steps;
+                    for (unsigned lookup : feature.lookups)
+                        steps.push_back({lookup, 1, name, true});
+                    Buffer items = literalBuffer({glyph});
+                    r.gsub.substituteLookups(items, r.gdef, steps);
+                    if (items.size() == 1 && items.front().glyph != glyph)
+                        return @(items.front().glyph);
+                }
+            }
         }
     } catch (const std::exception &error) {
         [self recordError:error];

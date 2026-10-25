@@ -545,3 +545,8 @@ At the user's request, ran one small offscreen NSTextView/TextKit 2 probe on mac
 ## Per-glyph vertical fallback follow-up — 2026-10-26
 
 Added a distinct-glyph control: vrt2 actively substitutes U+3002 but does not cover U+3001; vert covers U+3001. Native offscreen NSTextView/TextKit 2 leaves U+3001 at its default shape when vrt2 exists, whereas the vert-only control substitutes it. This disproves automatic per-glyph vert fallback for this local TTF case. The four curly quotes remain identical to a no-GSUB control in all font variants, so this probe does not justify imposing the upright-punctuation behavior on the app's manual quote compensation. No product code change; retain the existing quote rule. Raw results: .build/vrt2-probe/quote-fallback-results.json.
+
+
+## Unified quote vertical-feature priority — 2026-10-26
+
+At the user's request, general layout prediction and the curly-quote helper now share Resource::verticalFeature(branch): select vrt2 when present, otherwise vert. An uncovered glyph no longer triggers a per-glyph vert fallback. Existing AAT handling and the quote display override remain in place. A targeted command-line probe reused the four earlier TTFs and passed 40 assertions comparing helper and layout results for upright punctuation and all four quotes. Only the changed adapter and probe were compiled; no App/ZIP build or broad suite rerun. The earlier feature-switch trial and newline-preservation changes still await their deferred integrated validation.
