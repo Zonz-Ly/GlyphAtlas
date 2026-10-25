@@ -64,11 +64,11 @@ for name,path,cases in fonts:
     if not Path(path).exists():report['real_fonts'].append({'font':name,'skipped':'not installed'});continue
     results=[]
     for text,options in cases:
-        hb=run(path,text,'--shape',*options);ct=run(path,text,'--reference-coretext',*options)
-        check(hb['glyphs']==ct['glyphs'],name+' CoreText reference '+text)
+        shaped=run(path,text,'--shape',*options);ct=run(path,text,'--reference-coretext',*options)
+        check(shaped['glyphs']==ct['glyphs'],name+' CoreText reference '+text)
         scan=run(path,text);found={(tuple(m['range']),tuple(m['glyphs'])) for m in scan['matches']}
-        for r,g in clusters(hb,text).items():check((r,tuple(g)) in found,name+' discovers reference output '+str((r,g)))
-        results.append({'text':text,'glyphs':hb['glyphs'],'names':hb['names'],'milliseconds':scan['milliseconds']})
+        for r,g in clusters(shaped,text).items():check((r,tuple(g)) in found,name+' discovers reference output '+str((r,g)))
+        results.append({'text':text,'glyphs':shaped['glyphs'],'names':shaped['names'],'milliseconds':scan['milliseconds']})
     if name=='Hiragino Sans':
         scan=run(path,'邊');spec=next(x for x in scan['features'] if x['tag']=='aalt');found={tuple(x['glyphs']) for x in scan['matches']}
         # Check every declared aalt selector against execution, not just a sample.

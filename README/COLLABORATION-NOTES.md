@@ -312,11 +312,11 @@ bash build.sh
 - 用户授权在 `Glyph Atlas GSUB` 完整取代 CoreText 的单字、上下文与连字扫描，并可重构相关组件；**无需再逐逻辑确认**。用户先排除 AAT，随后明确要求一并支持 **morx/mort**，以此最后决定为准。
 - 用户继续编辑原工作目录；本次只写入本实验副本。相邻 `Glyph Atlas Old` 是复制时的 81 个源码/资源/文档文件的未修改参照；不得把实验整目录覆盖回原目录。
 - 本副本 Git 基线为 `f6c4912a842ba4dae8a1881078b4acc4c60b79ce`，包含复制时原目录尚未提交的 VF 工作。后续应以 Old/该提交作三方合并基线，保留用户随后在原目录的修改。
-- 合并重点：替换 `GAFontEngine.m` 的扫描部分；合并 `GATextScanModel.m` 的段落查询；主窗口仅有多 GID/删除激活的改动；多字视图仅有多 GID 展开与点击索引映射的改动。加入 `GASubstitutionEngine.*`、`GASeedDisplay.*`、`Vendor/harfbuzz/`、`scripts/compile-harfbuzz.sh` 与构建链接/许可证复制。不要回退原目录后续的 VF 面板视觉调整。
+- 合并重点：替换 `GAFontEngine.m` 的扫描部分；合并 `GATextScanModel.m` 的段落查询；主窗口仅有多 GID/删除激活的改动；多字视图仅有多 GID 展开与点击索引映射的改动。加入 `GASubstitutionEngine.h/.mm`、`Sources/FontLayout/`、`GASeedDisplay.*`、`scripts/compile-font-layout.sh` 与构建链接。不要回退原目录后续的 VF 面板视觉调整。
 - `Tests/Fixtures` 是自建测试字体，没有打包用户安装的商业字体。通常测试不需 fontTools；只有重新生成 fixture 需要 fontTools >= 4.60.2。本机旧 `ttx` 的 fontTools 3.0 不适合生成这些 FV 测试。
 - 验证只用命令行，**没有启动/操作 GUI**。用户自行验证 TextKit 实际布局、竖排、点击、选择保留和 Popover；不要把数据测试说成视觉验收。
 - 构建：`bash build.sh --zip`。沙盒内 iconutil 会把尺寸正确的 iconset 报成 Invalid Iconset，沙盒外同一命令成功；这不是图示文件损坏。构建输出不安装、不自动启动 app。
-- 依赖：HarfBuzz 14.5.0 原版源码静态编入，CoreText shaper 禁用，AAT 启用。`UPSTREAM.md` 记录来源与 SHA-256；app 包含主许可证与 USE 许可证。
+- 当前依赖：C++17/libc++ 与系统 ICU；HarfBuzz 的源码、链接、许可证复制已在自写分支移除。之前的 HarfBuzz 版本只保存在 `experiment/gsub-aat` 历史。
 
 CLI 复核：
 
@@ -338,7 +338,7 @@ bash Tests/compare-old.sh
 
 补充验证注意事项：
 
-- HarfBuzz message callback 用于记录实际 lookup/chain 输出；依赖锁定版本的消息格式。升级 HarfBuzz 必须运行完整格式矩阵与真实字体比较，不能只看构建成功。
+- 当前变化记录由自己的 GSUB/AAT 执行器直接生成，不依赖外部库的调试消息或字符串格式。旧 callback 说明只适用于上一分支。
 - 本机 macOS 的 NSGlyphInfo.glyphID 对有效 override 也回传 0；检查实际 CTLine GID 输出可确认 override 正确，不能据该属性误判失败。
 - File Provider 会在工作目录给 `.app` 根目录重新加 FinderInfo/fpfs 属性，甚至与签名竞争。构建现在在 mktemp 的独立暂存目录生成图示、组装、签名、严格校验并压缩，再复制 app 到 dist；ZIP 明确不带扩展属性。用户最新要求：不要增加 ZIP 解压后的签名校验，脚本不做这一步。直接使用 ZIP 更方便；若校验 dist 内 app，需显式移除被重新注入的两个根属性。
 
@@ -353,3 +353,27 @@ bash Tests/compare-old.sh
 - CLI 构建脚本同步 LTO 与剔除，避免验证路径和 release 链接策略不同；保留 linker map 供审阅。大小原始记录在 `.build/binary-size-before.json`、`binary-size-code-stripping.json`、`binary-size-after.json`。没有做 GUI 或 ZIP 解压校验。
 
 - 签名封装后的 app 主程式为 **1,950,048 bytes**；上述 1,899,136 指签名前的 universal 链接产物，二者不要混称。本轮 331 引擎/资源、27 模型、7 显示数据断言均通过；两架构构建无警告，未操作 GUI，也未解压 ZIP。
+
+
+### 自写替换执行器分支（2026-10-25，最新）
+
+- 用户明确授权新建本地 branch 并完全自写，强调结构、逻辑和简洁。当前分支 `experiment/self-written-substitution`，基于 `73a999d`；`experiment/gsub-aat` 保留 HarfBuzz 方案，未推送任何分支。
+- 生产代码没有 HarfBuzz、CTLine/CTRun 扫描或外部 shaper fallback。核心按二进制读取、表程序、buffer/来源、GSUB、AAT、定位、Unicode 适配分层。完整范围与限制见 GLOSSARY 当前架构，尤其不要声称已经等价实现所有专用文字 shaper。
+- 所有 C++/Objective-C++ 模块统一由 `compile-font-layout.sh` 编译，release 继续 `-Oz`、LTO 与 dead stripping；GUI `.m` 文件仍由原构建路径编译。不要遗漏 `.cpp/.mm` 或把它们当 Objective-C 编译。
+- 不把 `.build/harfbuzz-reference-cli` 当产品依赖；它只是改动前留下的独立比较工具。可重复的新增测试只需系统工具和已提交的自制字体。
+- 测试 oracle 有两个陷阱：CoreText 的原始 CTRun 可能保留删除标记 GID 65535；也可能回退到另一字体。参考 CLI 现在输出 `fallback` 标记，跨字体 GID 不参与同资源比较。原生 advance 在 VF 上有小量固定精度误差，设计单位测试允许 0.02 的误差。
+- mort insertion fixture 已依据 Apple 规范修正：旧格式使用 state table 起点的字节偏移和 0 sentinel；morx 使用插入数组索引和 FFFF sentinel。子表四字节对齐，feature records 带终止项。不能为迁就旧测试或另一引擎而恢复错误格式。
+- CLI 新增：`python3 Tests/check-font-layout.py`、`.build/font-layout-tests Tests/Fixtures`；原 331/27/7 检查仍保留。sanitizer 同时覆盖全部自己的 core、Objective-C++ 适配和模型路径。`check-localizations.sh` 会创建 NSApplication，依本次约定没有运行；只跑 `check-catalogs.py`。
+- 用户原目录与 Old 都没有写入。GUI、实际 TextKit 视觉与操作验收留给用户；不启动、不安装、不做 Computer Use，也不解压 ZIP 校验。
+
+
+### 未编码 GID 与邻字（2026-10-25，最新用户补充）
+
+- 用户明确：新引擎找到而旧 CoreText 找不到的结果应全部展示，旧版可达性不构成产品过滤条件。已经移除列表中“与选择范围相交就排除连字”的旧过滤。
+- `GAGlyphSelection.h/.m` 承载共享的选择数据和范围快照；`GATextScanSubitem` 记录段内相对 selections。改变选择 GID 而文字不变，也会重新排队相应段落；缓存和旧后台工作都以文字 + 相对范围 + 全部 GID 识别，不能只按文字匹配。
+- `GADisplayGroups.h/.m` 从主窗口提取列表数据构建，生产 UI 和 CLI 模型测试使用同一个入口。不创建 NSApplication 或窗口即可检验最终行数据。跨种子的组合列与种子自身的上下文变体都保留。
+- 种子多 GID 中只有部分参与连字时，来源重叠必须合成原子 cluster；候选保留其余 GID，激活时替换完整来源。相同文字中的另一处未选择字符不能误用该 GID。
+- 自制 `unencoded-neighbor.ttf`：输入 `ab`，`a` 的 aalt 选项为没有 cmap 编码的 `a.alt2`（GID 19）；选择它后与 `b` 形成 `f_i`（GID 22）。`ca` 可检查选择字形自身的上下文结果。morx/mort 也有对应的两条 chain 测试。
+- CLI 例：`.build/gsub-cli --font Tests/Fixtures/unencoded-neighbor.ttf --text ab --seed 0:1=19 --model`。`--seed start:length=gids` 的范围为 UTF-16，支持多项；省略 `--model` 查看引擎原始发现。带种子的 `--model` 会输出生产列表构建器的最终数据。
+- 合并时加入上述两个模块，并合并 worker 的 `updateText:selections:` / `rawScanContent:selections:` 调用。原 UI 持久选择类型从旧文件移到了共享文件；不要重复保留 class 或 attribute 常量定义。
+- 测试矩阵现含 331 个引擎/资源断言、373 个额外布局断言、46 个模型断言和 7 个显示数据断言；额外有纯 C++ 变异执行及 sanitizer。最终构建/体积记录看 PRODUCT-LOG 的最新段落。

@@ -37,8 +37,8 @@ for ARCH in $ARCHS; do
   ARCH_BIN="$BUILD/bin/GlyphAtlas-$ARCH"
   MODULE_CACHE="$BUILD/modulecache-clang-$ARCH"
   mkdir -p "$MODULE_CACHE"
-  HB_OBJECT="$BUILD/bin/harfbuzz-$ARCH.o"
-  bash "$ROOT/scripts/compile-harfbuzz.sh" "$ARCH" "$HB_OBJECT"
+  LAYOUT="$BUILD/font-layout-$ARCH"
+  bash "$ROOT/scripts/compile-font-layout.sh" "$ARCH" "$LAYOUT"
   echo "→ Compiling Glyph Atlas ($ARCH)"
   clang \
     -fobjc-arc -fmodules \
@@ -53,7 +53,7 @@ for ARCH in $ARCHS; do
     -framework CoreText \
     -framework UniformTypeIdentifiers \
     -licucore \
-    "$ROOT/Sources"/*.m "$HB_OBJECT" -lc++ \
+    "$ROOT/Sources"/*.m "$LAYOUT"/*.o -lc++ \
     -o "$ARCH_BIN"
   ARCH_BINARIES+=("$ARCH_BIN")
 done
@@ -66,8 +66,6 @@ rm -rf "$APP"
 mkdir -p "$BUNDLE/MacOS" "$BUNDLE/Resources"
 cp "$BUILD/bin/GlyphAtlas" "$BUNDLE/MacOS/GlyphAtlas"
 cp "$ROOT/Resources/Info.plist" "$BUNDLE/Info.plist"
-cp "$ROOT/Vendor/harfbuzz/COPYING" "$BUNDLE/Resources/HarfBuzz-LICENSE.txt"
-cp "$ROOT/Vendor/harfbuzz/src/ms-use/COPYING" "$BUNDLE/Resources/HarfBuzz-USE-LICENSE.txt"
 for LOCALIZATION in "$ROOT"/Resources/*.lproj; do
   cp -R "$LOCALIZATION" "$BUNDLE/Resources/"
 done

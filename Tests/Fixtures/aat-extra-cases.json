@@ -1,0 +1,398 @@
+[
+  {
+    "font": "morx-verb0.ttf",
+    "text": "abcde",
+    "want": [
+      2,
+      3,
+      4,
+      5,
+      6
+    ]
+  },
+  {
+    "font": "morx-verb1.ttf",
+    "text": "abcde",
+    "want": [
+      3,
+      4,
+      5,
+      6,
+      2
+    ]
+  },
+  {
+    "font": "morx-verb2.ttf",
+    "text": "abcde",
+    "want": [
+      6,
+      2,
+      3,
+      4,
+      5
+    ]
+  },
+  {
+    "font": "morx-verb3.ttf",
+    "text": "abcde",
+    "want": [
+      6,
+      3,
+      4,
+      5,
+      2
+    ]
+  },
+  {
+    "font": "morx-verb4.ttf",
+    "text": "abcde",
+    "want": [
+      4,
+      5,
+      6,
+      2,
+      3
+    ]
+  },
+  {
+    "font": "morx-verb5.ttf",
+    "text": "abcde",
+    "want": [
+      4,
+      5,
+      6,
+      3,
+      2
+    ]
+  },
+  {
+    "font": "morx-verb6.ttf",
+    "text": "abcde",
+    "want": [
+      5,
+      6,
+      2,
+      3,
+      4
+    ]
+  },
+  {
+    "font": "morx-verb7.ttf",
+    "text": "abcde",
+    "want": [
+      6,
+      5,
+      2,
+      3,
+      4
+    ]
+  },
+  {
+    "font": "morx-verb8.ttf",
+    "text": "abcde",
+    "want": [
+      5,
+      6,
+      3,
+      4,
+      2
+    ]
+  },
+  {
+    "font": "morx-verb9.ttf",
+    "text": "abcde",
+    "want": [
+      6,
+      5,
+      3,
+      4,
+      2
+    ]
+  },
+  {
+    "font": "morx-verb10.ttf",
+    "text": "abcde",
+    "want": [
+      6,
+      4,
+      5,
+      2,
+      3
+    ]
+  },
+  {
+    "font": "morx-verb11.ttf",
+    "text": "abcde",
+    "want": [
+      6,
+      4,
+      5,
+      3,
+      2
+    ]
+  },
+  {
+    "font": "morx-verb12.ttf",
+    "text": "abcde",
+    "want": [
+      5,
+      6,
+      4,
+      2,
+      3
+    ]
+  },
+  {
+    "font": "morx-verb13.ttf",
+    "text": "abcde",
+    "want": [
+      5,
+      6,
+      4,
+      3,
+      2
+    ]
+  },
+  {
+    "font": "morx-verb14.ttf",
+    "text": "abcde",
+    "want": [
+      6,
+      5,
+      4,
+      2,
+      3
+    ]
+  },
+  {
+    "font": "morx-verb15.ttf",
+    "text": "abcde",
+    "want": [
+      6,
+      5,
+      4,
+      3,
+      2
+    ]
+  },
+  {
+    "font": "morx-eot-ligature.ttf",
+    "text": "fi",
+    "want": [
+      22
+    ]
+  },
+  {
+    "font": "mort-verb0.ttf",
+    "text": "abcde",
+    "want": [
+      2,
+      3,
+      4,
+      5,
+      6
+    ]
+  },
+  {
+    "font": "mort-verb1.ttf",
+    "text": "abcde",
+    "want": [
+      3,
+      4,
+      5,
+      6,
+      2
+    ]
+  },
+  {
+    "font": "mort-verb2.ttf",
+    "text": "abcde",
+    "want": [
+      6,
+      2,
+      3,
+      4,
+      5
+    ]
+  },
+  {
+    "font": "mort-verb3.ttf",
+    "text": "abcde",
+    "want": [
+      6,
+      3,
+      4,
+      5,
+      2
+    ]
+  },
+  {
+    "font": "mort-verb4.ttf",
+    "text": "abcde",
+    "want": [
+      4,
+      5,
+      6,
+      2,
+      3
+    ]
+  },
+  {
+    "font": "mort-verb5.ttf",
+    "text": "abcde",
+    "want": [
+      4,
+      5,
+      6,
+      3,
+      2
+    ]
+  },
+  {
+    "font": "mort-verb6.ttf",
+    "text": "abcde",
+    "want": [
+      5,
+      6,
+      2,
+      3,
+      4
+    ]
+  },
+  {
+    "font": "mort-verb7.ttf",
+    "text": "abcde",
+    "want": [
+      6,
+      5,
+      2,
+      3,
+      4
+    ]
+  },
+  {
+    "font": "mort-verb8.ttf",
+    "text": "abcde",
+    "want": [
+      5,
+      6,
+      3,
+      4,
+      2
+    ]
+  },
+  {
+    "font": "mort-verb9.ttf",
+    "text": "abcde",
+    "want": [
+      6,
+      5,
+      3,
+      4,
+      2
+    ]
+  },
+  {
+    "font": "mort-verb10.ttf",
+    "text": "abcde",
+    "want": [
+      6,
+      4,
+      5,
+      2,
+      3
+    ]
+  },
+  {
+    "font": "mort-verb11.ttf",
+    "text": "abcde",
+    "want": [
+      6,
+      4,
+      5,
+      3,
+      2
+    ]
+  },
+  {
+    "font": "mort-verb12.ttf",
+    "text": "abcde",
+    "want": [
+      5,
+      6,
+      4,
+      2,
+      3
+    ]
+  },
+  {
+    "font": "mort-verb13.ttf",
+    "text": "abcde",
+    "want": [
+      5,
+      6,
+      4,
+      3,
+      2
+    ]
+  },
+  {
+    "font": "mort-verb14.ttf",
+    "text": "abcde",
+    "want": [
+      6,
+      5,
+      4,
+      2,
+      3
+    ]
+  },
+  {
+    "font": "mort-verb15.ttf",
+    "text": "abcde",
+    "want": [
+      6,
+      5,
+      4,
+      3,
+      2
+    ]
+  },
+  {
+    "font": "mort-eot-ligature.ttf",
+    "text": "fi",
+    "want": [
+      22
+    ]
+  },
+  {
+    "font": "morx-eot-context.ttf",
+    "text": "a",
+    "want": [
+      18
+    ]
+  },
+  {
+    "font": "morx-eot-insertion.ttf",
+    "text": "a",
+    "want": [
+      2,
+      18
+    ]
+  },
+  {
+    "font": "mort-eot-context.ttf",
+    "text": "a",
+    "want": [
+      18
+    ]
+  },
+  {
+    "font": "mort-eot-insertion.ttf",
+    "text": "a",
+    "want": [
+      2,
+      18
+    ]
+  }
+]

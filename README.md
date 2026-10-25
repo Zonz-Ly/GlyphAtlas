@@ -32,7 +32,7 @@ A native macOS font and alternate-glyph inspector. Type text to see every altern
 
 ## Limitations
 
-- This experimental copy discovers GSUB types 1–8 and AAT `morx`/`mort` substitutions through statically linked HarfBuzz. CoreText supplies font tables and drawing; TextKit still lays out the multi-character view.
+- This experimental copy discovers GSUB types 1–8 and AAT `morx`/`mort` substitutions with its own table interpreters. CoreText supplies font tables, native glyph metrics and drawing; system ICU supplies Unicode properties and bidi levels. TextKit still lays out the multi-character view. The interpreter is not a full script shaper; see [the implementation boundaries](README/GLOSSARY.md#明确的能力边界).
 - Refreshing after entering long text can be a little slow, because of how alternates are discovered.
 - Discovery covers default execution plus individual feature/selector values and all FeatureVariations records. Arbitrary combinations of optional settings and private shaping systems are not exhaustively enumerated.
 - Glyph names depend on the font's glyph-name data (`post` table or CFF charset); when CoreText returns no usable name, the app shows `GID n`.
@@ -89,7 +89,7 @@ The build assembles icons and the app in a temporary directory, removes metadata
 
 ## 限制
 
-- 此實驗副本使用靜態編入的 HarfBuzz 發現 GSUB 1–8 類及 AAT `morx`／`mort` 替換。CoreText 提供字體表與繪製，多字視圖仍由 TextKit 排版。
+- 此實驗副本使用自寫的字體表執行器發現 GSUB 1–8 類及 AAT `morx`／`mort` 替換。CoreText 提供字體表、原生字形度量與繪製，系統 ICU 提供 Unicode 屬性及雙向層級；多字視圖仍由 TextKit 排版。執行器尚未涵蓋完整的專用文字整形流程，見[實作邊界](README/GLOSSARY.md#明确的能力边界)。
 - 由於替換字發現原理限制，輸入長文本後刷新可能會有點卡。
 - 發現範圍包括預設執行、各個特性／選擇器值，以及所有 FeatureVariations 記錄；不窮舉可選設定的任意組合或私有排版系統。
 - 字形名稱取決於字體的 glyph name 數據（post 表或 CFF charset）；CoreText 沒有可用名稱時顯示 GID。

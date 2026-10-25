@@ -368,7 +368,7 @@ At the user's request, the Variable button returns to its original borderless na
 This change is built and packaged without tests or UI verification, as requested.
 
 
-## 2026-10-25 — Isolated GSUB and AAT discovery replacement
+## 2026-10-25 — Isolated GSUB and AAT discovery replacement (historical HarfBuzz branch)
 
 The experimental copy replaces CoreText feature-font scanning with statically linked HarfBuzz 14.5.0. The resource index reads GSUB lookup widths, nested lookup references, GDEF filtering data, FeatureVariations replacements and AAT chain feature masks. Execution covers all GSUB lookup types and morx/mort state machines; Unicode preparation, clusters and positioning come from the same engine. CoreText remains the font-table and drawing API; native TextKit remains responsible for the multi-character layout.
 
@@ -397,3 +397,24 @@ Keep HarfBuzz in its upstream single-translation-unit amalgamation and compile i
 The use of HarfBuzz is an implementation choice, not a requirement for Glyph Atlas. The old parser can be extended into a dedicated GSUB/AAT interpreter; doing so transfers lookup execution, state-machine handling, source tracking, malformed-table handling and compatibility maintenance to this project. Our own discovery policy, range/index/cache logic and FeatureVariations union remain separate from HarfBuzz's shaping execution.
 
 The signed executable in the delivered app is 1,950,048 bytes; this includes the final signing data. All 331 engine/resource, 27 model and 7 display-data assertions passed with the optimized CLI build. Both release architectures compiled without warnings; no GUI or ZIP extraction checks were performed for this change.
+
+
+## 2026-10-25 — Self-written GSUB/AAT branch and literal neighbor queries
+
+Work is isolated on local `experiment/self-written-substitution`, based on `73a999d`. The preceding HarfBuzz implementation remains on `experiment/gsub-aat`. This branch removes its vendored source, compilation and license-copy path. No changes were pushed or copied into the user's active project or Old.
+
+The new C++17 core separates checked immutable byte views, cmap/GDEF, OpenType programs, GSUB execution, AAT execution, glyph/source tracking, variation data and positioning. Objective-C++ adapts selected-resource table bytes and native CoreText advances. System ICU supplies Unicode properties and bidi levels. There is no production CTLine/CTRun discovery or external shaping engine. All code participates in size optimization, LTO and dead stripping.
+
+GSUB lookup types 1–8, all contextual formats and nested length-changing actions execute in our interpreter. AAT supports both morx/mort and all legal substitution types, including all 16 rearrangement verbs and end-of-text mark/ligature/insertion actions. GSUB discoveries keep the union of all FeatureVariations branches; axis changes rebind native metrics and positioning without rescanning or changing literal selections.
+
+The user's additional requirement is implemented through the full data path: a selected unencoded GID participates in paragraph discovery with its neighbors. Text, relative source ranges and complete selected GID sequences define query/cache identity. A selection change with unchanged text schedules the affected paragraph; stale work from an earlier GID cannot populate the new query. When one part of a multi-GID seed ligates with a neighbor, overlapping sources form one atomic candidate and preserve the surviving GIDs. No Unicode placeholder or temporary cmap is needed.
+
+`GADisplayGroups` now builds the same row data for the UI and CLI tests, independently of windows. The old exclusion of any ligature intersecting a selection has been removed. New combinations crossing a selected source and contextual changes on the selected glyph itself appear in the list. Only identical output/source identities are deduplicated; CoreText's old reachability is not a display filter. Optional feature settings remain individually enumerated; this is not an exhaustive Cartesian product of every glyph alternative and feature combination.
+
+Validation: 331 engine/resource assertions, 373 additional layout assertions, 46 model assertions and 7 display-data assertions passed. Pure C++ checks include 31,756 assertions over 24,731 truncated/mutated table executions. AddressSanitizer and UndefinedBehaviorSanitizer passed 103 self-generated fixture fonts and the literal-neighbor row path. The requested Hiragino Sans, LucidaSubmono, Zapfino and actual Futura FeatureVariations samples pass. An additional 147 same-resource real-font strings agree with CoreText; one Lucida case that invokes another font's fallback is excluded from that comparison. A separate earlier 148-string comparison with the saved HarfBuzz executable had no GID differences. The original CoreText scanner comparison loses no options on the recorded samples; it is a regression oracle, not an output filter.
+
+Performance findings: reverse alternate-family lookup is indexed once per resource rather than scanning all alternate sets on every query. The Hiragino 60-character example improved from about 2.3 seconds in the initial own-engine draft to about 107 ms. Query identities are immutable and cached per subitem, avoiding repeated allocation during queue completion. Current CLI model examples: 1,000 distinct plain characters about 74 ms, 190 Lucida characters about 80 ms, and 105 Zapfino characters about 218 ms. These are font-dependent model timings, not GUI end-to-end measurements.
+
+Universal arm64/x86_64 builds complete without warnings, targeting macOS 12.0. Final unsigned universal link output is 1,027,776 bytes, signed app executable 1,078,688 bytes, and ZIP 706,289 bytes. The previous optimized HarfBuzz branch measured 1,899,136 / 1,950,048 / 1,173,542 bytes respectively. Both linker maps and exported symbols contain no HarfBuzz. Old's 81 baseline files remain byte-for-byte unchanged.
+
+Runtime tests ran on arm64; x86_64 was compiled only. No GUI, NSApplication smoke test, app launch, installation or ZIP extraction verification was performed. GUI acceptance remains with the user. Full specialized script shaping and advanced positioning formats have explicit limits in GLOSSARY; supported lookup types are not a claim of complete HarfBuzz behavior equivalence.

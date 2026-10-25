@@ -1,4 +1,5 @@
 #import <Foundation/Foundation.h>
+#import "GAGlyphSelection.h"
 #import <CoreText/CoreText.h>
 #import <CoreGraphics/CoreGraphics.h>
 #import <AppKit/AppKit.h>
@@ -8,31 +9,10 @@ NS_ASSUME_NONNULL_BEGIN
 /// The point size at which variants are shaped.
 FOUNDATION_EXPORT const CGFloat GAFontShapingSize;
 
-/// Attribute stored on a selected, unencoded replacement in the input text.
-/// The value is a GAGlyphSelection. A run may cover one character or, for a
-/// ligature, all of its source characters.
-FOUNDATION_EXPORT NSString * const GAGlyphSelectionAttributeName;
-
 /// A small ARC-friendly owner for a CoreText font.
 @interface GAFontBox : NSObject
 @property (nonatomic, readonly) CTFontRef font;
 - (instancetype)initWithFont:(CTFontRef)font;
-@end
-
-/// The persistent metadata for one selected replacement run. It deliberately
-/// stores no text offsets: the attributed-string range is the position. The
-/// exact glyph IDs are enough because the font does not change for this window.
-@interface GAGlyphSelection : NSObject
-@property (nonatomic, copy, readonly) NSString *sourceText;
-@property (nonatomic, copy, readonly) NSArray<NSNumber *> *glyphIDs;
-/// Feature labels for the glyph list, not a shaping recipe.
-@property (nonatomic, copy, readonly) NSArray<NSString *> *featureSources;
-@property (nonatomic, readonly, getter=isLigature) BOOL ligature;
-- (instancetype)initWithSourceText:(NSString *)sourceText
-                           glyphIDs:(NSArray<NSNumber *> *)glyphIDs
-                     featureSources:(NSArray<NSString *> *)featureSources
-                           ligature:(BOOL)ligature NS_DESIGNATED_INITIALIZER;
-- (instancetype)init NS_UNAVAILABLE;
 @end
 
 /// Minimal glyph inventory used by the all-glyphs grid.
@@ -53,6 +33,8 @@ FOUNDATION_EXPORT NSString * const GAGlyphSelectionAttributeName;
 @property (nonatomic, copy) NSArray<NSNumber *> *unicodeScalars;
 @property (nonatomic, copy) NSString *glyphName;
 @property (nonatomic, getter=isLigature) BOOL ligature;
+/// Produced by a query containing explicit glyph selections.
+@property(nonatomic) BOOL fromGlyphSeed;
 @property (nonatomic) NSRange sourceTextRange;
 @property (nonatomic, readonly) NSString *glyphKey;
 @end
@@ -83,8 +65,8 @@ typedef struct {
 FOUNDATION_EXPORT NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text);
 
 /// A range-independent scan result for one input context. The cache stores
-/// these, keyed by content; a range-bound GAGlyphVariant is created only when
-/// the result is applied to the current text.
+/// these, keyed by text and explicit glyph selections; a range-bound GAGlyphVariant is created only
+/// when the result is applied to the current text.
 @interface GAScanCandidate : NSObject
 @property (nonatomic, copy) NSArray<NSNumber *> *glyphIDs;
 @property (nonatomic, copy) NSArray<NSValue *> *positions;
@@ -92,6 +74,8 @@ FOUNDATION_EXPORT NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text);
 @property (nonatomic, copy) NSArray<NSString *> *sources;
 @property (nonatomic, getter=isBase) BOOL base;
 @property (nonatomic, getter=isLigature) BOOL ligature;
+/// Produced by a query containing explicit glyph selections.
+@property(nonatomic) BOOL fromGlyphSeed;
 /// UTF-16 range of the cluster relative to the scanned content.
 @property (nonatomic) NSRange sourceRange;
 /// Composed-character index of the target group relative to the content.
@@ -124,6 +108,8 @@ FOUNDATION_EXPORT NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text);
 /// Scans one content (a composed character or a multi-character context) and
 /// returns range-independent candidates. Safe to cache by content.
 - (GARawScanResult *)rawScanContent:(NSString *)content;
+- (GARawScanResult *)rawScanContent:(NSString *)content
+                         selections:(NSArray<GAGlyphSelectionRun *> *)selections;
 
 /// Applies a raw scan result to the current groups. Each candidate targets the
 /// group at startGroupIndex + targetOffset; ligature source ranges are resolved

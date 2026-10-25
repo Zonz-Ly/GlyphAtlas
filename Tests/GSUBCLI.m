@@ -1,4 +1,5 @@
 #import "GAFontEngine.h"
+#import "GADisplayGroups.h"
 #import "GAFontResource.h"
 #import "GASubstitutionEngine.h"
 #import "GATextScanModel.h"
@@ -21,6 +22,7 @@ static NSArray *Names(CTFontRef font, NSArray<NSNumber *> *glyphs) {
 int main(int argc, const char **argv) {
     @autoreleasepool {
         NSMutableDictionary *options = [NSMutableDictionary dictionary];
+        NSMutableArray *rawSeeds = [NSMutableArray array];
         NSMutableDictionary *features = [NSMutableDictionary dictionary],
                             *coordinates = [NSMutableDictionary dictionary];
         for (int i = 1; i < argc; i++) {
@@ -34,7 +36,9 @@ int main(int argc, const char **argv) {
                 return 2;
             }
             NSString *value = @(argv[++i]);
-            if ([key isEqual:@"--feature"]) {
+            if ([key isEqual:@"--seed"]) {
+                [rawSeeds addObject:value];
+            } else if ([key isEqual:@"--feature"]) {
                 NSArray *p = [value componentsSeparatedByString:@"="];
                 features[p[0]] = @(p.count > 1 ? [p[1] intValue] : 1);
             } else if ([key isEqual:@"--axis"]) {
@@ -76,8 +80,34 @@ int main(int argc, const char **argv) {
                                                                       coordinates:coords
                                                                           sharing:nil];
         NSString *text = options[@"--text"] ?: @"";
+        NSMutableArray *selections = [NSMutableArray array];
+        for (NSString *seed in rawSeeds) {
+            NSArray *parts = [seed componentsSeparatedByString:@"="];
+            if (parts.count != 2)
+                return 2;
+            NSArray *rangeParts = [parts[0] componentsSeparatedByString:@":"];
+            if (rangeParts.count != 2)
+                return 2;
+            NSRange range = NSMakeRange([rangeParts[0] integerValue], [rangeParts[1] integerValue]);
+            if (range.location > text.length || range.length > text.length - range.location)
+                return 2;
+            NSMutableArray *gids = [NSMutableArray array];
+            for (NSString *gid in [parts[1] componentsSeparatedByString:@","])
+                [gids addObject:@(gid.intValue)];
+            GAGlyphSelectionRun *run = [[GAGlyphSelectionRun alloc] init];
+            run.range = range;
+            run.selection =
+                [[GAGlyphSelection alloc] initWithSourceText:[text substringWithRange:range]
+                                                    glyphIDs:gids
+                                              featureSources:@[]
+                                                    ligature:NO];
+            [selections addObject:run];
+        }
         @try {
-            if (options[@"--positions"]) {
+            if (options[@"--vertical"]) {
+                NSNumber *glyph = [engine verticalGlyph:[options[@"--vertical"] intValue]];
+                Emit(@{@"glyph" : glyph ?: NSNull.null});
+            } else if (options[@"--positions"]) {
                 NSMutableArray *g = [NSMutableArray array];
                 for (NSString *part in [options[@"--positions"] componentsSeparatedByString:@","])
                     [g addObject:@(part.intValue)];
@@ -118,8 +148,15 @@ int main(int argc, const char **argv) {
                                 (__bridge NSString *)kCTFontAttributeName : (__bridge id)configured
                             }]);
                 NSMutableArray *glyphs = [NSMutableArray array], *clusters = [NSMutableArray array];
+                BOOL fallback = NO;
+                NSString *selectedName = CFBridgingRelease(CTFontCopyPostScriptName(configured));
                 for (id obj in (__bridge NSArray *)CTLineGetGlyphRuns(line)) {
                     CTRunRef run = (__bridge CTRunRef)obj;
+                    CTFontRef runFont = (CTFontRef)CFDictionaryGetValue(CTRunGetAttributes(run),
+                                                                        kCTFontAttributeName);
+                    NSString *runName =
+                        runFont ? CFBridgingRelease(CTFontCopyPostScriptName(runFont)) : nil;
+                    fallback |= ![selectedName isEqual:runName];
                     CFIndex n = CTRunGetGlyphCount(run);
                     CGGlyph *g = calloc(n, sizeof(*g));
                     CFIndex *s = calloc(n, sizeof(*s));
@@ -135,7 +172,8 @@ int main(int argc, const char **argv) {
                 Emit(@{
                     @"glyphs" : glyphs,
                     @"names" : Names(configured, glyphs),
-                    @"clusters" : clusters
+                    @"clusters" : clusters,
+                    @"fallback" : @(fallback)
                 });
                 CFRelease(line);
                 CFRelease(configured);
@@ -154,15 +192,19 @@ int main(int argc, const char **argv) {
                                                            URL:[NSURL fileURLWithPath:path]];
                 GATextScanModel *model = [[GATextScanModel alloc] initWithFontDocument:document];
                 CFAbsoluteTime begin = CFAbsoluteTimeGetCurrent();
-                [model updateText:text];
+                [model updateText:text selections:selections];
                 NSUInteger tasks = 0;
                 GATextScanSubitem *s;
                 while ((s = [model startNextSubitem])) {
-                    [model completeSubitem:s result:[document rawScanContent:s.content]];
+                    [model completeSubitem:s
+                                    result:[document rawScanContent:s.content
+                                                         selections:s.selections ?: @[]]];
                     tasks++;
                 }
                 NSMutableArray *groups = [NSMutableArray array];
-                for (GACharacterGroup *group in model.groups) {
+                for (GACharacterGroup *group in selections.count
+                         ? GABuildDisplayGroups(model.groups, text, selections, document)
+                         : model.groups) {
                     NSMutableArray *variants = [NSMutableArray array];
                     for (GAGlyphVariant *v in group.variants)
                         [variants addObject:@{
@@ -187,7 +229,7 @@ int main(int argc, const char **argv) {
                 });
             } else {
                 CFAbsoluteTime begin = CFAbsoluteTimeGetCurrent();
-                NSArray *matches = [engine discoverText:text];
+                NSArray *matches = [engine discoverText:text selections:selections];
                 NSMutableArray *output = [NSMutableArray array];
                 for (GASubstitutionMatch *m in matches)
                     [output addObject:@{
@@ -200,7 +242,8 @@ int main(int argc, const char **argv) {
                 Emit(@{
                     @"matches" : output,
                     @"milliseconds" : @((CFAbsoluteTimeGetCurrent() - begin) * 1000),
-                    @"features" : engine.featureSpecifications
+                    @"features" : engine.featureSpecifications,
+                    @"diagnostics" : engine.diagnostics
                 });
             }
         } @catch (NSException *exception) {

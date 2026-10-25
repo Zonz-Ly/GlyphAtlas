@@ -1,6 +1,22 @@
 #import "GATextScanModel.h"
 
-@implementation GATextScanSubitem
+@implementation GATextScanSubitem {
+    GAGlyphQueryIdentity *_queryIdentity;
+}
+@synthesize content = _content, selections = _selections;
+- (void)setContent:(NSString *)content {
+    _content = [content copy];
+    _queryIdentity = nil;
+}
+- (void)setSelections:(NSArray<GAGlyphSelectionRun *> *)selections {
+    _selections = [selections copy];
+    _queryIdentity = nil;
+}
+- (GAGlyphQueryIdentity *)cacheKey {
+    if (!_queryIdentity)
+        _queryIdentity = GAGlyphQueryKey(self.content, self.selections ?: @[]);
+    return _queryIdentity;
+}
 @end
 
 @implementation GATextScanItem
@@ -27,7 +43,8 @@
     GAFontDocument *_fontDocument;
     NSMutableArray<GACharacterGroup *> *_groups;
     NSMutableArray<GATextScanGroup *> *_scanGroups;
-    NSMutableDictionary<NSString *, GARawScanResult *> *_cache;
+    NSMutableDictionary<GAGlyphQueryIdentity *, GARawScanResult *> *_cache;
+    NSArray<GAGlyphSelectionRun *> *_selections;
     NSMutableDictionary<NSString *, NSMutableArray<NSNumber *> *> *_singleGroupIndicesByContent;
 }
 - (BOOL)hasPendingSubitems;
@@ -40,6 +57,7 @@
     if (self) {
         _fontDocument = fontDocument;
         _text = @"";
+        _selections = @[];
         _groups = [NSMutableArray array];
         _scanGroups = [NSMutableArray array];
         _cache = [NSMutableDictionary dictionary];
@@ -48,10 +66,15 @@
 }
 
 - (GARawScanResult *)cachedResultForContent:(NSString *)content {
-    GARawScanResult *raw = _cache[content];
+    return [self cachedResultForContent:content selections:@[]];
+}
+- (GARawScanResult *)cachedResultForContent:(NSString *)content
+                                 selections:(NSArray<GAGlyphSelectionRun *> *)selections {
+    GAGlyphQueryIdentity *key = GAGlyphQueryKey(content, selections);
+    GARawScanResult *raw = _cache[key];
     if (raw == nil) return nil;
     GARawScanResult *rebound = [_fontDocument rebindResult:raw content:content];
-    _cache[content] = rebound;
+    _cache[key] = rebound;
     return rebound;
 }
 
@@ -99,14 +122,21 @@
 #pragma mark - Text / desired set
 
 - (void)updateText:(NSString *)text {
+    [self updateText:text selections:@[]];
+}
+- (void)updateText:(NSString *)text selections:(NSArray<GAGlyphSelectionRun *> *)selections {
+    NSArray *next = GAGlyphSelectionsInRange(selections, NSMakeRange(0, text.length));
+    if ([GAGlyphQueryKey(_text, _selections) isEqual:GAGlyphQueryKey(text, next)])
+        return;
+    _selections = next;
     NSString *newText = [text copy];
     _text = newText;
     [self rebuildGroups];
     NSArray<GATextScanSubitem *> *desired = [self desiredSubitems];
 
-    // Old unfinished work, keyed by content. A still-valid subitem keeps its
+    // Old unfinished work, keyed by text and literal glyph inputs. A still-valid subitem keeps its
     // old item and is rebound to the new range/start below.
-    NSMutableDictionary<NSString *, NSMutableArray<GATextScanSubitem *> *> *oldByContent =
+    NSMutableDictionary<GAGlyphQueryIdentity *, NSMutableArray<GATextScanSubitem *> *> *oldByQuery =
         [NSMutableDictionary dictionary];
     for (GATextScanGroup *group in _scanGroups) {
         for (GATextScanItem *item in group.items) {
@@ -114,10 +144,10 @@
                 if (subitem.state == GATextScanSubitemStateCompleted) {
                     continue;
                 }
-                NSMutableArray<GATextScanSubitem *> *list = oldByContent[subitem.content];
+                NSMutableArray<GATextScanSubitem *> *list = oldByQuery[subitem.cacheKey];
                 if (list == nil) {
                     list = [NSMutableArray array];
-                    oldByContent[subitem.content] = list;
+                    oldByQuery[subitem.cacheKey] = list;
                 }
                 [list addObject:subitem];
             }
@@ -140,7 +170,7 @@
     NSMutableDictionary<NSNumber *, GATextScanItem *> *missingItemByLength =
         [NSMutableDictionary dictionary];
     for (__strong GATextScanSubitem *desiredSubitem in desired) {
-        NSMutableArray<GATextScanSubitem *> *list = oldByContent[desiredSubitem.content];
+        NSMutableArray<GATextScanSubitem *> *list = oldByQuery[desiredSubitem.cacheKey];
         GATextScanSubitem *old = list.firstObject;
         if (old != nil) {
             [list removeObjectAtIndex:0];
@@ -252,6 +282,7 @@
             GATextScanSubitem *subitem = [[GATextScanSubitem alloc] init];
             subitem.range = NSMakeRange(first.location, NSMaxRange(last) - first.location);
             subitem.content = [_text substringWithRange:subitem.range];
+            subitem.selections = GAGlyphSelectionsInRange(_selections, subitem.range);
             subitem.startGroup = start;
             subitem.length = end - start;
             [result addObject:subitem];
@@ -277,7 +308,8 @@
                 if (subitem.state != GATextScanSubitemStatePending) {
                     continue;
                 }
-                GARawScanResult *cached = [self cachedResultForContent:subitem.content];
+                GARawScanResult *cached = [self cachedResultForContent:subitem.content
+                                                            selections:subitem.selections ?: @[]];
                 if (cached != nil) {
                     subitem.result = cached;
                     subitem.state = GATextScanSubitemStateCompleted;
@@ -298,12 +330,14 @@
 }
 
 - (void)completeSubitem:(GATextScanSubitem *)subitem result:(GARawScanResult *)result {
-    _cache[subitem.content] = result;
+    GAGlyphQueryIdentity *identity=subitem.cacheKey;
+    _cache[identity] = result;
     BOOL single = (subitem.length == 1);
     for (GATextScanGroup *group in _scanGroups) {
         for (GATextScanItem *item in group.items) {
             for (GATextScanSubitem *candidate in item.subitems) {
-                if (![candidate.content isEqualToString:subitem.content]) {
+                GAGlyphQueryIdentity *key=candidate.cacheKey;
+                if (key.hash!=identity.hash || ![key isEqual:identity]) {
                     continue;
                 }
                 candidate.result = result;

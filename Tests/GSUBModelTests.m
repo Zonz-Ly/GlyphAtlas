@@ -1,4 +1,5 @@
 #import "GAFontEngine.h"
+#import "GADisplayGroups.h"
 #import "GAFontResource.h"
 #import "GATextScanModel.h"
 #import <Foundation/Foundation.h>
@@ -23,7 +24,8 @@ static NSUInteger Drain(GATextScanModel *model, GAFontDocument *document) {
     NSUInteger n = 0;
     GATextScanSubitem *s;
     while ((s = [model startNextSubitem])) {
-        [model completeSubitem:s result:[document rawScanContent:s.content]];
+        [model completeSubitem:s
+                        result:[document rawScanContent:s.content selections:s.selections ?: @[]]];
         n++;
     }
     return n;
@@ -46,6 +48,21 @@ static NSArray *Keys(GATextScanModel *m) {
         [keys addObject:v];
     }
     return keys;
+}
+static GAGlyphSelectionRun *Seed(NSString *text, NSRange range, NSArray *gids) {
+    GAGlyphSelectionRun *run = [[GAGlyphSelectionRun alloc] init];
+    run.range = range;
+    run.selection = [[GAGlyphSelection alloc] initWithSourceText:[text substringWithRange:range]
+                                                        glyphIDs:gids
+                                                  featureSources:@[]
+                                                        ligature:NO];
+    return run;
+}
+static BOOL HasRow(NSArray<GACharacterGroup *> *groups, NSRange range, NSArray *gids) {
+    for (GACharacterGroup *group in groups)
+        if (NSEqualRanges(group.textRange, range) && Has(group, gids))
+            return YES;
+    return NO;
 }
 int main(int argc, const char **argv) {
     @autoreleasepool {
@@ -150,6 +167,90 @@ int main(int argc, const char **argv) {
             }
         Check(sharedRanges.count == 2 && plainBase,
               @"equal GIDs preserve two source spans and the character base");
+        d = Document([root stringByAppendingPathComponent:@"unencoded-neighbor.ttf"]);
+        Check([d analyzeGlyphIDs:@[ @19 ]].firstObject.variants.firstObject.unicodeScalars.count ==
+                  0,
+              @"literal seed is genuinely unencoded");
+        m = [[GATextScanModel alloc] initWithFontDocument:d];
+        [m updateText:@"ab"];
+        Drain(m, d);
+        Check(!Has(m.groups.lastObject, @[ @22 ]),
+              @"text query alone does not discover the literal ligature");
+        GAGlyphSelectionRun *seed = Seed(@"ab", NSMakeRange(0, 1), @[ @19 ]);
+        [m updateText:@"ab" selections:@[ seed ]];
+        Check(Drain(m, d) == 1, @"changing only the GID schedules one paragraph query");
+        NSArray *display = GABuildDisplayGroups(m.groups, m.text, @[ seed ], d);
+        Check(HasRow(display, NSMakeRange(0, 2), @[ @22 ]),
+              @"sidebar keeps unencoded seed plus encoded neighbor ligature");
+        [m updateText:@"ab" selections:@[ seed ]];
+        Check(Drain(m, d) == 0, @"identical literal query is cached");
+        seed = Seed(@"ab", NSMakeRange(0, 1), @[ @20 ]);
+        [m updateText:@"ab" selections:@[ seed ]];
+        Check(Drain(m, d) == 1 && !Has(m.groups.lastObject, @[ @22 ]),
+              @"different literal GID cannot reuse the same text cache");
+        seed = Seed(@"ab", NSMakeRange(0, 1), @[ @9, @19 ]);
+        [m updateText:@"ab" selections:@[ seed ]];
+        Drain(m, d);
+        display = GABuildDisplayGroups(m.groups, m.text, @[ seed ], d);
+        Check(HasRow(display, NSMakeRange(0, 2), @[ @9, @22 ]),
+              @"sidebar keeps surviving multi-GID prefix with neighbor ligature");
+        seed = Seed(@"ca", NSMakeRange(1, 1), @[ @19 ]);
+        [m updateText:@"ca" selections:@[ seed ]];
+        Drain(m, d);
+        display = GABuildDisplayGroups(m.groups, m.text, @[ seed ], d);
+        Check(HasRow(display, NSMakeRange(1, 1), @[ @21 ]),
+              @"contextual change on selected run is not hidden by its own row");
+        seed = Seed(@"ac", NSMakeRange(0, 1), @[ @19 ]);
+        [m updateText:@"ac" selections:@[ seed ]];
+        Drain(m, d);
+        Check(Has(m.groups.lastObject, @[ @21 ]),
+              @"unencoded seed participates as contextual back input");
+        seed = Seed(@"zab", NSMakeRange(0, 2), @[ @19 ]);
+        [m updateText:@"zab" selections:@[ seed ]];
+        Drain(m, d);
+        display = GABuildDisplayGroups(m.groups, m.text, @[ seed ], d);
+        Check(HasRow(display, NSMakeRange(0, 3), @[ @22 ]),
+              @"collapsed multi-character seed retains complete replacement range");
+        NSString *repeated = @"😀ab ab";
+        seed = Seed(repeated, NSMakeRange(2, 1), @[ @19 ]);
+        [m updateText:repeated selections:@[ seed ]];
+        Drain(m, d);
+        display = GABuildDisplayGroups(m.groups, m.text, @[ seed ], d);
+        Check(HasRow(display, NSMakeRange(2, 2), @[ @22 ]) &&
+                  !HasRow(display, NSMakeRange(5, 2), @[ @22 ]),
+              @"literal selection affects its own UTF-16 occurrence only");
+        NSString *composed = @"áb";
+        seed = Seed(composed, NSMakeRange(0, 2), @[ @19 ]);
+        [m updateText:composed selections:@[ seed ]];
+        Drain(m, d);
+        Check(HasRow(GABuildDisplayGroups(m.groups, m.text, @[ seed ], d), NSMakeRange(0, 3),
+                     @[ @22 ]),
+              @"derived windows never split a selected composed character");
+        m = [[GATextScanModel alloc] initWithFontDocument:d];
+        [m updateText:@"ab"];
+        Drain(m, d);
+        seed = Seed(@"ab", NSMakeRange(0, 1), @[ @19 ]);
+        [m updateText:@"ab" selections:@[ seed ]];
+        GATextScanSubitem *oldSeed = [m startNextSubitem];
+        Check(oldSeed.selections.count == 1, @"in-flight paragraph carries a literal snapshot");
+        GAGlyphSelectionRun *other = Seed(@"ab", NSMakeRange(0, 1), @[ @20 ]);
+        [m updateText:@"ab" selections:@[ other ]];
+        [m completeSubitem:oldSeed
+                    result:[d rawScanContent:oldSeed.content selections:oldSeed.selections]];
+        Drain(m, d);
+        Check(!Has(m.groups.lastObject, @[ @22 ]),
+              @"old selected-GID result cannot leak into a newer selection");
+        for (NSString *name in
+             @[ @"morx-unencoded-neighbor.ttf", @"mort-unencoded-neighbor.ttf" ]) {
+            d = Document([root stringByAppendingPathComponent:name]);
+            m = [[GATextScanModel alloc] initWithFontDocument:d];
+            seed = Seed(@"ai", NSMakeRange(0, 1), @[ @19 ]);
+            [m updateText:@"ai" selections:@[ seed ]];
+            Drain(m, d);
+            Check(HasRow(GABuildDisplayGroups(m.groups, m.text, @[ seed ], d), NSMakeRange(0, 2),
+                         @[ @22 ]),
+                  @"AAT literal seed with neighbor reaches sidebar");
+        }
         printf("OK: %lu model assertions; no GUI initialized\n", (unsigned long)checks);
         return 0;
     }

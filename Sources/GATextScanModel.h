@@ -9,10 +9,12 @@ typedef NS_ENUM(NSInteger, GATextScanSubitemState) {
     GATextScanSubitemStateCompleted,
 };
 
-/// One desired context of the current text. `content` is the cache key; the
+/// One desired context of the current text. Text plus literal selections form the cache key; the
 /// range/startGroup only describe where this instance is displayed.
 @interface GATextScanSubitem : NSObject
 @property (nonatomic, copy) NSString *content;
+@property(nonatomic, copy) NSArray<GAGlyphSelectionRun *> *selections;
+@property(nonatomic, readonly) GAGlyphQueryIdentity *cacheKey;
 @property (nonatomic) NSRange range;
 @property (nonatomic) NSUInteger startGroup;
 @property (nonatomic) NSUInteger length;
@@ -40,7 +42,7 @@ typedef NS_ENUM(NSInteger, GATextScanSubitemState) {
 
 /// Incremental scan model: the complete desired set is reconciled against the
 /// content cache and the pending queue on every text change. Raw results are
-/// cached by content; range-bound variants are applied to `groups` on demand.
+/// cached by text and literal selections; range-bound variants are applied to `groups` on demand.
 @interface GATextScanModel : NSObject
 @property (nonatomic, copy, readonly) NSString *text;
 @property (nonatomic, strong, readonly) NSArray<GACharacterGroup *> *groups;
@@ -57,14 +59,15 @@ typedef NS_ENUM(NSInteger, GATextScanSubitemState) {
 /// Rebuilds the desired subitem set, applies cached results, keeps still-valid
 /// pending work, and enqueues each group's new missing items at the group end.
 - (void)updateText:(NSString *)text;
+- (void)updateText:(NSString *)text selections:(NSArray<GAGlyphSelectionRun *> *)selections;
 
 /// Returns the next pending subitem and marks it scanning, or nil. Cached
 /// pending subitems are completed inline and skipped.
 - (nullable GATextScanSubitem *)startNextSubitem;
 - (nullable GATextScanSubitem *)startNextSubitemWithMaximumLength:(NSUInteger)maxLength;
 
-/// Stores the raw result under its content and applies it to every current
-/// subitem with that content, including instances added by a newer text.
+/// Stores the raw result under its query identity and applies it to every current
+/// subitem with that identity, including instances added by a newer text.
 - (void)completeSubitem:(GATextScanSubitem *)subitem result:(GARawScanResult *)result;
 
 @end

@@ -169,8 +169,8 @@
 | 单字扫描       | per-character scan    | 单字 content → base + GSUB alternates + settings    | `characterVariantsForContent:`、`rawSingleCharacterResultForContent:` |
 | 上下文扫描      | context scan          | 多字 content → base/feature clusters，按 cluster 目标归组 | `rawContextResultForContent:groups:`、`addRawClusters:...`            |
 | GSUB 直接替换  | direct GSUB alternate | 从 GSUB 表直接取 single/alternate                      | `GASubstitutionEngine.discoverText:/discoverGlyphIDs:`                                   |
-| 单字形替换      | SingleSubst           | GSUB lookup type 1，format 1/2                     | HarfBuzz GSUB execution + family index                                      |
-| 备用字形替换     | AlternateSubst        | GSUB lookup type 3                                | HarfBuzz GSUB execution + family index                                     |
+| 单字形替换      | SingleSubst           | GSUB lookup type 1，format 1/2                     | `FontLayout/GAOpenType` + `GASubstitution` + family index                                      |
+| 备用字形替换     | AlternateSubst        | GSUB lookup type 3                                | `FontLayout/GAOpenType` + `GASubstitution` + family index                                     |
 | 整串 cluster | whole-text cluster    | 一次 shaping 的连续 cluster；start/end/glyphs           | `GAWholeTextClusters`（private）                                       |
 | 组跨度        | group span            | cluster 覆盖的合成字符组范围                                | `GAGroupSpanForCluster`（private）                                     |
 | 特性设置       | feature setting       | 一个 AAT/OpenType feature 的字体箱和来源                   | `GAFeatureSetting`（private）                                          |
@@ -506,23 +506,38 @@ buildDisplayGroupsFromBaseGroups:
 
 
 
-## GSUB/AAT 实验架构（2026-10-25，当前有效）
+## GSUB/AAT 自写架构（2026-10-25，当前有效）
 
-| 术语 | 当前实现与边界 |
+| 模块 | 职责与边界 |
 | --- | --- |
-| 替换引擎 | `GASubstitutionEngine`；静态 HarfBuzz 14.5.0 执行 GSUB 1–8、morx/mort、Unicode 预处理和定位，禁用 HarfBuzz 的 CoreText shaper；无 CoreText 扫描 fallback |
-| 资源程序 | `GAOTProgram`；有界读取 FeatureList、lookup 宽度/引用、GDEF、FeatureVariations 与 AAT chain feature masks；不可变 face/index 由同资源新坐标文档共享 |
-| 表回调所有权 | `CreateFace` 为 HarfBuzz 回调保留独立 table owner；它不持有 hb_face，避免循环与临时 face 的释放后使用 |
-| 条件并集 | 默认 GSUB + 每条 FeatureVariations 的完整 feature-table replacement；强制该记录无条件生效，避免以抽样轴坐标猜测条件范围 |
-| AAT 选择器 | 从 chain records 枚举 type/setting，按 `(defaultFlags & disableFlags) | enableFlags` 冻结各 chain；标签如 `morx:18:1`；morx 优先于 mort |
-| 文字查询 | 模型只排队不同单字与每段一个多字查询；引擎按 GSUB lookup 的输入/前文/后文宽度与过滤标志扩展窗口，AAT 则使用 unsafe-to-break 相依岛 |
-| AAT 相依岛 | 状态机上下文可无界；只在引擎标记的相依岛中列举原文 grapheme 窗口，不设任意长度上限。病理字体现有状态机仍可能使整段相依 |
-| 来源范围 | HarfBuzz cluster → content UTF-16 range → composed-character group；组合候选挂到源范围最后一组，应用时转成输入绝对范围 |
-| 去重身份 | GID 序列 + 是否组合 + 组合来源范围；不同范围即使输出相同 GID 也保留，避免与最后一字的 base 合并 |
-| GID 种子 | identity cmap 让全部 GID 进入同一 GSUB/AAT 执行路径；单/备用字形反向 family index 另外保留兄弟选项，不尝试一般性逆执行 GSUB |
-| 字面定位 | `positionsForGlyphIDs:content:` 禁用全部替换表，保留 GPOS/kern/kerx 与变量度量；校验定位前后 GID 序列不变，RTL 在输入/输出之间维持选择顺序 |
-| 删除 | GSUB 零输出保留为 `∅` 行；普通激活移除来源文字。多 GID 激活保留完整 selection run，不退化为第一个编码 |
-| 多 GID 显示 | `GASeedDisplay` 展开私有显示副本，为每个 GID 建立 NSGlyphInfo；`displaySourceIndices` 将展开后的点击位置映射回输入 UTF-16 字组，不修改输入文字 |
-| 缓存 | 文档 raw cache 保持原有资源级语义；引擎窗口 cache 为 NSCache，2048 项/32 MiB 软限制。切轴仅重绑当前字形与定位 |
+| `GABinary` | 共享不可变字节、有界相对偏移、Coverage、ClassDef；不处理 UI 或字体 API |
+| `GACmap` | Unicode cmap 0/2/4/6/8/10/12/13、UVS 14、symbol 与 MacRoman fallback；不回退到其他字体 |
+| `GAGlyphBuffer` | 字面 GID、UTF-16 来源范围、稳定 token 身份、连字组件、变化记录、执行/输出预算；GDEF 过滤 |
+| `GAOpenType` | GSUB/GPOS 的脚本、语言、feature、lookup、上下文模式与 FeatureVariations 程序；alternate 反向 family 索引只建一次 |
+| `GASubstitution` | GSUB 1–8；嵌套动作按每次替换后的输入位置执行，处理一对多、零输出、过滤、反向链与递归保护 |
+| `GAAAT` | Apple lookup 0/2/4/6/8/10；morx/mort 0/1/2/4/5、16 种重排、状态/标记/栈/插入、方向、段尾动作和 chain selectors |
+| `GAPositioning` | GPOS 1–9：单字/成对/连写/mark 附着及上下文定位；定位路径没有替换操作 |
+| `GAVariation` | fvar/avar v1 正规化、ItemVariationStore、VariationIndex；GPOS 按实际坐标选择条件，GSUB 发现保持所有条件的并集 |
+| `GAKerning` | kern 0/2/3 与 kerx 0/2 的成对/类别定位；只在 GPOS 未接管 kern 时使用 |
+| `GATextPreparation` | grapheme 范围、NFC/NFD、UVS、脚本分段、系统 ICU bidi 与 Arabic joining forms；保留可编码的兼容字/UVS 基字 |
+| `GAGlyphSelection` | 明确选择的 GID、原文范围快照和不可变查询身份；键包含文字、相对范围和完整 GID 序列，hash 纳入文字内容 |
+| `GADisplayGroups` | 独立于窗口的列表数据构建；保留跨选择范围的新连字与选择字形本身的上下文结果，只对同来源/同 GID 的重复结果去重 |
+| `GASubstitutionEngine.mm` | Objective-C 接口、CoreText 表字节/原生 advance 适配、资源共享、发现策略、来源合并和 NSCache；没有 CTLine/CTRun 扫描 |
 
-旧的 `shapeString:`、`rawSingleCharacterResultForContent:`、`rawContextResultForContent:`、`GAGSUBFeatures`、`GAGSUBProcessSubtable`、`GAFeatureVariations` 和 CoreText feature-font 扫描均已删除；历史表格中的这些符号仅作旧版阅读线索。
+每个字体资源共享不可变表程序及 family 索引；每次执行独立持有 buffer、状态、预算。切轴只绑定新的 CTFont/原生度量与定位，沿用条件并集缓存、GID、列表顺序和选择。缓存为 NSCache（2048 项/32 MiB 软限制）。解析/执行失败通过线程安全 `diagnostics` 暴露，损坏的可选定位程序回退到原生 advance，不在后台线程抛出未处理异常。
+
+文字查询仍是不同单字与每段一个多字任务。GSUB 在实际匹配时记录前文/输入/后文范围；AAT 使用状态转换、标记、栈和段尾动作记录相依岛，再只枚举岛内的 grapheme 窗口。相依范围可能覆盖整段，没有人为的上下文长度截断。feature/selector 分别枚举，不穷举所有可选设置的笛卡尔积。
+
+每个输出携带原文 UTF-16 范围；被上下文修改的字形保留自己的来源，前后文只扩大查询窗口。候选身份为 GID 序列 + 是否组合 + 组合来源范围。GID 种子直接进入同一 buffer，完全不需要 identity cmap 或临时改写字体。段落查询也接收当前明确选择的 GID：先以字面 GID 替换对应输入区间，再与邻字一起执行规则。一个种子可含多个 GID 或覆盖多个原文字符；重叠来源合为原子替换，保留未被连字消耗的前缀/后缀。查询窗口会覆盖完整种子，不切断选择范围。单字/备用字形 family 支持未编码兄弟选项，但不一般性逆执行 GSUB。零输出保留 `∅` 行。
+
+`GASeedDisplay`、完整多 GID 激活与点击映射沿用上一分支。CoreText/NSGlyphInfo 和 TextKit 继续负责显示；代码没有以 CoreText shaping 补做替换发现，也没有 HarfBuzz 或第三方字体执行器。
+
+### 明确的能力边界
+
+这是 Glyph Atlas 的替换表执行器，并非通用文字排版引擎。它没有实现 HarfBuzz 的全部专用 script shaper（例如 OpenType Indic 的音节分析、重排和分阶段掩码）；不能把 GSUB lookup 类型齐全说成所有文字系统与 HarfBuzz 等价。AAT 字体自己编码在 morx/mort 中的重排则会执行。
+
+字面定位是未作像素 hinting 的设计单位布局；pixel Device deltas 不生效，VariationIndex 生效，Anchor format 2 使用表内设计坐标。尚未支持 kern 状态表 1、kerx 1/4/6、旧 AAT tuple kerning、avar v2。遇到这些定位程序会记录诊断并保留原生 advances，不退回 CoreText 扫描。多字视图的最终正常排版仍由原生 TextKit 完成。
+
+旧 `GAOTProgram`、HarfBuzz callback、identity-cmap seed、CoreText feature-font 扫描及 `Sources/GASubstitutionEngine.m` 都属于上一版；当前接口实现为 `.mm`，对应 private core 位于 `Sources/FontLayout/`。
+
+规范来源：[OpenType common formats](https://learn.microsoft.com/en-us/typography/opentype/spec/chapter2)、[GSUB](https://learn.microsoft.com/en-us/typography/opentype/spec/gsub)、[GPOS](https://learn.microsoft.com/en-us/typography/opentype/spec/gpos)、[Apple morx](https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6morx.html)、[Apple mort](https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6mort.html)。

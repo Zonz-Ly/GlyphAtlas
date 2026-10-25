@@ -4,35 +4,12 @@
 #import <AppKit/AppKit.h>
 
 const CGFloat GAFontShapingSize = 200.0;
-NSString * const GAGlyphSelectionAttributeName =
-    @"com.zonz.GlyphAtlas.glyphSelection";
-
 static NSString *GACopyString(CFStringRef _Nullable string) {
     if (string == NULL) {
         return @"";
     }
     return CFBridgingRelease(string);
 }
-
-#pragma mark - GAGlyphSelection
-
-@implementation GAGlyphSelection
-
-- (instancetype)initWithSourceText:(NSString *)sourceText
-                           glyphIDs:(NSArray<NSNumber *> *)glyphIDs
-                     featureSources:(NSArray<NSString *> *)featureSources
-                           ligature:(BOOL)ligature {
-    self = [super init];
-    if (self) {
-        _sourceText = [sourceText copy];
-        _glyphIDs = [glyphIDs copy];
-        _featureSources = [featureSources copy];
-        _ligature = ligature;
-    }
-    return self;
-}
-
-@end
 
 #pragma mark - GAAllGlyphEntry
 
@@ -246,6 +223,7 @@ NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text) {
         c.sources = old.sources;
         c.base = old.base;
         c.ligature = old.ligature;
+        c.fromGlyphSeed = old.fromGlyphSeed;
         c.sourceRange = old.sourceRange;
         c.targetOffset = old.targetOffset;
         [candidates addObject:c];
@@ -264,6 +242,7 @@ NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text) {
     v.unicodeScalars = old.unicodeScalars;
     v.glyphName = old.glyphName;
     v.ligature = old.ligature;
+    v.fromGlyphSeed = old.fromGlyphSeed;
     v.sourceTextRange = old.sourceTextRange;
     return v;
 }
@@ -398,8 +377,13 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
 #pragma mark - Font substitution discovery
 
 - (GARawScanResult *)rawScanContent:(NSString *)content {
+    return [self rawScanContent:content selections:@[]];
+}
+- (GARawScanResult *)rawScanContent:(NSString *)content
+                         selections:(NSArray<GAGlyphSelectionRun *> *)selections {
     NSArray<GACharacterGroup *> *groups = GAGroupsForText(content);
-    NSArray<GASubstitutionMatch *> *matches = [_substitutionEngine discoverText:content];
+    NSArray<GASubstitutionMatch *> *matches = [_substitutionEngine discoverText:content
+                                                                     selections:selections];
     NSMutableArray *candidates = [NSMutableArray array];
     BOOL single = groups.count == 1;
     if (single) {
@@ -456,6 +440,7 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
                          content:[content substringWithRange:match.sourceRange]];
         c.sources = match.sources.count ? match.sources : @[ @"actual" ];
         c.sourceRange = match.sourceRange;
+        c.fromGlyphSeed = selections.count > 0;
         c.targetOffset = last;
         c.ligature = first != last;
         c.base = NO;
@@ -486,7 +471,7 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
         }
         NSString *key = parts.length ? parts : @"∅";
         NSRange sourceRange = NSMakeRange(0, 0);
-        if (candidate.ligature)
+        if (candidate.ligature || candidate.fromGlyphSeed)
             sourceRange = NSMakeRange(contentRange.location + candidate.sourceRange.location,
                                       candidate.sourceRange.length);
         GAGlyphVariant *existing = nil;
@@ -500,6 +485,10 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
             break;
         }
         if (existing != nil) {
+            if (candidate.fromGlyphSeed) {
+                existing.fromGlyphSeed = YES;
+                existing.sourceTextRange = sourceRange;
+            }
             if (!existing.isBase) {
                 if (candidate.sources.count > 0) {
                     [existing addFeatureSources:candidate.sources];
@@ -517,6 +506,9 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
         variant.positions = candidate.positions ?: @[];
         [variant addFeatureSources:candidate.sources ?: @[]];
         variant.base = candidate.isBase;
+        variant.fromGlyphSeed = candidate.fromGlyphSeed;
+        if (candidate.fromGlyphSeed)
+            variant.sourceTextRange = sourceRange;
         if (candidate.ligature) {
             variant.ligature = YES;
             variant.sourceTextRange = sourceRange;

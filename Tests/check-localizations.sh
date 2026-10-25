@@ -14,12 +14,12 @@ SOURCES=()
 for SOURCE in "$ROOT"/Sources/*.m; do
   [[ "$(basename "$SOURCE")" == main.m ]] || SOURCES+=("$SOURCE")
 done
-HB="$ROOT/.build/harfbuzz-$(uname -m).o"
-bash "$ROOT/scripts/compile-harfbuzz.sh" "$(uname -m)" "$HB"
+LAYOUT="$ROOT/.build/font-layout-$(uname -m)"
+bash "$ROOT/scripts/compile-font-layout.sh" "$(uname -m)" "$LAYOUT"
 clang -fobjc-arc -flto -Wl,-dead_strip -mmacosx-version-min=12.0 -Wall -Wextra \
   -I "$ROOT/Sources" -framework Cocoa -framework CoreText \
   -framework UniformTypeIdentifiers -licucore \
-  "${SOURCES[@]}" "$ROOT/Tests/LocalizationSmoke.m" "$HB" -lc++ \
+  "${SOURCES[@]}" "$ROOT/Tests/LocalizationSmoke.m" "$LAYOUT"/*.o -lc++ \
   -o "$APP/Contents/MacOS/GlyphAtlas"
 for LOCALE in en zh-Hant zh-HK zh-Hans ja ko de fr es it pt-BR ru ar; do
   "$APP/Contents/MacOS/GlyphAtlas" -AppleLanguages "($LOCALE)" -expectedLocale "$LOCALE"

@@ -1,2 +1,0 @@
-# Keep the upstream source pristine and collapse it in code reviews.
-Vendor/harfbuzz/** linguist-vendored -whitespace
