@@ -42,12 +42,6 @@ static NSString *GACopyString(CFStringRef _Nullable string) {
     if (source.length == 0) {
         return;
     }
-    if ([source isEqualToString:@"actual"]) {
-        if (self.mutableFeatureSources.count > 0)
-            return;
-    } else {
-        [self.mutableFeatureSources removeObject:@"actual"];
-    }
     if ([self.mutableFeatureSources containsObject:source]) {
         return;
     }
@@ -388,31 +382,8 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
     NSArray<GASubstitutionMatch *> *matches = [_substitutionEngine discoverText:content
                                                                      selections:selections];
     NSMutableArray *candidates = [NSMutableArray array];
-    BOOL single = groups.count == 1;
-    if (single) {
-        NSMutableArray *baseGlyphs = [NSMutableArray array];
-        NSMutableOrderedSet *baseSources = [NSMutableOrderedSet orderedSet];
-        for (GASubstitutionMatch *match in matches)
-            if (match.base) {
-                [baseGlyphs addObjectsFromArray:match.glyphIDs];
-                [baseSources addObjectsFromArray:match.sources];
-            }
-        GAScanCandidate *base = [[GAScanCandidate alloc] init];
-        base.glyphIDs = baseGlyphs;
-        base.fontBox = _fontBox;
-        base.positions = [_substitutionEngine positionsForGlyphIDs:base.glyphIDs content:content];
-        base.sources = baseSources.array;
-        base.base = YES;
-        base.sourceRange = NSMakeRange(0, content.length);
-        base.targetOffset = 0;
-        [candidates addObject:base];
-    }
     for (GASubstitutionMatch *match in matches) {
-        if (single && match.base)
-            continue;
         if (!match.sourceRange.length || NSMaxRange(match.sourceRange) > content.length)
-            continue;
-        if (single && !NSEqualRanges(match.sourceRange, NSMakeRange(0, content.length)))
             continue;
         NSUInteger first = NSNotFound, last = NSNotFound;
         NSUInteger lo = 0, hi = groups.count;
@@ -444,12 +415,12 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
         c.positions = [_substitutionEngine
             positionsForGlyphIDs:c.glyphIDs
                          content:[content substringWithRange:match.sourceRange]];
-        c.sources = match.sources.count ? match.sources : @[ @"actual" ];
+        c.sources = match.sources ?: @[];
         c.sourceRange = match.sourceRange;
         c.fromGlyphSeed = selections.count > 0;
         c.targetOffset = last;
         c.ligature = first != last;
-        c.base = NO;
+        c.base = match.base && first == last;
         [candidates addObject:c];
     }
     GARawScanResult *result = [[GARawScanResult alloc] init];
@@ -546,6 +517,15 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
 
 - (NSNumber *)verticalSubstituteForGlyph:(CGGlyph)glyph {
     return [_substitutionEngine verticalGlyph:glyph];
+}
+- (NSArray<GAGlyphLayoutRun *> *)layoutRunsForText:(NSString *)text
+                                        contextual:(BOOL)contextual
+                                         ligatures:(BOOL)ligatures
+                                          vertical:(BOOL)vertical {
+    return [_substitutionEngine layoutRunsForText:text
+                                       contextual:contextual
+                                        ligatures:ligatures
+                                         vertical:vertical];
 }
 - (NSArray<GACharacterGroup *> *)analyzeGlyphIDs:(NSArray<NSNumber *> *)glyphIDs {
     if (!glyphIDs.count)

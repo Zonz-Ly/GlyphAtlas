@@ -1,19 +1,7 @@
 #import "GASidebarViewController.h"
+#import "GASidebarInput.h"
 #import "GAGlyphViews.h"
 #import "GAUnicode.h"
-
-/// YES when the shortcut modifiers in `modifiers` are exactly `expected`.
-/// Caps Lock, the function key, the numeric keypad, Help, and device-dependent
-/// bits do not count.
-static BOOL GAModifiersAre(NSEventModifierFlags modifiers,
-                           NSEventModifierFlags expected) {
-    NSEventModifierFlags mask =
-        NSEventModifierFlagCommand |
-        NSEventModifierFlagShift |
-        NSEventModifierFlagOption |
-        NSEventModifierFlagControl;
-    return (modifiers & mask) == expected;
-}
 
 @interface GASidebarViewController (CommandArrowNavigation)
 - (void)selectCurrentGroupBase;
@@ -66,285 +54,6 @@ static BOOL GAModifiersAre(NSEventModifierFlags modifiers,
         return [self.sidebarController selectedGlyphHasEncoding];
     }
     return [super validateUserInterfaceItem:item];
-}
-
-@end
-
-#pragma mark - Line-break marker
-
-/// The input field keeps a line break as U+23CE RETURN SYMBOL carrying this
-/// attribute. A literal U+23CE typed by the user has no attribute and stays a
-/// normal character. The model text handed to the window uses U+000A instead;
-/// the conversion is one UTF-16 unit for one, so ranges never move.
-static NSString * const GALineBreakAttributeName = @"com.zonz.GlyphAtlas.lineBreak";
-static NSString * const GALineBreakCharacter = @"\u23CE";
-
-/// Marks one visible line-break character and gives it the secondary text
-/// colour used by AppKit for auxiliary inline content.
-static void GASetLineBreakMarker(NSMutableAttributedString *text, NSRange range) {
-    [text addAttribute:GALineBreakAttributeName value:@YES range:range];
-    [text addAttribute:NSForegroundColorAttributeName
-                 value:[NSColor secondaryLabelColor]
-                 range:range];
-}
-
-/// Replaces line breaks with markers and attaches the line-break attribute.
-static NSAttributedString *GAMarkerTextFromString(NSString *string,
-                                                  NSDictionary *attributes) {
-    NSMutableString *converted = [NSMutableString stringWithCapacity:string.length];
-    NSMutableIndexSet *markers = [NSMutableIndexSet indexSet];
-    for (NSUInteger index = 0; index < string.length; index++) {
-        unichar character = [string characterAtIndex:index];
-        if (character == '\r') {
-            if (index + 1 < string.length &&
-                [string characterAtIndex:index + 1] == '\n') {
-                index++;
-            }
-            [markers addIndex:converted.length];
-            [converted appendString:GALineBreakCharacter];
-        } else if (character == '\n') {
-            [markers addIndex:converted.length];
-            [converted appendString:GALineBreakCharacter];
-        } else {
-            [converted appendString:[string substringWithRange:NSMakeRange(index, 1)]];
-        }
-    }
-    NSMutableAttributedString *text =
-        [[NSMutableAttributedString alloc] initWithString:converted
-                                                attributes:attributes];
-    [markers enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
-        (void)stop;
-        GASetLineBreakMarker(text, NSMakeRange(index, 1));
-    }];
-    return text;
-}
-
-/// Replaces the marker attribute with real line breaks for the model text.
-static NSAttributedString *GAModelTextFromFieldText(NSAttributedString *fieldText) {
-    if (fieldText.length == 0) {
-        return [[NSAttributedString alloc] init];
-    }
-    NSRange all = NSMakeRange(0, fieldText.length);
-    NSMutableArray<NSValue *> *markerRanges = [NSMutableArray array];
-    [fieldText enumerateAttribute:GALineBreakAttributeName
-                          inRange:all
-                          options:0
-                       usingBlock:^(id value, NSRange range, BOOL *stop) {
-        (void)stop;
-        if (value != nil) {
-            [markerRanges addObject:[NSValue valueWithRange:range]];
-        }
-    }];
-    NSMutableString *string = [fieldText.string mutableCopy];
-    for (NSValue *value in markerRanges) {
-        NSRange range = value.rangeValue;
-        for (NSUInteger index = range.location; index < NSMaxRange(range); index++) {
-            [string replaceCharactersInRange:NSMakeRange(index, 1) withString:@"\n"];
-        }
-    }
-    NSMutableAttributedString *model = [[NSMutableAttributedString alloc] initWithString:string];
-    [fieldText enumerateAttributesInRange:all
-                                  options:0
-                               usingBlock:^(NSDictionary<NSAttributedStringKey, id> *attrs,
-                                            NSRange range, BOOL *stop) {
-        (void)stop;
-        NSMutableDictionary *clean = [attrs mutableCopy];
-        [clean removeObjectForKey:GALineBreakAttributeName];
-        [model setAttributes:clean range:range];
-    }];
-    return model;
-}
-
-/// Replaces model line breaks with the visible marked character for the field.
-static NSAttributedString *GAFieldTextFromModelText(NSAttributedString *modelText) {
-    if (modelText.length == 0) {
-        return [[NSAttributedString alloc] init];
-    }
-    NSRange all = NSMakeRange(0, modelText.length);
-    NSMutableString *string = [modelText.string mutableCopy];
-    NSMutableIndexSet *markers = [NSMutableIndexSet indexSet];
-    for (NSUInteger index = 0; index < string.length; index++) {
-        if ([string characterAtIndex:index] == '\n') {
-            [string replaceCharactersInRange:NSMakeRange(index, 1)
-                                  withString:GALineBreakCharacter];
-            [markers addIndex:index];
-        }
-    }
-    NSMutableAttributedString *field = [[NSMutableAttributedString alloc] initWithString:string];
-    [modelText enumerateAttributesInRange:all
-                                  options:0
-                               usingBlock:^(NSDictionary<NSAttributedStringKey, id> *attrs,
-                                            NSRange range, BOOL *stop) {
-        (void)stop;
-        NSMutableDictionary *clean = [attrs mutableCopy];
-        [clean removeObjectForKey:GALineBreakAttributeName];
-        [field setAttributes:clean range:range];
-    }];
-    [markers enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
-        (void)stop;
-        GASetLineBreakMarker(field, NSMakeRange(index, 1));
-    }];
-    return field;
-}
-
-/// Converts newlines before the single-line field editor can turn them into
-/// spaces. A newline is inserted as a marked U+23CE, so the field stays one
-/// line tall and the character can be told apart from a literal U+23CE.
-@interface GASearchFieldEditor : NSTextView
-@end
-
-@implementation GASearchFieldEditor
-
-/// AppKit's single-line field editor does not map all four Command-arrow
-/// variants to the document start/end (Command-Down is a no-op). Handle them
-/// explicitly so the whole field behaves as one document.
-- (void)keyDown:(NSEvent *)event {
-    BOOL commandOnly =
-        GAModifiersAre(event.modifierFlags, NSEventModifierFlagCommand);
-    if (commandOnly) {
-        if (event.keyCode == 123 || event.keyCode == 126) { // Left, Up
-            [self moveToBeginningOfDocument:nil];
-            return;
-        }
-        if (event.keyCode == 124 || event.keyCode == 125) { // Right, Down
-            [self moveToEndOfDocument:nil];
-            return;
-        }
-    }
-    [super keyDown:event];
-}
-
-- (void)insertText:(id)string replacementRange:(NSRange)replacementRange {
-    NSString *inserted = nil;
-    if ([string isKindOfClass:[NSAttributedString class]]) {
-        inserted = [(NSAttributedString *)string string];
-    } else if ([string isKindOfClass:[NSString class]]) {
-        inserted = string;
-    }
-    if (inserted.length == 0) {
-        [super insertText:string replacementRange:replacementRange];
-        return;
-    }
-    if ([inserted rangeOfCharacterFromSet:[NSCharacterSet newlineCharacterSet]].location ==
-        NSNotFound) {
-        [super insertText:string replacementRange:replacementRange];
-        return;
-    }
-    NSRange range = replacementRange;
-    if (range.location == NSNotFound) {
-        range = self.selectedRange;
-    }
-    NSMutableDictionary *attributes = [self.typingAttributes mutableCopy];
-    [attributes removeObjectForKey:GALineBreakAttributeName];
-    NSAttributedString *text = GAMarkerTextFromString(inserted, attributes);
-    if ([self shouldChangeTextInRange:range replacementString:text.string]) {
-        [self.textStorage replaceCharactersInRange:range withAttributedString:text];
-        [self didChangeText];
-        [self setSelectedRange:NSMakeRange(range.location + text.length, 0)];
-        self.typingAttributes = attributes;
-    }
-}
-
-- (void)paste:(id)sender {
-    NSString *string = [[NSPasteboard generalPasteboard] stringForType:NSPasteboardTypeString];
-    if (string != nil &&
-        [string rangeOfCharacterFromSet:[NSCharacterSet newlineCharacterSet]].location !=
-            NSNotFound) {
-        [self insertText:string replacementRange:self.selectedRange];
-        return;
-    }
-    [super paste:sender];
-}
-
-/// Copy the selection as plain text, turning marked line breaks back into
-/// U+000A. A literal U+23CE has no marker attribute and is copied as is.
-- (void)copy:(id)sender {
-    NSRange range = self.selectedRange;
-    if (range.length == 0) {
-        [super copy:sender];
-        return;
-    }
-    NSAttributedString *selected = [self.textStorage attributedSubstringFromRange:range];
-    NSString *model = GAModelTextFromFieldText(selected).string;
-    NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
-    [pasteboard clearContents];
-    [pasteboard setString:model forType:NSPasteboardTypeString];
-}
-
-- (void)cut:(id)sender {
-    NSRange range = self.selectedRange;
-    if (range.length == 0) {
-        [super cut:sender];
-        return;
-    }
-    [self copy:sender];
-    if ([self shouldChangeTextInRange:range replacementString:@""]) {
-        [self.textStorage replaceCharactersInRange:range withString:@""];
-        [self didChangeText];
-        [self setSelectedRange:NSMakeRange(range.location, 0)];
-    }
-}
-
-/// Dragging out of the field also carries real line breaks. The superclass
-/// writes the selection for every requested type; the plain-text entries are
-/// then replaced with the model text.
-- (BOOL)writeSelectionToPasteboard:(NSPasteboard *)pboard
-                             types:(NSArray<NSPasteboardType> *)types {
-    BOOL result = [super writeSelectionToPasteboard:pboard types:types];
-    NSRange range = self.selectedRange;
-    if (range.length == 0) {
-        return result;
-    }
-    NSAttributedString *selected = [self.textStorage attributedSubstringFromRange:range];
-    NSString *model = GAModelTextFromFieldText(selected).string;
-    [pboard setString:model forType:NSPasteboardTypeString];
-    // Older pasteboard readers ask for the legacy name instead.
-    [pboard setString:model forType:@"NSStringPboardType"];
-    return YES;
-}
-
-@end
-
-/// macOS 26+ search fields drop the leading text inset when the search button
-/// cell is removed; the text then starts at the bezel edge. Use a fixed 9 pt
-/// text inset on both edges without changing the field's frame, font or text.
-static const CGFloat GASearchFieldTextInset = 9.0;
-
-@interface GASearchFieldCell : NSSearchFieldCell
-@end
-
-@implementation GASearchFieldCell
-
-- (NSRect)rectByInsettingTextEdges:(NSRect)rect bounds:(NSRect)bounds {
-    rect.origin.x = NSMinX(bounds) + GASearchFieldTextInset;
-    rect.size.width = MAX(0, NSMaxX(bounds) - GASearchFieldTextInset - NSMinX(rect));
-    return rect;
-}
-
-- (NSRect)searchTextRectForBounds:(NSRect)bounds {
-    return [self rectByInsettingTextEdges:[super searchTextRectForBounds:bounds]
-                                   bounds:bounds];
-}
-
-- (NSRect)titleRectForBounds:(NSRect)bounds {
-    return [self rectByInsettingTextEdges:[super titleRectForBounds:bounds]
-                                   bounds:bounds];
-}
-
-- (NSRect)drawingRectForBounds:(NSRect)bounds {
-    return [self rectByInsettingTextEdges:[super drawingRectForBounds:bounds]
-                                   bounds:bounds];
-}
-
-@end
-
-@interface GASearchField : NSSearchField
-@end
-
-@implementation GASearchField
-
-+ (Class)cellClass {
-    return [GASearchFieldCell class];
 }
 
 @end
@@ -480,66 +189,12 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
     return [NSColor controlTextColor];
 }
 
-- (void)collectSelectionRunsFrom:(NSAttributedString *)text
-                          ranges:(NSMutableArray<NSValue *> *)ranges
-                          values:(NSMutableArray<GAGlyphSelection *> *)values {
-    [text enumerateAttribute:GAGlyphSelectionAttributeName
-                     inRange:NSMakeRange(0, text.length)
-                     options:0
-                  usingBlock:^(id value, NSRange range, BOOL *stop) {
-        (void)stop;
-        if ([value isKindOfClass:[GAGlyphSelection class]]) {
-            [ranges addObject:[NSValue valueWithRange:range]];
-            [values addObject:value];
-        }
-    }];
-}
-
-/// Drops every attribute except the app font, the app foreground color,
-/// selection runs, and line-break markers. Shared by the plain copy and the
-/// field editor normalization path.
-- (void)applyPlainAttributesToStorage:(NSMutableAttributedString *)storage
-                             fromText:(NSAttributedString *)source {
-    NSRange all = NSMakeRange(0, storage.length);
-    NSMutableArray<NSValue *> *runRanges = [NSMutableArray array];
-    NSMutableArray<GAGlyphSelection *> *runValues = [NSMutableArray array];
-    [self collectSelectionRunsFrom:source ranges:runRanges values:runValues];
-    NSMutableArray<NSValue *> *markerRanges = [NSMutableArray array];
-    [source enumerateAttribute:GALineBreakAttributeName
-                       inRange:all
-                       options:0
-                    usingBlock:^(id value, NSRange range, BOOL *stop) {
-        (void)stop;
-        if (value != nil) {
-            [markerRanges addObject:[NSValue valueWithRange:range]];
-        }
-    }];
-
-    [storage beginEditing];
-    [storage setAttributes:@{
-        NSFontAttributeName: [self inputFont],
-        NSForegroundColorAttributeName: [self inputTextColor],
-    } range:all];
-    for (NSUInteger index = 0; index < runRanges.count; index++) {
-        [storage addAttribute:GAGlyphSelectionAttributeName
-                        value:runValues[index]
-                        range:runRanges[index].rangeValue];
-    }
-    for (NSValue *value in markerRanges) {
-        GASetLineBreakMarker(storage, value.rangeValue);
-    }
-    [storage endEditing];
-}
-
 /// Returns only the attributes this app understands: the default font,
 /// the app-owned foreground color, and selection runs. Everything else
 /// (pasted colors, backgrounds, paragraph styles, links, attachments) is
 /// discarded.
 - (NSAttributedString *)plainCopyOfAttributedText:(NSAttributedString *)text {
-    NSMutableAttributedString *plain =
-        [[NSMutableAttributedString alloc] initWithString:text.string];
-    [self applyPlainAttributesToStorage:plain fromText:text];
-    return plain;
+    return GANormalizedSidebarInput(text, [self inputFont], [self inputTextColor]);
 }
 
 - (void)prepareFieldEditor {
@@ -597,7 +252,8 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
 
     NSRange selection = editor.selectedRange;
     self.suppressTextChangeCallback = YES;
-    [self applyPlainAttributesToStorage:storage fromText:storage];
+    [storage setAttributedString:GANormalizedSidebarInput(storage, [self inputFont],
+                                                           [self inputTextColor])];
     if (selection.location != NSNotFound) {
         NSUInteger location = MIN(selection.location, storage.length);
         NSUInteger length = MIN(selection.length, storage.length - location);
@@ -1074,6 +730,25 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
         }
     }
     return YES;
+}
+
+- (BOOL)selectGlyphIDs:(NSArray<NSNumber *> *)glyphIDs textRange:(NSRange)range {
+    for (NSUInteger index = 0; index < self.rows.count; index++) {
+        GARowItem *row = self.rows[index];
+        if (!NSEqualRanges(row.group.textRange, range) || ![row.variant.glyphIDs isEqual:glyphIDs])
+            continue;
+        self.suppressSelectionCallback = YES;
+        self.pendingSelectionGlyphKey = nil;
+        [self.tableView selectRowIndexes:[NSIndexSet indexSetWithIndex:index]
+                    byExtendingSelection:NO];
+        self.selectedVariant = row.variant;
+        self.selectedVariantTextRange = range;
+        [self scrollGroupContainingRow:index];
+        self.suppressSelectionCallback = NO;
+        [self notifySelection];
+        return YES;
+    }
+    return NO;
 }
 
 - (void)setGroups:(NSArray<GACharacterGroup *> *)groups {

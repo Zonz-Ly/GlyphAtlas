@@ -29,7 +29,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly) NSSize documentSize;
 /// Called when the text layout changes the required document size.
 @property (nonatomic, copy, nullable) void (^onContentSizeChanged)(void);
-@property (nonatomic, copy, nullable) void (^onGroupSelected)(GACharacterGroup *group);
+@property(nonatomic, copy, nullable) void (^onGlyphSelected)
+    (NSArray<NSNumber *> *glyphIDs, NSRange range);
 
 - (void)setText:(NSString *)text groups:(NSArray<GACharacterGroup *> *)groups;
 - (void)zoomTextIn;

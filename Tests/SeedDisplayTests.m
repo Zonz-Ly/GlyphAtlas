@@ -1,4 +1,4 @@
-#import "GASeedDisplay.h"
+#import "GATextDisplay.h"
 #import <CoreText/CoreText.h>
 #import <Foundation/Foundation.h>
 static NSUInteger checks = 0;

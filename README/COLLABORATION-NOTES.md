@@ -404,3 +404,17 @@ bash Tests/compare-old.sh
 - 连字必须实际输入/选中全部被消耗的组件；单独 f 或 i 不列 fi，完整 fi 才列。未编码 GID 与多 GID 种子同理，不能恢复仅匹配任一组件就展示连字的旧目录分支。
 - `GARelatedSubstitutions` 不再读取 type 4 输出；extension 已解包，嵌套 contextual 调用 type 4 同样排除。实际 GSUB/AAT 执行器和完整来源范围保留，并不按 feature tag 名称猜测是否连字。
 - 回归覆盖直接/extension/嵌套 contextual 连字、morx/mort、字面 GID、不完整/完整序列，以及原有 Lucida W/Wi 上下文与 VF 并集。
+
+
+### 完整查询、点击匹配、合并与文件边界（2026-10-25，最新）
+
+- 用户授权直接重构不匹配新引擎的旧查询链路。已用 GATextQueryModel 替换逐字/段落任务桶及窗口重查调度；每次文字/选择只发一份完整 snapshot，不恢复流式补结果。
+- 用户最后选择自己的规则匹配实际 GID；此前暂时讨论的运行时 CoreText 行辅助已撤回。生产代码不调 CTLine/CTRun/CTTypesetter；它们只在 CLI 参考工具里。原有 NSTextView/TextKit 2 没有更换。
+- ⌘5 上下文替换、⌘6 连字默认 OFF；竖排 ⌘7。保持已有竖排弯引号逻辑。点击以 GID + 完整原文 UTF-16 范围选列表，不能按最长候选或第一个候选猜选。
+- 用户要求后续只做必要测试，已完成过的广泛 CoreText 结果不重跑。GUI/滚动/竖排实际视觉留给用户；不启动/安装，不解压 ZIP 验签。
+- 用户授权将原 GlyphAtlas 后续代码合入实验副本。以 Old 为三方基线，只有 GAVariationViewController.m 的代码变化（70pt、间距、field-editor selector 判断），三份 README 文档一并合入。合并提交 0514c8f；原目录/Old 不写入，合并报告和原始快照在任务根 work/merge-2026-10-25。
+- 用户同意整理文件职责，随后明确「不用分文件夹，分文件即可」。保持 Sources 平铺；合并 GASeedDisplay + GATextDisplayOptions 为 GATextDisplay，拆出 GASidebarInput，FontLayout 原有各模块保持独立。
+- 用户确认来源规则：没有读到来源就留空。删除主 seed 被误补 actual 的旧 fallback，不隐藏真实的默认特性来源。
+- 资源表程序、每 GID 目录快取和完整输入结果快取内容不同；本次文件整理没有修改缓存策略。GLOSSARY 第 3 节描述具体边界，不把「已解析」说成「所有文本结果都已预计算」。
+
+- 用户随后追问 Sources 内为何仍有 FontLayout：平铺要求也包含这个旧目录。已将全部核心 .h/.cpp/.mm 移到 Sources，同步 include 与共用编译脚本；不把 C++ 当 Objective-C 编译。Vendor/harfbuzz 已无文件，仅遗留 Finder 元数据，现清除空壳；产品仍无 HarfBuzz。Tests 为非产品 CLI/自制 fixtures，scripts 只保存产品/测试共用的编译规则。

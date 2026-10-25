@@ -78,10 +78,9 @@
             weakSelf.onAllGlyphDoubleClick(entry);
         }
     };
-    self.multiView.onGroupSelected = ^(GACharacterGroup *group) {
-        if (weakSelf.onGroupSelected != nil) {
-            weakSelf.onGroupSelected(group);
-        }
+    self.multiView.onGlyphSelected = ^(NSArray<NSNumber *> *glyphIDs, NSRange range) {
+      if (weakSelf.onGlyphSelected)
+          weakSelf.onGlyphSelected(glyphIDs, range);
     };
     self.multiView.onContentSizeChanged = ^{
         [weakSelf updateMultiLayout];

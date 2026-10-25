@@ -1,6 +1,6 @@
 #pragma once
 #import <Foundation/Foundation.h>
-#import "../GAGlyphSelection.h"
+#import "GAGlyphSelection.h"
 #include "GACmap.h"
 #include "GAOpenType.h"
 namespace ga::layout {

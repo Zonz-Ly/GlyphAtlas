@@ -25,9 +25,9 @@ if [[ ! -f "$CONFIGURATION_FILE" || "$(cat "$CONFIGURATION_FILE")" != "$CONFIGUR
   REBUILD=true
   rm -f "$CONFIGURATION_FILE"
 fi
-for SOURCE in "$ROOT"/Sources/FontLayout/*.cpp "$ROOT"/Sources/FontLayout/*.mm "$ROOT/Sources/GASubstitutionEngine.mm"; do
+for SOURCE in "$ROOT"/Sources/*.cpp "$ROOT"/Sources/*.mm; do
   OBJECT="$OUT/$(basename "${SOURCE%.*}").o"
-  if [[ "$REBUILD" == false && -f "$OBJECT" && "$OBJECT" -nt "$SOURCE" && "$OBJECT" -nt "$0" && -z "$(find "$ROOT/Sources/FontLayout" "$ROOT/Sources/GASubstitutionEngine.h" "$ROOT/Sources/GAGlyphSelection.h" -name '*.h' -newer "$OBJECT" -print -quit)" ]]; then continue; fi
+  if [[ "$REBUILD" == false && -f "$OBJECT" && "$OBJECT" -nt "$SOURCE" && "$OBJECT" -nt "$0" && -z "$(find "$ROOT/Sources" -name '*.h' -newer "$OBJECT" -print -quit)" ]]; then continue; fi
   if [[ "$SOURCE" == *.mm ]]; then
     clang++ "${FLAGS[@]}" -fobjc-arc -c "$SOURCE" -o "$OBJECT"
   else

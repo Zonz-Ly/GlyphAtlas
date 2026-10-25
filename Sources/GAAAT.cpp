@@ -101,10 +101,6 @@ AAT::AAT(View table, bool extended) : extended_(extended) {
 namespace {
 struct Entry {
     unsigned state = 0, flags = 0, first = 0xffff, second = 0xffff;
-    friend bool operator==(const Entry &a, const Entry &b) {
-        return a.state == b.state && a.flags == b.flags && a.first == b.first &&
-               a.second == b.second;
-    }
 };
 class Machine {
     View data_;
@@ -217,16 +213,12 @@ class Machine {
 class Runner {
     Buffer &buffer_;
     Trace *trace_;
-    Budget budget_;
+    Budget ownedBudget_;
+    Budget &budget_;
     uint64_t nextIdentity_ = 1;
     size_t mark_ = 0, first_ = 0, last_ = 0;
     bool marked_ = false;
     std::vector<uint64_t> stack_;
-    std::optional<Span> dependency_;
-    void window(Span span) {
-        if (trace_ && !span.empty())
-            trace_->windows.insert(span);
-    }
     size_t locate(uint64_t identity) const {
         for (size_t i = 0; i < buffer_.size(); i++)
             if (buffer_[i].identity == identity)
@@ -241,7 +233,6 @@ class Runner {
             span = unite(span, buffer_[i].source);
         for (size_t i = first; i < last; i++)
             buffer_[i].source = span;
-        window(span);
     }
     void rearrange(unsigned verb) {
         if (first_ >= last_ || last_ > buffer_.size())
@@ -270,10 +261,8 @@ class Runner {
     void contextual(const Machine &machine, const Entry &entry, size_t cursor) {
         if (buffer_.empty() || (cursor == buffer_.size() && !marked_))
             return;
-        size_t current = std::min(cursor, buffer_.size() - 1);
         if (marked_ && mark_ < buffer_.size())
             if (auto g = machine.contextual(entry.first, buffer_[mark_].glyph)) {
-                window(unite(buffer_[mark_].source, buffer_[current].source));
                 buffer_[mark_].glyph = *g;
             }
         if (cursor < buffer_.size())
@@ -334,7 +323,6 @@ class Runner {
                 buffer_[pos].components = std::move(components);
                 for (size_t p = low; p <= high; p++)
                     buffer_[p].source = source;
-                window(source);
                 pending = {pos};
             }
             if (value & 0x80000000) {
@@ -381,7 +369,6 @@ class Runner {
         unsigned markedCount = entry.flags & 31, currentCount = (entry.flags >> 5) & 31;
         if (markedCount && originalMark < buffer_.size()) {
             Span source = (entry.flags & 0x1000) ? buffer_[originalMark].source : currentSource;
-            window(unite(buffer_[originalMark].source, currentSource));
             insert(machine, entry.second, markedCount, originalMark, entry.flags & 0x400, source);
         }
         cursor = locate(currentIdentity);
@@ -407,7 +394,9 @@ class Runner {
     }
 
   public:
-    Runner(Buffer &buffer, Trace *trace) : buffer_(buffer), trace_(trace), budget_(buffer.size()) {
+    Runner(Buffer &buffer, Trace *trace, Budget *budget = nullptr)
+        : buffer_(buffer), trace_(trace), ownedBudget_(buffer.size()),
+          budget_(budget ? *budget : ownedBudget_) {
         for (auto &item : buffer_) {
             if (!item.identity)
                 item.identity = nextIdentity_++;
@@ -415,50 +404,62 @@ class Runner {
                 nextIdentity_ = std::max(nextIdentity_, item.identity + 1);
         }
     }
-    void run(View data, unsigned type, bool extended) {
-        if (type == 4) {
-            for (auto &item : buffer_)
-                if (auto value = aatLookup(data, item.glyph))
-                    item.glyph = Glyph(*value);
+    void action(const Machine &machine, const Entry &entry, size_t &cursor, unsigned type,
+                bool extended) {
+        if (type == 0) {
+            if (entry.flags & 0x8000)
+                first_ = cursor;
+            if (entry.flags & 0x2000)
+                last_ = std::min(cursor + 1, buffer_.size());
+            if (entry.flags & 15)
+                rearrange(entry.flags & 15);
+        } else if (type == 1)
+            contextual(machine, entry, cursor);
+        else if (type == 2)
+            ligate(machine, entry, cursor, extended);
+        else if (type == 5)
+            cursor = insertion(machine, entry, cursor);
+    }
+    // A prefix end is a transition of this parsed automaton, not a separate
+    // text query. Snapshot only when EOT has an action; never cut an atomic seed.
+    void terminal(const Machine &machine, unsigned state, size_t cursor, unsigned type,
+                  bool extended, const std::string &label) {
+        if (!cursor || cursor >= buffer_.size() ||
+            buffer_[cursor - 1].source.end > buffer_[cursor].source.start)
             return;
-        }
-        Machine machine(data, extended, type);
+        Entry ending = machine.entry(state, 0);
+        if (!machine.actionable(ending))
+            return;
+        budget_.step();
+        Buffer prefix(buffer_.begin(), buffer_.begin() + cursor), before = prefix;
+        Runner trial(prefix, nullptr, &budget_);
+        trial.mark_ = mark_;
+        trial.first_ = first_;
+        trial.last_ = last_;
+        trial.marked_ = marked_;
+        trial.stack_ = stack_;
+        trial.nextIdentity_ = nextIdentity_;
+        trial.action(machine, ending, cursor, type, extended);
+        trace_->changed(before, prefix, label);
+    }
+    void runMachine(const Machine &machine, unsigned type, bool extended, size_t start = 0,
+                    const std::string *label = nullptr) {
         unsigned state = 0;
-        size_t cursor = 0;
-        mark_ = first_ = last_ = 0;
+        size_t cursor = start;
+        mark_ = first_ = last_ = start;
         marked_ = false;
         stack_.clear();
-        dependency_.reset();
         while (cursor <= buffer_.size()) {
             budget_.step();
             bool end = cursor == buffer_.size();
+            if (label && !end)
+                terminal(machine, state, cursor, type, extended, *label);
             unsigned cls = end ? 0 : machine.glyphClass(buffer_[cursor].glyph);
-            Entry entry = machine.entry(state, cls), root = machine.entry(0, cls),
-                  ending = machine.entry(state, 0);
-            if (!end) {
-                // A transition independent of prior state starts a new dependency
-                // island. Actual mark/stack actions add their full source scope.
-                bool boundary = (state == 0 || entry == root) && !machine.actionable(ending);
-                dependency_ = !dependency_ || boundary
-                                  ? buffer_[cursor].source
-                                  : unite(*dependency_, buffer_[cursor].source);
-                if (!boundary)
-                    window(*dependency_);
-            } else if (dependency_ && machine.actionable(entry))
-                window(*dependency_);
-            if (type == 0) {
-                if (entry.flags & 0x8000)
-                    first_ = cursor;
-                if (entry.flags & 0x2000)
-                    last_ = std::min(cursor + 1, buffer_.size());
-                if (entry.flags & 15)
-                    rearrange(entry.flags & 15);
-            } else if (type == 1)
-                contextual(machine, entry, cursor);
-            else if (type == 2)
-                ligate(machine, entry, cursor, extended);
-            else if (type == 5)
-                cursor = insertion(machine, entry, cursor);
+            Entry entry = machine.entry(state, cls);
+            Buffer before = label && machine.actionable(entry) ? buffer_ : Buffer{};
+            action(machine, entry, cursor, type, extended);
+            if (!before.empty())
+                trace_->changed(before, buffer_, *label);
             state = entry.state;
             if (end)
                 break;
@@ -466,26 +467,74 @@ class Runner {
                 cursor++;
         }
     }
+    void run(View data, unsigned type, bool extended) {
+        if (type == 4) {
+            for (auto &item : buffer_)
+                if (auto value = aatLookup(data, item.glyph))
+                    item.glyph = Glyph(*value);
+        } else {
+            Machine machine(data, extended, type);
+            runMachine(machine, type, extended);
+        }
+    }
+    // Match the automaton from productive input origins. Other glyphs remain
+    // in the buffer so a partial seed's surviving GIDs stay in its output.
+    void discover(View data, unsigned type, bool extended, const std::string &label) {
+        if (type == 4)
+            return;
+        Machine machine(data, extended, type);
+        for (size_t start = 0; start < buffer_.size(); start++) {
+            budget_.step();
+            Entry root = machine.entry(0, machine.glyphClass(buffer_[start].glyph));
+            if (!root.state && !machine.actionable(root) && !root.flags)
+                continue;
+            Buffer candidate = buffer_;
+            Runner matcher(candidate, trace_, &budget_);
+            matcher.runMachine(machine, type, extended, start, &label);
+        }
+    }
 };
 } // namespace
+bool AAT::hasVerticalSubstitutions() const {
+    for (const auto &chain : chains_) {
+        for (const auto &feature : chain.features)
+            if (feature.selector.type == 4)
+                return true;
+        for (const auto &sub : chain.subtables)
+            if (!(sub.coverage & 0x20000000) && (sub.coverage & 0x80000000))
+                return true;
+    }
+    return false;
+}
 void AAT::substitute(Buffer &buffer, std::optional<AATSelector> selector, bool rtl, bool vertical,
                      Trace *trace, bool verticalSubstitutionsOnly) const {
+    applyFeatures(buffer,
+                  selector ? std::vector<AATSelector>{*selector} : std::vector<AATSelector>{}, rtl,
+                  vertical, trace, verticalSubstitutionsOnly);
+}
+void AAT::applyFeatures(Buffer &buffer, const std::vector<AATSelector> &selectors, bool rtl,
+                        bool vertical, Trace *trace, bool verticalSubstitutionsOnly) const {
     std::string label = name();
-    if (selector)
-        label += ":" + std::to_string(selector->type) + ":" + std::to_string(selector->setting);
+    const Buffer original = trace && trace->inventory ? buffer : Buffer{};
+    const auto originalClusters = clusters(original);
+    Budget discoveryBudget(buffer.size());
+    std::set<std::tuple<Span, std::vector<Glyph>, std::string>> recorded;
+    for (const auto &selector : selectors)
+        label += ":" + std::to_string(selector.type) + ":" + std::to_string(selector.setting);
     for (const auto &chain : chains_) {
         uint32_t flags = chain.defaults;
-        if (selector)
-            for (const auto &feature : chain.features)
-                if (feature.selector == *selector)
-                    flags = (flags & feature.disable) | feature.enable;
+        for (const auto &feature : chain.features)
+            if (std::find(selectors.begin(), selectors.end(), feature.selector) != selectors.end())
+                flags = (flags & feature.disable) | feature.enable;
         for (const auto &sub : chain.subtables) {
             if (!(sub.flags & flags))
                 continue;
             if (verticalSubstitutionsOnly) {
                 bool directional = !(sub.coverage & 0x20000000) && (sub.coverage & 0x80000000);
                 bool selected =
-                    selector && selector->type == 4 && (sub.flags & flags & ~chain.defaults);
+                    (sub.flags & flags & ~chain.defaults) &&
+                    std::any_of(selectors.begin(), selectors.end(),
+                                [](AATSelector selector) { return selector.type == 4; });
                 if (!directional && !selected)
                     continue;
             }
@@ -497,6 +546,79 @@ void AAT::substitute(Buffer &buffer, std::optional<AATSelector> selector, bool r
             if (reverse)
                 std::reverse(buffer.begin(), buffer.end());
             try {
+                if (trace && trace->inventory) {
+                    // Match this parsed rule against the supplied input and
+                    // preceding candidate outputs. A default ffi must not hide
+                    // the stylistic mappings of f, ff, or fi in later tables.
+                    size_t prior = trace->changes.size();
+                    auto append = [&](Change change) {
+                        if (recorded.emplace(change.source, change.glyphs, change.feature).second)
+                            trace->changes.push_back(std::move(change));
+                    };
+                    auto mapped = [&](Span source, const std::vector<Glyph> &glyphs) {
+                        auto output = glyphs;
+                        for (auto &glyph : output)
+                            if (auto value = aatLookup(sub.data, glyph))
+                                glyph = Glyph(*value);
+                        if (output != glyphs)
+                            append({source, std::move(output), label});
+                    };
+                    auto explore = [&](Buffer candidate) {
+                        Buffer input = candidate;
+                        Trace found;
+                        Runner(candidate, &found, &discoveryBudget)
+                            .discover(sub.data, sub.type, extended_, label);
+                        Runner(candidate, nullptr, &discoveryBudget)
+                            .run(sub.data, sub.type, extended_);
+                        found.changed(input, candidate, label);
+                        for (auto &change : found.changes) {
+                            if (reverse)
+                                std::reverse(change.glyphs.begin(), change.glyphs.end());
+                            append(std::move(change));
+                        }
+                    };
+                    if (sub.type == 4) {
+                        for (const auto &cluster : originalClusters)
+                            mapped(cluster.source, cluster.glyphs);
+                        for (auto cluster : clusters(buffer)) {
+                            if (reverse)
+                                std::reverse(cluster.glyphs.begin(), cluster.glyphs.end());
+                            mapped(cluster.source, cluster.glyphs);
+                        }
+                    } else
+                        explore(buffer);
+                    Buffer input = original;
+                    if (reverse)
+                        std::reverse(input.begin(), input.end());
+                    bool same = input.size() == buffer.size() &&
+                                std::equal(input.begin(), input.end(), buffer.begin(),
+                                           [](const Item &a, const Item &b) {
+                                               return a.glyph == b.glyph && a.source == b.source;
+                                           });
+                    if (!same && sub.type != 4)
+                        explore(std::move(input));
+                    std::set<std::pair<Span, std::vector<Glyph>>> visited;
+                    for (size_t i = 0; i < prior; i++) {
+                        const Change previous = trace->changes[i];
+                        if (previous.glyphs.empty() ||
+                            !visited.emplace(previous.source, previous.glyphs).second)
+                            continue;
+                        if (sub.type == 4) {
+                            mapped(previous.source, previous.glyphs);
+                            continue;
+                        }
+                        Buffer candidate;
+                        for (Glyph glyph : previous.glyphs) {
+                            Item item;
+                            item.glyph = glyph;
+                            item.source = previous.source;
+                            candidate.push_back(item);
+                        }
+                        if (reverse)
+                            std::reverse(candidate.begin(), candidate.end());
+                        explore(std::move(candidate));
+                    }
+                }
                 Runner(buffer, trace).run(sub.data, sub.type, extended_);
             } catch (const InvalidTable &error) {
                 throw InvalidTable(name() + " type " + std::to_string(sub.type) + ": " +

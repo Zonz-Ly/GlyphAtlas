@@ -1,5 +1,12 @@
 #import <Foundation/Foundation.h>
 NS_ASSUME_NONNULL_BEGIN
+/// Actual layout choice for one atomic source span, distinct from the union
+/// of available candidates. Coordinates and optional settings are applied.
+@interface GAGlyphLayoutRun : NSObject
+@property(nonatomic) NSRange range;
+@property(nonatomic, copy) NSArray<NSNumber *> *glyphIDs;
+@end
+
 /// Attribute stored on a selected, unencoded replacement in the input text.
 /// The value is a GAGlyphSelection. A run may cover one character or, for a
 /// ligature, all of its source characters.

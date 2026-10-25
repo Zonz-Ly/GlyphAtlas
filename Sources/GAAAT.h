@@ -38,9 +38,13 @@ class AAT {
     const std::vector<AATSelector> &selectors() const {
         return selectors_;
     }
+    bool hasVerticalSubstitutions() const;
     std::string name() const {
         return extended_ ? "morx" : "mort";
     }
+    void applyFeatures(Buffer &buffer, const std::vector<AATSelector> &selectors, bool rtl,
+                       bool vertical, Trace *trace = nullptr,
+                       bool verticalSubstitutionsOnly = false) const;
     void substitute(Buffer &buffer, std::optional<AATSelector> selector = {}, bool rtl = false,
                     bool vertical = false, Trace *trace = nullptr,
                     bool verticalSubstitutionsOnly = false) const;

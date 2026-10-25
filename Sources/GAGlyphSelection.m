@@ -3,6 +3,9 @@ NSString *const GAGlyphSelectionAttributeName = @"com.zonz.GlyphAtlas.glyphSelec
 
 #pragma mark - GAGlyphSelection
 
+@implementation GAGlyphLayoutRun
+@end
+
 @implementation GAGlyphSelection
 
 - (instancetype)initWithSourceText:(NSString *)sourceText

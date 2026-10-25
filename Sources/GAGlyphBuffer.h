@@ -49,7 +49,7 @@ struct Change {
 };
 struct Trace {
     std::vector<Change> changes;
-    std::set<Span> windows;
+    bool inventory = false;
     void changed(const Buffer &before, const Buffer &after, const std::string &feature);
 };
 struct Budget {

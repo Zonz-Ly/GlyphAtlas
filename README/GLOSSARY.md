@@ -13,76 +13,41 @@
 
 ## 0. 架构速查
 
-```
-侧栏输入（attributedText）
-  │
-  ├─ GAMainWindowController.scheduleAnalysis
-  │    ├─ selectionRunsInAttributedText:didChange:
-  │    ├─ GATextScanModel.updateText:
-  │    │    ├─ rebuildGroups
-  │    │    │    ├─ GAGroupsForText()
-  │    │    │    └─ content → [1 字组 index]
-  │    │    ├─ desiredSubitems（单字 + 多字 context）
-  │    │    ├─ 缓存/旧 pending 对账
-  │    │    ├─ 缓存命中按索引 apply
-  │    │    └─ notify → textScanModelDidUpdate:
-  │    ├─ publishScanDisplayWithSelections:text:
-  │    │    ├─ buildDisplayGroupsFromBaseGroups:text:selections:document:
-  │    │    ├─ GASidebarViewController.setGroups:/applyStreamedGroups:
-  │    │    └─ GADetailViewController.setMultiText:groups:
-  │    └─ runScanLoop
-  │         ├─ scanModel.startNextSubitem
-  │         ├─ analysisQueue: GAFontDocument.rawScanContent:
-  │         └─ main: scanModel.completeSubitem:result:
-  │              ├─ cache[content] = raw
-  │              ├─ 单字：按 content 索引分发给所有同字组
-  │              ├─ 多字：apply 到对应目标组
-  │              ├─ publish
-  │              └─ runScanLoop（下一子项）
-  │
-  └─ 侧栏 pending（追加/激活）→ 下一次快照解析 → 选中 → 整组滚动 → notify
+```text
+侧栏 attributedText + 明确选择的 GID
+  → GAMainWindowController.scheduleAnalysis（generation）
+  → analysisQueue: GATextQueryModel.analyzeText:selections:cancelled:
+      → GAFontDocument.rawScanContent:selections:
+          → GASubstitutionEngine：已解析表程序 + 完整输入
+          → 单字上下文目录 + GSUB/AAT 实际匹配 + 所有 FV 分支
+      → applyRawResult:（按原文 UTF-16 来源投影字符组）
+  → 一份完整 snapshot → GABuildDisplayGroups
+      → Sidebar：行相同则重绑，行改变则保留可见锚点后刷新
+      → 原有 NSTextView / TextKit 2：原生显示
+
+点击：TextKit 字元位置 + 行边界
+  → 两个显示开关都关闭：基础/明确选择 GID 快路
+  → 任一开启：自己的规则执行器选定 GID + 完整来源范围
+  → Sidebar.selectGlyphIDs:textRange:（不刷新列表）
 ```
 
-要点：
-
-1. **content 缓存与 range 无关**：`GAScanCandidate.sourceRange` 只带相对 content 的 UTF-16 range，不带输入框绝对位置。
-2. **`GAGlyphVariant` 与 range 绑定**：只在 `applyRawResult:` 时按当前 range 创建；同一 content 可在多个位置各 apply 一次。
-3. **显示组 = 模型组 + 选择组 + 组合组**；组合组按“最后一个源字符之后”插入。
-4. **扫描只处理缺失 content**：旧 pending 保留，新缺失项追加；不重扫缓存内容。
-5. **UI 在 main，raw scan 在 analysisQueue**；首次 `setGroups:`，后续 `applyStreamedGroups:`；多字重建由单字完成 + seed 签名驱动。
+每次文本/选择变化是一项完整查询、一次完整发布。没有逐字任务、子串队列、分批候选发布或额外多字 worker。过时代次不能提交；空文本也会清空当前身份和展示。切轴重绑上次完整结果及原生度量，保留输入、选定 GID 和列表顺序。
 
 ## 1. 数据模型
 
-| 中文      | English             | 说明                                                                              | 代码符号                                                    |
-| ------- | ------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| 字体文档    | font document       | 已载入字体的查询入口，持有 descriptor、font、`_gsub`、settings                                  | `GAFontDocument`（`GAFontEngine.h`）                      |
-| 字体箱     | font box            | 持有 `CTFontRef` 的轻量 ARC 包装                                                       | `GAFontBox`                                             |
-| 字形变体    | glyph variant       | 一次 shaping 产生的字形组合，可含多 GID/连字，带 range                                           | `GAGlyphVariant`                                        |
-| 字符组     | character group     | 文本中一个合成字符或一个显示组，携带全部候选变体                                                        | `GACharacterGroup`                                      |
-| 字形选择    | glyph selection     | 一段替换运行的持久元数据（不含文本偏移）                                                            | `GAGlyphSelection`                                      |
-| 全字条目    | all-glyph entry     | 全字视图一行：GID 与 Unicode 标量                                                         | `GAAllGlyphEntry`                                       |
-| 行项      | row item            | 侧栏中“字符组 + 变体”的统一行模型                                                             | `GARowItem`（`GAGlyphViews.h`）                           |
-| 字形键     | glyph key           | 变体的稳定标识（GID 列表，逗号连接）                                                            | `GAGlyphVariant.glyphKey`                               |
-| 扫描子项    | scan subitem        | 一个待扫/扫描中/已完成的 context；带 range/start                                             | `GATextScanSubitem`                                     |
-| 扫描项     | scan item           | 一次文字变动产生的一批工作                                                                   | `GATextScanItem`                                        |
-| 扫描组     | scan group          | 同一字数的全部项；不是 `GACharacterGroup`                                                  | `GATextScanGroup`                                       |
-| 扫描模型    | text scan model     | 理想集、缓存、队列、对账、1 字组索引与发布                                                          | `GATextScanModel`                                       |
-| 子项状态    | subitem state       | pending / scanning / completed                                                  | `GATextScanSubitemState`                                |
-| raw 候选  | raw candidate       | 与 range 无关的候选：glyphIDs/positions/sources/base/ligature/targetOffset/sourceRange | `GAScanCandidate`                                       |
-| raw 结果  | raw scan result     | 一个 content 的候选列表                                                                | `GARawScanResult`                                       |
-| 内容      | content             | 缓存键：一个合成字符或连续上下文的子串                                                             | `GATextScanSubitem.content`                             |
-| 内容缓存    | content cache       | `content → GARawScanResult`，与 range 无关                                          | `GATextScanModel._cache`、`rawScanContent:`              |
-| 内容索引    | content index       | `content → [1 字组 index]`，用于 O(k) 分发                                             | `GATextScanModel._singleGroupIndicesByContent`（private） |
-| 理想集     | desired set         | 当前文本的全部连续 context，不跨换行、无长度上限                                                    | `desiredSubitems`                                       |
-| 对账      | reconcile           | 理想集与缓存/旧 pending 比对，保留旧项、移除失效、追加新项                                              | `updateText:`                                           |
-| 旧项 / 新项 | old item / new item | 旧未完成项优先；新缺失项按组追加在旧项之后                                                           | `GATextScanGroup.items` 数组顺序                            |
-| 应用      | apply               | 把 raw 候选按当前 range 建成 `GAGlyphVariant`                                           | `applyRawResult:contentRange:startGroupIndex:groups:`   |
-| 组合组     | combination group   | 跨多个字符的替换结果（连字/上下文），只显示、不替换源文本                                                   | `GACharacterGroup.insertedLigature`                     |
-| 基础变体    | base variant        | 未应用替换特性的原始字形                                                                    | `GAGlyphVariant.isBase`                                 |
-| 特性来源    | feature sources     | 产生变体的 OpenType tag/value（如 `liga`、`aalt 1`）                                     | `GAGlyphVariant.featureSources`                         |
-| 目标偏移    | target offset       | 候选目标组在 content 内的相对合成字符索引                                                       | `GAScanCandidate.targetOffset`                          |
-| 相对源范围   | source range        | 候选 cluster 相对 content 的 UTF-16 范围                                               | `GAScanCandidate.sourceRange`                           |
-| 实际候选    | actual candidate    | 基础字体 shaping 得到的候选（source 记为 `actual`）                                          | `addRawClusters:...`                                    |
+| 符号 | 当前含义 |
+| --- | --- |
+| `GAFontDocument` / `GAFontBox` | 字体资源、原生字体所有权、查询与度量入口 |
+| `GAGlyphVariant` | 已绑定字体与原文范围的显示字形，可包含多个 GID |
+| `GACharacterGroup` | 一个合成字符、明确选择组或额外组合组，持有候选列表 |
+| `GAGlyphSelection` / `GAGlyphSelectionRun` | 持久 GID 元数据与 attributed-string UTF-16 范围 |
+| `GAGlyphQueryIdentity` | 不可变文字 + 选择范围 + 完整 GID 序列；不把来源标签当执行配方 |
+| `GAScanCandidate` / `GARawScanResult` | 完整输入的一组原始候选，范围相对该输入；旧 Scan 命名仍保留 |
+| `GATextQueryModel` | 当前完整输入、结果和显示投影；仅保存上次身份/结果，没有第二套历史缓存 |
+| `GAGlyphLayoutRun` | 当前设置实际选定的 GID + 来源范围；与候选并集分开 |
+| `GAAllGlyphEntry` / `GARowItem` | 全字 inventory 与侧栏行数据 |
+
+`base` 是原子输入的默认/明确选择基准；不等于“没有任何特性来源”。有真实来源就显示，没有就留空，不添加 `actual`。组合候选保留完整来源范围；同一输出 GID 但消耗范围不同的 ff/ffi 是不同行。
 
 ## 2. 字体与 CoreText
 
@@ -148,65 +113,27 @@
 - WOFF/WOFF2 依赖系统 CoreText 版本；最低目标 macOS 12.0 未实机验证，以上为 14.8.7 结果。
 - `Info.plist` 的 `public.truetype-ttc-font` 在系统里不存在（`UTType typeWithIdentifier:` 返回 nil）；实际生效的是 `public.truetype-collection-font`。不影响打开，是死声明。
 
-## 3. 整形、变体与扫描
+## 3. 整形、变体与查询
 
-### 3.1 文本切分
+- `GAGroupsForText` 按合成字符建立显示组；`GATextPreparation` 保留 UTF-16 来源、脚本、bidi、UVS 和 Arabic joining。硬换行分开执行，不跨段匹配连字。
+- GSUB 的 `collect` 在消费输入前收集所有匹配规则，包括重叠和嵌套上下文连字；正常排版选择路径仍遵守 lookup 顺序。
+- AAT 候选发现直接遍历状态程序、可生产动作的起点及段尾状态，并把候选传过后续子表；没有相依岛或文本窗口重查队列。状态前缀/缓冲副本是一次查询内的执行状态，不是另一轮文字查询。
+- 查询字形自身的上下文变体由 `GARelatedSubstitutions` 读取，合并所有 FV 分支；不要求输入周围文字。连字必须匹配完整实际输入/所选 GID。
+- `GATextQueryModel.analyzeText:selections:cancelled:` 完成后只投影一次，旧结果在新查询成功前保持完整。取消的查询不改当前身份/结果。
+- `GABuildDisplayGroups` 合并模型、明确选择和额外组合组，不用旧 CoreText 可达性过滤新结果。
 
-| 中文         | English                 | 说明                                                     | 代码符号                                |
-| ---------- | ----------------------- | ------------------------------------------------------ | ----------------------------------- |
-| 合成字符组      | composed character      | 按 `NSStringEnumerationByComposedCharacterSequences` 切分 | `GAGroupsForText()`                 |
-| 单字组        | single-character group  | 一个合成字符，扫描 length = 1                                   | `GATextScanSubitem.length == 1`     |
-| 多字 context | multi-character context | 连续 2..n 个合成字符，不跨换行                                     | `desiredSubitems`                   |
-| 字符范围       | text range              | 组在整段文本中的 UTF-16 范围                                     | `GACharacterGroup.textRange`        |
-| 源文本范围      | source text range       | 连字/替换覆盖的源字符范围                                          | `GAGlyphVariant.sourceTextRange`    |
-| 硬换行        | hard line break         | 模型 U+000A；输入框 U+23CE 标记；扫描不跨行                          | `GALineBreakAttributeName`（private） |
+### 解析、共享与快取
 
-### 3.2 变体发现
+`GAFontProgram` 首次建立时读取整个相关字体表，解析 script/feature/lookup、上下文模式、FV 分支与反向 alternate 索引。部分子表数据保留有界字节视图，执行时按偏移读取；不是输入一个字符才重新读取/解析整张 GSUB，也不是预先算出所有可能文本的结果。
 
-| 中文         | English               | 说明                                                | 代码符号                                                                 |
-| ---------- | --------------------- | ------------------------------------------------- | -------------------------------------------------------------------- |
-| shaping    | shaping               | 文本 + 字体 → CTRun → GID 序列                          | `CTLineCreateWithAttributedString`、`CTLineGetGlyphRuns`              |
-| 单字扫描       | per-character scan    | 单字 content → base + GSUB alternates + settings    | `characterVariantsForContent:`、`rawSingleCharacterResultForContent:` |
-| 上下文扫描      | context scan          | 多字 content → base/feature clusters，按 cluster 目标归组 | `rawContextResultForContent:groups:`、`addRawClusters:...`            |
-| GSUB 直接替换  | direct GSUB alternate | 从 GSUB 表直接取 single/alternate                      | `GASubstitutionEngine.discoverText:/discoverGlyphIDs:`                                   |
-| 单字形替换      | SingleSubst           | GSUB lookup type 1，format 1/2                     | `FontLayout/GAOpenType` + `GASubstitution` + family index                                      |
-| 备用字形替换     | AlternateSubst        | GSUB lookup type 3                                | `FontLayout/GAOpenType` + `GASubstitution` + family index                                     |
-| 整串 cluster | whole-text cluster    | 一次 shaping 的连续 cluster；start/end/glyphs           | `GAWholeTextClusters`（private）                                       |
-| 组跨度        | group span            | cluster 覆盖的合成字符组范围                                | `GAGroupSpanForCluster`（private）                                     |
-| 特性设置       | feature setting       | 一个 AAT/OpenType feature 的字体箱和来源                   | `GAFeatureSetting`（private）                                          |
-| 实际候选       | actual candidate      | 基础字体的 cluster，source = `actual`                   | `addRawClusters:...`                                                 |
-| 连字 / 上下文替换 | ligature / contextual | cluster 跨多个合成字符                                   | `GAScanCandidate.ligature`、`sourceRange`                             |
-| 候选去重       | candidate dedup       | raw 内按 `(target, glyphs)` 去重并合并 sources           | `addRawClusters:...`                                                 |
-| 特性来源       | feature source        | `sourceName → tag → key`；AAT 不标                   | `featureSources`                                                     |
+| 保留数据 | 保存什么 | 省掉什么 |
+| --- | --- | --- |
+| 共享 `Resource` | 表字节、已解析程序与索引 | 切轴后的重复读取/解析 |
+| `relatedCache`，2048 项 / 16 MiB 软限制 | 某个 GID 的上下文候选、来源、directFamily 分类 | 对同一 GID 重复遍历 feature/嵌套动作 |
+| `cache`，2048 项 / 32 MiB 软限制 | 完整文字+选择，或字面 GID 序列的候选结果 | 对完全相同输入重复执行发现规则 |
+| 查询模型当前结果 | 当前一次 raw 结果及身份 | 相同请求重复提交、切轴重新发现 |
 
-### 3.3 扫描模型（当前）
-
-| 中文        | English              | 说明                                                    | 代码符号                                                            |
-| --------- | -------------------- | ----------------------------------------------------- | --------------------------------------------------------------- |
-| 更新文本      | update text          | 重建 groups、单字索引、理想集、对账、通知                              | `GATextScanModel.updateText:`（单参数）                              |
-| 单字索引      | single-group index   | `content → [group index]`，缓存命中时分发用                    | `_singleGroupIndicesByContent`（private）                         |
-| 理想集       | desired set          | 当前文本全部连续 context                                      | `desiredSubitems`                                               |
-| 新缺失项      | new missing item     | 无缓存、无旧 pending 的 context                              | `updateText:`、`missingItemByLength`                             |
-| 旧 pending | old pending          | 仍有效、未扫完的子项；保留在旧项先扫                                    | `GATextScanSubitem.state`                                       |
-| 对账        | reconcile            | 缓存/旧 pending/新理想集三者对齐                                 | `updateText:`                                                   |
-| 扫描循环      | scan loop            | 取子项 → raw → 主线程 complete → 下一项                        | `runScanLoop`                                                   |
-| 单字完成      | single completion    | 长度 1 只 apply 一次，按 content 索引分发到所有同字组                  | `completeSubitem:result:`、`applySingleCharacterResult:content:` |
-| 多字完成      | multi completion     | 按 candidate target 合并到目标组                             | `completeSubitem:result:`、`applySubitem:`                       |
-| 单字扫描完成    | single scan complete | 没有长度 1 的 pending 子项即完成；没有组也返回 YES                     | `singleCharacterScanComplete`（`GAMainWindowController` private） |
-| 多字重建门槛    | multi rebuild gate   | 文本变化且单字完成，或 seed 签名变化                                 | `shouldUpdateMulti`                                             |
-| 清空重置      | clear reset          | 清空文本时重置 `workerLastMultiText/Seeds`                   | `clearScanDisplay`                                              |
-| 发布代次      | generation guard     | 旧 generation 不得写回新文本的多字签名/snapshot                    | `workerGeneration`、`publishWorkerSnapshotWithText:...`          |
-| 应用 raw    | apply raw            | 目标组 = startGroupIndex + targetOffset；同 key 合并 sources | `applyRawResult:contentRange:startGroupIndex:groups:`           |
-| 扫描组列表     | scan groups          | 队列的组/项/子项结构                                           | `scanGroups`                                                    |
-
-### 3.4 单字分发的准确含义
-
-- 单字按 content 去重：`aaaa` 只创建一个 `a` 扫描子项。
-- 该子项只覆盖第一个 `a` 的 range。
-- 完成后用 `_singleGroupIndicesByContent[@"a"]` 遍历四个 1 字组，把同一个 `GARawScanResult` 合并进各自的 `variants`。
-- 这是**内存分发**，不是重新 shaping、不是重新读字体表。
-- 当前 `completeSubitem:` 对长度 1 只做一次 apply；`aaaa` 仍得到 4 个变体。
-- 所有单字只按 content cache 判断。
+共享范围是同一文档资源及其坐标版本；不是整个进程所有窗口的全局字体缓存。两个 NSCache 保存派生查询结果，不是重复保存解析程序；限额为近似 cost，不能当作精确内存占用。当前整理没有改变快取策略。
 
 ## 4. 多字视图（TextKit 2）
 
@@ -279,19 +206,19 @@
 | ---------- | ------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------- |
 | 输入框        | input field         | `GASearchField`（`NSSearchField` 子类），无放大镜/清除按钮；左右各 9pt 内缩由 `GASearchFieldCell` 固定 | `GASearchField`、`GASearchFieldCell`、`GASidebarViewController.searchField` |
 | 字段编辑器      | field editor        | 编辑时的 `NSTextView`                                                              | `currentEditor`、`GASearchFieldEditor`                                     |
-| 换行标记       | line-break marker   | 输入框 U+23CE + 自定义属性；模型为 U+000A                                                  | `GALineBreakAttributeName`（private）                                       |
-| 纯文本规范化     | plain normalization | 只保留字体、颜色、selection run、换行标记                                                    | `applyPlainAttributesToStorage:fromText:`                                 |
+| 换行标记       | line-break marker   | 输入框 U+23CE + 自定义属性；模型为 U+000A                                                  | `GALineBreakAttributeName`（`GASidebarInput`）                                       |
+| 纯文本规范化     | plain normalization | 只保留字体、颜色、selection run、换行标记                                                    | `GANormalizedSidebarInput`                                 |
 | 选择运行       | selection run       | 属性字符串中的 range + `GAGlyphSelection`                                             | `GAGlyphSelectionAttributeName`                                           |
 | 选择组        | selection group     | run 在显示列表中的组表示                                                                 | `groupForSelectionRun:document:`                                          |
 | 字形列表       | glyph list          | 字符组/变体/seed 行                                                                  | `NSTableView`、`setGroups:`                                                |
-| 流式列表       | streamed list       | 后续快照原地重建，保留选中锚点                                                                | `applyStreamedGroups:`                                                    |
+| 完整列表更新 | complete list update | 行相同重绑；结构改变时保持可见锚点 | `setGroups:` / `updateGroupsWithSameRows:` |
 | 变体行        | variant cell        | 缩略图、名称、来源、Unicode 徽章                                                           | `GAVariantCellView`                                                       |
 | 缩略图        | thumbnail           | 34pt 图标、32pt/em；按 advance × (ascent+descent) 的页面居中，baseline=descent；墨迹可画到行内边距 | `GAGlyphView`、`pageForVariant:usesVerticalMetrics:NO`                    |
 | Unicode 徽章 | Unicode badge       | 16pt 高、3pt gap、4pt 横向 padding                                                  | `GAUnicodeCodesView`、`GAUnicodeBadgeView`                                 |
 | pending 选择 | pending selection   | 追加/激活后按 range → 精确 GID → base 行解析                                              | `pendingSelectionGlyphKey`、`rowForPendingSelection`                       |
-| pending 等待 | pending wait        | 组/base 未出现：不恢复旧选择、不跳第一                                                         | `setGroups:`、`applyStreamedGroups:`                                       |
+| pending 等待 | pending wait        | 组/base 未出现：不恢复旧选择、不跳第一                                                         | `setGroups:`                                       |
 | 组滚动        | group scroll        | 组放不下→顶对齐；能放下：顶/底/不动                                                            | `scrollGroupContainingRow:`                                               |
-| 手动选择       | manual selection    | 点击行清空 pending；流式快照不覆盖                                                          | `tableViewSelectionDidChange:`                                            |
+| 手动选择       | manual selection    | 点击行清空 pending；完整快照不覆盖                                                          | `tableViewSelectionDidChange:`                                            |
 | 激活         | activate            | Return/双击；编码替换文本，无编码建 run；Shift 时插到自身 source range 右侧（A）                                  | `activateGlyphVariant:inGroup:`                                           |
 | Shift 激活   | shift activation    | 触发事件里只有 Shift：把点中字形插到自身 source range 右缘，原字形不动；不选中新项，原选中行保持                                 | `GAModifiersAre(modifiers, Shift)`、`activateRowAtIndex:modifiers:`、`onGlyphShiftActivated`、`insertGlyphVariant:inGroup:` |
 | 激活 payload | activation payload  | 有 Unicode → 首个 Unicode 字符（无 run）；无 Unicode → sourceText + run                         | `activationPayloadForVariant:sourceText:selection:`                       |
@@ -346,33 +273,18 @@
 
 ## 10. 关键对象关系
 
-```
-GAFontDocument
-  ├─ allGlyphEntries
-  ├─ rawScanContent:
-  │    └─ GARawScanResult
-  │         └─ GAScanCandidate
-  ├─ applyRawResult:... ──→ GACharacterGroup.variants
-  ├─ verticalSubstituteForGlyph:
-  └─ inkBounds/advance/vertical metrics
-
-GATextScanModel
-  ├─ _groups: [GACharacterGroup]
-  ├─ _cache: content → GARawScanResult
-  ├─ _singleGroupIndicesByContent: content → [index]
-  ├─ _scanGroups: [GATextScanGroup → GATextScanItem → GATextScanSubitem]
-  └─ updateText: / startNextSubitem / completeSubitem:
-
-输入框 attributed string
-  └─ GAGlyphSelectionAttributeName
-       └─ GAGlyphSelection (sourceText / glyphIDs / featureSources / ligature)
-
-buildDisplayGroupsFromBaseGroups:
-  source groups
-  + selection groups
-  + combination groups
-  → GASidebarViewController.setGroups:/applyStreamedGroups:
-  → GADetailViewController.setMultiText:groups:
+```text
+GAFontDocument → GASubstitutionEngine → GAFontProgram / Resource
+                                     ├─ parsed table programs + indices
+                                     ├─ per-GID catalogue cache
+                                     └─ whole-input discovery cache
+GATextQueryModel → current query identity + GARawScanResult → GACharacterGroup
+GABuildDisplayGroups → source / selection / combination groups
+GAMultiGlyphView → 原有 NSTextView / TextKit 2
+                ├─ GATextDisplay：font settings、固定 GID 的显示副本
+                └─ GATextHitMap：行边界、自己的规则选择、原文范围投影
+GASidebarViewController → 列表、选择、滚动锚点与通知
+                       → GASidebarInput：输入编辑器、换行标记、属性规范化
 ```
 
 ## 11. 术语歧义与统一写法
@@ -405,26 +317,15 @@ buildDisplayGroupsFromBaseGroups:
 | 缺字      | missing、.notdef、fallback | GID 0 或字体无字形               | 不是 fallback 字体 GID |
 | 种子      | seed、替换字、选中字形            | 用户激活的无编码替换                 | 不是 base variant    |
 
-### 11.3 扫描/数据
+### 11.3 查询/数据
 
-| 主术语   | 也常被说成                      | 准确含义                               | 不要混淆                 |
-| ----- | -------------------------- | ---------------------------------- | -------------------- |
-| 扫描    | scan、raw scan、重新读字         | `rawScanContent:`/`GASubstitutionEngine` | 不是内存 apply           |
-| 遍历    | loop、遍历组                   | 遍历内存数组                             | 不是重新 shaping         |
-| 分发    | apply、应用、合并                | 把已算好的 candidate 合并进组               | 不是重新扫描               |
-| cache | 缓存、content cache           | `content → GARawScanResult`        | 不是 desired set       |
-| 理想集   | desired set、待扫集            | 当前文本全部 context                     | 不是 cache             |
-| 内容    | content                    | 子串，缓存键                             | 不是 range，不是 GID key  |
-| 字形键   | glyph key、key              | GID 序列字符串                          | 不是 content           |
-| 字符组   | group、GACharacterGroup     | 显示/文本的合成字符组                        | 不是 `GATextScanGroup` |
-| 扫描组   | scan group、GATextScanGroup | 按字数分的扫描队列组                         | 不是字符组                |
-| 扫描子项  | subitem                    | 一个待扫 context                       | 不是变体                 |
-| 候选    | candidate、raw 候选           | range 无关的 raw 结果                   | 不是 `GAGlyphVariant`  |
-| 变体    | variant、glyph variant      | range-bound 的显示字形组合                | 不是 raw candidate     |
-| 1 字组  | 单字组、single group           | 一个合成字符的字符组                         | 不是单字扫描子项             |
-| 组合组   | 连字组、context group          | 跨多字符的显示组                           | 不是字符组/选择组            |
-| 发布    | publish、推送                 | 把 snapshot 发到 UI                   | 不是 apply             |
-| 完成    | complete、completed         | 子项状态/单字扫描无 pending                 | 不是“没有组”              |
+- **解析**：字体表字节 → 规则结构，只随资源建立；不是查某段文字。
+- **发现**：输入与规则 → 可浏览候选并集；不等于原生显示最终选中哪个 GID。
+- **选择预测**：按实际坐标、开关、规则顺序执行，得到一个确定布局结果。
+- **投影 / apply**：已有候选 → 当前原文范围与显示模型；不是再解析或重新匹配。
+- **发布**：一份完整 snapshot → 主线程；没有单字/多字任务进度状态。
+- **快取**：规则、每 GID 目录、完整输入结果、当前模型结果职责不同；见第 3 节。
+- **字符组**是 `GACharacterGroup`；旧 scan group/item/subitem 已删除。
 
 ### 11.4 选择/UI
 
@@ -453,14 +354,13 @@ buildDisplayGroupsFromBaseGroups:
 
 ## 12. 已知限制
 
-- 初次完整扫描是 O(n²) 个 context；完整扫描是产品要求，但长文本仍慢。
-- 缓存按 content 保留，长文本下内存会增长；上限是后续工作。
+- 完整候选发现仍需执行各 feature/selector/FV 分支；AAT 每起点状态遍历及候选传播可能很慢，没有承诺全字体线性复杂度。
+- 派生候选快取使用 NSCache 软限额；长文本发现与 AAT 起点/段尾遍历仍可能昂贵，不能声称本轮所有字体都更快。
 - 全字视图的页面度量缓存按 GID 分配（约 56B/字；62k 字形约 3.5MB），换字体时释放。
 - 多字视图竖排墨迹越出页面会被裁切；横排保留外扩。
 - 多字视图组合组只浏览，不替换源文本。
 - 多 GID 种子已在本实验中修复：显示副本展开所有组件，UTF-16 点击索引映射回原文。
 - 侧栏整组滚动在组比可视区高时只保证顶部。
-- `setGroups:` / `applyStreamedGroups:` 未合并：fallback、notify、pending 行为不同。
 - `setTextScale:` 在值未变时仍会 rebuild；当前未加保护（用户暂不动）。
 - 窗口最小尺寸文档冲突：`PRODUCT-LOG.md` 600×400，代码 `minSize` 600×390、初始 600×400，待确认。
 - 搜索框左右各 9pt 内缩由 `GASearchFieldCell` override 三个 rect 实现以兼容 macOS 26+。
@@ -476,13 +376,11 @@ buildDisplayGroupsFromBaseGroups:
 | `GAFontResource` / `GAFontInstance` | 纯 CoreText 按默认坐标归并资源，保存实例菜单与轴；多资源 TTC 才显示选择 sheet |
 | `GANormalizedFont` | 共同非默认坐标→默认坐标后 `CFEqual(CTFont)`，不经过 CGFont |
 | `GAVariationViewController` / `GAVariationSlider` | 「可變」面板；系统 margins 与控件 intrinsic size 布局，数字框固定 70pt；方向键 ±1，Shift+方向键 ±10；滑杆连续更新 |
-| `GAFeatureVariations`（private） | 每资源解析一次条件、替代 Feature 偏移、fvar/avar；以盒差集避开优先记录已覆盖区域，找出每个可达分支的代表坐标 |
-| `GADiscoveryFonts`（private） | 资源级扫描字体集合：默认坐标优先，再加其余可达条件分支；扫描字体不反向引用集合，避免循环持有 |
-| `GAFontDocument.rawScanContent:` | 扫描各分支并合并 GID、来源与覆盖范围；只有默认坐标的基础结果标记 base。条件替换作为列表选项，不自动替换单字画布的选定 GID |
-| `directAlternatesForSeed:`（private） | 合并默认 Feature 与所有条件替代 Feature 的 single/alternate lookup；显式 GID 分析也能列出条件替换 |
+| `GAOpenType` / `GAVariation` | 自己解析所有 GSUB FV 分支；候选取并集，实际布局选择按当前坐标与条件优先级 |
+| `GAFontDocument.rawScanContent:` | 执行完整输入并转换候选，保留 GID、真实来源与覆盖范围 |
 | `documentWithDescriptor:` / `rebindResult:content:` / `rebindVariant:content:` | 新坐标共享已解析表及 inventory；沿用 literal GID/来源/范围，只更新字体与必要的位置 |
-| `GATextScanModel.updateFontDocument:` | 资源级 content cache 与扫描队列保持不变，直接重绑当前组；切轴不重新枚举 context 或按分支重扫 |
-| `GASidebarViewController.updateCoordinateGroups:` | 行成员、顺序、文字元数据不变时，只重绑行模型并配置可见 cell，不 reloadData、不重新选择、不滚动。成员变动或正常激活 pending 时交回原流式更新 |
+| `GATextQueryModel.updateFontDocument:` | 重绑上次完整结果；切轴不重新发现 |
+| `GASidebarViewController.updateGroupsWithSameRows:` | 行身份及元数据不变时只重绑模型/可见 cell，不 reload、不滚动；成员变化由完整快照刷新 |
 | `GAAllGlyphsView.setDocument:` | 每个窗口只建立一次资源 inventory；后续只替换 fontBox 并使度量缓存失效。已删除换字体重建/回顶路径 |
 | `popoverShouldDetach:` | 仅返回 YES，使用 NSPopover 自带的同外观 detached window 与同一内容控制器；不提供自订窗口；按钮可唤回已拖出的窗口，主窗口关闭时关闭 Popover |
 
@@ -491,9 +389,9 @@ buildDisplayGroupsFromBaseGroups:
 - 附着中的 NSPopover 没有原生用户拖边缩放，本次按用户要求不添加自订拖曳手柄。contentSize 可由程序设置；detach 后保持系统原生外观，不为拉宽另建 NSPanel，也不修改系统窗口 styleMask。内容控制器 title 为空。附着时按系统 titled window 度量预留标题栏空间，菜单上方留白比上一版减少 18pt（原生 detach 后也保留这项间距调整）；popoverDidShow: 记录原始窗口和内容高度，popoverDidDetach: 保持原窗口总高度并消耗预留空间。
 - 调轴时列表 GID 与顺序不变。选取自然保留，已删除切轴专用 pending selection/跳回流程；输入变化、正常激活与新扫描结果仍走原列表策略。
 - 单字画布始终绘制选定 GID；例如 k 不会因跨条件变为 k.jump，选择 k.jump 后低字重仍画 k.jump 的轮廓。多字布局仍由当前坐标的 CoreText/TextKit 处理。
-- 发现阶段使用默认坐标与条件分支的结果并集；代表点解析当前支持 Condition Format 1、avar 1。未支持的新条件/坐标映射仍可枚举已有 single/alternate 规则，但不能保证发现其上下文条件分支。
-- `opsz` 显式固定，不跟随显示字号。分支代表点判定使用 descriptor 原始请求值，避免 CTFontCopyVariation 截短小数。
-- 旧 multi scan 捕获原文档/模型，完成时核对后再提交；模型安装后重新投递最新输入，防止旧任务污染新坐标。
+- 发现阶段直接枚举 GSUB FV 分支，不再创建代表点扫描字体。实际选择支持 Condition Format 1、avar 1；未知条件/avar 2 的限制仍保留。
+- `opsz` 显式固定，不跟随显示字号；实际条件判定使用 descriptor 请求坐标，避免 CTFontCopyVariation 截短小数。
+- 后台完整查询通过 generation 与文档身份核对后提交；不发布旧文本/旧选择的结果。
 
 ## 13. 更新规则
 
@@ -527,11 +425,11 @@ buildDisplayGroupsFromBaseGroups:
 
 每个字体资源共享不可变表程序及 family 索引；每次执行独立持有 buffer、状态、预算。切轴只绑定新的 CTFont/原生度量与定位，沿用条件并集缓存、GID、列表顺序和选择。文字/字面查询缓存为 NSCache（2048 项/32 MiB 软限制）；按 GID 的静态候选目录另用 NSCache（2048 项/16 MiB 软限制）。解析/执行失败通过线程安全 `diagnostics` 暴露，损坏的可选定位程序回退到原生 advance，不在后台线程抛出未处理异常。
 
-文字查询仍是不同单字与每段一个多字任务。GSUB 在实际匹配时记录前文/输入/后文范围；AAT 使用状态转换、标记、栈和段尾动作记录相依岛，再只枚举岛内的 grapheme 窗口。相依范围可能覆盖整段，没有人为的上下文长度截断。feature/selector 分别枚举，不穷举所有可选设置的笛卡尔积。
+文字查询只有一次完整请求；GSUB 直接收集重叠规则，AAT 直接遍历状态与段尾动作并传播候选。没有单字任务或子串窗口队列。feature/selector 分别枚举，不穷举所有可选设置的笛卡尔积。
 
-每个输出携带原文 UTF-16 范围；被上下文修改的字形保留自己的来源，前后文只扩大查询窗口。候选身份为 GID 序列 + 是否组合 + 组合来源范围。GID 种子直接进入同一 buffer，完全不需要 identity cmap 或临时改写字体。段落查询也接收当前明确选择的 GID：先以字面 GID 替换对应输入区间，再与邻字一起执行规则。一个种子可含多个 GID 或覆盖多个原文字符；重叠来源合为原子替换，保留未被连字消耗的前缀/后缀。查询窗口会覆盖完整种子，不切断选择范围。单字/备用字形 family 支持未编码兄弟选项，但不一般性逆执行 GSUB。零输出保留 `∅` 行。
+每个输出携带原文 UTF-16 范围；被上下文修改的字形保留自己的来源，前后文只决定规则匹配。候选身份为 GID 序列 + 是否组合 + 组合来源范围。GID 种子直接进入同一 buffer，完全不需要 identity cmap 或临时改写字体。段落查询也接收当前明确选择的 GID：先以字面 GID 替换对应输入区间，再与邻字一起执行规则。一个种子可含多个 GID 或覆盖多个原文字符；重叠来源合为原子替换，保留未被连字消耗的前缀/后缀。执行与来源投影不切断原子种子。单字/备用字形 family 支持未编码兄弟选项，但不一般性逆执行 GSUB。零输出保留 `∅` 行。
 
-`GASeedDisplay`、完整多 GID 激活与点击映射沿用上一分支。CoreText/NSGlyphInfo 和 TextKit 继续负责显示；代码没有以 CoreText shaping 补做替换发现，也没有 HarfBuzz 或第三方字体执行器。
+`GATextDisplay` 统一原生显示字体设置与多 GID 显示副本；`GATextHitMap` 独立处理原文投影和自己的布局选择。CoreText/NSGlyphInfo 和原有 TextKit 2 继续负责显示；生产代码没有 CTLine/CTRun/CTTypesetter shaping 查询，没有 HarfBuzz。
 
 ### 明确的能力边界
 
@@ -539,7 +437,7 @@ buildDisplayGroupsFromBaseGroups:
 
 字面定位是未作像素 hinting 的设计单位布局；pixel Device deltas 不生效，VariationIndex 生效，Anchor format 2 使用表内设计坐标。尚未支持 kern 状态表 1、kerx 1/4/6、旧 AAT tuple kerning、avar v2。遇到这些定位程序会记录诊断并保留原生 advances，不退回 CoreText 扫描。多字视图的最终正常排版仍由原生 TextKit 完成。
 
-旧 `GAOTProgram`、HarfBuzz callback、identity-cmap seed、CoreText feature-font 扫描及 `Sources/GASubstitutionEngine.m` 都属于上一版；当前接口实现为 `.mm`，对应 private core 位于 `Sources/FontLayout/`。
+旧 `GAOTProgram`、HarfBuzz callback、identity-cmap seed、CoreText feature-font 扫描及 `Sources/GASubstitutionEngine.m` 都属于上一版；当前接口实现为 `.mm`，对应 private core 位于 `Sources/`。
 
 规范来源：[OpenType common formats](https://learn.microsoft.com/en-us/typography/opentype/spec/chapter2)、[GSUB](https://learn.microsoft.com/en-us/typography/opentype/spec/gsub)、[GPOS](https://learn.microsoft.com/en-us/typography/opentype/spec/gpos)、[Apple morx](https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6morx.html)、[Apple mort](https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6mort.html)。
 
@@ -550,7 +448,7 @@ GSUB 查询增加与当前上下文无关的候选目录：从原始输入 GID �
 
 静态目录列出查询字形自身的直接/上下文替换，不预列需要其他组件的连字。GSUB type 4 无论直接引用、经 extension 或被上下文 lookup 调用，都必须由执行器匹配完整实际输入才产生候选；字面 GID 种子遵循同一规则。比如 f 或 i 单独不列 fi，输入 fi 才列 fi；W 则仍可独立列出 W.w0/W.w1。真实跨字组合保留完整来源范围。目录读取直接替换边，不是任意 feature 组合或上下文程序的通用符号执行器；嵌套动作中此前的直接一对多/删除，在输入可唯一确定时更新 SequenceIndex 的原始归属。复杂多候选/多阶段长度变化仍由实际上下文执行处理。morx/mort 继续使用其状态机执行路径，尚没有无上下文的全状态静态目录。
 
-`actual` 是应用的备援标记，不是 GSUB feature tag。执行 Trace/静态目录有 `liga`、`calt` 等来源时直接保留，默认输出与基础候选也不再清掉来源；已知来源会替换 `actual`。所有来源均原文显示，`actual` 也不翻译。
+只显示执行 Trace/静态目录记录的真实来源。默认输出与基础候选保留已有的 `liga`、`calt` 或 AAT selector 来源；缺失时留空。已删除人工补 `actual` 及其特殊去重规则；`actual` 不是 GSUB feature tag。
 
 侧栏的表格 document view 使用原生 frame/autoresizing 布局；reload 后显式失效所有行高并 tile，滚动范围由 NSClipView 的 constrainBoundsRect: 计算。该修复已编译，实际长列表滚动由用户做 GUI 验收；本轮没有启动窗口。
 
@@ -559,6 +457,21 @@ GSUB 查询增加与当前上下文无关的候选目录：从原始输入 GID �
 
 直接 single/alternate 与反向 alternate 兄弟候选统一进入 `relatedSubstitutions`；旧 `family` 接口已删除。每个候选带 directFamily 分类，只让直接根 lookup/兄弟选项参与默认 shaping 后的直接族查询；上下文输出仍绑定原输入的位置。反查只使用已解析的 alternateInputs 索引，不作一般 GSUB 逆执行。文字中的多 GID 种子与直接 GID 查询都保留未被替换的组件。
 
-任务队列只为实际出现的查询长度建立有序分组，保留旧批次和正在执行对象。未使用的 hasFeatureVariations 布尔接口已删除，切轴行为继续由共享并集决定。
+旧任务队列及其长度分组已删除。未使用的 hasFeatureVariations 布尔接口也已删除，切轴行为继续由共享并集决定。
 
 CLI 的 raw shape / feature specifications 只在测试模式编译，release 不包含这些 Objective-C 方法。解析与执行核心两模式共用。独立物件目录和编译配置签名共同避免测试物件进入 release；可用 `Tests/check-release.py` 检验最终两个架构的接口剔除。
+
+
+## 文件职责与实际点击选择（2026-10-25）
+
+Sources 全部平铺，原 FontLayout 的核心文件也已移到同一层。二进制、GSUB、AAT、定位等模块继续独立，不为减少文件数合成巨型文件。
+
+- `GASidebarInput.h/.m`：输入编辑器/搜索框、带属性的可见换行标记、纯文本属性规范化；不拥有列表、选中行或滚动状态。
+- `GASidebarViewController.h/.m`：列表展示、用户操作、pending 选择、可见锚点；委托输入转换给 Input。
+- `GATextDisplay.h/.m`：原 `GASeedDisplay` 与 `GATextDisplayOptions` 合并；原生字体特性设置、固定 GID 的显示副本与别名来源映射。
+- `GATextHitMap.h/.m`：TextKit 行范围与显示别名的原文投影；自己的规则匹配选定 GID。与显示绘制和候选发现分开。
+- `GATextQueryModel.h/.m`：替代旧 `GATextScanModel`，只有当前完整请求/结果及取消机制。
+
+「使用上下文替换」和「使用连字」默认关闭，分别 ⌘5/⌘6；竖排 ⌘7。不支持 TextKit 控制的主视图右键菜单隐藏这些项及对齐；菜单栏保留禁用状态。关闭两项时普通点击走基础/明确 GID 快路；开启任一时用自己的执行器选定序列，再以 GID + 完整来源范围选侧栏行。
+
+已测样本的软换行会重置行首前文状态，但保留行尾后方 lookahead，因此预测按当前行首到段尾执行、只取该行范围。固定 NSGlyphInfo seed 是显示原子，不再投入第二轮 GSUB。竖排 “ ” ‘ ’ 继续走既有 `verticalQuoteGlyphForGroup:`；测试验证新投影保留指定 GID 与原文范围，未声称独立 CTTypesetter 能重现竖排 NSTextView 绘制。GUI 由用户验收。

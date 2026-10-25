@@ -1,4 +1,4 @@
-#import "GATextDisplayOptions.h"
+#import "GATextDisplay.h"
 #import "GAViewMode.h"
 #import <AppKit/AppKit.h>
 static NSUInteger checks;

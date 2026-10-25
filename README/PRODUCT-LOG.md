@@ -487,3 +487,16 @@ Set the font title stack default spacing to 0pt and override only the spacing af
 ### Revert independent VF button spacing (2026-10-25)
 
 The user requested the immediately previous version. Restore the font title stack spacing to 5pt and remove the custom spacing override after the Variable button. Other changes, including the document bottom system margin minus 15pt, remain unchanged. Built and packaged only; no tests or UI verification.
+
+
+## Complete query pipeline, native display controls, and source consolidation — 2026-10-25
+
+Replaced per-character/paragraph jobs and text-window rediscovery with one complete query and one publication. GSUB collects overlapping/nested matches directly; AAT enumerates productive state origins/end actions and propagates candidates through subsequent subtables. The 220-case pre-refactor comparison initially found four Zapfino misses; targeted fixes restored all outputs/sources in those four cases. Full-input discovery can still be expensive: the recorded Zapfino 105-character case rose from about 237 to 555 ms, while plain 1000 characters improved from about 78 to 21 ms. These are CLI measurements, not GUI timing guarantees.
+
+Both native display switches default OFF (context ⌘5, ligatures ⌘6, vertical ⌘7). Context menus hide unsupported text/alignment controls. TextKit 2/NSTextView is unchanged. Click prediction executes our own rules using TextKit line boundaries, then selects by exact GID sequence plus consumed source range. Fixed NSGlyphInfo seeds remain atoms; existing vertical curly-quote overrides remain. Runtime CoreText shaping was rejected by the user and is absent from production; CLI references retain it. The quote check tests source/GID projection, not raster equivalence to a standalone vertical CTTypesetter.
+
+Sidebar structural updates preserve the visible row anchor; width changes do not reveal old selections. All-glyph append still selects and reveals its exact result. Removed the synthetic actual fallback after it accidentally labeled every base in the unified pipeline; missing provenance is now empty, known feature/selector sources remain.
+
+Merged the user's original VF panel changes with Old as baseline (0514c8f). Sources is flat including former FontLayout core files. GATextDisplay combines seed-display and native-font settings; GASidebarInput owns input editing/marker conversion/normalization separately from the list controller. Removed empty Vendor metadata remnants. Tests and scripts remain development/build support and are not copied into the app. This snapshot still uses a C++ core; the user subsequently requested a pure Objective-C rewrite, which follows from this checkpoint.
+
+Targeted validation: 327 layout/hit checks (including four own-only vertical quote projection checks), 74 atomic model checks, 16 sidebar/input checks, 7 seed-display and 13 native display-setting checks; 13 catalogs with 77 strings/plural each. Earlier in this refactor, ASan/UBSan passed 103 fixtures and 31,675 core checks over 24,731 mutations; not rerun after source-only consolidation. Universal build and release-selector audit pass without warnings. Old's 81 files and original merge snapshot hashes are unchanged. No GUI, installation, ZIP extraction or push.

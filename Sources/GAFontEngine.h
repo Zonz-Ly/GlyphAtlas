@@ -118,6 +118,10 @@ FOUNDATION_EXPORT NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text);
        startGroupIndex:(NSUInteger)startGroupIndex
                 groups:(NSArray<GACharacterGroup *> *)groups;
 
+- (NSArray<GAGlyphLayoutRun *> *)layoutRunsForText:(NSString *)text
+                                        contextual:(BOOL)contextual
+                                         ligatures:(BOOL)ligatures
+                                          vertical:(BOOL)vertical;
 - (NSArray<GACharacterGroup *> *)analyzeGlyphIDs:(NSArray<NSNumber *> *)glyphIDs;
 
 /// GSUB `vert` single-substitution output for a glyph, if the font has one.

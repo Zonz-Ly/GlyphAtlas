@@ -1,8 +1,8 @@
-#include "FontLayout/GAAAT.h"
-#include "FontLayout/GACmap.h"
-#include "FontLayout/GAKerning.h"
-#include "FontLayout/GAOpenType.h"
-#include "FontLayout/GAVariation.h"
+#include "GAAAT.h"
+#include "GACmap.h"
+#include "GAKerning.h"
+#include "GAOpenType.h"
+#include "GAVariation.h"
 #include <cmath>
 #include <filesystem>
 #include <fstream>
@@ -201,6 +201,7 @@ void exercise(Tag name, const Bytes &bytes) {
     Settings settings;
     settings.features[tag('t', 'e', 's', 't')] = 1;
     Trace trace;
+    trace.inventory = true;
     Metrics metrics;
     metrics.horizontalAdvance = [](Glyph) { return 600; };
     metrics.verticalAdvance = [](Glyph) { return 1000; };
@@ -283,12 +284,11 @@ void relatedTests(const std::filesystem::path &directory) {
     set(sub + nestedTable.u16(sub + 6) + 4, 7);
     set(sub + nestedTable.u16(sub + 8) + 4, 7);
     size_t child = nestedList + nestedTable.u16(nestedList + 4);
-    auto ligature = fixtureTable(directory / "ligature.ttf", tag('G', 'S', 'U', 'B'));
-    View ligatureTable(ligature);
-    size_t ligatureList = ligatureTable.u16(8);
-    size_t lookupStart = ligatureList + ligatureTable.u16(ligatureList + 2);
     nestedLigature.resize(child);
-    nestedLigature.insert(nestedLigature.end(), ligature.begin() + lookupStart, ligature.end());
+    // The longer rule wins normal shaping; inventory must keep the overlapping
+    // shorter rule even though it is reached through a contextual action.
+    auto childLookup = words({4, 0, 1, 8, 1, 8, 1, 14, 1, 1, 7, 2, 6, 14, 23, 3, 7, 8, 22, 2, 7});
+    nestedLigature.insert(nestedLigature.end(), childLookup.begin(), childLookup.end());
     OpenType nestedProgram{View(nestedLigature)};
     check(nestedProgram.relatedSubstitutions(7, GDEF{}).empty(),
           "context root cannot expose a nested ligature on one component");
@@ -304,6 +304,23 @@ void relatedTests(const std::filesystem::path &directory) {
     nestedProgram.substitute(complete, GDEF{}, settings, 0);
     check(complete.size() == 1 && complete[0].glyph == 23,
           "nested contextual ligature still executes on the complete input");
+    complete.clear();
+    for (Glyph glyph : {7, 7, 8}) {
+        Item item;
+        item.glyph = glyph;
+        item.source = {uint32_t(complete.size()), uint32_t(complete.size() + 1)};
+        complete.push_back(item);
+    }
+    Trace inventory;
+    inventory.inventory = true;
+    nestedProgram.substitute(complete, GDEF{}, settings, 0, &inventory);
+    bool shortRule = false, longRule = false;
+    for (const auto &change : inventory.changes) {
+        shortRule |= change.source == Span{0, 2} && change.glyphs == std::vector<Glyph>{22};
+        longRule |= change.source == Span{0, 3} && change.glyphs == std::vector<Glyph>{23};
+    }
+    check(shortRule && longRule,
+          "rule inventory preserves overlapping nested ligatures without text requery");
     // IgnoreBaseGlyphs must filter the original encoded alternate input, even
     // when the queried unencoded output itself has no GDEF class.
     View table(bytes);

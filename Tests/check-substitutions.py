@@ -87,7 +87,7 @@ r=run(F/'position.ttf','á','--positions','2,14');check(r['positions']==[[0,0],
 r=run(F/'plain.ttf','אב','--positions','15,16');check(len(r['positions'])==2,'RTL literal identity')
 r=run(F/'ligature.ttf','😀ffi😀ffi');check(any(x['glyphs']==[23] and x['range']==[2,3] for x in r['matches']) and any(x['glyphs']==[23] and x['range']==[7,3] for x in r['matches']),'supplementary UTF-16 positions')
 for n in (100,1000):
-    r=run(F/'plain.ttf',''.join(chr(0x4e00+i) for i in range(n)),'--model');check(r['tasks']==n+1,'paragraph task count');report['benchmarks'].append({'font':'plain fixture','characters':n,'tasks':r['tasks'],'milliseconds':r['milliseconds']})
+    r=run(F/'plain.ttf',''.join(chr(0x4e00+i) for i in range(n)),'--model');check(r['tasks']==1,'one complete input query');report['benchmarks'].append({'font':'plain fixture','characters':n,'tasks':r['tasks'],'milliseconds':r['milliseconds']})
 # These paths match this machine but can be overridden for another installation.
 fonts=[('Hiragino Sans',os.environ.get('GA_HIRAGINO','/Users/zonz/Library/Fonts/ThemeX Hiragino Sans.ttc'),[('邊',['--feature','aalt=2']),('骨令0',['--feature','aalt=1']),('漢字',['--feature','jp78=1'])]),('LucidaSubmono',os.environ.get('GA_LUCIDA','/Users/zonz/Library/Fonts/LucidaSubmono.otf'),[(x,[]) for x in ['Objective-C','IlMWrt','MWMW','Hello world']]),('Zapfino',os.environ.get('GA_ZAPFINO','/System/Library/Fonts/Supplemental/Zapfino.ttf'),[(x,[]) for x in ['ffi fi st','office affine flower','Zapfino','ffl fl ct']])]
 for name,path,cases in fonts:
@@ -116,6 +116,15 @@ for name,path,cases in fonts:
     if name=='Zapfino':
         scan=run(path,'ffi');found={(tuple(x['range']),tuple(x['names'])) for x in scan['matches']}
         check(((0,3),('ffi',)) in found and ((0,2),('ff',)) in found and ((1,2),('fi',)) in found,'Zapfino overlapping ligatures')
+        # Later AAT style tables must also see shorter overlapping candidates,
+        # not only the largest result chosen for normal native typesetting.
+        complete=run(path,'ffi fi st')
+        whole={(tuple(m['range']),tuple(m['glyphs'])) for m in complete['matches']}
+        for text,start in [('f',0),('f',1),('ff',0),('fi',1),('ffi',0),('st',7)]:
+            isolated=run(path,text)
+            for m in isolated['matches']:
+                if m['range']==[0,len(text)]:
+                    check(((start,len(text)),tuple(m['glyphs'])) in whole,'AAT overlapping/style propagation '+text+str(m['glyphs']))
         for text in ('f','i'):
             check(not any(m['names']==['fi'] for m in run(path,text)['matches']),'Zapfino fi needs both components '+text)
         check(any(m['names']==['fi'] and m['range']==[0,2] for m in run(path,'fi')['matches']),'Zapfino fi appears for the complete input')

@@ -23,6 +23,10 @@ NS_ASSUME_NONNULL_BEGIN
                  coordinates:(nullable NSDictionary<NSNumber *, NSNumber *> *)coordinates
                      sharing:(nullable GASubstitutionEngine *)source;
 @property(nonatomic, readonly) NSArray<NSString *> *diagnostics;
+- (NSArray<GAGlyphLayoutRun *> *)layoutRunsForText:(NSString *)text
+                                        contextual:(BOOL)contextual
+                                         ligatures:(BOOL)ligatures
+                                          vertical:(BOOL)vertical;
 - (NSArray<GASubstitutionMatch *> *)discoverText:(NSString *)text;
 - (NSArray<GASubstitutionMatch *> *)discoverText:(NSString *)text selections:(NSArray<GAGlyphSelectionRun *> *)selections;
 - (NSArray<GASubstitutionMatch *> *)discoverGlyphIDs:(NSArray<NSNumber *> *)glyphIDs;

@@ -3,7 +3,7 @@
 #import "GASidebarViewController.h"
 #import "GAFontEngine.h"
 #import "GADisplayGroups.h"
-#import "GATextScanModel.h"
+#import "GATextQueryModel.h"
 #import "GAUnicode.h"
 #import "GAFontTypes.h"
 #import "GAFontResource.h"
@@ -151,7 +151,7 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 @property (nonatomic, strong, nullable) GAFontDocument *workerFontDocument;
 @property (nonatomic, strong) dispatch_queue_t fontQueue;
 @property (nonatomic, strong) dispatch_queue_t analysisQueue;
-@property (nonatomic, strong, nullable) GATextScanModel *scanModel;
+@property(nonatomic, strong, nullable) GATextQueryModel *queryModel;
 @property (nonatomic, copy, nullable) NSString *pendingWorkerText;
 @property (nonatomic, copy, nullable) NSArray<GAGlyphSelectionRun *> *pendingWorkerSelections;
 @property (nonatomic) NSUInteger workerGeneration;
@@ -298,8 +298,8 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
     self.detailViewController.onAllGlyphDoubleClick = ^(GAAllGlyphEntry *entry) {
         [weakSelf appendAllGlyphEntry:entry];
     };
-    self.detailViewController.onGroupSelected = ^(GACharacterGroup *group) {
-        [weakSelf selectBaseGlyphForGroup:group];
+    self.detailViewController.onGlyphSelected = ^(NSArray<NSNumber *> *glyphIDs, NSRange range) {
+      [weakSelf selectLayoutGlyphIDs:glyphIDs multiRange:range];
     };
 }
 
@@ -326,16 +326,16 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
     }
 }
 
-- (void)selectBaseGlyphForGroup:(GACharacterGroup *)group {
-    GACharacterGroup *sourceGroup = [self.multiGroupSources objectForKey:group] ?: group;
-    GAGlyphVariant *base = sourceGroup.variants.firstObject;
-    if (base == nil) {
-        return;
-    }
-    [self.sidebarViewController
-        selectGlyphKeyAfterNextReload:base.glyphKey
-                            textRange:sourceGroup.textRange];
-    [self.sidebarViewController setGroups:self.displayGroups ?: @[]];
+- (void)selectLayoutGlyphIDs:(NSArray<NSNumber *> *)glyphIDs multiRange:(NSRange)range {
+    NSRange source = NSMakeRange(NSNotFound, 0);
+    for (GACharacterGroup *group in self.multiGroups)
+        if (NSIntersectionRange(group.textRange, range).length) {
+            GACharacterGroup *original = [self.multiGroupSources objectForKey:group] ?: group;
+            source = source.location == NSNotFound ? original.textRange
+                                                   : NSUnionRange(source, original.textRange);
+        }
+    if (source.location != NSNotFound)
+        [self.sidebarViewController selectGlyphIDs:glyphIDs textRange:source];
 }
 
 - (void)toggleShowsMetrics {
@@ -647,10 +647,10 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
             // Swap all model-owned state on its queue after the old batch yields.
             dispatch_async(self.analysisQueue, ^{
                 self.workerFontDocument = document;
-                if (preserve && self.scanModel != nil) {
-                    [self.scanModel updateFontDocument:document];
+                if (preserve && self.queryModel != nil) {
+                    [self.queryModel updateFontDocument:document];
                 } else {
-                    self.scanModel = [[GATextScanModel alloc] initWithFontDocument:document];
+                    self.queryModel = [[GATextQueryModel alloc] initWithFontDocument:document];
                 }
                 // Schedule from the latest input only after the old worker has
                 // yielded and the new model is installed. Otherwise that old
@@ -973,7 +973,7 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 #pragma mark - Worker (analysisQueue only)
 
 - (void)workerRun {
-    if (!self.scanModel || !self.workerFontDocument)
+    if (!self.queryModel || !self.workerFontDocument)
         return;
     while (YES) {
         NSString *text;
@@ -988,12 +988,13 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
         }
         if (!text)
             return;
-        [self.scanModel updateText:text selections:selections];
-        BOOL complete = [self.scanModel processPendingSubitemsUntilCancelled:^BOOL {
-          @synchronized(self) {
-              return generation != self.workerGeneration;
-          }
-        }];
+        BOOL complete = [self.queryModel analyzeText:text
+                                          selections:selections
+                                           cancelled:^BOOL {
+                                             @synchronized(self) {
+                                                 return generation != self.workerGeneration;
+                                             }
+                                           }];
         if (complete)
             [self publishWorkerSnapshotWithText:text selections:selections generation:generation];
     }
@@ -1008,7 +1009,7 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
         }
     }
     NSArray<GACharacterGroup *> *display =
-        GABuildDisplayGroups(self.scanModel.groups, text, selections, self.workerFontDocument);
+        GABuildDisplayGroups(self.queryModel.groups, text, selections, self.workerFontDocument);
     NSString *multiText;
     NSArray<GACharacterGroup *> *multiGroups;
     NSMapTable<GACharacterGroup *, GACharacterGroup *> *multiSources;

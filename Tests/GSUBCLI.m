@@ -2,7 +2,7 @@
 #import "GADisplayGroups.h"
 #import "GAFontResource.h"
 #import "GASubstitutionEngine.h"
-#import "GATextScanModel.h"
+#import "GATextQueryModel.h"
 #import <CoreText/CoreText.h>
 #import <Foundation/Foundation.h>
 static void Emit(id value) {
@@ -190,17 +190,10 @@ int main(int argc, const char **argv) {
                 GAFontDocument *document =
                     [[GAFontDocument alloc] initWithDescriptor:descriptor
                                                            URL:[NSURL fileURLWithPath:path]];
-                GATextScanModel *model = [[GATextScanModel alloc] initWithFontDocument:document];
+                GATextQueryModel *model = [[GATextQueryModel alloc] initWithFontDocument:document];
                 CFAbsoluteTime begin = CFAbsoluteTimeGetCurrent();
-                [model updateText:text selections:selections];
-                NSUInteger tasks = 0;
-                GATextScanSubitem *s;
-                while ((s = [model startNextSubitem])) {
-                    [model completeSubitem:s
-                                    result:[document rawScanContent:s.content
-                                                         selections:s.selections ?: @[]]];
-                    tasks++;
-                }
+                [model analyzeText:text selections:selections cancelled:nil];
+                NSUInteger tasks = model.queryCount;
                 NSMutableArray *groups = [NSMutableArray array];
                 for (GACharacterGroup *group in selections.count
                          ? GABuildDisplayGroups(model.groups, text, selections, document)

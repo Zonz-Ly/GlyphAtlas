@@ -186,9 +186,20 @@ std::vector<TextRun> prepareText(NSString *text, const Cmap &cmap,
         previous = groups[i].script;
     }
     std::vector<TextRun> runs;
+    bool paragraphStart = true;
     for (auto &group : groups) {
-        if (runs.empty() || runs.back().script != group.script || runs.back().level != group.level)
+        bool newline = false;
+        for (const auto &item : group.glyphs)
+            newline |= item.scalar == '\n' || item.scalar == '\r' || item.scalar == 0x2028 ||
+                       item.scalar == 0x2029;
+        if (newline) {
+            paragraphStart = true;
+            continue;
+        }
+        if (paragraphStart || runs.empty() || runs.back().script != group.script ||
+            runs.back().level != group.level)
             runs.push_back({{}, group.source, group.script, group.level});
+        paragraphStart = false;
         auto &run = runs.back();
         run.source = unite(run.source, group.source);
         run.glyphs.insert(run.glyphs.end(), group.glyphs.begin(), group.glyphs.end());

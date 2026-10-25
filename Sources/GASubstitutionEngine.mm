@@ -1,9 +1,9 @@
 #import "GASubstitutionEngine.h"
-#import "FontLayout/GAAAT.h"
-#import "FontLayout/GACmap.h"
-#import "FontLayout/GAKerning.h"
-#import "FontLayout/GATextPreparation.h"
-#import "FontLayout/GAVariation.h"
+#import "GAAAT.h"
+#import "GACmap.h"
+#import "GAKerning.h"
+#import "GATextPreparation.h"
+#import "GAVariation.h"
 #include <map>
 
 using namespace ga::layout;
@@ -30,6 +30,7 @@ struct Resource {
     AAT aat;
     Kerning kerning;
     View fvar, avar;
+    bool verticalAAT = false;
     unsigned glyphCount = 0;
     double unitsPerEm = 1000;
     std::vector<Domain> domains;
@@ -65,6 +66,7 @@ struct Resource {
             for (size_t i = 0; i < gsub.branchCount(); i++)
                 domains.push_back({false, i, {}});
         featureSpecs = collectFeatures();
+        verticalAAT = aat.hasVerticalSubstitutions();
     }
     const std::vector<Feature> &specifications() const {
         return featureSpecs;
@@ -134,16 +136,8 @@ void merge(NSMutableDictionary *seen, NSMutableArray<GASubstitutionMatch *> *mat
         [matches addObject:match];
     }
     match.base |= base;
-    if (source.length) {
-        if (![source isEqualToString:@"actual"]) {
-            NSMutableArray *sources = [match.sources mutableCopy];
-            [sources removeObject:@"actual"];
-            if (![sources containsObject:source])
-                [sources addObject:source];
-            match.sources = sources;
-        } else if (!match.sources.count)
-            match.sources = @[ source ];
-    }
+    if (source.length && ![match.sources containsObject:source])
+        match.sources = [match.sources arrayByAddingObject:source];
 }
 Buffer literalBuffer(const std::vector<Glyph> &glyphs) {
     Buffer buffer;
@@ -269,6 +263,18 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
                 @"family" : @(output.directFamily)
             }];
         }
+        if (r.verticalAAT)
+            for (const auto &domain : r.domains) {
+                if (!domain.apple || (domain.selector && domain.selector->type != 4)) continue;
+                Buffer input = literalBuffer({glyph});
+                Trace trace;
+                r.aat.substitute(input,domain.selector,false,true,&trace,true);
+                auto ids = identifiers(input);
+                if (ids == std::vector<Glyph>{glyph}) continue;
+                std::string source = r.aat.name();
+                if (domain.selector) source += ":" + std::to_string(domain.selector->type) + ":" + std::to_string(domain.selector->setting);
+                [outputs addObject:@{@"glyphs":glyphArray(ids),@"source":@(source.c_str()),@"family":@YES}];
+            }
     } catch (const InvalidTable &error) {
         [self recordError:error];
     }
@@ -285,7 +291,42 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
     auto runs = prepareText(text, r.cmap, selections);
     NSMutableArray *matches = [NSMutableArray array];
     NSMutableDictionary *seen = [NSMutableDictionary dictionary];
-    NSMutableSet *scopes = [NSMutableSet set];
+    // Baselines are a glyph-level projection, not independent text queries.
+    // Cache repeated input sequences within this request, then attach each to
+    // its own UTF-16 span. Explicit seeds keep their exact original GIDs.
+    using BaseKey = std::tuple<Tag, bool, bool, std::vector<Glyph>>;
+    using BaseValue = std::pair<std::vector<Glyph>, std::vector<std::string>>;
+    std::map<BaseKey, BaseValue> baselines;
+    for (const auto &run : runs)
+        for (const auto &cluster : clusters(run.glyphs)) {
+            bool selected = false;
+            for (GAGlyphSelectionRun *selection in selections)
+                selected |= NSIntersectionRange(selection.range,
+                    NSMakeRange(cluster.source.start, cluster.source.end-cluster.source.start)).length > 0;
+            auto key = std::make_tuple(run.script, bool(run.level & 1), selected, cluster.glyphs);
+            auto found = baselines.find(key);
+            if (found == baselines.end()) {
+                Buffer basis;
+                for (const auto &item : run.glyphs)
+                    if (item.source.start < cluster.source.end && item.source.end > cluster.source.start) {
+                        basis.push_back(item);
+                        if (basis.back().form) basis.back().form = tag('i','s','o','l');
+                    }
+                Trace baselineTrace;
+                Settings settings; settings.script = run.script; settings.rtl = run.level & 1;
+                if (!selected && !r.domains.empty())
+                    r.substitute(basis, r.domains.front(), settings, &baselineTrace);
+                if (settings.rtl) std::reverse(basis.begin(), basis.end());
+                BaseValue value{identifiers(basis), {}};
+                for (const auto &change : baselineTrace.changes)
+                    if (std::find(value.second.begin(), value.second.end(), change.feature) == value.second.end())
+                        value.second.push_back(change.feature);
+                found = baselines.emplace(std::move(key), std::move(value)).first;
+            }
+            merge(seen, matches, cluster.source, found->second.first, nil, YES);
+            for (const auto &source : found->second.second)
+                merge(seen, matches, cluster.source, found->second.first, @(source.c_str()), YES);
+        }
     for (size_t di = 0; di < r.domains.size(); di++) {
         const auto &domain = r.domains[di];
         for (const auto &run : runs) {
@@ -314,6 +355,7 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
                             settings.features[plan.first] = plan.second;
                         Buffer items = run.glyphs;
                         Trace trace;
+                        trace.inventory = true;
                         try {
                             r.substitute(items, domain, settings, &trace);
                         } catch (const InvalidTable &error) {
@@ -324,8 +366,7 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
                         for (auto &item : items)
                             if (item.glyph >= r.glyphCount)
                                 item.glyph = 0;
-                        bool base =
-                            di == 0 && script == run.script && language == 0 && plan.first == 0;
+                        bool base = false;
                         for (auto change : trace.changes) {
                             if (settings.rtl)
                                 std::reverse(change.glyphs.begin(), change.glyphs.end());
@@ -348,11 +389,6 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
                                 merge(seen, matches, run.source, {}, @(change.feature.c_str()),
                                       base);
                         }
-                        for (auto scope : trace.windows)
-                            [scopes
-                                addObject:[NSValue
-                                              valueWithRange:NSMakeRange(scope.start,
-                                                                         scope.end - scope.start)]];
                     }
             }
         }
@@ -383,39 +419,7 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
                       {uint32_t(base.sourceRange.location), uint32_t(NSMaxRange(base.sourceRange))},
                       glyphVector(output[@"glyphs"]), output[@"source"], NO);
             }
-    // AAT can carry state across any number of glyphs. Merge overlapping scopes
-    // before enumerating their grapheme windows; safe boundaries remain cuts.
-    if (!r.aat.empty()) {
-        std::vector<Span> sorted;
-        for (NSValue *value in scopes) {
-            NSRange range = value.rangeValue;
-            sorted.push_back({uint32_t(range.location), uint32_t(NSMaxRange(range))});
-        }
-        std::sort(sorted.begin(), sorted.end());
-        std::vector<Span> islands;
-        for (Span span : sorted) {
-            if (!islands.empty() && span.start < islands.back().end)
-                islands.back() = unite(islands.back(), span);
-            else
-                islands.push_back(span);
-        }
-        for (Span island : islands) {
-            if (island.end > text.length)
-                continue;
-            std::vector<NSRange> groups;
-            for (NSUInteger start = island.start; start < island.end;) {
-                NSRange group = [text rangeOfComposedCharacterSequenceAtIndex:start];
-                groups.push_back(group);
-                start = NSMaxRange(group);
-            }
-            for (size_t a = 0; a < groups.size(); a++)
-                for (size_t b = a; b < groups.size(); b++)
-                    [scopes addObject:[NSValue valueWithRange:NSMakeRange(groups[a].location,
-                                                                          NSMaxRange(groups[b]) -
-                                                                              groups[a].location)]];
-        }
-    }
-    NSDictionary *result = @{@"matches" : matches, @"spans" : scopes.allObjects};
+    NSDictionary *result = @{@"matches" : matches};
     [self.program.cache setObject:result
                            forKey:queryKey
                              cost:text.length * 2 + matches.count * 128];
@@ -429,46 +433,8 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
     if (!text.length)
         return @[];
     try {
-        NSRange whole = NSMakeRange(0, text.length);
-        NSMutableArray *queue = [NSMutableArray arrayWithObject:[NSValue valueWithRange:whole]];
-        NSMutableSet *visited = [NSMutableSet setWithArray:queue];
-        NSMutableArray *matches = [NSMutableArray array];
-        NSMutableDictionary *seen = [NSMutableDictionary dictionary];
-        for (NSUInteger i = 0; i < queue.count; i++) {
-            NSRange outer = [queue[i] rangeValue];
-            NSDictionary *result =
-                [self discoverContent:[text substringWithRange:outer]
-                           selections:GAGlyphSelectionsInRange(selections, outer)];
-            for (GASubstitutionMatch *m in result[@"matches"]) {
-                Span span{uint32_t(outer.location + m.sourceRange.location),
-                          uint32_t(outer.location + NSMaxRange(m.sourceRange))};
-                BOOL base = m.base && NSEqualRanges(outer, whole);
-                merge(seen, matches, span, glyphVector(m.glyphIDs),
-                      m.sources.firstObject ?: (base ? nil : @"actual"), base);
-                GASubstitutionMatch *target = seen[matchKey(span, m.glyphIDs)];
-                {
-                    NSMutableOrderedSet *sources =
-                        [NSMutableOrderedSet orderedSetWithArray:target.sources];
-                    [sources addObjectsFromArray:m.sources];
-                    [sources removeObject:@"actual"];
-                    target.sources = sources.count ? sources.array : target.sources;
-                }
-            }
-            for (NSValue *value in result[@"spans"]) {
-                NSRange range = value.rangeValue;
-                range.location += outer.location;
-                for (GAGlyphSelectionRun *selection in selections)
-                    if (NSIntersectionRange(range, selection.range).length)
-                        range = NSUnionRange(range, selection.range);
-                if (!range.length || NSMaxRange(range) > text.length)
-                    continue;
-                NSValue *absolute = [NSValue valueWithRange:range];
-                if (![visited containsObject:absolute]) {
-                    [visited addObject:absolute];
-                    [queue addObject:absolute];
-                }
-            }
-        }
+        NSDictionary *result = [self discoverContent:text selections:selections];
+        NSMutableArray *matches = [result[@"matches"] mutableCopy];
         [matches sortUsingComparator:^NSComparisonResult(GASubstitutionMatch *a,
                                                          GASubstitutionMatch *b) {
           if (a.base != b.base)
@@ -486,6 +452,41 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
         [self recordError:error];
     }
     return @[];
+}
+- (NSArray<GAGlyphLayoutRun *> *)layoutRunsForText:(NSString *)text
+                                       contextual:(BOOL)contextual
+                                        ligatures:(BOOL)ligatures
+                                         vertical:(BOOL)vertical {
+    NSMutableArray *result = [NSMutableArray array];
+    try {
+        const auto &r = *self.program->resource;
+        std::map<Tag,double> coordinates;
+        for (NSNumber *axis in self.coordinates) coordinates[axis.unsignedIntValue] = [self.coordinates[axis] doubleValue];
+        size_t branch = r.gsub.variationBranch(normalizeCoordinates(r.fvar,r.avar,coordinates));
+        for (auto run : prepareText(text,r.cmap)) {
+            Settings settings; settings.script = run.script;
+            settings.rtl = run.level & 1; settings.vertical = vertical;
+            settings.features[tag('c','a','l','t')] = contextual;
+            settings.features[tag('l','i','g','a')] = ligatures;
+            settings.features[tag('c','l','i','g')] = ligatures;
+            bool vrt2 = false;
+            for (const auto &feature : r.gsub.features(branch)) vrt2 |= feature.name == tag('v','r','t','2');
+            settings.features[tag('v','r','t','2')] = vertical && vrt2;
+            settings.features[tag('v','e','r','t')] = vertical && !vrt2;
+            Buffer items = run.glyphs;
+            if (!r.aat.empty()) {
+                std::vector<AATSelector> options{{36,contextual ? 0u:1u},{1,ligatures ? 2u:3u},{4,vertical ? 0u:1u}};
+                r.aat.applyFeatures(items,options,settings.rtl,vertical);
+            } else r.gsub.substitute(items,r.gdef,settings,branch);
+            if (settings.rtl) std::reverse(items.begin(),items.end());
+            for (const auto &cluster : clusters(items)) {
+                GAGlyphLayoutRun *hit = [GAGlyphLayoutRun new];
+                hit.range = NSMakeRange(cluster.source.start,cluster.source.end-cluster.source.start);
+                hit.glyphIDs = glyphArray(cluster.glyphs); [result addObject:hit];
+            }
+        }
+    } catch (const std::exception &error) { [self recordError:error]; }
+    return result;
 }
 - (Metrics)metrics {
     const auto &r = *self.program->resource;
@@ -610,6 +611,7 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
                             settings.features[plan.first] = plan.second;
                         Buffer items = literalBuffer(original);
                         Trace trace;
+                        trace.inventory = true;
                         r.substitute(items, domain, settings, &trace);
                         merge(seen, matches, whole, identifiers(items), nil, NO);
                         for (const auto &change : trace.changes)
