@@ -420,9 +420,11 @@ bash Tests/compare-old.sh
 - 用户随后追问 Sources 内为何仍有 FontLayout：平铺要求也包含这个旧目录。已将全部核心 .h/.cpp/.mm 移到 Sources，同步 include 与共用编译脚本；不把 C++ 当 Objective-C 编译。Vendor/harfbuzz 已无文件，仅遗留 Finder 元数据，现清除空壳；产品仍无 HarfBuzz。Tests 为非产品 CLI/自制 fixtures，scripts 只保存产品/测试共用的编译规则。
 
 
-### 全部改用 Objective-C（2026-10-25，最终语言决定）
+### 恢复 C++ 核心并保存 Objective-C 备份（2026-10-25，最新决定）
 
-- 用户发现核心用了 C++ 后明确要求「那就都用 Objective-C 写」，无需再确认是否改语言。已把全部 Sources 转为 .h/.m，去掉 .cpp/.mm、clang++、libc++；Tests 核心检查也已转为 .m。C++ 比较基线为 a5ebe1a；合并原 VF 面板仍为 0514c8f，均本地未推送。
-- 不只是把后缀改成 .m：表 owner/view、强类型规则对象、可变 item 的深拷贝、状态执行器和资源程序均为 Objective-C。执行器的局部状态不能写入共享的解析模型；错误边界只处理 GAInvalidFontTable，构建启用 ARC exception cleanup。
-- 用户再次要求仅做最必要测试、节省 token，同时注意结构、逻辑、简洁。转写以 100 组旧/新 CLI 的代表输出对比、现有 47 核心/74 模型/327 命中检查和 quick sanitizer 样本核对；不重新跑过去的 148 字串 CoreText 广泛比较或 24k 全量变异。不启动 GUI。
-- 当前 scripts 只服务测试核心物件复用；产品 build.sh 直接构建全部 Objective-C 源码。旧的 C++ 工作方法/目录说明属于历史，不得据此恢复依赖或子目录。
+- 纯 Objective-C 转写在约 100 字已出现明显性能回归。用户明确选择恢复 a5ebe1a 的 C++ 核心，并要求当前 Objective-C 作备份。
+- 完整 Objective-C 源码与原 ZIP 已归档到任务 outputs/Glyph Atlas ObjC Backup；该目录无 .git，但 BACKUP.json 标记 c9788b5 和 ZIP SHA256。本仓库另保留本地分支 backup/objective-c-core-2026-10-25 指向 c9788b5。
+- 当前产品恢复 C++17 核心与 Objective-C++ 适配，App/UI 仍为 Objective-C；Sources 继续平铺。保留 0514c8f 的原 VF 面板合并、a5ebe1a 的完整查询/点击逻辑、SidebarInput/TextDisplay 文件整理以及来源缺失留空规则。
+- 此次恢复解决语言转写回归，不等于解决所有长文本算法成本。Zapfino 105 字实测 C++ 549.5ms / ObjC 4379.4ms；420 字两者都超过 12 秒。不要把恢复后的 C++ 说成所有长输入即时完成。
+- 编译配置切换时清理原目录旧 .o，避免两种语言实现的翻译单元列表不同，误链接遗留的 Objective-C GAFontProgram.o/GABinary.o。
+- 用户继续要求最必要的 CLI 核对与构建；不恢复 GUI、全量 native-shaper 比对或 mutation 扫描。

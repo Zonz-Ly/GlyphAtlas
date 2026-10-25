@@ -1,106 +1,108 @@
-#import "GAGlyphBuffer.h"
-typedef NS_ENUM(NSUInteger, GAPredicateKind) {
-    GAPredicateExact,
-    GAPredicateCoverage,
-    GAPredicateClass
+#pragma once
+#include "GAGlyphBuffer.h"
+#include <optional>
+#include <unordered_map>
+
+namespace ga::layout {
+struct Predicate {
+    enum class Kind { Exact, Coverage, Class };
+    Kind kind = Kind::Exact;
+    unsigned value = 0;
+    Coverage coverage;
+    ClassDef classes;
+    static Predicate exact(Glyph value);
+    static Predicate covered(View table);
+    static Predicate classified(View table, unsigned value);
+    bool matches(Glyph glyph) const;
 };
-@interface GAOTPredicate : NSObject
-@property(nonatomic) GAPredicateKind kind;
-@property(nonatomic) unsigned value;
-@property(nonatomic, strong) GACoverage *coverage;
-@property(nonatomic, strong) GAClassDef *classes;
-+ (instancetype)exact:(GAGlyph)glyph;
-+ (instancetype)covered:(GATableView *)view;
-+ (instancetype)classified:(GATableView *)view value:(unsigned)value;
-- (BOOL)matches:(GAGlyph)glyph;
-@end
-@interface GAOTAction : NSObject
-@property(nonatomic) unsigned sequence, lookup;
-@end
-@interface GAOTPattern : NSObject
-@property(nonatomic, strong) GACoverage *firstCoverage;
-@property(nonatomic, strong) NSMutableArray<GAOTPredicate *> *backtrack, *input, *lookahead;
-@property(nonatomic, copy) NSArray<GAOTAction *> *actions;
-@property(nonatomic, copy) NSArray<NSNumber *> *replacement;
-@end
-@interface GAOTSubtable : NSObject
-@property(nonatomic) unsigned type;
-@property(nonatomic, strong) GATableView *data;
-@property(nonatomic, strong) GACoverage *coverage;
-@property(nonatomic, copy) NSArray<GAOTPattern *> *patterns;
-@property(nonatomic, strong) NSMutableDictionary<NSNumber *, NSMutableArray<NSNumber *> *> *starts,
-    *alternateInputs;
-@end
-@interface GAOTLookup : NSObject
-@property(nonatomic) unsigned flags, markSet, alternateCount;
-@property(nonatomic) BOOL reverse;
-@property(nonatomic, copy) NSArray<GAOTSubtable *> *subtables;
-@property(nonatomic, strong) NSMutableIndexSet *references;
-@end
-@interface GAOTFeature : NSObject <NSCopying>
-@property(nonatomic) GATag name;
-@property(nonatomic, copy) NSArray<NSNumber *> *lookups;
-@property(nonatomic) unsigned maximum;
-@end
-@interface GAOTLanguage : NSObject
-@property(nonatomic) GATag name;
-@property(nonatomic) unsigned required;
-@property(nonatomic, copy) NSArray<NSNumber *> *features;
-@end
-@interface GAOTScript : NSObject
-@property(nonatomic) GATag name;
-@property(nonatomic, copy) NSArray<GAOTLanguage *> *languages;
-@end
-@interface GALayoutSettings : NSObject
-@property(nonatomic) GATag script, language;
-@property(nonatomic, strong) NSMutableDictionary<NSNumber *, NSNumber *> *features;
-@property(nonatomic) BOOL vertical, rtl;
-@end
-@interface GARelatedSubstitution : NSObject
-@property(nonatomic, copy) NSArray<NSNumber *> *glyphs;
-@property(nonatomic) GATag feature;
-@property(nonatomic) unsigned value;
-@property(nonatomic) BOOL directFamily;
-@end
-@interface GAOTLookupStep : NSObject
-@property(nonatomic) unsigned lookup, value;
-@property(nonatomic) GATag feature;
-@property(nonatomic) BOOL explicitValue;
-@end
-@interface GAOpenType : NSObject
-@property(nonatomic, readonly) NSArray<GAOTLookup *> *lookups;
-@property(nonatomic, readonly) NSArray<GAOTScript *> *scripts;
-@property(nonatomic, readonly) NSUInteger branchCount;
-@property(nonatomic, readonly) BOOL positioning;
-- (instancetype)initWithView:(GATableView *)table positioning:(BOOL)positioning;
-- (NSArray<GAOTFeature *> *)features:(NSUInteger)branch;
-- (NSUInteger)variationBranch:(NSArray<NSNumber *> *)normalized;
-- (NSArray<NSNumber *> *)languages:(GATag)script;
-- (NSArray<GAOTLookupStep *> *)plan:(GALayoutSettings *)settings branch:(NSUInteger)branch;
-@end
-@interface GAOpenType (Candidates)
-- (NSArray<GARelatedSubstitution *> *)relatedSubstitutions:(GAGlyph)glyph gdef:(GAGDEF *)gdef;
-@end
-@interface GAOpenType (Substitution)
-- (void)substituteBuffer:(NSMutableArray<GALayoutItem *> *)buffer
-                    gdef:(GAGDEF *)gdef
-                settings:(GALayoutSettings *)settings
-                  branch:(NSUInteger)branch
-                   trace:(GALayoutTrace *)trace;
-- (void)substituteLookups:(NSMutableArray<GALayoutItem *> *)buffer
-                     gdef:(GAGDEF *)gdef
-                    steps:(NSArray<GAOTLookupStep *> *)steps
-                    trace:(GALayoutTrace *)trace;
-@end
-@interface GAOpenType (Positioning)
-- (void)positionBuffer:(NSMutableArray<GALayoutItem *> *)buffer
-                  gdef:(GAGDEF *)gdef
-              settings:(GALayoutSettings *)settings
-               metrics:(GALayoutMetrics *)metrics
-                branch:(NSUInteger)branch;
-@end
-/// nil means no match; the returned indices refer to the unmodified buffer.
-FOUNDATION_EXPORT NSArray<NSNumber *> *
-GAMatchPattern(GAOTPattern *pattern, NSArray<GALayoutItem *> *buffer, NSUInteger start,
-               GAGDEF *gdef, unsigned flags, unsigned markSet, GASpan *scope);
-FOUNDATION_EXPORT NSArray<NSNumber *> *GASubstitutionOutputs(GAOTSubtable *subtable, GAGlyph glyph);
+struct LookupRecord {
+    unsigned sequence = 0, lookup = 0;
+};
+struct Pattern {
+    Coverage firstCoverage;
+    std::vector<Predicate> backtrack, input, lookahead;
+    std::vector<LookupRecord> actions;
+    std::vector<Glyph> replacement;
+};
+struct Subtable {
+    unsigned type = 0;
+    View data;
+    Coverage coverage;
+    std::vector<Pattern> patterns;
+    std::unordered_map<Glyph, std::vector<unsigned>> starts;
+    std::unordered_map<Glyph, std::vector<Glyph>> alternateInputs;
+};
+struct Lookup : LookupFlags {
+    std::vector<Subtable> subtables;
+    std::set<unsigned> references;
+    unsigned alternateCount = 1;
+    bool reverse = false;
+};
+struct Feature {
+    Tag name = 0;
+    std::vector<unsigned> lookups;
+    unsigned maximum = 1;
+};
+struct Language {
+    Tag name = 0;
+    std::vector<unsigned> features;
+    unsigned required = 0xffff;
+};
+struct Script {
+    Tag name = 0;
+    std::vector<Language> languages;
+};
+struct Settings {
+    Tag script = tag('D', 'F', 'L', 'T'), language = 0;
+    std::map<Tag, unsigned> features;
+    bool vertical = false, rtl = false;
+};
+struct RelatedSubstitution {
+    std::vector<Glyph> glyphs;
+    Tag feature = 0;
+    unsigned value = 1;
+    // Direct single/alternate outputs, including reverse alternate siblings.
+    bool directFamily = false;
+};
+struct LookupStep {
+    unsigned lookup = 0, value = 1;
+    Tag feature = 0;
+    bool explicitValue = false;
+};
+class OpenType {
+    bool positioning_ = false;
+    View data_;
+    std::vector<Lookup> lookups_;
+    std::vector<std::vector<Feature>> branches_;
+    std::vector<Script> scripts_;
+
+  public:
+    explicit OpenType(View table = {}, bool positioning = false);
+    const std::vector<Lookup> &lookups() const {
+        return lookups_;
+    }
+    const std::vector<Feature> &features(size_t branch = 0) const;
+    const std::vector<Script> &scripts() const {
+        return scripts_;
+    }
+    size_t branchCount() const {
+        return branches_.size();
+    }
+    size_t variationBranch(const std::vector<double> &normalized) const;
+    std::vector<Tag> languages(Tag script) const;
+    std::vector<LookupStep> plan(const Settings &settings, size_t branch = 0) const;
+    std::vector<RelatedSubstitution> relatedSubstitutions(Glyph seed, const GDEF &gdef) const;
+    void substitute(Buffer &buffer, const GDEF &gdef, const Settings &settings, size_t branch,
+                    Trace *trace = nullptr) const;
+    void substituteLookups(Buffer &buffer, const GDEF &gdef, const std::vector<LookupStep> &steps,
+                           Trace *trace = nullptr) const;
+    void position(Buffer &buffer, const GDEF &gdef, const Settings &settings,
+                  const Metrics &metrics, size_t branch = 0) const;
+};
+// Shared context matching for substitution and positioning lookup formats.
+std::optional<std::vector<size_t>> match(const Pattern &pattern, const Buffer &buffer, size_t start,
+                                         const GDEF &gdef, LookupFlags flags,
+                                         Span *scope = nullptr);
+std::vector<Glyph> substitutionOutputs(const Subtable &subtable, Glyph glyph);
+std::vector<Pattern> readContexts(View subtable, unsigned type);
+} // namespace ga::layout

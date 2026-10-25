@@ -37,9 +37,11 @@ for ARCH in $ARCHS; do
   ARCH_BIN="$BUILD/bin/GlyphAtlas-$ARCH"
   MODULE_CACHE="$BUILD/modulecache-clang-$ARCH"
   mkdir -p "$MODULE_CACHE"
+  LAYOUT="$BUILD/font-layout-$ARCH"
+  bash "$ROOT/scripts/compile-font-layout.sh" "$ARCH" "$LAYOUT"
   echo "→ Compiling Glyph Atlas ($ARCH)"
   clang \
-    -fobjc-arc -fobjc-arc-exceptions -fmodules \
+    -fobjc-arc -fmodules \
     -fmodules-cache-path="$MODULE_CACHE" \
     -mmacosx-version-min=12.0 \
     -Oz -flto \
@@ -51,7 +53,7 @@ for ARCH in $ARCHS; do
     -framework CoreText \
     -framework UniformTypeIdentifiers \
     -licucore \
-    "$ROOT/Sources"/*.m \
+    "$ROOT/Sources"/*.m "$LAYOUT"/*.o -lc++ \
     -o "$ARCH_BIN"
   ARCH_BINARIES+=("$ARCH_BIN")
 done

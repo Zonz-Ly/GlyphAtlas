@@ -128,7 +128,7 @@
 
 | 保留数据 | 保存什么 | 省掉什么 |
 | --- | --- | --- |
-| 共享 `GAFontProgram` | 表字节、已解析程序与索引 | 切轴后的重复读取/解析 |
+| 共享 `Resource` | 表字节、已解析程序与索引 | 切轴后的重复读取/解析 |
 | `relatedCache`，2048 项 / 16 MiB 软限制 | 某个 GID 的上下文候选、来源、directFamily 分类 | 对同一 GID 重复遍历 feature/嵌套动作 |
 | `cache`，2048 项 / 32 MiB 软限制 | 完整文字+选择，或字面 GID 序列的候选结果 | 对完全相同输入重复执行发现规则 |
 | 查询模型当前结果 | 当前一次 raw 结果及身份 | 相同请求重复提交、切轴重新发现 |
@@ -274,7 +274,7 @@
 ## 10. 关键对象关系
 
 ```text
-GAFontDocument → GASubstitutionEngine → GAFontProgram
+GAFontDocument → GASubstitutionEngine → GAFontProgram / Resource
                                      ├─ parsed table programs + indices
                                      ├─ per-GID catalogue cache
                                      └─ whole-input discovery cache
@@ -421,8 +421,7 @@ GASidebarViewController → 列表、选择、滚动锚点与通知
 | `GATextPreparation` | grapheme 范围、NFC/NFD、UVS、脚本分段、系统 ICU bidi 与 Arabic joining forms；保留可编码的兼容字/UVS 基字 |
 | `GAGlyphSelection` | 明确选择的 GID、原文范围快照和不可变查询身份；键包含文字、相对范围和完整 GID 序列，hash 纳入文字内容 |
 | `GADisplayGroups` | 独立于窗口的列表数据构建；保留跨选择范围的新连字与选择字形本身的上下文结果，只对同来源/同 GID 的重复结果去重 |
-| `GAFontProgram` | 共享字体表程序、解析诊断与两种派生查询快取；切轴复用同一实例 |
-| `GASubstitutionEngine` | 完整输入/字面 GID 发现、CoreText 原生度量适配、来源合并和实际选择；无 CoreText shaping 查询 |
+| `GASubstitutionEngine.mm` | Objective-C 接口、CoreText 表字节/原生 advance 适配、资源共享、发现策略、来源合并和 NSCache；没有 CTLine/CTRun 扫描 |
 
 每个字体资源共享不可变表程序及 family 索引；每次执行独立持有 buffer、状态、预算。切轴只绑定新的 CTFont/原生度量与定位，沿用条件并集缓存、GID、列表顺序和选择。文字/字面查询缓存为 NSCache（2048 项/32 MiB 软限制）；按 GID 的静态候选目录另用 NSCache（2048 项/16 MiB 软限制）。解析/执行失败通过线程安全 `diagnostics` 暴露，损坏的可选定位程序回退到原生 advance，不在后台线程抛出未处理异常。
 
@@ -438,7 +437,7 @@ GASidebarViewController → 列表、选择、滚动锚点与通知
 
 字面定位是未作像素 hinting 的设计单位布局；pixel Device deltas 不生效，VariationIndex 生效，Anchor format 2 使用表内设计坐标。尚未支持 kern 状态表 1、kerx 1/4/6、旧 AAT tuple kerning、avar v2。遇到这些定位程序会记录诊断并保留原生 advances，不退回 CoreText 扫描。多字视图的最终正常排版仍由原生 TextKit 完成。
 
-当前产品全部为 Objective-C（.h/.m），没有 .cpp/.mm、C++ 标准库或 HarfBuzz。二进制数值/来源跨度使用简单 C 类型，所有表对象、规则、缓冲项、缓存及状态执行器使用 Objective-C。旧 C++ 版本保存在 a5ebe1a，不能重新加入产品构建。
+旧 `GAOTProgram`、HarfBuzz callback、identity-cmap seed、CoreText feature-font 扫描及 `Sources/GASubstitutionEngine.m` 都属于上一版；当前接口实现为 `.mm`，对应 private core 位于 `Sources/`。
 
 规范来源：[OpenType common formats](https://learn.microsoft.com/en-us/typography/opentype/spec/chapter2)、[GSUB](https://learn.microsoft.com/en-us/typography/opentype/spec/gsub)、[GPOS](https://learn.microsoft.com/en-us/typography/opentype/spec/gpos)、[Apple morx](https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6morx.html)、[Apple mort](https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6mort.html)。
 
@@ -478,16 +477,6 @@ Sources 全部平铺，原 FontLayout 的核心文件也已移到同一层。二
 已测样本的软换行会重置行首前文状态，但保留行尾后方 lookahead，因此预测按当前行首到段尾执行、只取该行范围。固定 NSGlyphInfo seed 是显示原子，不再投入第二轮 GSUB。竖排 “ ” ‘ ’ 继续走既有 `verticalQuoteGlyphForGroup:`；测试验证新投影保留指定 GID 与原文范围，未声称独立 CTTypesetter 能重现竖排 NSTextView 绘制。GUI 由用户验收。
 
 
-### 纯 Objective-C 实现（2026-10-25，最新）
+### 当前语言与备份（2026-10-25，最新）
 
-用户明确要求全用 Objective-C。所有解析与执行源文件已转为 .m；C++ namespace/vector/map/optional/lambda、Objective-C++ 桥接及 libc++ 链接均移除。Sources 继续全部平铺。
-
-- `GABinary`：`GATableView` 持有不可变 NSData；子视图共享 owner，有界读与偏移/乘法检查；零偏移返回空视图，读取空视图仍报错。
-- `GAGlyphBuffer`：`GALayoutItem`、cluster/change/trace、`GAGDEF` 与预算。`GACopyBuffer` 明确深拷贝可变 glyph item，来源/组件数组不可变共享；预览不能污染输入。
-- `GAOpenType`：有型别的 predicate、pattern、action、lookup、feature、script/language 与 plan；替换、目录、定位分别由明确的 category 实现，不把单字候选与实际执行混成一个算法。
-- `GAAAT`：不可变 chain/subtable、可执行 machine 与每次请求独立 runner；保留标记、稳定 identity 栈、16 种重排、段尾动作与跨子表候选传播。
-- `GAFontProgram`：资源建立/共享及 NSCache，与 `GASubstitutionEngine` 的输入策略、坐标和输出转换分开。
-- 损坏字体只抛出 `GAInvalidFontTable` 并在资源/查询边界记录；普通程序异常不被字体错误兜底吞掉。编译启用 ARC exception cleanup，避免错误路径泄漏临时对象。
-- 产品 build.sh 直接编译全部 .m。scripts/compile-font-layout.sh 仅为 CLI/sanitizer 缓存 Objective-C 核心物件；没有 C++ 编译器或链接步骤。正常核心检查不再隐式跑完整变异矩阵；`--mutate` 可选全量、`--mutate-sample` 为必要的小样本。`check-sanitizers.sh --quick` 使用小样本与六个 fixture 字体。
-
-转写比较使用 a5ebe1a 的已保存 CLI（.build/cpp-reference-cli），不依赖 CoreText/HarfBuzz oracle。`Tests/check-objc-port.py` 是可选的本机转写核对，不是产品运行依赖；fresh checkout 需先从该提交构建参考 CLI。坐标、候选范围、来源、选择及显示规则与前述章节一致，快取策略未变。
+用户在性能实测后选择恢复 C++ 核心。当前 Sources 平铺，核心为 C++17 .cpp/.h，GASubstitutionEngine.mm / GATextPreparation.mm 作 Objective-C++ 适配，App/UI 为 Objective-C；重新链接 libc++。解析、缓冲区、GSUB/AAT、定位与共享程序边界仍按上述自写架构。没有 HarfBuzz。完整 Objective-C 版本在 outputs/Glyph Atlas ObjC Backup（含原 ZIP）及本地 backup/objective-c-core-2026-10-25 分支 c9788b5，不能误将该备份的构建方式用于当前版本。
