@@ -386,4 +386,13 @@ bash Tests/compare-old.sh
 - 原测试中“没有上下文就没有候选”的断言已改成：单字候选可以存在，但不应凭空产生跨字来源范围的组合。保留实际 shape 的独立断言。
 - 清除默认/base 输出来源是旧版 UI 规则遗留的问题，已修复引擎、模型和显示数据的合并路径。来源用原始 tag；无来源时才保留 `actual`，13 份本地化不再翻译它。
 - 长侧栏重新计算行高和原生可滚范围；GUI 按约定留给用户验收，不写模拟数学测试冒充滚动验收。
-- 用户新要求：额外冗余清理先检查再询问。审查见 CLEANUP-REVIEW.md，已提出异步选择；未收到明确选择前不做这四项可选清理。必要功能修正继续完成。
+- 用户新要求：额外冗余清理先检查再询问。审查见 CLEANUP-REVIEW.md；随后用户已明确选择“四项都清理”，四项现已完成。
+
+
+### 四项清理完成（2026-10-25）
+
+- 已删除未用的 hasFeatureVariations 接口和 OpenType::family；反向 alternate 兄弟归入每 GID 目录缓存。directFamily 是直接根 lookup / 兄弟候选的分类，不是 UI 开关，也不能把嵌套上下文输出误记成 directFamily。
+- 任务桶用实际所需长度排序；不要恢复按 1...段长分配空组。保留 GATextScanItem 批次，因为仍用于旧任务优先及编辑复用。
+- `compile-font-layout.sh arch out [release|test]` 默认 release，CLI/sanitizer 用 test 和不同输出目录。配置签名纳入模式、架构、优化/检测 flags；模式切换失败时签名无效，避免旧配置误用半更新物件。
+- 测试接口由 GA_FONT_LAYOUT_TESTING 条件编译；CLI 的 .m 也必须显式传 1。`Tests/check-release.py` 检查实际两架构产物无测试 selectors、CLI 有这些接口。release 的共享解析/执行/定位核心仍完整保留。
+- 129 组清理前后比较没有丢结果/来源；一组多 GID 文本种子新增原来漏掉的兄弟候选，记录见审查文件。GUI 和 ZIP 解压仍留空，不把源码/数值测试冒充视觉验收。

@@ -154,16 +154,17 @@
         }
     }
 
-    NSUInteger maxLength = 0;
+    // Only allocate lengths that have desired work. Keep ascending priority
+    // without one empty bucket for every possible paragraph length.
+    NSMutableDictionary<NSNumber *, GATextScanGroup *> *groupsByLength =
+        [NSMutableDictionary dictionary];
     for (GATextScanSubitem *subitem in desired) {
-        maxLength = MAX(maxLength, subitem.length);
-    }
-    NSMutableArray<GATextScanGroup *> *newGroups =
-        [NSMutableArray arrayWithCapacity:maxLength];
-    for (NSUInteger length = 1; length <= maxLength; length++) {
-        GATextScanGroup *group = [[GATextScanGroup alloc] init];
-        group.length = length;
-        [newGroups addObject:group];
+        NSNumber *key = @(subitem.length);
+        if (!groupsByLength[key]) {
+            GATextScanGroup *group = [[GATextScanGroup alloc] init];
+            group.length = subitem.length;
+            groupsByLength[key] = group;
+        }
     }
 
     NSMutableSet<GATextScanSubitem *> *reused = [NSMutableSet set];
@@ -204,22 +205,16 @@
                 continue;
             }
             oldItem.subitems = kept;
-            NSUInteger length = oldGroup.length;
-            if (length < 1 || length > newGroups.count) {
-                continue;
-            }
-            [newGroups[length - 1].items addObject:oldItem];
+            [groupsByLength[@(oldGroup.length)].items addObject:oldItem];
         }
     }
     for (NSNumber *key in missingItemByLength) {
-        NSUInteger length = key.unsignedIntegerValue;
-        if (length < 1 || length > newGroups.count) {
-            continue;
-        }
-        [newGroups[length - 1].items addObject:missingItemByLength[key]];
+        [groupsByLength[key].items addObject:missingItemByLength[key]];
     }
 
-    _scanGroups = newGroups;
+    _scanGroups = [NSMutableArray arrayWithCapacity:groupsByLength.count];
+    for (NSNumber *key in [groupsByLength.allKeys sortedArrayUsingSelector:@selector(compare:)])
+        [_scanGroups addObject:groupsByLength[key]];
     [self notifyUpdate];
     if (![self hasPendingSubitems]) {
         [self.delegate textScanModelDidFinish:self];

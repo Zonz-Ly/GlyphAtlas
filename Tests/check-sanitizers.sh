@@ -2,10 +2,10 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 ARCH="$(uname -m)"
-LAYOUT="$ROOT/.build/font-layout-sanitized-$ARCH"
+LAYOUT="$ROOT/.build/font-layout-test-sanitized-$ARCH"
 SANITIZERS=(-fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer -O1 -gline-tables-only)
-SANITIZE=1 bash "$ROOT/scripts/compile-font-layout.sh" "$ARCH" "$LAYOUT"
-clang -fobjc-arc "${SANITIZERS[@]}" -Wall -Wextra -mmacosx-version-min=12.0 -arch "$ARCH" -I "$ROOT/Sources" \
+SANITIZE=1 bash "$ROOT/scripts/compile-font-layout.sh" "$ARCH" "$LAYOUT" test
+clang -DGA_FONT_LAYOUT_TESTING=1 -fobjc-arc "${SANITIZERS[@]}" -Wall -Wextra -mmacosx-version-min=12.0 -arch "$ARCH" -I "$ROOT/Sources" \
   "$ROOT/Tests/GSUBCLI.m" "$ROOT/Sources/GAFontEngine.m" "$ROOT/Sources/GAGlyphSelection.m" "$ROOT/Sources/GADisplayGroups.m" \
   "$ROOT/Sources/GAFontResource.m" "$ROOT/Sources/GAUnicode.m" "$ROOT/Sources/GATextScanModel.m" \
   "$LAYOUT"/*.o -lc++ -framework Cocoa -framework CoreText -licucore -o "$ROOT/.build/gsub-cli-sanitized"

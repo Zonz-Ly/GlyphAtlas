@@ -553,3 +553,12 @@ GSUB 查询增加与当前上下文无关的候选目录：从原始输入 GID �
 `actual` 是应用的备援标记，不是 GSUB feature tag。执行 Trace/静态目录有 `liga`、`calt` 等来源时直接保留，默认输出与基础候选也不再清掉来源；已知来源会替换 `actual`。所有来源均原文显示，`actual` 也不翻译。
 
 侧栏的表格 document view 使用原生 frame/autoresizing 布局；reload 后显式失效所有行高并 tile，滚动范围由 NSClipView 的 constrainBoundsRect: 计算。该修复已编译，实际长列表滚动由用户做 GUI 验收；本轮没有启动窗口。
+
+
+### 目录与测试构建清理（2026-10-25）
+
+直接 single/alternate 与反向 alternate 兄弟候选统一进入 `relatedSubstitutions`；旧 `family` 接口已删除。每个候选带 directFamily 分类，只让直接根 lookup/兄弟选项参与默认 shaping 后的直接族查询；上下文输出仍绑定原输入的位置。反查只使用已解析的 alternateInputs 索引，不作一般 GSUB 逆执行。文字中的多 GID 种子与直接 GID 查询都保留未被替换的组件。
+
+任务队列只为实际出现的查询长度建立有序分组，保留旧批次和正在执行对象。未使用的 hasFeatureVariations 布尔接口已删除，切轴行为继续由共享并集决定。
+
+CLI 的 raw shape / feature specifications 只在测试模式编译，release 不包含这些 Objective-C 方法。解析与执行核心两模式共用。独立物件目录和编译配置签名共同避免测试物件进入 release；可用 `Tests/check-release.py` 检验最终两个架构的接口剔除。

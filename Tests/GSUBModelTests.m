@@ -76,6 +76,30 @@ int main(int argc, const char **argv) {
         if (argc != 2)
             return 2;
         NSString *root = @(argv[1]);
+        GAFontDocument *plain = Document([root stringByAppendingPathComponent:@"plain.ttf"]);
+        GATextScanModel *sparse = [[GATextScanModel alloc] initWithFontDocument:plain];
+        [sparse updateText:[@"" stringByPaddingToLength:10000 withString:@"a" startingAtIndex:0]];
+        Check(sparse.scanGroups.count == 2 && sparse.scanGroups[0].length == 1 &&
+                  sparse.scanGroups[1].length == 10000,
+              @"long paragraph allocates only single and paragraph buckets");
+        sparse = [[GATextScanModel alloc] initWithFontDocument:plain];
+        [sparse updateText:@"abc\nab"];
+        GATextScanSubitem *kept = [sparse startNextSubitemWithMaximumLength:1];
+        GATextScanItem *oldBatch = sparse.scanGroups.firstObject.items.firstObject;
+        [sparse updateText:@"abc\nab\nabcd"];
+        Check(sparse.scanGroups.count == 4 && sparse.scanGroups[0].length == 1 &&
+                  sparse.scanGroups[1].length == 2 && sparse.scanGroups[2].length == 3 &&
+                  sparse.scanGroups[3].length == 4,
+              @"sparse buckets retain ascending task priority");
+        Check(sparse.scanGroups.firstObject.items.firstObject == oldBatch &&
+                  [oldBatch.subitems containsObject:kept] &&
+                  kept.state == GATextScanSubitemStateScanning &&
+                  sparse.scanGroups.firstObject.items.count == 2,
+              @"edit retains in-flight identity and puts old batch before new work");
+        Check(Drain(sparse, plain) == 7, @"remaining singles precede three paragraph tasks");
+        [sparse completeSubitem:kept result:[plain rawScanContent:kept.content]];
+        [sparse updateText:@"ab\nabc"];
+        Check(Drain(sparse, plain) == 0, @"sparse bucket edits retain cached paragraph results");
         GAFontDocument *d = Document([root stringByAppendingPathComponent:@"ligature.ttf"]);
         GATextScanModel *m = [[GATextScanModel alloc] initWithFontDocument:d];
         [m updateText:@"😀ffi ffi\nffi"];

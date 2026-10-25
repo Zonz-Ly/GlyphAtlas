@@ -91,6 +91,7 @@ struct Resource {
             gsub.substitute(items, gdef, settings, domain.branch, trace);
     }
 };
+#if GA_FONT_LAYOUT_TESTING
 std::string sourceName(const Resource &resource, const Domain &domain) {
     if (!domain.apple)
         return "";
@@ -100,6 +101,7 @@ std::string sourceName(const Resource &resource, const Domain &domain) {
                 std::to_string(domain.selector->setting);
     return name;
 }
+#endif
 NSArray<NSNumber *> *glyphArray(const std::vector<Glyph> &glyphs) {
     NSMutableArray *array = [NSMutableArray arrayWithCapacity:glyphs.size()];
     for (Glyph glyph : glyphs)
@@ -234,9 +236,7 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
         [self.program.errors addObject:@(error.what())];
     }
 }
-- (BOOL)hasFeatureVariations {
-    return self.program->resource->gsub.branchCount() > 1;
-}
+#if GA_FONT_LAYOUT_TESTING
 - (NSArray *)featureSpecifications {
     const auto &r = *self.program->resource;
     NSMutableArray *result = [NSMutableArray array];
@@ -251,6 +251,7 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
             }];
     return result;
 }
+#endif
 - (NSArray<NSDictionary *> *)relatedOutputs:(Glyph)glyph {
     NSArray *cached = [self.program.relatedCache objectForKey:@(glyph)];
     if (cached)
@@ -262,8 +263,11 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
             std::string label = tagName(output.feature);
             if (output.value > 1)
                 label += " " + std::to_string(output.value);
-            [outputs
-                addObject:@{@"glyphs" : glyphArray(output.glyphs), @"source" : @(label.c_str())}];
+            [outputs addObject:@{
+                @"glyphs" : glyphArray(output.glyphs),
+                @"source" : @(label.c_str()),
+                @"family" : @(output.directFamily)
+            }];
         }
     } catch (const InvalidTable &error) {
         [self recordError:error];
@@ -365,27 +369,20 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
                     sequence.insert(sequence.begin() + i, replacement.begin(), replacement.end());
                     merge(seen, matches, cluster.source, sequence, output[@"source"], NO);
                 }
-    // Direct single/alternate families include unencoded outputs and language
-    // alternatives that are not selected by this text's default language system.
+    // Default shaping may itself change the input GID. Its direct families
+    // share the same cached catalogue; contextual candidates belong to the
+    // original queried GID above, not an unconstrained transitive closure.
     NSArray *bases = [matches copy];
     for (GASubstitutionMatch *base in bases)
-        if (base.base && base.glyphIDs.count == 1) {
-            Glyph seed = base.glyphIDs.firstObject.unsignedShortValue;
-            for (size_t branch = 0; branch < r.gsub.branchCount(); branch++)
-                for (const auto &feature : r.gsub.features(branch))
-                    for (unsigned li : feature.lookups)
-                        for (auto output : r.gsub.family(seed, li, r.gdef)) {
-                            if (output.first == seed)
-                                continue;
-                            std::string label = tagName(feature.name);
-                            if (output.second > 1)
-                                label += " " + std::to_string(output.second);
-                            merge(seen, matches,
-                                  {uint32_t(base.sourceRange.location),
-                                   uint32_t(NSMaxRange(base.sourceRange))},
-                                  {output.first}, @(label.c_str()), NO);
-                        }
-        }
+        if (base.base && base.glyphIDs.count == 1)
+            for (NSDictionary *output in
+                 [self relatedOutputs:base.glyphIDs.firstObject.unsignedShortValue]) {
+                if (![output[@"family"] boolValue])
+                    continue;
+                merge(seen, matches,
+                      {uint32_t(base.sourceRange.location), uint32_t(NSMaxRange(base.sourceRange))},
+                      glyphVector(output[@"glyphs"]), output[@"source"], NO);
+            }
     // AAT can carry state across any number of glyphs. Merge overlapping scopes
     // before enumerating their grapheme windows; safe boundaries remain cuts.
     if (!r.aat.empty()) {
@@ -630,20 +627,6 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
                         }
                     }
         }
-        for (size_t component = 0; component < original.size(); component++)
-            for (size_t branch = 0; branch < r.gsub.branchCount(); branch++)
-                for (const auto &feature : r.gsub.features(branch))
-                    for (unsigned li : feature.lookups)
-                        for (auto output : r.gsub.family(original[component], li, r.gdef)) {
-                            auto sequence = original;
-                            sequence[component] = output.first;
-                            if (sequence == original)
-                                continue;
-                            std::string label = tagName(feature.name);
-                            if (output.second > 1)
-                                label += " " + std::to_string(output.second);
-                            merge(seen, matches, whole, sequence, @(label.c_str()), NO);
-                        }
         for (size_t i = 0; i < original.size(); i++)
             for (NSDictionary *output in [self relatedOutputs:original[i]]) {
                 auto sequence = original;
@@ -691,6 +674,7 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
     }
     return nil;
 }
+#if GA_FONT_LAYOUT_TESTING
 - (NSDictionary *)shapeText:(NSString *)text
                    features:(NSDictionary *)features
                      script:(NSString *)script
@@ -737,4 +721,5 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
         };
     }
 }
+#endif
 @end

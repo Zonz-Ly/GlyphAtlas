@@ -210,9 +210,6 @@ NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text) {
     if (_descriptor)
         CFRelease(_descriptor);
 }
-- (BOOL)hasFeatureVariations {
-    return _substitutionEngine.hasFeatureVariations;
-}
 - (GAFontDocument *)documentWithDescriptor:(CTFontDescriptorRef)descriptor {
     return [[GAFontDocument alloc] initWithDescriptor:descriptor URL:_fontURL sourceDocument:self];
 }

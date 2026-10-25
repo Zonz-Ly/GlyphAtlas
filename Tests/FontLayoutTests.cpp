@@ -232,6 +232,45 @@ void exercise(Tag name, const Bytes &bytes) {
     for (const auto &item : buffer)
         check(item.source.start < item.source.end, "source span lost");
 }
+Bytes fixtureTable(const std::filesystem::path &file, Tag name) {
+    std::ifstream stream(file, std::ios::binary);
+    Bytes bytes((std::istreambuf_iterator<char>(stream)), {});
+    View sfnt(bytes);
+    for (unsigned i = 0; i < sfnt.u16(4); i++) {
+        size_t p = 12 + i * 16;
+        if (sfnt.u32(p) == name) {
+            size_t offset = sfnt.u32(p + 8), size = sfnt.u32(p + 12);
+            sfnt.require(offset, size);
+            return Bytes(bytes.begin() + offset, bytes.begin() + offset + size);
+        }
+    }
+    throw std::runtime_error("fixture table missing");
+}
+void relatedTests(const std::filesystem::path &directory) {
+    auto bytes = fixtureTable(directory / "alternate.ttf", tag('G', 'S', 'U', 'B'));
+    OpenType program{View(bytes)};
+    auto outputs = program.relatedSubstitutions(18, GDEF{});
+    check(outputs.size() == 1 && outputs[0].glyphs == std::vector<Glyph>{19} &&
+              outputs[0].feature == tag('t', 'e', 's', 't') && outputs[0].value == 2 &&
+              outputs[0].directFamily,
+          "unencoded sibling preserves alternate index and excludes self");
+    auto nested = fixtureTable(directory / "nested-alternate.ttf", tag('G', 'S', 'U', 'B'));
+    OpenType context{View(nested)};
+    outputs = context.relatedSubstitutions(2, GDEF{});
+    check(outputs.size() == 2 && !outputs[0].directFamily && !outputs[1].directFamily,
+          "nested output is contextual, not a standalone family");
+    check(context.relatedSubstitutions(18, GDEF{}).empty(),
+          "alternate siblings are not invented through inverse context");
+    // IgnoreBaseGlyphs must filter the original encoded alternate input, even
+    // when the queried unencoded output itself has no GDEF class.
+    View table(bytes);
+    size_t list = table.u16(8), lookup = list + table.u16(list + 2);
+    bytes[lookup + 2] = 0;
+    bytes[lookup + 3] = 2;
+    GDEF gdef{View(words({1, 0, 12, 0, 0, 0, 1, 2, 1, 1}))};
+    check(OpenType{View(bytes)}.relatedSubstitutions(18, gdef).empty(),
+          "reverse sibling catalogue respects original input filtering");
+}
 void mutationsTest(const std::filesystem::path &directory) {
     std::mt19937 random(1729);
     for (const auto &entry : std::filesystem::directory_iterator(directory)) {
@@ -276,8 +315,10 @@ int main(int argc, char **argv) {
         appleLookupTests();
         cmapTests();
         variationTests();
-        if (argc == 2)
+        if (argc == 2) {
+            relatedTests(argv[1]);
             mutationsTest(argv[1]);
+        }
         std::cout << "OK: " << checks << " core assertions; " << mutations
                   << " deterministic truncated/mutated table executions\n";
         return 0;

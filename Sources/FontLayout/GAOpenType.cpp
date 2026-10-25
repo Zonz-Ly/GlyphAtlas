@@ -579,32 +579,4 @@ std::vector<Glyph> substitutionOutputs(const Subtable &s, Glyph glyph) {
     }
     return {};
 }
-std::vector<std::pair<Glyph, unsigned>> OpenType::family(Glyph seed, unsigned index,
-                                                         const GDEF &gdef) const {
-    std::vector<std::pair<Glyph, unsigned>> result;
-    if (index >= lookups_.size())
-        return result;
-    const auto &lookup = lookups_[index];
-    for (const auto &s : lookup.subtables) {
-        if (s.type != 1 && s.type != 3)
-            continue;
-        auto add = [&](const std::vector<Glyph> &outputs) {
-            for (unsigned i = 0; i < outputs.size(); i++) {
-                auto item = std::make_pair(outputs[i], i + 1);
-                if (std::find(result.begin(), result.end(), item) == result.end())
-                    result.push_back(item);
-            }
-        };
-        if (gdef.included(seed, lookup.flags, lookup.markSet))
-            add(substitutionOutputs(s, seed));
-        if (s.type == 3) {
-            auto family = s.alternateInputs.find(seed);
-            if (family != s.alternateInputs.end())
-                for (Glyph input : family->second)
-                    if (gdef.included(input, lookup.flags, lookup.markSet))
-                        add(substitutionOutputs(s, input));
-        }
-    }
-    return result;
-}
 } // namespace ga::layout

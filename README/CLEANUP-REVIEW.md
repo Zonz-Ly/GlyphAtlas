@@ -1,6 +1,6 @@
 # 更新后的冗余检查（2026-10-25）
 
-本次先记录候选，不擅自做额外清理。用户要求先检查再询问。必要的候选发现、来源标签与滚动修复不属于这里的可选清理。
+用户已选择“四项都清理”，以下四项均已完成。最初的候选发现、来源标签与滚动修复保存在前一提交 a031fc2；本次单独提交清理。
 
 | 项目 | 当前证据 | 建议与验证 |
 | --- | --- | --- |
@@ -12,3 +12,15 @@
 没有发现生产 Sources 中残留 CTLine/CTRun 扫描或 HarfBuzz 调用。Tests 中的原生排版比较是独立验证工具，应保留。字体程序缓存、每 GID 目录缓存、模型范围绑定缓存承担不同工作，不能只因都叫 cache 就合并。
 
 旧 README 的历史章节仍引用旧方法和旧架构，当前架构位于 GLOSSARY 后部。历史记录不建议批量删除；可以另作一次文档整理，不混入本次代码清理。
+
+
+## 完成结果
+
+1. 删除 `GAFontDocument` 和 `GASubstitutionEngine` 的 `hasFeatureVariations` 两层接口；VF 分支解析和所有条件候选并集保留。
+2. 调度器只建立实际所需长度的分组并升序排列。10,000 字的单段只建立 1 和 10,000 两个桶；编辑仍保留进行中对象/旧批次优先，段落缓存复用不变。
+3. 移除 `OpenType::family` 及 facade 的逐 feature/lookup 重复遍历。直接输出、未编码 alternate 兄弟的反查统一到 `relatedSubstitutions` / `relatedOutputs:` 及每 GID 缓存；明确标记 directFamily，使默认 shaping 后的查询不会误作任意上下文传递闭包。反查仍只作用于 feature 根的 alternate 索引，并检查原始输入的 GDEF 过滤、保留 alternate 索引且排除自身。
+4. `featureSpecifications` / `shapeText:...` 和对应 AAT source-name 适配只在 `GA_FONT_LAYOUT_TESTING=1` 中编译。CLI/sanitizer 显式使用 test 构建及独立物件目录；release 默认为 0。编译配置指纹防止同一物件目录切换模式时复用旧物件；失败的配置转换不会留下有效旧指纹。最终两个架构均未包含上述 Objective-C selectors；CLI 保留测试接口。
+
+清理前后 129 组 fixture、字面种子和真实字体查询无候选/来源丢失。128 组完全一致；另一组 alternate.ttf 多 GID 文本种子 [9,19] 新增 [9,18] 兄弟候选（保留前缀），与字面 GID 查询一致，已补回归测试。
+
+CLI 验证现为 352 个替换/资源断言、373 个布局断言、52 个模型断言、7 个显示数据断言、31,755 个 core checks/24,731 次变异执行；ASan/UBSan 103 个字体通过。构建模式还验证了同一物件目录 release → test → release，最终产物检查入口为 `python3 Tests/check-release.py`。没有运行 GUI、安装或 ZIP 解压验证。

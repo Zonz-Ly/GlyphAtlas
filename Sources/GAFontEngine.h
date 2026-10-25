@@ -94,7 +94,6 @@ FOUNDATION_EXPORT NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text);
 @property (nonatomic, readonly, nullable) NSURL *fontURL;
 @property (nonatomic, readonly) NSString *fullName;
 @property (nonatomic, readonly) GAFontBox *fontBox;
-@property (nonatomic, readonly) BOOL hasFeatureVariations;
 /// Same resource, new coordinates; shares parsed tables and immutable inventory.
 - (GAFontDocument *)documentWithDescriptor:(CTFontDescriptorRef)descriptor;
 /// Rebind existing discoveries without enumerating substitutions again.

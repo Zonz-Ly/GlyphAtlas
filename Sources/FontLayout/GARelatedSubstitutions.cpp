@@ -7,6 +7,7 @@ namespace {
 struct Output {
     unsigned position = 0, value = 1;
     std::vector<Glyph> glyphs;
+    bool directFamily = false;
 };
 // A table catalogue, independent of the current text. Positions identify the
 // glyph affected by a nested action, so a rule for W+i contributes W's outputs
@@ -20,12 +21,14 @@ class Catalogue {
     std::set<unsigned> active_;
     const std::vector<Output> empty_;
     void append(std::vector<Output> &outputs, unsigned position, std::vector<Glyph> glyphs,
-                unsigned value = 1) {
-        if (std::none_of(outputs.begin(), outputs.end(), [&](const Output &output) {
-                return output.position == position && output.value == value &&
-                       output.glyphs == glyphs;
-            }))
-            outputs.push_back({position, value, std::move(glyphs)});
+                unsigned value = 1, bool directFamily = false) {
+        auto found = std::find_if(outputs.begin(), outputs.end(), [&](const Output &output) {
+            return output.position == position && output.value == value && output.glyphs == glyphs;
+        });
+        if (found != outputs.end())
+            found->directFamily |= directFamily;
+        else
+            outputs.push_back({position, value, std::move(glyphs), directFamily});
     }
     // SequenceIndex addresses the updated input, including earlier direct
     // multiple substitutions. Preserve each new slot's original owner.
@@ -86,9 +89,9 @@ class Catalogue {
                 auto glyphs = substitutionOutputs(sub, seed_);
                 if (sub.type == 3) {
                     for (unsigned i = 0; i < glyphs.size(); i++)
-                        append(outputs, 0, {glyphs[i]}, i + 1);
+                        append(outputs, 0, {glyphs[i]}, i + 1, true);
                 } else
-                    append(outputs, 0, std::move(glyphs));
+                    append(outputs, 0, std::move(glyphs), 1, sub.type == 1);
             } else if (sub.type == 4) {
                 if (!gdef_.included(seed_, program.flags, program.markSet))
                     continue;
@@ -153,16 +156,43 @@ std::vector<RelatedSubstitution> OpenType::relatedSubstitutions(Glyph seed,
         throw InvalidTable("positioning program used as substitution catalogue");
     Catalogue catalogue(lookups_, gdef, seed);
     std::vector<RelatedSubstitution> result;
-    std::set<std::tuple<Tag, unsigned, std::vector<Glyph>>> seen;
+    std::map<std::tuple<Tag, unsigned, std::vector<Glyph>>, size_t> seen;
+    auto add = [&](const std::vector<Glyph> &glyphs, Tag feature, unsigned value,
+                   bool directFamily) {
+        if (glyphs == std::vector<Glyph>{seed})
+            return;
+        auto [found, inserted] =
+            seen.emplace(std::make_tuple(feature, value, glyphs), result.size());
+        if (inserted)
+            result.push_back({glyphs, feature, value, directFamily});
+        else
+            result[found->second].directFamily |= directFamily;
+    };
     for (const auto &branch : branches_)
         for (const auto &feature : branch)
-            for (unsigned index : feature.lookups)
-                for (const auto &output : catalogue.lookup(index)) {
-                    if (output.glyphs == std::vector<Glyph>{seed})
+            for (unsigned index : feature.lookups) {
+                for (const auto &output : catalogue.lookup(index))
+                    add(output.glyphs, feature.name, output.value, output.directFamily);
+                if (index >= lookups_.size())
+                    continue;
+                const auto &lookup = lookups_[index];
+                // Reverse the alternate index only at a feature root. This is
+                // sibling discovery, not an inverse contextual substitution.
+                for (const auto &sub : lookup.subtables) {
+                    if (sub.type != 3)
                         continue;
-                    if (seen.emplace(feature.name, output.value, output.glyphs).second)
-                        result.push_back({output.glyphs, feature.name, output.value});
+                    auto family = sub.alternateInputs.find(seed);
+                    if (family == sub.alternateInputs.end())
+                        continue;
+                    for (Glyph input : family->second) {
+                        if (!gdef.included(input, lookup.flags, lookup.markSet))
+                            continue;
+                        auto glyphs = substitutionOutputs(sub, input);
+                        for (unsigned i = 0; i < glyphs.size(); i++)
+                            add({glyphs[i]}, feature.name, i + 1, true);
+                    }
                 }
+            }
     return result;
 }
 } // namespace ga::layout

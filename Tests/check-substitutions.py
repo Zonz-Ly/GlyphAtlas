@@ -62,6 +62,8 @@ for kind in ('truncated','bad-offset','recursive'):
 for seed in ('18','19'):
     r=run(F/'alternate.ttf','','--gids',seed)
     check(any(x['glyphs']==[19 if seed=='18' else 18] for x in r['matches']),'alternate-output sibling family')
+r=run(F/'alternate.ttf','ab','--seed','0:1=9,19')
+check(any(m['glyphs']==[9,18] and m['range']==[0,1] and m['sources']==['test'] for m in r['matches']),'multi-GID text seed preserves prefix while finding alternate sibling')
 r=run(F/'alternate.ttf','a');check(any(x['names']==['a.alt2'] and 'test 2' in x['sources'] for x in r['matches']),'all alternate indices')
 for axis in (100,400,900):
     r=run(F/'feature-variations.ttf','a','--axis',f'wght={axis}')
