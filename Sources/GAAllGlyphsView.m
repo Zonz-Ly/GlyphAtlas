@@ -434,9 +434,14 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
 }
 
 - (void)setCellScale:(CGFloat)cellScale {
-    _cellScale = cellScale;
-    self.grid.cellScale = cellScale;
-    [self.grid updateLayoutForWidth:NSWidth(self.bounds)];
+    CGFloat clamped = GAAllGlyphsClampScale(cellScale);
+    if (fabs(clamped - _cellScale) < 1e-9) return;
+    [self layoutSubtreeIfNeeded];
+    GAPreserveScrollPosition(self.scrollView, ^{
+        self->_cellScale = clamped;
+        self.grid.cellScale = clamped;
+        [self.grid updateLayoutForWidth:NSWidth(self.bounds)];
+    });
 }
 
 - (void)zoomIn {

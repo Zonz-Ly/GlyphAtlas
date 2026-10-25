@@ -15,12 +15,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) BOOL showsMetrics;
 /// Called after the inset changes so sibling views can share one zoom state.
 @property (nonatomic, copy, nullable) void (^onSideInsetFractionChanged)(CGFloat fraction);
-/// Called after the text scale changes so the controller can keep the page
-/// centred in the scroll view.
-@property (nonatomic, copy, nullable) void (^onTextScaleChanged)(void);
 @property (nonatomic) NSTextAlignment textAlignment;
 @property (nonatomic) BOOL vertical;
-/// Both optional native shaping switches default to NO.
+/// Both optional native shaping switches default to YES.
 @property(nonatomic) BOOL usesContextualAlternates;
 @property(nonatomic) BOOL usesLigatures;
 /// Visible size of the enclosing scroll view; drives wrapping and margins.
@@ -36,8 +33,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)zoomTextIn;
 - (void)zoomTextOut;
 - (void)resetTextZoom;
-/// The page in the view's own coordinates; used to keep the scroll view
-/// centred on the page while zooming.
+/// The page in the view's own coordinates, including the current page inset.
 - (NSRect)pageRect;
 
 @end

@@ -76,6 +76,51 @@ NSRect GAInsetRectByFraction(NSRect rect, CGFloat fraction) {
     return NSInsetRect(rect, insetX, insetY);
 }
 
+// Ask the clip view for its actual limits, including any content insets.
+// The views use custom content sizing rather than NSScrollView magnification.
+static NSRect GAScrollPositionLimits(NSScrollView *scrollView) {
+    NSClipView *clip = scrollView.contentView;
+    NSRect document = scrollView.documentView.frame;
+    NSRect proposed = clip.bounds;
+    proposed.origin = NSMakePoint(NSMinX(document) - NSWidth(proposed),
+                                  NSMinY(document) - NSHeight(proposed));
+    NSPoint minimum = [clip constrainBoundsRect:proposed].origin;
+    proposed.origin = NSMakePoint(NSMaxX(document), NSMaxY(document));
+    NSPoint maximum = [clip constrainBoundsRect:proposed].origin;
+    return NSMakeRect(minimum.x, minimum.y, MAX(0, maximum.x - minimum.x),
+                       MAX(0, maximum.y - minimum.y));
+}
+
+static NSPoint GACaptureScrollPosition(NSScrollView *scrollView) {
+    NSRect bounds = scrollView.contentView.bounds;
+    if (scrollView.documentView == nil || NSWidth(bounds) <= 0 || NSHeight(bounds) <= 0)
+        return NSMakePoint(0.5, 0.5);
+    NSRect limits = GAScrollPositionLimits(scrollView);
+    return NSMakePoint(NSWidth(limits) > 0.5
+                           ? MIN(1, MAX(0, (NSMinX(bounds) - NSMinX(limits)) / NSWidth(limits))) : 0.5,
+                       NSHeight(limits) > 0.5
+                           ? MIN(1, MAX(0, (NSMinY(bounds) - NSMinY(limits)) / NSHeight(limits))) : 0.5);
+}
+
+static void GARestoreScrollPosition(NSScrollView *scrollView, NSPoint position) {
+    if (scrollView.documentView == nil) return;
+    [scrollView layoutSubtreeIfNeeded];
+    NSClipView *clip = scrollView.contentView;
+    if (NSWidth(clip.bounds) <= 0 || NSHeight(clip.bounds) <= 0) return;
+    NSRect limits = GAScrollPositionLimits(scrollView);
+    NSRect proposed = clip.bounds;
+    proposed.origin = NSMakePoint(NSMinX(limits) + MIN(1, MAX(0, position.x)) * NSWidth(limits),
+                                  NSMinY(limits) + MIN(1, MAX(0, position.y)) * NSHeight(limits));
+    [clip scrollToPoint:[clip constrainBoundsRect:proposed].origin];
+    [scrollView reflectScrolledClipView:clip];
+}
+
+void GAPreserveScrollPosition(NSScrollView *scrollView, void (^changes)(void)) {
+    NSPoint position = GACaptureScrollPosition(scrollView);
+    changes();
+    GARestoreScrollPosition(scrollView, position);
+}
+
 void GADrawPage(NSRect page, NSAppearance *appearance) {
     NSString *match = [appearance bestMatchFromAppearancesWithNames:
         @[NSAppearanceNameAqua, NSAppearanceNameDarkAqua]];
@@ -162,11 +207,13 @@ NSColor *GAGlyphForegroundColor(void) {
     if (fabs(clamped - _sideInsetFraction) < 1e-9) {
         return;
     }
-    _sideInsetFraction = clamped;
-    [self setNeedsDisplay:YES];
-    if (self.onSideInsetFractionChanged) {
-        self.onSideInsetFractionChanged(clamped);
-    }
+    GAPreserveScrollPosition(self.enclosingScrollView, ^{
+        self->_sideInsetFraction = clamped;
+        [self setNeedsDisplay:YES];
+        if (self.onSideInsetFractionChanged) {
+            self.onSideInsetFractionChanged(clamped);
+        }
+    });
 }
 
 - (void)setShowsMetrics:(BOOL)showsMetrics {

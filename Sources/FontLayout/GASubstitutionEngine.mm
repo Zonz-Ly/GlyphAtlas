@@ -334,6 +334,18 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
             for (const auto &source : found->second.second)
                 merge(seen, matches, cluster.source, found->second.first, @(source.c_str()), YES);
         }
+    // Catalogue order comes first; text matches below merge into these rows.
+    // Preserve other GIDs belonging to the same atomic input cluster.
+    for (const auto &run : runs)
+        for (const auto &cluster : clusters(run.glyphs))
+            for (size_t i = 0; i < cluster.glyphs.size(); i++)
+                for (NSDictionary *output in [self relatedOutputs:cluster.glyphs[i]]) {
+                    auto sequence = cluster.glyphs;
+                    auto replacement = glyphVector(output[@"glyphs"]);
+                    sequence.erase(sequence.begin() + i);
+                    sequence.insert(sequence.begin() + i, replacement.begin(), replacement.end());
+                    merge(seen, matches, cluster.source, sequence, output[@"source"], NO);
+                }
     for (size_t di = 0; di < r.domains.size(); di++) {
         const auto &domain = r.domains[di];
         for (const auto &run : runs) {
@@ -400,18 +412,6 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
             }
         }
     }
-    // Context-free inventory: expose only the queried component's replacement,
-    // preserving other GIDs belonging to the same atomic input cluster.
-    for (const auto &run : runs)
-        for (const auto &cluster : clusters(run.glyphs))
-            for (size_t i = 0; i < cluster.glyphs.size(); i++)
-                for (NSDictionary *output in [self relatedOutputs:cluster.glyphs[i]]) {
-                    auto sequence = cluster.glyphs;
-                    auto replacement = glyphVector(output[@"glyphs"]);
-                    sequence.erase(sequence.begin() + i);
-                    sequence.insert(sequence.begin() + i, replacement.begin(), replacement.end());
-                    merge(seen, matches, cluster.source, sequence, output[@"source"], NO);
-                }
     // Default shaping may itself change the input GID. Its direct families
     // share the same cached catalogue; contextual candidates belong to the
     // original queried GID above, not an unconstrained transitive closure.
@@ -442,7 +442,7 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
     try {
         NSDictionary *result = [self discoverContent:text selections:selections];
         NSMutableArray *matches = [result[@"matches"] mutableCopy];
-        [matches sortUsingComparator:^NSComparisonResult(GASubstitutionMatch *a,
+        [matches sortWithOptions:NSSortStable usingComparator:^NSComparisonResult(GASubstitutionMatch *a,
                                                          GASubstitutionMatch *b) {
           if (a.base != b.base)
               return a.base ? NSOrderedAscending : NSOrderedDescending;

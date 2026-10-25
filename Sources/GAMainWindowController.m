@@ -1041,8 +1041,7 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
         return;
     }
     self.displayGroups = snapshot.display;
-    if (![self.sidebarViewController updateGroupsWithSameRows:snapshot.display])
-        [self.sidebarViewController setGroups:snapshot.display];
+    [self.sidebarViewController updateGroups:snapshot.display sourceText:snapshot.text];
     self.multiText = snapshot.multiText ?: @"";
     self.multiGroups = snapshot.multiGroups ?: @[];
     self.multiGroupSources = snapshot.multiGroupSources;

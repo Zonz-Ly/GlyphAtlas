@@ -127,11 +127,13 @@ static NSColor *GAResolvedColor(NSColor *color, NSAppearance *appearance) {
     if (fabs(clamped - _sideInsetFraction) < 1e-9) {
         return;
     }
-    _sideInsetFraction = clamped;
-    [self rebuildLayout];
-    if (self.onSideInsetFractionChanged) {
-        self.onSideInsetFractionChanged(clamped);
-    }
+    GAPreserveScrollPosition(self.enclosingScrollView, ^{
+        self->_sideInsetFraction = clamped;
+        [self rebuildLayout];
+        if (self.onSideInsetFractionChanged) {
+            self.onSideInsetFractionChanged(clamped);
+        }
+    });
 }
 
 - (void)setShowsMetrics:(BOOL)showsMetrics {
@@ -140,11 +142,12 @@ static NSColor *GAResolvedColor(NSColor *color, NSAppearance *appearance) {
 }
 
 - (void)setTextScale:(CGFloat)textScale {
-    _textScale = GAMultiClampTextScale(textScale);
-    [self rebuildLayout];
-    if (self.onTextScaleChanged) {
-        self.onTextScaleChanged();
-    }
+    CGFloat clamped = GAMultiClampTextScale(textScale);
+    if (fabs(clamped - _textScale) < 1e-9) return;
+    GAPreserveScrollPosition(self.enclosingScrollView, ^{
+        self->_textScale = clamped;
+        [self rebuildLayout];
+    });
 }
 
 - (void)setTextAlignment:(NSTextAlignment)textAlignment {
