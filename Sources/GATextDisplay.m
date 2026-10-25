@@ -1,22 +1,49 @@
 #import "GATextDisplay.h"
+#import <CoreText/SFNTLayoutTypes.h>
 
-CTFontRef GACopyTextDisplayFont(CTFontRef font, CGFloat size,
-                                BOOL contextualAlternates) {
-  CTFontDescriptorRef descriptor = CTFontCopyFontDescriptor(font);
-  NSDictionary *attributes = @{
-    (__bridge NSString *)kCTFontFeatureSettingsAttribute : @[ @{
-      (__bridge NSString *)kCTFontOpenTypeFeatureTag : @"calt",
-      (__bridge NSString *)kCTFontOpenTypeFeatureValue : @(contextualAlternates)
-    } ]
-  };
-  CTFontDescriptorRef configured = CTFontDescriptorCreateCopyWithAttributes(
-      descriptor, (__bridge CFDictionaryRef)attributes);
-  CFRelease(descriptor);
-  if (!configured)
-    return NULL;
-  CTFontRef result = CTFontCreateWithFontDescriptor(configured, size, NULL);
-  CFRelease(configured);
-  return result;
+static NSDictionary *GAOpenTypeDisplaySetting(NSString *tag, BOOL enabled) {
+    return @{
+        (__bridge NSString *)kCTFontOpenTypeFeatureTag : tag,
+        (__bridge NSString *)kCTFontOpenTypeFeatureValue : @(enabled)
+    };
+}
+
+static NSDictionary *GAAATDisplaySetting(NSInteger type, NSInteger selector) {
+    return @{
+        (__bridge NSString *)kCTFontFeatureTypeIdentifierKey : @(type),
+        (__bridge NSString *)kCTFontFeatureSelectorIdentifierKey : @(selector)
+    };
+}
+
+CTFontRef GACopyTextDisplayFont(CTFontRef font, CGFloat size, BOOL contextualAlternates,
+                                BOOL ligatures) {
+    NSArray *settings;
+    // The native AAT path uses feature selectors; no font table bytes are read.
+    if (CTFontHasTable(font, kCTFontTableMorx) || CTFontHasTable(font, kCTFontTableMort)) {
+        settings = @[
+            GAAATDisplaySetting(kContextualAlternatesType, contextualAlternates
+                                                               ? kContextualAlternatesOnSelector
+                                                               : kContextualAlternatesOffSelector),
+            GAAATDisplaySetting(kLigaturesType, ligatures ? kCommonLigaturesOnSelector
+                                                          : kCommonLigaturesOffSelector)
+        ];
+    } else {
+        settings = @[
+            GAOpenTypeDisplaySetting(@"calt", contextualAlternates),
+            GAOpenTypeDisplaySetting(@"liga", ligatures),
+            GAOpenTypeDisplaySetting(@"clig", ligatures)
+        ];
+    }
+    CTFontDescriptorRef descriptor = CTFontCopyFontDescriptor(font);
+    NSDictionary *attributes = @{(__bridge NSString *)kCTFontFeatureSettingsAttribute : settings};
+    CTFontDescriptorRef configured =
+        CTFontDescriptorCreateCopyWithAttributes(descriptor, (__bridge CFDictionaryRef)attributes);
+    CFRelease(descriptor);
+    if (!configured)
+        return NULL;
+    CTFontRef result = CTFontCreateWithFontDescriptor(configured, size, NULL);
+    CFRelease(configured);
+    return result;
 }
 
 NSAttributedString *

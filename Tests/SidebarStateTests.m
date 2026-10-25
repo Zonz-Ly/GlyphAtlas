@@ -189,6 +189,20 @@ static GACharacterGroup *Group(NSRange range, NSArray<NSNumber *> *ids) {
   g.variants = variants;
   return g;
 }
+static NSArray<GACharacterGroup *> *RangeShiftGroups(NSIndexSet *lineBreaks) {
+    NSMutableArray *groups = [NSMutableArray array];
+    for (NSUInteger i = 0; i < 10; i++) {
+        NSMutableArray *glyphs = [NSMutableArray array];
+        for (NSUInteger j = 0; j < 5; j++)
+            [glyphs addObject:@((i + 1) * 100 + j)];
+        NSUInteger shift = [lineBreaks countOfIndexesInRange:NSMakeRange(0, i + 1)];
+        GACharacterGroup *group = Group(NSMakeRange(i + shift, 1), glyphs);
+        group.text = [NSString stringWithFormat:@"%lu", i];
+        [groups addObject:group];
+    }
+    return groups;
+}
+
 int main(void) {
   @autoreleasepool {
     Check(NSApp == nil, "no GUI application initialized");
@@ -275,6 +289,29 @@ int main(void) {
     Check([sidebar selectGlyphIDs:@[ @101 ] textRange:NSMakeRange(0, 1)] &&
               clip.bounds.origin.y == 0,
           "TextView link near the group top keeps original group positioning");
+    [sidebar setGroups:RangeShiftGroups(NSIndexSet.indexSet)];
+    clip.bounds = NSMakeRect(0, 1638, 200, 88);
+    table.selectedRow = 37;
+    [sidebar tableViewSelectionDidChange:nil];
+    NSUInteger rangeReloads = table.reloads, rangeReveals = table.reveals;
+    NSMutableIndexSet *bothBreaks = [NSMutableIndexSet indexSetWithIndex:0];
+    [bothBreaks addIndex:5];
+    for (NSIndexSet *breaks in @[ [NSIndexSet indexSetWithIndex:0], bothBreaks,
+                                [NSIndexSet indexSetWithIndex:5], NSIndexSet.indexSet ]) {
+        Check([sidebar updateGroupsWithSameRows:RangeShiftGroups(breaks)] &&
+                  table.reloads == rangeReloads && table.reveals == rangeReveals &&
+                  clip.bounds.origin.y == 1638 && table.selectedRow == 37,
+              "inserting/removing leading and middle line breaks rebinds without scrolling");
+        NSRange selectedRange = [[sidebar valueForKey:@"selectedVariantTextRange"] rangeValue];
+        NSUInteger shift = [breaks countOfIndexesInRange:NSMakeRange(0, 8)];
+        Check(NSEqualRanges(selectedRange, NSMakeRange(7 + shift, 1)) &&
+                  [[[sidebar valueForKey:@"selectedVariant"] glyphIDs] isEqual:@[ @802 ]],
+              "the selected glyph keeps its new UTF-16 source range after a range-only edit");
+    }
+    NSArray<GACharacterGroup *> *differentText = RangeShiftGroups(NSIndexSet.indexSet);
+    differentText[7].text = @"X";
+    Check(![sidebar updateGroupsWithSameRows:differentText],
+          "different source content is not mistaken for a position-only update");
     MenuChecks();
     NSAttributedString *modelText =
         [[NSAttributedString alloc] initWithString:@"a\n⏎b"];

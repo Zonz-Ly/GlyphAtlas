@@ -157,12 +157,12 @@ int main(int argc, const char **argv) {
               if (!sample)
                 continue;
               CTFontRef font = GACopyTextDisplayFont(document.fontBox.font, 32,
-                                                     context.boolValue);
+                                                     context.boolValue, liga.boolValue);
               NSAttributedString *display = [[NSAttributedString alloc]
                   initWithString:item[1]
                       attributes:@{
                         NSFontAttributeName : (__bridge id)font,
-                        NSLigatureAttributeName : liga,
+                        NSLigatureAttributeName : @1,
                         NSVerticalGlyphFormAttributeName : vertical
                       }];
               NSArray *native = Hits(display, 150, indices, @[], item[1]);
@@ -207,7 +207,7 @@ int main(int argc, const char **argv) {
       [model analyzeText:@"ab" selections:@[ run ] cancelled:nil];
       NSArray *groups =
           GABuildDisplayGroups(model.groups, @"ab", @[ run ], document);
-      CTFontRef font = GACopyTextDisplayFont(document.fontBox.font, 32, NO);
+      CTFontRef font = GACopyTextDisplayFont(document.fontBox.font, 32, NO, YES);
       NSDictionary *attrs = @{
         NSFontAttributeName : (__bridge id)font,
         NSLigatureAttributeName : @1
@@ -256,12 +256,12 @@ int main(int argc, const char **argv) {
         model = [[GATextQueryModel alloc] initWithFontDocument:document];
         [model analyzeText:source selections:@[] cancelled:nil];
         groups = GABuildDisplayGroups(model.groups, source, @[], document);
-        font = GACopyTextDisplayFont(document.fontBox.font, 32, NO);
+        font = GACopyTextDisplayFont(document.fontBox.font, 32, NO, NO);
         NSAttributedString *text = [[NSAttributedString alloc]
             initWithString:source
                 attributes:@{
                   NSFontAttributeName : (__bridge id)font,
-                  NSLigatureAttributeName : @0,
+                  NSLigatureAttributeName : @1,
                   NSVerticalGlyphFormAttributeName : @YES
                 }];
         NSMutableArray *mapping = [NSMutableArray array];
@@ -274,7 +274,7 @@ int main(int argc, const char **argv) {
     NSString *hira = @"/Users/zonz/Library/Fonts/ThemeX Hiragino Sans.ttc";
     if ([[NSFileManager defaultManager] fileExistsAtPath:hira]) {
       GAFontDocument *document = Document(hira);
-      CTFontRef font = GACopyTextDisplayFont(document.fontBox.font, 32, NO);
+      CTFontRef font = GACopyTextDisplayFont(document.fontBox.font, 32, NO, NO);
       for (NSNumber *scalar in @[ @0x201C, @0x201D, @0x2018, @0x2019 ]) {
         unichar c = scalar.unsignedShortValue;
         CGGlyph base = 0;
@@ -285,7 +285,7 @@ int main(int argc, const char **argv) {
         NSString *source = [NSString stringWithCharacters:&c length:1];
         NSDictionary *attrs = @{
           NSFontAttributeName : (__bridge id)font,
-          NSLigatureAttributeName : @0,
+          NSLigatureAttributeName : @1,
           NSVerticalGlyphFormAttributeName : @YES
         };
         NSMutableAttributedString *display =

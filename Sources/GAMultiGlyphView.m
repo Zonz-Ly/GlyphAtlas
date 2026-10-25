@@ -223,8 +223,8 @@ static NSColor *GAResolvedColor(NSColor *color, NSAppearance *appearance) {
     if (document == nil) {
         return nil;
     }
-    return (__bridge_transfer NSFont *)GACopyTextDisplayFont(document.fontBox.font, size,
-                                                             self.usesContextualAlternates);
+    return (__bridge_transfer NSFont *)GACopyTextDisplayFont(
+        document.fontBox.font, size, self.usesContextualAlternates, self.usesLigatures);
 }
 
 - (CGFloat)horizontalAdvanceForGlyph:(CGGlyph)glyph font:(NSFont *)font {
@@ -347,7 +347,8 @@ static NSColor *GAResolvedColor(NSColor *color, NSAppearance *appearance) {
             GAResolvedColor(GAGlyphForegroundColor(), self.effectiveAppearance),
         NSParagraphStyleAttributeName : paragraph,
         // Native TextKit owns shaping. Explicit glyph selections remain seeds.
-        NSLigatureAttributeName : @(self.usesLigatures ? 1 : 0),
+        // Optional features live on the font; do not disable the shaping channel.
+        NSLigatureAttributeName : @1,
     };
 
     NSMutableAttributedString *display =

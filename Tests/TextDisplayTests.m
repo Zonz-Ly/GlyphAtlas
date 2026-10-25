@@ -15,14 +15,14 @@ static NSArray *Shape(NSString *path, NSString *text, BOOL contextual, BOOL liga
     Check(descriptors && CFArrayGetCount(descriptors), "native font available");
     CTFontRef base =
         CTFontCreateWithFontDescriptor(CFArrayGetValueAtIndex(descriptors, 0), 32, NULL);
-    CTFontRef font = GACopyTextDisplayFont(base, 32, contextual);
+    CTFontRef font = GACopyTextDisplayFont(base, 32, contextual, ligatures);
     CFRelease(base);
     CFRelease(descriptors);
     NSAttributedString *string = [[NSAttributedString alloc]
         initWithString:text
             attributes:@{
                 (__bridge NSString *)kCTFontAttributeName : (__bridge id)font,
-                (__bridge NSString *)kCTLigatureAttributeName : @(ligatures ? 1 : 0)
+                (__bridge NSString *)kCTLigatureAttributeName : @1
             }];
     CTLineRef line = CTLineCreateWithAttributedString((__bridge CFAttributedStringRef)string);
     NSMutableArray *glyphs = [NSMutableArray array];

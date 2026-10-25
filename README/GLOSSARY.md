@@ -489,3 +489,15 @@ Sources 全部平铺，原 FontLayout 的核心文件也已移到同一层。二
 - TextView 竖排通过原有 setLayoutOrientation:Vertical 交给 TextKit；点击预测在竖排下始终执行对应 vert/vrt2/AAT 选择。原有弯引号显示 override 与固定 seed 不变。
 - 用户最终要求第三点仅做追加检查，不统一/替换旧规则。selectGlyphIDs:textRange: 仍先调用原 scrollGroupContainingRow:；若选中行 bottom 超过可视 bottom，最后补一次 bottom 对齐。既有大组对齐组顶、能放下整组时显示整组、激活后 SelectedToTopIfNeeded 策略全部保留。
 - Option+Enter 只诊断未修复：插入换行使后方组的原文范围 +1，即使行成员/文字元数据相同，也会令 updateGroupsWithSameRows: 拒绝重绑。restoreScrollAnchor: 用旧范围找组，可能找到上一组，并 fallback 到它的基础行；于是可视位置改变。真实 Hiragino 10 字 49 行测例的非范围元数据全部不变，开头/中间插入分别有 10/5 组范围变化，末尾为 0；测试替身重现前两种可视 y 从 1638 到 1330，末尾不动。该证据只覆盖前面/中间插入，不可冒称已经重现末尾追加时的 GUI 问题。
+
+
+### 开关解耦试用版与换行保位（2026-10-25，未构建）
+
+- 用户随后授权先按特性分开控制的方案做一版，并明确本轮不构建、留下一轮一起验证。
+- GACopyTextDisplayFont 增加 ligatures 参数；TextView 的 NSLigatureAttributeName 固定为 1。没有 morx/mort 的字体分别设置 OpenType calt、liga、clig 的 0/1；有 morx/mort 的字体分别设置 ContextualAlternates（type 36，selector 0/1）及 CommonLigatures（type 1，selector 2/3）。CTFontHasTable 只判断表存在，不复制表字节。两项默认值仍为开启。
+- 这是原生特性优先级的试用方案，不是已经证实所有字体都能独立控制；下一轮需验证 calt ON / common ligatures OFF，尤其实际 TextView 路径。固定 GID seed 显示规则和自己的点击预测未改变。
+- 对于 Option+Enter 导致的纯位置变化，updateGroupsWithSameRows: 不再要求绝对 textRange.location 相等。它仍核对相对分组边界、源文字/范围长度、seed/组合/base/ligature 标志与原有全部行元数据；匹配时只重绑组、行及选中范围，不 reload、不选择、不滚动。内容或结构改变仍走原有完整更新，pending 激活请求优先级不变。
+- 已追加源位置移动/插入删除换行的回归检查代码，并同步所有字体设置 helper 的测试调用；本轮按要求没有编译、构建、运行新增测试或重打包。dist 仍是上一轮产物。
+- vrt2：OpenType 规范定义它可覆盖 vert；2019 年字体开发者在 Glyphs 论坛有 NSTextView/TextEdit 优先使用 vrt2 的一手记录。这支持“TextView 能用 vrt2”，不能当作本机当前 TextKit 2 的实测保证。现有 vert-only fixture 不能区分 vert/vrt2 优先级；下一轮应用二者输出不同的专用字体验证，暂未改预测中的选择策略。
+
+参考：[OpenType vrt2](https://learn.microsoft.com/en-us/typography/opentype/spec/features_uz#tag-vrt2)、[字体开发者的 NSTextView/TextEdit 记录](https://forum.glyphsapp.com/t/automatic-feature-code-must-include-vert-in-vrt2/12297)。

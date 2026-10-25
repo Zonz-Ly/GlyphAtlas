@@ -24,7 +24,8 @@ typedef NS_ENUM(NSInteger, GAPendingSelectionScroll) {
 @property (nonatomic, readonly) NSRange inputSelectionRange;
 
 - (void)setAttributedText:(NSAttributedString *)attributedText;
-/// Rebinds existing rows without reloading the table, changing selection or scrolling.
+/// Rebinds the same visual row sequence, including shifted source ranges,
+/// without reloading the table, changing the selected row or scrolling.
 /// Returns NO if the inventory changed or a normal activation is pending.
 - (BOOL)updateGroupsWithSameRows:(NSArray<GACharacterGroup *> *)groups;
 - (void)setGroups:(NSArray<GACharacterGroup *> *)groups;

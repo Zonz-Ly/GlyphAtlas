@@ -709,7 +709,17 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
     if (rows.count != self.rows.count) return NO;
     for (NSUInteger i = 0; i < rows.count; i++) {
         GARowItem *old = self.rows[i], *updated = rows[i];
-        if (!NSEqualRanges(old.group.textRange, updated.group.textRange) ||
+        BOOL oldGroupStarts = i == 0 || self.rows[i - 1].group != old.group;
+        BOOL newGroupStarts = i == 0 || rows[i - 1].group != updated.group;
+        // Absolute source locations move after edits. They are rebound below,
+        // not a reason to reload an otherwise identical visual row sequence.
+        if (oldGroupStarts != newGroupStarts ||
+            old.group.textRange.length != updated.group.textRange.length ||
+            ![old.group.text isEqualToString:updated.group.text] ||
+            old.group.seeded != updated.group.seeded ||
+            old.group.insertedLigature != updated.group.insertedLigature ||
+            old.variant.isBase != updated.variant.isBase ||
+            old.variant.isLigature != updated.variant.isLigature ||
             ![old.variant.glyphKey isEqualToString:updated.variant.glyphKey] ||
             ![old.variant.featureSources isEqualToArray:updated.variant.featureSources] ||
             ![old.variant.unicodeScalars isEqualToArray:updated.variant.unicodeScalars] ||

@@ -4,11 +4,11 @@
 
 NS_ASSUME_NONNULL_BEGIN
 /// Native display settings only. Candidate discovery is independent of these
-/// switches.
+/// switches. Keep the native ligature channel enabled; this font controls the
+/// two optional features independently.
 FOUNDATION_EXPORT
-CTFontRef _Nullable GACopyTextDisplayFont(CTFontRef font, CGFloat size,
-                                          BOOL contextualAlternates)
-    CF_RETURNS_RETAINED;
+CTFontRef _Nullable GACopyTextDisplayFont(CTFontRef font, CGFloat size, BOOL contextualAlternates,
+                                          BOOL ligatures) CF_RETURNS_RETAINED;
 
 /// Expands a fixed GID sequence in the private TextKit display string. Each
 /// component keeps its own glyph override; the user's source text is untouched.
