@@ -24,7 +24,7 @@ A native macOS font and alternate-glyph inspector. Type text to see every altern
 - Use `⌘C` to copy all encoded characters of the selected glyph.
 - Hover over a Unicode badge to see the character name defined by the Unicode standard.
 - All Glyphs is the default. Right-click to switch views, or press `⌘1` for Single Glyph, `⌘2` for Multi-Character, or `⌘3` for All Glyphs.
-- In Multi-Character, click a glyph to view its alternates. Vertical writing is supported; right-click or press `⌘5` to switch writing direction.
+- In Multi-Character, click a glyph to view its alternates. Use `⌘5` for contextual alternates and `⌘6` for ligatures; both start off. Use `⌘7` to switch writing direction.
 - In All Glyphs, double-click a glyph to add it to the existing text. Clicking a glyph in the sidebar also makes it blink there.
 - Use `⌘+`/`⌘-` to zoom the glyphs, and `⌥⌘+`/`⌥⌘-` to resize the margins in Multi-Character. Trackpad pinch also works.
 - The page shadow shows the glyph's width and height, as well as the layout's line height and leading; press `⌘4` to hide it.
@@ -81,7 +81,7 @@ The build assembles icons and the app in a temporary directory, removes metadata
 - 使用 `⌘C` 複製選中字形的所有編碼字符。
 - 鼠標在 Unicode 上靜置時顯示該 Unicode 標準規定的字符名稱。
 - 默認打开全部字形, 可以點右鍵切換或使用 `⌘1` 單字形、`⌘2` 多字符、`⌘3` 全部字。
-- 在多字符中點一下字形就能查看替換字。支持豎排，點右鍵或使用 `⌘5` 切換。
+- 在多字符中點一下字形就能查看替換字。`⌘5` 使用上下文替換、`⌘6` 使用連字，兩者默認關閉；`⌘7` 切換豎排。
 - 在全部字中點兩下字形可以添加到已有文字中，在側邊欄中點一下字形還會在全部字中閃一閃。
 - 用 `⌘+`／`⌘−` 來放大或縮小字形，用 `⌥⌘+`／`⌥⌘−` 來在多字符模式中放大或縮小邊距。也可以使用觸控板撐捏。
 - 用陰影表示字形寬度高度和排版行高行距，用可用 `⌘4` 隱藏。

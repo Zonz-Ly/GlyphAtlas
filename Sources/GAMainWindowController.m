@@ -123,7 +123,6 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 @property (nonatomic, strong) NSArray<GACharacterGroup *> *display;
 @property (nonatomic, copy) NSString *text;
 @property (nonatomic) NSUInteger generation;
-@property (nonatomic) BOOL shouldUpdateMulti;
 @property (nonatomic, copy, nullable) NSString *multiText;
 @property (nonatomic, strong, nullable) NSArray<GACharacterGroup *> *multiGroups;
 @property (nonatomic, strong, nullable) NSMapTable<GACharacterGroup *, GACharacterGroup *> *multiGroupSources;
@@ -153,20 +152,11 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 @property (nonatomic, strong) dispatch_queue_t fontQueue;
 @property (nonatomic, strong) dispatch_queue_t analysisQueue;
 @property (nonatomic, strong, nullable) GATextScanModel *scanModel;
-@property (nonatomic) BOOL scanDisplayPublished;
 @property (nonatomic, copy, nullable) NSString *pendingWorkerText;
 @property (nonatomic, copy, nullable) NSArray<GAGlyphSelectionRun *> *pendingWorkerSelections;
 @property (nonatomic) NSUInteger workerGeneration;
-@property (nonatomic, copy, nullable) NSString *workerLastMultiText;
-@property (nonatomic, copy, nullable) NSArray<NSString *> *workerLastMultiSeeds;
-@property (nonatomic, strong) dispatch_queue_t multiScanQueue;
-@property (nonatomic) BOOL multiScanInFlight;
-@property (nonatomic, copy, nullable) NSString *workerText;
-@property (nonatomic, copy, nullable) NSArray<GAGlyphSelectionRun *> *workerSelections;
-@property (nonatomic) NSUInteger workerTextGeneration;
 @property (nonatomic) BOOL didFocusInitialField;
 @property (nonatomic, strong, nullable) NSArray<GACharacterGroup *> *displayGroups;
-@property (nonatomic, copy) NSString *analysisText;
 @property (nonatomic, copy) NSString *multiText;
 @property (nonatomic, strong) NSArray<GACharacterGroup *> *multiGroups;
 /// Multi-view groups are filtered copies; map each copy back to its sidebar
@@ -174,10 +164,11 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 @property (nonatomic, strong) NSMapTable<GACharacterGroup *, GACharacterGroup *> *multiGroupSources;
 @property (nonatomic) NSTextAlignment textAlignment;
 @property (nonatomic) BOOL verticalWriting;
+@property(nonatomic) BOOL usesContextualAlternates;
+@property(nonatomic) BOOL usesLigatures;
 @property (nonatomic, strong, nullable) GAGlyphVariant *lastSelectedVariant;
 /// Set by an all-glyph double-click append; consumed by the next reveal.
 @property (nonatomic) BOOL appendRevealPending;
-@property (nonatomic) BOOL coordinateRefresh;
 @property (nonatomic) BOOL didSetInitialSidebarWidth;
 @end
 
@@ -202,6 +193,8 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 
     self = [super initWithWindow:window];
     if (self) {
+        _usesContextualAlternates = NO;
+        _usesLigatures = NO;
         window.delegate = self;
         [self configureInterfaceWithWindow:window];
 
@@ -222,15 +215,12 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 
 - (void)configureInterfaceWithWindow:(NSWindow *)window {
     _showsMetrics = YES;
-    _analysisText = @"";
     _multiText = @"";
     _multiGroups = @[];
     _multiGroupSources = [NSMapTable weakToStrongObjectsMapTable];
     self.fontQueue = dispatch_queue_create("com.zonz.GlyphAtlas.font", DISPATCH_QUEUE_SERIAL);
     self.analysisQueue = dispatch_queue_create("com.zonz.GlyphAtlas.analysis",
                                                DISPATCH_QUEUE_SERIAL);
-    self.multiScanQueue = dispatch_queue_create("com.zonz.GlyphAtlas.multiscan",
-                                                DISPATCH_QUEUE_SERIAL);
 
     self.sidebarViewController = [[GASidebarViewController alloc] init];
     self.detailViewController = [[GADetailViewController alloc] init];
@@ -290,7 +280,6 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 
     __weak typeof(self) weakSelf = self;
     self.sidebarViewController.onTextChanged = ^{
-        weakSelf.coordinateRefresh = NO;
         [weakSelf scheduleAnalysis];
     };
     self.sidebarViewController.onSelectionChanged = ^(GAGlyphVariant *variant) {
@@ -332,6 +321,8 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
                                          groups:self.multiGroups ?: @[]];
         [self.detailViewController setTextAlignment:self.textAlignment];
         [self.detailViewController setWritingDirectionVertical:self.verticalWriting];
+        [self.detailViewController setUsesContextualAlternates:self.usesContextualAlternates];
+        [self.detailViewController setUsesLigatures:self.usesLigatures];
     }
 }
 
@@ -401,6 +392,16 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 - (void)setVerticalWriting:(BOOL)vertical {
     _verticalWriting = vertical;
     [self.detailViewController setWritingDirectionVertical:vertical];
+}
+
+- (void)setUsesContextualAlternates:(BOOL)enabled {
+    _usesContextualAlternates = enabled;
+    [self.detailViewController setUsesContextualAlternates:enabled];
+}
+
+- (void)setUsesLigatures:(BOOL)enabled {
+    _usesLigatures = enabled;
+    [self.detailViewController setUsesLigatures:enabled];
 }
 
 - (void)appendAllGlyphEntry:(GAAllGlyphEntry *)entry {
@@ -638,15 +639,12 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
             }
             GAGlyphVariant *selected = preserve ? self.lastSelectedVariant : nil;
             self.fontDocument = document;
-            self.coordinateRefresh = preserve;
-            if (!preserve) self.scanDisplayPublished = NO;
             @synchronized (self) {
                 self.pendingWorkerText = nil;
                 self.pendingWorkerSelections = nil;
                 self.workerGeneration += 1;
             }
-            // Swap all model-owned state on its queue. An old multi scan keeps
-            // its own document/model and cannot complete into the new cache.
+            // Swap all model-owned state on its queue after the old batch yields.
             dispatch_async(self.analysisQueue, ^{
                 self.workerFontDocument = document;
                 if (preserve && self.scanModel != nil) {
@@ -654,12 +652,6 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
                 } else {
                     self.scanModel = [[GATextScanModel alloc] initWithFontDocument:document];
                 }
-                self.workerLastMultiText = nil;
-                self.workerLastMultiSeeds = nil;
-                self.multiScanInFlight = NO;
-                self.workerText = nil;
-                self.workerSelections = nil;
-                self.workerTextGeneration = 0;
                 // Schedule from the latest input only after the old worker has
                 // yielded and the new model is installed. Otherwise that old
                 // worker could consume the pending text before this reset.
@@ -962,9 +954,6 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
     if (text.length == 0) {
         [self clearScanDisplay];
     }
-    if (![self.analysisText isEqualToString:text]) {
-        self.scanDisplayPublished = NO;
-    }
     dispatch_async(self.analysisQueue, ^{
         [self workerRun];
     });
@@ -975,101 +964,38 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
     [self.sidebarViewController setGroups:@[]];
     [self.detailViewController setVariant:nil];
     self.displayGroups = @[];
-    self.analysisText = @"";
     self.multiText = @"";
     self.multiGroups = @[];
     self.multiGroupSources = [NSMapTable weakToStrongObjectsMapTable];
-    // The next text may equal the pre-clear text (for example "a" -> "" -> "a");
-    // force a rebuild instead of trusting the stale worker-side signature.
-    self.workerLastMultiText = nil;
     [self.detailViewController setMultiText:@"" groups:@[]];
 }
 
 #pragma mark - Worker (analysisQueue only)
 
 - (void)workerRun {
-    if (self.scanModel == nil || self.workerFontDocument == nil) {
+    if (!self.scanModel || !self.workerFontDocument)
         return;
-    }
     while (YES) {
-        NSString *text = nil;
-        NSArray<GAGlyphSelectionRun *> *selections = nil;
-        NSUInteger generation = 0;
+        NSString *text;
+        NSArray<GAGlyphSelectionRun *> *selections;
+        NSUInteger generation;
         @synchronized (self) {
-            if (self.pendingWorkerText != nil) {
-                text = self.pendingWorkerText;
-                selections = self.pendingWorkerSelections ?: @[];
-                generation = self.workerGeneration;
-                self.pendingWorkerText = nil;
-                self.pendingWorkerSelections = nil;
-            }
+            text = self.pendingWorkerText;
+            selections = self.pendingWorkerSelections ?: @[];
+            generation = self.workerGeneration;
+            self.pendingWorkerText = nil;
+            self.pendingWorkerSelections = nil;
         }
-        if (text != nil) {
-            self.workerText = text;
-            self.workerSelections = selections;
-            self.workerTextGeneration = generation;
-            [self.scanModel updateText:text selections:selections];
-        }
-        if (self.workerText == nil) {
+        if (!text)
             return;
-        }
-
-        // Single-character scans run inline on the model queue. They are short
-        // and the display needs their base variants first. Only length-1
-        // subitems are started here so a multi item is never marked Scanning
-        // while another multi raw is still in flight; otherwise that item would
-        // be lost and never dispatched.
-        GATextScanSubitem *subitem = nil;
-        while ((subitem = [self.scanModel startNextSubitemWithMaximumLength:1]) != nil) {
-            GARawScanResult *result =
-                [self.workerFontDocument rawScanContent:subitem.content
-                                             selections:subitem.selections ?: @[]];
-            [self.scanModel completeSubitem:subitem result:result];
-            @synchronized (self) {
-                if (self.pendingWorkerText != nil) {
-                    break;
-                }
-            }
-        }
-
-        [self publishWorkerSnapshotWithText:self.workerText
-                                 selections:self.workerSelections
-                                 generation:self.workerTextGeneration];
-        @synchronized (self) {
-            if (self.pendingWorkerText != nil) {
-                continue;
-            }
-        }
-        if (self.multiScanInFlight) {
-            return;
-        }
-        GATextScanSubitem *multiSubitem = [self.scanModel startNextSubitem];
-        if (multiSubitem != nil) {
-            self.multiScanInFlight = YES;
-            GAFontDocument *document = self.workerFontDocument;
-            GATextScanModel *model = self.scanModel;
-            dispatch_async(self.multiScanQueue, ^{
-              GARawScanResult *result = [document rawScanContent:multiSubitem.content
-                                                      selections:multiSubitem.selections ?: @[]];
-              dispatch_async(self.analysisQueue, ^{
-                if (self.workerFontDocument != document || self.scanModel != model)
-                    return;
-                self.multiScanInFlight = NO;
-                [self.scanModel completeSubitem:multiSubitem result:result];
-                [self workerRun];
-              });
-            });
-            return;
-        }
-
-        [self publishWorkerSnapshotWithText:self.workerText
-                                 selections:self.workerSelections
-                                 generation:self.workerTextGeneration];
-        @synchronized (self) {
-            if (self.pendingWorkerText == nil) {
-                return;
-            }
-        }
+        [self.scanModel updateText:text selections:selections];
+        BOOL complete = [self.scanModel processPendingSubitemsUntilCancelled:^BOOL {
+          @synchronized(self) {
+              return generation != self.workerGeneration;
+          }
+        }];
+        if (complete)
+            [self publishWorkerSnapshotWithText:text selections:selections generation:generation];
     }
 }
 
@@ -1083,31 +1009,19 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
     }
     NSArray<GACharacterGroup *> *display =
         GABuildDisplayGroups(self.scanModel.groups, text, selections, self.workerFontDocument);
-    NSArray<NSString *> *seeds = [self multiSeedSignatureForDisplay:display];
-    BOOL textChanged = self.workerLastMultiText == nil ||
-                       ![self.workerLastMultiText isEqualToString:text];
-    BOOL seedsChanged = self.workerLastMultiSeeds == nil ||
-                        ![self.workerLastMultiSeeds isEqualToArray:seeds];
-    BOOL shouldUpdateMulti = (textChanged && [self singleCharacterScanComplete]) || seedsChanged;
-
-    NSString *multiText = nil;
-    NSArray<GACharacterGroup *> *multiGroups = nil;
-    NSMapTable<GACharacterGroup *, GACharacterGroup *> *multiSources = nil;
-    if (shouldUpdateMulti) {
-        self.workerLastMultiText = text;
-        self.workerLastMultiSeeds = seeds;
-        [self buildMultiDisplayWithText:text
-                                 groups:display
-                              multiText:&multiText
-                            multiGroups:&multiGroups
-                                sources:&multiSources];
-    }
+    NSString *multiText;
+    NSArray<GACharacterGroup *> *multiGroups;
+    NSMapTable<GACharacterGroup *, GACharacterGroup *> *multiSources;
+    [self buildMultiDisplayWithText:text
+                             groups:display
+                          multiText:&multiText
+                        multiGroups:&multiGroups
+                            sources:&multiSources];
 
     GAScanDisplaySnapshot *snapshot = [[GAScanDisplaySnapshot alloc] init];
     snapshot.display = display;
     snapshot.text = text;
     snapshot.generation = generation;
-    snapshot.shouldUpdateMulti = shouldUpdateMulti;
     snapshot.multiText = multiText;
     snapshot.multiGroups = multiGroups;
     snapshot.multiGroupSources = multiSources;
@@ -1126,22 +1040,12 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
         return;
     }
     self.displayGroups = snapshot.display;
-    self.analysisText = snapshot.text;
-    BOOL updatedInPlace = self.coordinateRefresh && [self.sidebarViewController updateCoordinateGroups:snapshot.display];
-    if (updatedInPlace) {
-        self.scanDisplayPublished = YES;
-    } else if (!self.scanDisplayPublished) {
-        self.scanDisplayPublished = YES;
+    if (![self.sidebarViewController updateGroupsWithSameRows:snapshot.display])
         [self.sidebarViewController setGroups:snapshot.display];
-    } else {
-        [self.sidebarViewController applyStreamedGroups:snapshot.display];
-    }
-    if (snapshot.shouldUpdateMulti) {
-        self.multiText = snapshot.multiText ?: @"";
-        self.multiGroups = snapshot.multiGroups ?: @[];
-        self.multiGroupSources = snapshot.multiGroupSources;
-        [self.detailViewController setMultiText:self.multiText groups:self.multiGroups];
-    }
+    self.multiText = snapshot.multiText ?: @"";
+    self.multiGroups = snapshot.multiGroups ?: @[];
+    self.multiGroupSources = snapshot.multiGroupSources;
+    [self.detailViewController setMultiText:self.multiText groups:self.multiGroups];
 }
 
 /// Builds the text/group pair handed to the multi-character view. Missing
@@ -1198,38 +1102,6 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
         *outSources = sources;
     }
 }
-
-- (BOOL)singleCharacterScanComplete {
-    for (GATextScanGroup *group in self.scanModel.scanGroups) {
-        if (group.length != 1) {
-            continue;
-        }
-        for (GATextScanItem *item in group.items) {
-            for (GATextScanSubitem *subitem in item.subitems) {
-                if (subitem.state != GATextScanSubitemStateCompleted) {
-                    return NO;
-                }
-            }
-        }
-    }
-    return YES;
-}
-
-- (NSArray<NSString *> *)multiSeedSignatureForDisplay:(NSArray<GACharacterGroup *> *)display {
-    NSMutableArray<NSString *> *signature = [NSMutableArray array];
-    for (GACharacterGroup *group in display) {
-        if (!group.seeded) {
-            continue;
-        }
-        NSString *key = group.variants.firstObject.glyphKey ?: @"";
-        [signature addObject:[NSString stringWithFormat:@"%lu:%lu:%@",
-                              (unsigned long)group.textRange.location,
-                              (unsigned long)group.textRange.length, key]];
-    }
-    return signature;
-}
-
-#pragma mark - Alerts
 
 - (void)showErrorWithTitle:(NSString *)title message:(NSString *)message {
     NSAlert *alert = [[NSAlert alloc] init];

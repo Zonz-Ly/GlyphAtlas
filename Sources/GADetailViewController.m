@@ -229,6 +229,14 @@
     [self updateMultiLayout];
 }
 
+- (void)setUsesContextualAlternates:(BOOL)enabled {
+    self.multiView.usesContextualAlternates = enabled;
+}
+
+- (void)setUsesLigatures:(BOOL)enabled {
+    self.multiView.usesLigatures = enabled;
+}
+
 - (void)zoomMultiTextIn {
     [self.multiView zoomTextIn];
 }

@@ -26,13 +26,8 @@ typedef NS_ENUM(NSInteger, GAPendingSelectionScroll) {
 - (void)setAttributedText:(NSAttributedString *)attributedText;
 /// Rebinds existing rows without reloading the table, changing selection or scrolling.
 /// Returns NO if the inventory changed or a normal activation is pending.
-- (BOOL)updateCoordinateGroups:(NSArray<GACharacterGroup *> *)groups;
+- (BOOL)updateGroupsWithSameRows:(NSArray<GACharacterGroup *> *)groups;
 - (void)setGroups:(NSArray<GACharacterGroup *> *)groups;
-/// Replaces the list with an intermediate analysis result. A normal restore
-/// keeps the selected row without notifying the delegate. A pending selection
-/// is resolved when its group/row appears, scrolled into view, and notifies the
-/// delegate once; otherwise it waits without restoring the old selection.
-- (void)applyStreamedGroups:(NSArray<GACharacterGroup *> *)groups;
 - (void)selectGlyphKeyAfterNextReload:(NSString *)glyphKey
                             textRange:(NSRange)textRange;
 /// Explicit selection with a scroll policy. `Group` keeps the existing

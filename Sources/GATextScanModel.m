@@ -47,7 +47,6 @@
     NSArray<GAGlyphSelectionRun *> *_selections;
     NSMutableDictionary<NSString *, NSMutableArray<NSNumber *> *> *_singleGroupIndicesByContent;
 }
-- (BOOL)hasPendingSubitems;
 @end
 
 @implementation GATextScanModel
@@ -106,17 +105,17 @@
     return _scanGroups;
 }
 
-- (BOOL)hasPendingSubitems {
+- (BOOL)isComplete {
     for (GATextScanGroup *group in _scanGroups) {
         for (GATextScanItem *item in group.items) {
             for (GATextScanSubitem *subitem in item.subitems) {
-                if (subitem.state == GATextScanSubitemStatePending) {
-                    return YES;
+                if (subitem.state != GATextScanSubitemStateCompleted) {
+                    return NO;
                 }
             }
         }
     }
-    return NO;
+    return YES;
 }
 
 #pragma mark - Text / desired set
@@ -216,7 +215,7 @@
     for (NSNumber *key in [groupsByLength.allKeys sortedArrayUsingSelector:@selector(compare:)])
         [_scanGroups addObject:groupsByLength[key]];
     [self notifyUpdate];
-    if (![self hasPendingSubitems]) {
+    if (self.isComplete) {
         [self.delegate textScanModelDidFinish:self];
     }
 }
@@ -289,6 +288,18 @@
 
 #pragma mark - Scanning
 
+- (BOOL)processPendingSubitemsUntilCancelled:(BOOL (^)(void))cancelled {
+    while (!cancelled || !cancelled()) {
+        GATextScanSubitem *subitem = [self startNextSubitem];
+        if (!subitem)
+            return self.isComplete;
+        GARawScanResult *result = [_fontDocument rawScanContent:subitem.content
+                                                     selections:subitem.selections ?: @[]];
+        [self completeSubitem:subitem result:result];
+    }
+    return NO;
+}
+
 - (GATextScanSubitem *)startNextSubitem {
     return [self startNextSubitemWithMaximumLength:NSUIntegerMax];
 }
@@ -347,7 +358,7 @@
         [self applySingleCharacterResult:result content:subitem.content];
     }
     [self notifyUpdate];
-    if (![self hasPendingSubitems]) {
+    if (self.isComplete) {
         [self.delegate textScanModelDidFinish:self];
     }
 }

@@ -2,6 +2,7 @@
 #import "GAGlyphCanvasView.h"
 #import "GAUnicode.h"
 #import "GASeedDisplay.h"
+#import "GATextDisplayOptions.h"
 #import <CoreText/CoreText.h>
 #import <math.h>
 
@@ -74,6 +75,8 @@ static NSColor *GAResolvedColor(NSColor *color, NSAppearance *appearance) {
         _sideInsetFraction = GACanvasDefaultSideInsetFraction;
         _showsMetrics = YES;
         _textScale = 1.0;
+        _usesContextualAlternates = NO;
+        _usesLigatures = NO;
 
         GAMultiTextView *textView =
             [[GAMultiTextView alloc] initUsingTextLayoutManager:YES];
@@ -150,6 +153,20 @@ static NSColor *GAResolvedColor(NSColor *color, NSAppearance *appearance) {
     [self rebuildLayout];
 }
 
+- (void)setUsesContextualAlternates:(BOOL)enabled {
+    if (_usesContextualAlternates == enabled)
+        return;
+    _usesContextualAlternates = enabled;
+    [self rebuildLayout];
+}
+
+- (void)setUsesLigatures:(BOOL)enabled {
+    if (_usesLigatures == enabled)
+        return;
+    _usesLigatures = enabled;
+    [self rebuildLayout];
+}
+
 - (void)setVertical:(BOOL)vertical {
     if (_vertical == vertical) {
         return;
@@ -204,31 +221,8 @@ static NSColor *GAResolvedColor(NSColor *color, NSAppearance *appearance) {
     if (document == nil) {
         return nil;
     }
-    CTFontDescriptorRef descriptor = CTFontCopyFontDescriptor(document.fontBox.font);
-    if (descriptor == NULL) {
-        return nil;
-    }
-    NSDictionary *attributes = @{
-        (__bridge NSString *)kCTFontFeatureSettingsAttribute: @[
-            @{
-                (__bridge NSString *)kCTFontOpenTypeFeatureTag: @"calt",
-                (__bridge NSString *)kCTFontOpenTypeFeatureValue: @0,
-            },
-        ],
-    };
-    CTFontDescriptorRef configured =
-        CTFontDescriptorCreateCopyWithAttributes(descriptor,
-                                                 (__bridge CFDictionaryRef)attributes);
-    CFRelease(descriptor);
-    if (configured == NULL) {
-        return nil;
-    }
-    CTFontRef font = CTFontCreateWithFontDescriptor(configured, size, NULL);
-    CFRelease(configured);
-    if (font == NULL) {
-        return nil;
-    }
-    return (__bridge_transfer NSFont *)font;
+    return (__bridge_transfer NSFont *)GACopyTextDisplayFont(document.fontBox.font, size,
+                                                             self.usesContextualAlternates);
 }
 
 - (CGFloat)horizontalAdvanceForGlyph:(CGGlyph)glyph font:(NSFont *)font {
@@ -362,9 +356,8 @@ static NSColor *GAResolvedColor(NSColor *color, NSAppearance *appearance) {
         NSForegroundColorAttributeName :
             GAResolvedColor(GAGlyphForegroundColor(), self.effectiveAppearance),
         NSParagraphStyleAttributeName : paragraph,
-        // Show the source characters as shaped, not as the font's optional
-        // common/rare ligatures. NSLigatureAttributeName 0 disables both.
-        NSLigatureAttributeName : @0,
+        // Native TextKit owns shaping. Explicit glyph selections remain seeds.
+        NSLigatureAttributeName : @(self.usesLigatures ? 1 : 0),
     };
 
     NSMutableAttributedString *display =

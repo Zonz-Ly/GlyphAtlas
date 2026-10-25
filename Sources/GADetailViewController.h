@@ -22,6 +22,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)setMultiText:(NSString *)text groups:(NSArray<GACharacterGroup *> *)groups;
 - (void)setTextAlignment:(NSTextAlignment)alignment;
 - (void)setWritingDirectionVertical:(BOOL)vertical;
+- (void)setUsesContextualAlternates:(BOOL)enabled;
+- (void)setUsesLigatures:(BOOL)enabled;
 - (void)zoomMultiTextIn;
 - (void)zoomMultiTextOut;
 - (void)resetMultiTextZoom;

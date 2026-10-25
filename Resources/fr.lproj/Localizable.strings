@@ -66,7 +66,7 @@
 "Help.05" = "Utilisez ⌘C pour copier tous les caractères encodés du glyphe sélectionné.";
 "Help.06" = "Survolez une étiquette Unicode pour voir le nom du caractère défini par la norme Unicode.";
 "Help.07" = "« Tous les glyphes » est la vue par défaut. Changez de vue par un clic droit, ou utilisez ⌘1 pour « Glyphe unique », ⌘2 pour « Plusieurs caractères » et ⌘3 pour « Tous les glyphes ».";
-"Help.08" = "Dans « Plusieurs caractères », cliquez sur un glyphe pour voir ses variantes. L’écriture verticale est prise en charge ; changez de sens par un clic droit ou avec ⌘5.";
+"Help.08" = "Dans Plusieurs caractères, cliquez sur un glyphe pour voir ses variantes. ⌘5 active les variantes contextuelles et ⌘6 les ligatures ; les deux sont désactivées au départ. ⌘7 change le sens d’écriture.";
 "Help.09" = "Dans « Tous les glyphes », cliquez deux fois sur un glyphe pour l’ajouter au texte existant. Cliquer sur un glyphe dans la barre latérale le fait également clignoter dans la vue d’ensemble.";
 "Help.10" = "Utilisez ⌘+/⌘- pour agrandir ou réduire les glyphes, et ⌥⌘+/⌥⌘- pour ajuster les marges dans « Plusieurs caractères ». Le pincement sur le trackpad fonctionne également.";
 "Help.11" = "L’ombre de la page indique la largeur et la hauteur du glyphe, ainsi que la hauteur de ligne et l’interligne de la composition. Appuyez sur ⌘4 pour la masquer.";
@@ -77,3 +77,6 @@
 "Named Instance" = "Instance nommée";
 "Default" = "Par défaut";
 "Custom" = "Personnalisé";
+
+"Use Contextual Alternates" = "Utiliser les variantes contextuelles";
+"Use Ligatures" = "Utiliser les ligatures";

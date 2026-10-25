@@ -48,6 +48,8 @@ typedef NS_ENUM(NSInteger, GATextScanSubitemState) {
 @property (nonatomic, strong, readonly) NSArray<GACharacterGroup *> *groups;
 @property (nonatomic, weak, nullable) id<GATextScanModelDelegate> delegate;
 @property (nonatomic, strong, readonly) NSArray<GATextScanGroup *> *scanGroups;
+/// Includes work currently in flight, not just pending work.
+@property(nonatomic, readonly, getter=isComplete) BOOL complete;
 
 - (instancetype)initWithFontDocument:(GAFontDocument *)fontDocument NS_DESIGNATED_INITIALIZER;
 - (instancetype)init NS_UNAVAILABLE;
@@ -60,6 +62,10 @@ typedef NS_ENUM(NSInteger, GATextScanSubitemState) {
 /// pending work, and enqueues each group's new missing items at the group end.
 - (void)updateText:(NSString *)text;
 - (void)updateText:(NSString *)text selections:(NSArray<GAGlyphSelectionRun *> *)selections;
+
+/// Synchronously completes this query batch on its owner queue. Cancellation
+/// keeps useful cached work but callers must not publish a partial batch.
+- (BOOL)processPendingSubitemsUntilCancelled:(BOOL (^_Nullable)(void))cancelled;
 
 /// Returns the next pending subitem and marks it scanning, or nil. Cached
 /// pending subitems are completed inline and skipped.

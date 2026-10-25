@@ -66,7 +66,7 @@
 "Help.05" = "Use ⌘C para copiar todos os caracteres codificados do glifo selecionado.";
 "Help.06" = "Mantenha o cursor sobre uma etiqueta Unicode para ver o nome do caractere definido pelo padrão Unicode.";
 "Help.07" = "A visualização padrão é “Todos os Glifos”. Alterne com um clique secundário ou use ⌘1 para “Glifo Único”, ⌘2 para “Vários Caracteres” e ⌘3 para “Todos os Glifos”.";
-"Help.08" = "Em “Vários Caracteres”, clique em um glifo para ver suas alternativas. Há suporte para escrita vertical; alterne a direção com um clique secundário ou com ⌘5.";
+"Help.08" = "Em Vários caracteres, clique em um glifo para ver suas alternativas. ⌘5 ativa alternativas contextuais e ⌘6 ligaduras; ambas começam desativadas. ⌘7 muda a direção da escrita.";
 "Help.09" = "Em “Todos os Glifos”, clique duas vezes em um glifo para adicioná-lo ao texto existente. Clicar em um glifo na barra lateral também o faz piscar na visualização completa.";
 "Help.10" = "Use ⌘+/⌘- para ampliar ou reduzir os glifos e ⌥⌘+/⌥⌘- para ajustar as margens em “Vários Caracteres”. O gesto de pinça no trackpad também funciona.";
 "Help.11" = "A sombra da página mostra a largura e a altura do glifo, além da altura da linha e da entrelinha da composição. Pressione ⌘4 para ocultá-la.";
@@ -77,3 +77,6 @@
 "Named Instance" = "Instância nomeada";
 "Default" = "Padrão";
 "Custom" = "Personalizado";
+
+"Use Contextual Alternates" = "Usar alternativas contextuais";
+"Use Ligatures" = "Usar ligaduras";

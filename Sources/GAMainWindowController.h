@@ -8,6 +8,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly) BOOL showsMetrics;
 @property (nonatomic, readonly) NSTextAlignment textAlignment;
 @property (nonatomic, readonly) BOOL verticalWriting;
+/// Both optional native shaping switches default to NO.
+@property(nonatomic, readonly) BOOL usesContextualAlternates;
+@property(nonatomic, readonly) BOOL usesLigatures;
 - (void)loadFontAtURL:(NSURL *)url;
 - (void)setViewMode:(GAViewMode)viewMode;
 - (void)toggleShowsMetrics;
@@ -18,6 +21,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)resetZoom;
 - (void)setTextAlignment:(NSTextAlignment)alignment;
 - (void)setVerticalWriting:(BOOL)vertical;
+- (void)setUsesContextualAlternates:(BOOL)enabled;
+- (void)setUsesLigatures:(BOOL)enabled;
 @property (nonatomic, copy, nullable) void (^onFontLoaded)(NSURL *url);
 @property (nonatomic, copy, nullable) void (^onFontDropRequest)(NSURL *url);
 @end

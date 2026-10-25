@@ -930,8 +930,15 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
     }
     GACharacterGroup *group = [self groupForTextRange:self.pendingSelectionTextRange];
     if (group == nil) {
-        return NSNotFound;
+        for (GACharacterGroup *candidate in self.groups)
+            if (self.pendingSelectionTextRange.location >= candidate.textRange.location &&
+                NSMaxRange(self.pendingSelectionTextRange) <= NSMaxRange(candidate.textRange)) {
+                group = candidate;
+                break;
+            }
     }
+    if (group == nil)
+        return NSNotFound;
     NSInteger row = [self rowForGlyphKey:self.pendingSelectionGlyphKey inGroup:group];
     if (row != NSNotFound) {
         return row;
@@ -1040,7 +1047,7 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
     // Otherwise both edges are visible: do nothing.
 }
 
-- (BOOL)updateCoordinateGroups:(NSArray<GACharacterGroup *> *)groups {
+- (BOOL)updateGroupsWithSameRows:(NSArray<GACharacterGroup *> *)groups {
     if (self.pendingSelectionGlyphKey != nil) return NO;
     NSArray<GARowItem *> *rows = GARowsForGroups(groups);
     if (rows.count != self.rows.count) return NO;
@@ -1070,128 +1077,76 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
 }
 
 - (void)setGroups:(NSArray<GACharacterGroup *> *)groups {
-    NSPoint scrollOrigin = self.scrollView.contentView.bounds.origin;
-    NSString *oldGlyphKey = nil;
-    NSRange oldGroupRange = self.selectedVariantTextRange;
-    if (self.selectedVariant != nil) {
-        oldGlyphKey = self.selectedVariant.glyphKey;
-    } else {
-        oldGroupRange = NSMakeRange(NSNotFound, 0);
-    }
+    [NSAnimationContext beginGrouping];
+    NSAnimationContext.currentContext.duration = 0;
+    @try {
+        NSDictionary *scrollAnchor = [self captureScrollAnchor];
+        NSString *oldGlyphKey = nil;
+        NSRange oldGroupRange = self.selectedVariantTextRange;
+        if (self.selectedVariant != nil) {
+            oldGlyphKey = self.selectedVariant.glyphKey;
+        } else {
+            oldGroupRange = NSMakeRange(NSNotFound, 0);
+        }
 
-    _groups = [groups copy];
-    self.rows = GARowsForGroups(groups);
+        _groups = [groups copy];
+        self.rows = GARowsForGroups(groups);
 
-    self.suppressSelectionCallback = YES;
-    [self reloadTableGeometry];
+        self.suppressSelectionCallback = YES;
+        [self reloadTableGeometry];
 
-    BOOL hasPending = self.pendingSelectionGlyphKey.length > 0;
-    if (hasPending) {
-        if ([self resolvePendingSelectionIfPossible]) {
+        BOOL hasPending = self.pendingSelectionGlyphKey.length > 0;
+        if (hasPending) {
+            if ([self resolvePendingSelectionIfPossible]) {
+                return;
+            }
+            // The appended character group is not in this snapshot yet (or has no
+            // rows). Wait; do not restore the old selection or jump to the first.
+            self.selectedVariant = nil;
+            self.selectedVariantTextRange = NSMakeRange(NSNotFound, 0);
+            [self restoreScrollAnchor:scrollAnchor];
+            self.suppressSelectionCallback = NO;
+            [self notifySelection];
             return;
         }
-        // The appended character group is not in this snapshot yet (or has no
-        // rows). Wait; do not restore the old selection or jump to the first.
-        self.selectedVariant = nil;
-        self.selectedVariantTextRange = NSMakeRange(NSNotFound, 0);
-        self.suppressSelectionCallback = NO;
-        [self notifySelection];
-        return;
-    }
 
-    NSInteger rowToSelect = NSNotFound;
-    if (oldGlyphKey.length > 0) {
-        GACharacterGroup *oldGroup = [self groupForGlyphKey:oldGlyphKey
-                                                  textRange:oldGroupRange];
-        if (oldGroup != nil) {
-            rowToSelect = [self rowForGlyphKey:oldGlyphKey inGroup:oldGroup];
-        }
-    }
-    // The selected text may have been deleted; fall back to the first base row.
-    if (rowToSelect == NSNotFound) {
-        for (NSInteger index = 0; index < (NSInteger)self.rows.count; index++) {
-            GARowItem *item = self.rows[index];
-            if (item.variant.isBase) {
-                rowToSelect = index;
-                break;
+        NSInteger rowToSelect = NSNotFound;
+        if (oldGlyphKey.length > 0) {
+            GACharacterGroup *oldGroup = [self groupForGlyphKey:oldGlyphKey
+                                                      textRange:oldGroupRange];
+            if (oldGroup != nil) {
+                rowToSelect = [self rowForGlyphKey:oldGlyphKey inGroup:oldGroup];
             }
         }
-    }
-
-    if (rowToSelect != NSNotFound) {
-        if (rowToSelect != self.tableView.selectedRow) {
-            [self.tableView selectRowIndexes:[NSIndexSet indexSetWithIndex:(NSUInteger)rowToSelect]
-                        byExtendingSelection:NO];
+        // The selected text may have been deleted; fall back to the first base row.
+        if (rowToSelect == NSNotFound) {
+            for (NSInteger index = 0; index < (NSInteger)self.rows.count; index++) {
+                GARowItem *item = self.rows[index];
+                if (item.variant.isBase) {
+                    rowToSelect = index;
+                    break;
+                }
+            }
         }
-        self.selectedVariant = [self.rows[rowToSelect] variant];
-        self.selectedVariantTextRange = self.rows[rowToSelect].group.textRange;
-    } else {
-        self.selectedVariant = nil;
-        self.selectedVariantTextRange = NSMakeRange(NSNotFound, 0);
-    }
-    self.suppressSelectionCallback = NO;
-    [self notifySelection];
-    [self restoreScrollOrigin:scrollOrigin];
-}
 
-- (void)applyStreamedGroups:(NSArray<GACharacterGroup *> *)groups {
-    NSPoint scrollOrigin = self.scrollView.contentView.bounds.origin;
-
-    // The table selection is the user's click, not necessarily the cached
-    // selectedVariant. Capture its identity before reloading; the row order can
-    // change while the scan inserts new groups.
-    NSInteger previousRow = self.tableView.selectedRow;
-    NSString *currentKey = nil;
-    NSRange currentRange = NSMakeRange(NSNotFound, 0);
-    if (previousRow >= 0 && previousRow < (NSInteger)self.rows.count) {
-        GARowItem *item = self.rows[(NSUInteger)previousRow];
-        if (item.variant != nil && item.group != nil) {
-            currentKey = item.variant.glyphKey;
-            currentRange = item.group.textRange;
+        if (rowToSelect != NSNotFound) {
+            if (rowToSelect != self.tableView.selectedRow) {
+                [self.tableView
+                        selectRowIndexes:[NSIndexSet indexSetWithIndex:(NSUInteger)rowToSelect]
+                    byExtendingSelection:NO];
+            }
+            self.selectedVariant = [self.rows[rowToSelect] variant];
+            self.selectedVariantTextRange = self.rows[rowToSelect].group.textRange;
+        } else {
+            self.selectedVariant = nil;
+            self.selectedVariantTextRange = NSMakeRange(NSNotFound, 0);
         }
-    }
-
-    _groups = [groups copy];
-    self.rows = GARowsForGroups(groups);
-
-    self.suppressSelectionCallback = YES;
-    [self reloadTableGeometry];
-
-    BOOL hasPending = self.pendingSelectionGlyphKey.length > 0;
-    if (hasPending) {
-        if ([self resolvePendingSelectionIfPossible]) {
-            return;
-        }
-        self.selectedVariant = nil;
-        self.selectedVariantTextRange = NSMakeRange(NSNotFound, 0);
         self.suppressSelectionCallback = NO;
-        return;
+        [self notifySelection];
+        [self restoreScrollAnchor:scrollAnchor];
+    } @finally {
+        [NSAnimationContext endGrouping];
     }
-
-    NSInteger row = NSNotFound;
-    if (currentKey.length > 0) {
-        GACharacterGroup *group = [self groupForGlyphKey:currentKey
-                                               textRange:currentRange];
-        if (group != nil) {
-            row = [self rowForGlyphKey:currentKey inGroup:group];
-        }
-    }
-    if (row != NSNotFound) {
-        [self.tableView rectOfRow:row];
-        if (row != self.tableView.selectedRow) {
-            [self.tableView selectRowIndexes:[NSIndexSet indexSetWithIndex:(NSUInteger)row]
-                        byExtendingSelection:NO];
-        }
-        self.selectedVariant = self.rows[(NSUInteger)row].variant;
-        self.selectedVariantTextRange = self.rows[(NSUInteger)row].group.textRange;
-    } else {
-        // Do not fall back to the cached selectedVariant; that is the stale
-        // value that snapped back over the user's click.
-        self.selectedVariant = nil;
-        self.selectedVariantTextRange = NSMakeRange(NSNotFound, 0);
-    }
-    self.suppressSelectionCallback = NO;
-    [self restoreScrollOrigin:scrollOrigin];
 }
 
 - (void)reloadTableGeometry {
@@ -1208,6 +1163,36 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
     [self.tableView tile];
 }
 
+// Preserve the visible row, not just a pixel offset that becomes stale when
+// candidates above it change height or the native scroller changes width.
+- (NSDictionary *)captureScrollAnchor {
+    NSPoint origin = self.scrollView.contentView.bounds.origin;
+    NSRange visible = [self.tableView rowsInRect:self.tableView.visibleRect];
+    NSMutableDictionary *anchor = [@{@"origin" : [NSValue valueWithPoint:origin]} mutableCopy];
+    if (visible.length && visible.location < self.rows.count) {
+        GARowItem *row = self.rows[visible.location];
+        anchor[@"key"] = row.variant.glyphKey;
+        anchor[@"range"] = [NSValue valueWithRange:row.group.textRange];
+        anchor[@"offset"] = @(origin.y - NSMinY([self.tableView rectOfRow:visible.location]));
+    }
+    return anchor;
+}
+
+- (void)restoreScrollAnchor:(NSDictionary *)anchor {
+    NSPoint origin = [anchor[@"origin"] pointValue];
+    if (anchor[@"key"]) {
+        GACharacterGroup *group = [self groupForTextRange:[anchor[@"range"] rangeValue]];
+        NSInteger row = [self rowForGlyphKey:anchor[@"key"] inGroup:group];
+        if (row == NSNotFound && group.variants.count)
+            row = [self rowForGlyphKey:group.variants.firstObject.glyphKey inGroup:group];
+        if (row != NSNotFound) {
+            NSRect rect = [self.tableView rectOfRow:row];
+            origin.y = NSMinY(rect) + MIN([anchor[@"offset"] doubleValue], NSHeight(rect) - 1);
+        }
+    }
+    [self restoreScrollOrigin:origin];
+}
+
 - (void)restoreScrollOrigin:(NSPoint)origin {
     NSClipView *clip = self.scrollView.contentView;
     NSRect bounds = clip.bounds;
@@ -1217,14 +1202,15 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
 }
 
 - (void)reloadRowsPreservingSelection {
+    NSDictionary *anchor = [self captureScrollAnchor];
     NSInteger selectedRow = self.tableView.selectedRow;
     self.suppressSelectionCallback = YES;
     [self reloadTableGeometry];
     if (selectedRow >= 0 && selectedRow < (NSInteger)self.rows.count) {
         [self.tableView selectRowIndexes:[NSIndexSet indexSetWithIndex:(NSUInteger)selectedRow]
                     byExtendingSelection:NO];
-        [self.tableView scrollRowToVisible:selectedRow];
     }
+    [self restoreScrollAnchor:anchor];
     self.suppressSelectionCallback = NO;
 }
 

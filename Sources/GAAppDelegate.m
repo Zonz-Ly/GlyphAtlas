@@ -219,6 +219,32 @@
 - (void)menuNeedsUpdate:(NSMenu *)menu {
     if (menu == self.recentMenu) {
         [self rebuildRecentMenu];
+        return;
+    }
+    // Only context View menus use this delegate. Re-evaluate on every open;
+    // the same menu is shared by the three canvases.
+    GAViewMode mode = self.activeMainWindowController.viewMode;
+    for (NSMenuItem *item in menu.itemArray) {
+        BOOL textOnly = item.action == @selector(toggleContextualAlternates:) ||
+                        item.action == @selector(toggleLigatures:) ||
+                        item.action == @selector(toggleWritingDirection:) ||
+                        [item.identifier isEqualToString:@"TextAlignment"];
+        item.hidden =
+            (textOnly && !GAViewModeSupportsTextLayout(mode)) ||
+            (item.action == @selector(toggleShowMetrics:) && !GAViewModeSupportsMetrics(mode));
+    }
+    NSMenuItem *separator = nil;
+    BOOL hasVisibleItem = NO;
+    for (NSMenuItem *item in menu.itemArray) {
+        if (item.separatorItem) {
+            item.hidden = YES;
+            if (hasVisibleItem)
+                separator = item;
+        } else if (!item.hidden) {
+            separator.hidden = NO;
+            separator = nil;
+            hasVisibleItem = YES;
+        }
     }
 }
 
@@ -393,6 +419,7 @@
     [menu addItem:[NSMenuItem separatorItem]];
 
     if (!includeZoom) {
+        menu.delegate = self;
         [self addViewAlignmentItemsToMenu:menu];
         return menu;
     }
@@ -438,9 +465,22 @@
 }
 
 - (void)addViewAlignmentItemsToMenu:(NSMenu *)menu {
-    NSMenuItem *verticalItem = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Vertical", @"Vertical")
-                                                          action:@selector(toggleWritingDirection:)
-                                                   keyEquivalent:@"5"];
+    NSMenuItem *contextual = [[NSMenuItem alloc]
+        initWithTitle:NSLocalizedString(@"Use Contextual Alternates", @"Use Contextual Alternates")
+               action:@selector(toggleContextualAlternates:)
+        keyEquivalent:@"5"];
+    contextual.target = self;
+    [menu addItem:contextual];
+    NSMenuItem *ligatures =
+        [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Use Ligatures", @"Use Ligatures")
+                                   action:@selector(toggleLigatures:)
+                            keyEquivalent:@"6"];
+    ligatures.target = self;
+    [menu addItem:ligatures];
+    NSMenuItem *verticalItem =
+        [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Vertical", @"Vertical")
+                                   action:@selector(toggleWritingDirection:)
+                            keyEquivalent:@"7"];
     verticalItem.target = self;
     [menu addItem:verticalItem];
 
@@ -462,6 +502,7 @@
         item.tag = alignmentTags[(NSUInteger)alignment].integerValue;
         [alignmentMenu addItem:item];
     }
+    alignmentItem.identifier = @"TextAlignment";
     alignmentItem.submenu = alignmentMenu;
     [menu addItem:alignmentItem];
 }
@@ -515,6 +556,16 @@
     [self.activeMainWindowController setTextAlignment:(NSTextAlignment)sender.tag];
 }
 
+- (void)toggleContextualAlternates:(id)sender {
+    GAMainWindowController *controller = self.activeMainWindowController;
+    [controller setUsesContextualAlternates:!controller.usesContextualAlternates];
+}
+
+- (void)toggleLigatures:(id)sender {
+    GAMainWindowController *controller = self.activeMainWindowController;
+    [controller setUsesLigatures:!controller.usesLigatures];
+}
+
 - (void)toggleWritingDirection:(id)sender {
     GAMainWindowController *controller = [self activeMainWindowController];
     [controller setVerticalWriting:!controller.verticalWriting];
@@ -536,6 +587,13 @@
         item.state = controller.viewMode == (GAViewMode)item.tag
             ? NSControlStateValueOn : NSControlStateValueOff;
         return YES;
+    }
+    if (action == @selector(toggleContextualAlternates:) || action == @selector(toggleLigatures:)) {
+        BOOL enabled = action == @selector(toggleContextualAlternates:)
+                           ? controller.usesContextualAlternates
+                           : controller.usesLigatures;
+        item.state = enabled ? NSControlStateValueOn : NSControlStateValueOff;
+        return GAViewModeSupportsTextLayout(controller.viewMode);
     }
     if (action == @selector(toggleShowMetrics:)) {
         item.state = controller.showsMetrics ? NSControlStateValueOn : NSControlStateValueOff;

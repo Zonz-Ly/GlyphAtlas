@@ -66,7 +66,7 @@
 "Help.05" = "Use ⌘C to copy all encoded characters of the selected glyph.";
 "Help.06" = "Hover over a Unicode badge to see the character name defined by the Unicode standard.";
 "Help.07" = "All Glyphs is the default. Right-click to switch views, or press ⌘1 for Single Glyph, ⌘2 for Multi-Character, or ⌘3 for All Glyphs.";
-"Help.08" = "In Multi-Character, click a glyph to view its alternates. Vertical writing is supported; right-click or press ⌘5 to switch writing direction.";
+"Help.08" = "In Multi-Character, click a glyph to view its alternates. Use ⌘5 for contextual alternates and ⌘6 for ligatures; both start off. Use ⌘7 to switch writing direction.";
 "Help.09" = "In All Glyphs, double-click a glyph to add it to the existing text. Clicking a glyph in the sidebar also makes it blink there.";
 "Help.10" = "Use ⌘+/⌘- to zoom the glyphs, and ⌥⌘+/⌥⌘- to resize the margins in Multi-Character. Trackpad pinch also works.";
 "Help.11" = "The page shadow shows the glyph's width and height, as well as the layout's line height and leading; press ⌘4 to hide it.";
@@ -77,3 +77,6 @@
 "Named Instance" = "Named Instance";
 "Default" = "Default";
 "Custom" = "Custom";
+
+"Use Contextual Alternates" = "Use Contextual Alternates";
+"Use Ligatures" = "Use Ligatures";

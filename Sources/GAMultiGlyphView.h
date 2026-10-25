@@ -20,6 +20,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, copy, nullable) void (^onTextScaleChanged)(void);
 @property (nonatomic) NSTextAlignment textAlignment;
 @property (nonatomic) BOOL vertical;
+/// Both optional native shaping switches default to NO.
+@property(nonatomic) BOOL usesContextualAlternates;
+@property(nonatomic) BOOL usesLigatures;
 /// Visible size of the enclosing scroll view; drives wrapping and margins.
 @property (nonatomic) NSSize viewportSize;
 /// Size needed to show the whole page plus its margins.

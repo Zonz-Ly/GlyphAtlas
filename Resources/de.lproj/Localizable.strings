@@ -66,7 +66,7 @@
 "Help.05" = "Mit ⌘C kopierst du alle codierten Zeichen der ausgewählten Glyphe.";
 "Help.06" = "Bewege den Zeiger über eine Unicode-Kennzeichnung, um den im Unicode-Standard definierten Zeichennamen zu sehen.";
 "Help.07" = "Standardmäßig ist „Alle Glyphen“ aktiv. Wechsle die Ansicht per Rechtsklick oder mit ⌘1 zu „Einzelne Glyphe“, ⌘2 zu „Mehrere Zeichen“ und ⌘3 zu „Alle Glyphen“.";
-"Help.08" = "Klicke in „Mehrere Zeichen“ auf eine Glyphe, um ihre Alternativen zu sehen. Vertikaler Satz wird unterstützt. Ändere die Schreibrichtung per Rechtsklick oder mit ⌘5.";
+"Help.08" = "Klicke in der Mehrzeichenansicht auf eine Glyphe, um ihre Alternativen zu sehen. ⌘5 schaltet kontextabhängige Alternativen, ⌘6 Ligaturen ein; beide sind anfangs aus. ⌘7 wechselt die Schreibrichtung.";
 "Help.09" = "Doppelklicke in „Alle Glyphen“ auf eine Glyphe, um sie an den vorhandenen Text anzuhängen. Ein Klick auf eine Glyphe in der Seitenleiste lässt sie auch in der Gesamtübersicht blinken.";
 "Help.10" = "Mit ⌘+/⌘- vergrößerst oder verkleinerst du Glyphen; mit ⌥⌘+/⌥⌘- änderst du die Ränder in „Mehrere Zeichen“. Auch die Zoomgeste auf dem Trackpad funktioniert.";
 "Help.11" = "Der Seitenschatten zeigt Breite und Höhe der Glyphe sowie Zeilenhöhe und Durchschuss des Satzes. Mit ⌘4 blendest du ihn aus.";
@@ -77,3 +77,6 @@
 "Named Instance" = "Benannte Instanz";
 "Default" = "Standard";
 "Custom" = "Eigene";
+
+"Use Contextual Alternates" = "Kontextabhängige Alternativen verwenden";
+"Use Ligatures" = "Ligaturen verwenden";

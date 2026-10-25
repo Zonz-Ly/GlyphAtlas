@@ -69,6 +69,23 @@ int main(int argc, const char **argv) {
         if (argc != 2)
             return 2;
         NSString *root = @(argv[1]);
+        GAFontDocument *batchDocument =
+            Document([root stringByAppendingPathComponent:@"chain3.ttf"]);
+        GATextScanModel *batch = [[GATextScanModel alloc] initWithFontDocument:batchDocument];
+        [batch updateText:@"xaby"];
+        __block NSUInteger cancellationChecks = 0;
+        Check(![batch processPendingSubitemsUntilCancelled:^BOOL {
+          return ++cancellationChecks > 1;
+        }] && !batch.isComplete,
+              @"cancelled batch is not publishable");
+        Check([batch processPendingSubitemsUntilCancelled:nil] && batch.isComplete &&
+                  Has(batch.groups[2], @[ @20 ]),
+              @"resumed batch has complete contextual results");
+        NSArray *batchKeys = Keys(batch);
+        [batch updateText:@""];
+        [batch updateText:@"xaby"];
+        Check([batch processPendingSubitemsUntilCancelled:nil] && [Keys(batch) isEqual:batchKeys],
+              @"clear and restore publishes complete cached results in one batch");
         GAFontDocument *plain = Document([root stringByAppendingPathComponent:@"plain.ttf"]);
         GATextScanModel *sparse = [[GATextScanModel alloc] initWithFontDocument:plain];
         [sparse updateText:[@"" stringByPaddingToLength:10000 withString:@"a" startingAtIndex:0]];

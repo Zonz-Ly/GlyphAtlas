@@ -21,3 +21,15 @@ for SOURCE in "$ROOT"/Sources/FontLayout/*.cpp; do CORE+=("$LAYOUT/$(basename "$
 clang++ -std=c++17 -flto -Wl,-dead_strip -Wl,-x -Oz -Wall -Wextra -mmacosx-version-min=12.0 -arch "$ARCH" -I "$ROOT/Sources" \
   "$ROOT/Tests/FontLayoutTests.cpp" "${CORE[@]}" -framework Cocoa -framework CoreText -licucore \
   -o "$ROOT/.build/font-layout-tests"
+
+clang -fobjc-arc -Oz -Wall -Wextra -mmacosx-version-min=12.0 -arch "$ARCH" -I "$ROOT/Sources" \
+  "$ROOT/Tests/TextDisplayTests.m" "$ROOT/Sources/GATextDisplayOptions.m" \
+  -framework Cocoa -framework CoreText -o "$ROOT/.build/text-display-tests"
+UI_SOURCES=()
+for SOURCE in "$ROOT"/Sources/*.m; do
+  if [[ "$SOURCE" != "$ROOT/Sources/main.m" ]]; then UI_SOURCES+=("$SOURCE"); fi
+done
+clang -fobjc-arc -flto -Wl,-dead_strip -Oz -Wall -Wextra -mmacosx-version-min=12.0 -arch "$ARCH" -I "$ROOT/Sources" \
+  "$ROOT/Tests/SidebarStateTests.m" "${UI_SOURCES[@]}" "$LAYOUT"/*.o -lc++ \
+  -framework Cocoa -framework CoreText -framework UniformTypeIdentifiers -licucore \
+  -o "$ROOT/.build/sidebar-state-tests"
