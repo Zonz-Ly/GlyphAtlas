@@ -101,3 +101,8 @@ The build assembles icons and the app in a temporary directory, removes metadata
 ## 特別鳴謝
 
 - 整個 app 由 DeepSeek Flash 1013 親自打造，並由本人全程指手畫腳，共計花費 24,8423,7676 偷啃。
+
+
+## 實作與開發檢查
+
+產品程式碼全部使用 Objective-C（Sources 內的 .h/.m），以系統 AppKit、CoreText 和 ICU 工作；沒有 C++、HarfBuzz 或其他外部字體執行器依賴。Sources 維持平鋪。Tests 保存命令行檢查及自製測試字體，不會打包進 App；scripts 只協助重用測試用的核心編譯物件。架構與限制見 README/GLOSSARY.md。

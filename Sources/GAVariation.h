@@ -1,10 +1,8 @@
-#pragma once
-#include "GABinary.h"
-#include <map>
-namespace ga::layout {
-std::vector<double> normalizeCoordinates(View fvar, View avar,
-                                         const std::map<Tag, double> &coordinates);
-double variationDelta(View store, unsigned outer, unsigned inner,
-                      const std::vector<double> &normalized);
-double deviceDelta(View device, View store, const std::vector<double> &normalized);
-} // namespace ga::layout
+#import "GABinary.h"
+FOUNDATION_EXPORT NSArray<NSNumber *> *
+GANormalizeCoordinates(GATableView *fvar, GATableView *avar,
+                       NSDictionary<NSNumber *, NSNumber *> *coordinates);
+FOUNDATION_EXPORT double GAVariationDelta(GATableView *store, unsigned outer, unsigned inner,
+                                          NSArray<NSNumber *> *normalized);
+FOUNDATION_EXPORT double GADeviceDelta(GATableView *device, GATableView *store,
+                                       NSArray<NSNumber *> *normalized);

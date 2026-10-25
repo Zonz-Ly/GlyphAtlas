@@ -10,16 +10,16 @@ for LOCALIZATION in "$ROOT"/Resources/*.lproj; do
   cp -R "$LOCALIZATION" "$APP/Contents/Resources/"
 done
 # Keep the production bundle's executable name so NSBundle sees a real app.
-SOURCES=()
-for SOURCE in "$ROOT"/Sources/*.m; do
-  [[ "$(basename "$SOURCE")" == main.m ]] || SOURCES+=("$SOURCE")
-done
 LAYOUT="$ROOT/.build/font-layout-$(uname -m)"
 bash "$ROOT/scripts/compile-font-layout.sh" "$(uname -m)" "$LAYOUT"
+SOURCES=()
+for SOURCE in "$ROOT"/Sources/*.m; do
+  [[ "$(basename "$SOURCE")" == main.m || -f "$LAYOUT/$(basename "${SOURCE%.m}").o" ]] || SOURCES+=("$SOURCE")
+done
 clang -fobjc-arc -flto -Wl,-dead_strip -mmacosx-version-min=12.0 -Wall -Wextra \
   -I "$ROOT/Sources" -framework Cocoa -framework CoreText \
   -framework UniformTypeIdentifiers -licucore \
-  "${SOURCES[@]}" "$ROOT/Tests/LocalizationSmoke.m" "$LAYOUT"/*.o -lc++ \
+  "${SOURCES[@]}" "$ROOT/Tests/LocalizationSmoke.m" "$LAYOUT"/*.o \
   -o "$APP/Contents/MacOS/GlyphAtlas"
 for LOCALE in en zh-Hant zh-HK zh-Hans ja ko de fr es it pt-BR ru ar; do
   "$APP/Contents/MacOS/GlyphAtlas" -AppleLanguages "($LOCALE)" -expectedLocale "$LOCALE"

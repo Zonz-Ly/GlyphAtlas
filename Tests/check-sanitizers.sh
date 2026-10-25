@@ -2,24 +2,29 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 ARCH="$(uname -m)"
+QUICK=false
+MUTATIONS=--mutate
+if [[ "${1:-}" == --quick ]]; then QUICK=true; MUTATIONS=--mutate-sample; fi
 LAYOUT="$ROOT/.build/font-layout-test-sanitized-$ARCH"
 SANITIZERS=(-fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer -O1 -gline-tables-only)
 SANITIZE=1 bash "$ROOT/scripts/compile-font-layout.sh" "$ARCH" "$LAYOUT" test
 clang -DGA_FONT_LAYOUT_TESTING=1 -fobjc-arc "${SANITIZERS[@]}" -Wall -Wextra -mmacosx-version-min=12.0 -arch "$ARCH" -I "$ROOT/Sources" \
   "$ROOT/Tests/GSUBCLI.m" "$ROOT/Sources/GAFontEngine.m" "$ROOT/Sources/GAGlyphSelection.m" "$ROOT/Sources/GADisplayGroups.m" \
   "$ROOT/Sources/GAFontResource.m" "$ROOT/Sources/GAUnicode.m" "$ROOT/Sources/GATextQueryModel.m" \
-  "$LAYOUT"/*.o -lc++ -framework Cocoa -framework CoreText -licucore -o "$ROOT/.build/gsub-cli-sanitized"
-CORE=()
-for SOURCE in "$ROOT"/Sources/*.cpp; do CORE+=("$LAYOUT/$(basename "${SOURCE%.cpp}").o"); done
-clang++ -std=c++17 "${SANITIZERS[@]}" -Wall -Wextra -mmacosx-version-min=12.0 -arch "$ARCH" -I "$ROOT/Sources" \
-  "$ROOT/Tests/FontLayoutTests.cpp" "${CORE[@]}" -framework Cocoa -framework CoreText -licucore \
+  "$LAYOUT"/*.o -framework Cocoa -framework CoreText -licucore -o "$ROOT/.build/gsub-cli-sanitized"
+CORE=("$LAYOUT"/*.o)
+clang -fobjc-arc -fobjc-arc-exceptions "${SANITIZERS[@]}" -Wall -Wextra -mmacosx-version-min=12.0 -arch "$ARCH" -I "$ROOT/Sources" \
+  "$ROOT/Tests/FontLayoutTests.m" "$ROOT/Sources/GAGlyphSelection.m" "${CORE[@]}" -framework Cocoa -framework CoreText -licucore \
   -o "$ROOT/.build/font-layout-tests-sanitized"
-ASAN_OPTIONS=detect_leaks=0 "$ROOT/.build/font-layout-tests-sanitized" "$ROOT/Tests/Fixtures"
-ASAN_OPTIONS=detect_leaks=0 python3 - "$ROOT" <<'PY'
+ASAN_OPTIONS=detect_leaks=0 "$ROOT/.build/font-layout-tests-sanitized" "$ROOT/Tests/Fixtures" "$MUTATIONS"
+ASAN_OPTIONS=detect_leaks=0 python3 - "$ROOT" "$QUICK" <<'PY'
 import json,subprocess,sys
 from pathlib import Path
 root=Path(sys.argv[1]);cli=root/'.build/gsub-cli-sanitized';fixtures=root/'Tests/Fixtures'
 fonts=sorted(list(fixtures.glob('*.ttf'))+list(fixtures.glob('*.ttc')))
+if sys.argv[2]=='true':
+    names={'context-expand.ttf','morx2.ttf','mort2.ttf','position.ttf','feature-variations.ttf','malformed-bad-offset.ttf'}
+    fonts=[path for path in fonts if path.name in names]
 for path in fonts:
     p=subprocess.run([str(cli),'--font',str(path),'--text','xaby f́fi ab 😀','--model'],capture_output=True,text=True,timeout=10)
     assert p.returncode==0,(path.name,p.stderr,p.stdout)

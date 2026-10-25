@@ -418,3 +418,11 @@ bash Tests/compare-old.sh
 - 资源表程序、每 GID 目录快取和完整输入结果快取内容不同；本次文件整理没有修改缓存策略。GLOSSARY 第 3 节描述具体边界，不把「已解析」说成「所有文本结果都已预计算」。
 
 - 用户随后追问 Sources 内为何仍有 FontLayout：平铺要求也包含这个旧目录。已将全部核心 .h/.cpp/.mm 移到 Sources，同步 include 与共用编译脚本；不把 C++ 当 Objective-C 编译。Vendor/harfbuzz 已无文件，仅遗留 Finder 元数据，现清除空壳；产品仍无 HarfBuzz。Tests 为非产品 CLI/自制 fixtures，scripts 只保存产品/测试共用的编译规则。
+
+
+### 全部改用 Objective-C（2026-10-25，最终语言决定）
+
+- 用户发现核心用了 C++ 后明确要求「那就都用 Objective-C 写」，无需再确认是否改语言。已把全部 Sources 转为 .h/.m，去掉 .cpp/.mm、clang++、libc++；Tests 核心检查也已转为 .m。C++ 比较基线为 a5ebe1a；合并原 VF 面板仍为 0514c8f，均本地未推送。
+- 不只是把后缀改成 .m：表 owner/view、强类型规则对象、可变 item 的深拷贝、状态执行器和资源程序均为 Objective-C。执行器的局部状态不能写入共享的解析模型；错误边界只处理 GAInvalidFontTable，构建启用 ARC exception cleanup。
+- 用户再次要求仅做最必要测试、节省 token，同时注意结构、逻辑、简洁。转写以 100 组旧/新 CLI 的代表输出对比、现有 47 核心/74 模型/327 命中检查和 quick sanitizer 样本核对；不重新跑过去的 148 字串 CoreText 广泛比较或 24k 全量变异。不启动 GUI。
+- 当前 scripts 只服务测试核心物件复用；产品 build.sh 直接构建全部 Objective-C 源码。旧的 C++ 工作方法/目录说明属于历史，不得据此恢复依赖或子目录。

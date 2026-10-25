@@ -1,18 +1,14 @@
-#pragma once
-#import <Foundation/Foundation.h>
+#import "GACmap.h"
 #import "GAGlyphSelection.h"
-#include "GACmap.h"
-#include "GAOpenType.h"
-namespace ga::layout {
-struct TextRun {
-    Buffer glyphs;
-    Span source;
-    Tag script = 0;
-    uint8_t level = 0;
-};
-std::vector<TextRun> prepareText(NSString *text, const Cmap &cmap,
-                                 NSArray<GAGlyphSelectionRun *> *selections = nil);
-Tag scriptTag(NSString *script);
-Tag languageTag(NSString *language);
-std::vector<size_t> visualRunOrder(const std::vector<TextRun> &runs);
-} // namespace ga::layout
+#import "GAOpenType.h"
+@interface GATextRun : NSObject
+@property(nonatomic, strong) NSMutableArray<GALayoutItem *> *glyphs;
+@property(nonatomic) GASpan source;
+@property(nonatomic) GATag script;
+@property(nonatomic) uint8_t level;
+@end
+FOUNDATION_EXPORT NSArray<GATextRun *> *GAPrepareText(NSString *text, GACmap *cmap,
+                                                      NSArray<GAGlyphSelectionRun *> *selections);
+FOUNDATION_EXPORT GATag GAScriptTag(NSString *name);
+FOUNDATION_EXPORT GATag GALanguageTag(NSString *name);
+FOUNDATION_EXPORT NSArray<NSNumber *> *GAVisualRunOrder(NSArray<GATextRun *> *runs);
