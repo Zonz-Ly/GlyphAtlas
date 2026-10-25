@@ -558,3 +558,7 @@ Moved the C++/Objective-C++ core, its headers and compile-font-layout.sh into So
 Synchronized English README with the user's Chinese revision. All 13 locale catalogs now describe the default-enabled layout switches and variable-font panel; Help includes 13 paragraphs. Removed the Use prefix in every menu localization. Apple CoreText's local OpenType.loctable supplied the feature names; the user explicitly chose the clearer Chinese overrides 上下文替代 (Taiwan/Hong Kong) and 上下文替换 (Simplified Chinese).
 
 Preassembled Resources/AppIcon.icns from the seven supplied size-specific PNGs without resampling. Verified all ten standard/Retina slots preserve their source bytes and that iconutil extracts ten images. Builds now copy the committed icon instead of regenerating it. Catalog/README consistency, CLI compilation and 74 model, 13 display and 29 sidebar checks passed; no App/ZIP build.
+
+## Final icon asset — 2026-10-26
+
+Regenerated Resources/AppIcon.icns from the user's revised size-specific PNGs. Verified all ten standard/Retina slots preserve the supplied PNG bytes and that macOS iconutil extracts ten images. Removed Resources/AppIcon after successful verification, as requested; builds continue copying the preassembled icns. Temporary 1024-only and 2318.png comparison outputs are not production assets. No App/ZIP build was needed for this asset-only update.
