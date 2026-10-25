@@ -501,3 +501,8 @@ Sources 全部平铺，原 FontLayout 的核心文件也已移到同一层。二
 - vrt2：OpenType 规范定义它可覆盖 vert；2019 年字体开发者在 Glyphs 论坛有 NSTextView/TextEdit 优先使用 vrt2 的一手记录。这支持“TextView 能用 vrt2”，不能当作本机当前 TextKit 2 的实测保证。现有 vert-only fixture 不能区分 vert/vrt2 优先级；下一轮应用二者输出不同的专用字体验证，暂未改预测中的选择策略。
 
 参考：[OpenType vrt2](https://learn.microsoft.com/en-us/typography/opentype/spec/features_uz#tag-vrt2)、[字体开发者的 NSTextView/TextEdit 记录](https://forum.glyphsapp.com/t/automatic-feature-code-must-include-vert-in-vrt2/12297)。
+
+
+### vrt2 本机判别实测（2026-10-25）
+
+已在 macOS 14.8.7（23J520）用离屏 NSTextView、initUsingTextLayoutManager:YES、setLayoutOrientation:Vertical 验证。临时 TTF 令 U+3001 默认为矩形，vert 为三角形，vrt2 为双竖条；U+4E00/U+4E8C 分别编码两个输出作同路径渲染参照。直接渲染 TextKit 2 原生 line fragment 并比较裁切后的 alpha mask，不调用 CTLine/CTRun 辅助。两特性都存在时输出严格匹配 vrt2，只有 vert 时匹配 vert；横排维持矩形。证据仅覆盖本机与此 TTF 样本，不扩称所有系统/格式。脚本、字体与结果在 .build/vrt2-probe；产品源码及 App/ZIP 未变。

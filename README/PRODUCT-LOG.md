@@ -535,3 +535,8 @@ Fixed the reported unchanged-list case of Option+Enter: absolute source location
 Updated all test callers for the display-font signature and added range-shift/repeated newline insertion/removal assertions. The user explicitly deferred builds to the next round: no compiler invocation, binary test, GUI, app build or ZIP packaging was performed. Existing dist artifacts belong to the preceding revision. Source diff and SDK identifier checks only; tests are prepared, not passed.
 
 Research on vrt2 found the current OpenType definition and first-hand 2019 reports of NSTextView/TextEdit using vrt2 in preference to vert. This is historical evidence, not a current-machine TextKit 2 verification. Existing vertical-only fixture tests cannot establish that priority; a discriminating font is needed next round. No change to the existing vrt2 prediction policy was made during this source-only round.
+
+
+## Local NSTextView vrt2 discrimination — 2026-10-25
+
+At the user's request, ran one small offscreen NSTextView/TextKit 2 probe on macOS 14.8.7 (23J520). Two original TTFs distinguish default rectangle, vert triangle and vrt2 double bars. Native line-fragment alpha masks match vrt2 when both features exist and vert when only vert exists; horizontal control retains the default. References are encoded output glyphs rendered through the same TextView path, not CoreText reconstruction. Probe/results: .build/vrt2-probe. No product source change or App/ZIP build; the earlier source-only trial still awaits its next-round validation.
