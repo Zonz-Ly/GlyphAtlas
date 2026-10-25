@@ -516,3 +516,11 @@ Sources 全部平铺，原 FontLayout 的核心文件也已移到同一层。二
 ### 彎引號統一豎排特性選擇（2026-10-26）
 
 使用者確認理解逐字 fallback 的差別後，授權將彎引號補償與一般匹配統一。Resource::verticalFeature(branch) 共用選擇規則：存在 vrt2 就只選 vrt2，否則選 vert；所選特性沒有覆蓋該 GID 時，不再改查 vert。保留既有 AAT 路徑和彎引號顯示補償機制。使用前輪四份臨時 TTF，對頓號及四個彎引號核對一般排版預測與單字豎排 helper，共 40 項通過（兩特性都有、只有 vert、vrt2 不覆蓋該字、沒有特性）。僅編譯此次 engine adapter 與命令行探針，沒有構建 App/ZIP；先前特性開關與換行修正的整體驗證仍待下一輪。
+
+### 核心目錄、幫助本地化與圖標整理（2026-10-26）
+
+使用者重新授權將 C++ 核心、Objective-C++ adapter 及相關 headers 放入 Sources/FontLayout，並將 scripts/compile-font-layout.sh 移到同一目錄；頂層 scripts 已移除。App 的 Objective-C 檔案仍平鋪在 Sources。同步所有編譯／測試入口與 include 路徑，沿用 LTO 與 dead stripping；保留使用者本輪提供的 build.sh 直接輸出 dist 流程及 O2 設定，補回其缺少的核心編譯與連結。
+
+以使用者更新的 README 中文為準同步英文；13 個語言／地區版本均更新幫助第 8 段為兩開關預設開啟，新增第 12 段 VF 面板說明，暗黑模式順延到第 13 段。英文與繁中幫助逐段對應 README，保留既有地區用詞與阿拉伯文快捷鍵方向隔離。選單移除 Use 前綴；除中文偏好外，名稱取自本機 CoreText OpenType.loctable。該官方資源的港台 Contextual Alternates 同為「上下文替用項目」，簡中為「关联备选」；依使用者最終決定改用繁中「上下文替代」、簡中「上下文替换」，Ligatures 保持「連字／连字」。
+
+Resources/AppIcon 保留使用者的 16–1024px 七張 PNG，預先打包 Resources/AppIcon.icns 的十個標準／Retina 尺寸槽，不重新取樣；逐槽確認內嵌 PNG 與原圖位元組一致，iconutil 解出十個尺寸成功。build.sh 僅複製現成 icns，不在編譯時合成圖標。本輪不構建或打包 App。

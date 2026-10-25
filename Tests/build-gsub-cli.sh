@@ -3,38 +3,38 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 ARCH="${ARCH:-$(uname -m)}"
 LAYOUT="$ROOT/.build/font-layout-test-$ARCH"
-bash "$ROOT/scripts/compile-font-layout.sh" "$ARCH" "$LAYOUT" test
-clang -DGA_FONT_LAYOUT_TESTING=1 -fobjc-arc -flto -Wl,-dead_strip -Wl,-x -Oz -Wall -Wextra -mmacosx-version-min=12.0 -arch "$ARCH" -I "$ROOT/Sources" \
+bash "$ROOT/Sources/FontLayout/compile-font-layout.sh" "$ARCH" "$LAYOUT" test
+clang -DGA_FONT_LAYOUT_TESTING=1 -fobjc-arc -flto -Wl,-dead_strip -Wl,-x -Oz -Wall -Wextra -mmacosx-version-min=12.0 -arch "$ARCH" -I "$ROOT/Sources" -I "$ROOT/Sources/FontLayout" \
   "$ROOT/Tests/GSUBCLI.m" "$ROOT/Sources/GAFontEngine.m" "$ROOT/Sources/GAGlyphSelection.m" "$ROOT/Sources/GADisplayGroups.m" \
   "$ROOT/Sources/GAFontResource.m" "$ROOT/Sources/GAUnicode.m" "$ROOT/Sources/GATextQueryModel.m" \
   "$LAYOUT"/*.o -lc++ -framework Cocoa -framework CoreText -licucore -o "$ROOT/.build/gsub-cli"
-clang -fobjc-arc -flto -Wl,-dead_strip -Wl,-x -Oz -Wall -Wextra -mmacosx-version-min=12.0 -arch "$ARCH" -I "$ROOT/Sources" \
+clang -fobjc-arc -flto -Wl,-dead_strip -Wl,-x -Oz -Wall -Wextra -mmacosx-version-min=12.0 -arch "$ARCH" -I "$ROOT/Sources" -I "$ROOT/Sources/FontLayout" \
   "$ROOT/Tests/GSUBModelTests.m" "$ROOT/Sources/GAFontEngine.m" "$ROOT/Sources/GAGlyphSelection.m" "$ROOT/Sources/GADisplayGroups.m" \
   "$ROOT/Sources/GAFontResource.m" "$ROOT/Sources/GAUnicode.m" "$ROOT/Sources/GATextQueryModel.m" \
   "$LAYOUT"/*.o -lc++ -framework Cocoa -framework CoreText -licucore -o "$ROOT/.build/gsub-model-tests"
-clang -fobjc-arc -flto -Wl,-dead_strip -Wl,-x -Oz -Wall -Wextra -mmacosx-version-min=12.0 -arch "$ARCH" -I "$ROOT/Sources" \
+clang -fobjc-arc -flto -Wl,-dead_strip -Wl,-x -Oz -Wall -Wextra -mmacosx-version-min=12.0 -arch "$ARCH" -I "$ROOT/Sources" -I "$ROOT/Sources/FontLayout" \
   "$ROOT/Tests/SeedDisplayTests.m" "$ROOT/Sources/GATextDisplay.m" \
   -framework Cocoa -framework CoreText -o "$ROOT/.build/seed-display-tests"
 
 CORE=()
-for SOURCE in "$ROOT"/Sources/*.cpp; do CORE+=("$LAYOUT/$(basename "${SOURCE%.cpp}").o"); done
-clang++ -std=c++17 -flto -Wl,-dead_strip -Wl,-x -Oz -Wall -Wextra -mmacosx-version-min=12.0 -arch "$ARCH" -I "$ROOT/Sources" \
+for SOURCE in "$ROOT"/Sources/FontLayout/*.cpp; do CORE+=("$LAYOUT/$(basename "${SOURCE%.cpp}").o"); done
+clang++ -std=c++17 -flto -Wl,-dead_strip -Wl,-x -Oz -Wall -Wextra -mmacosx-version-min=12.0 -arch "$ARCH" -I "$ROOT/Sources" -I "$ROOT/Sources/FontLayout" \
   "$ROOT/Tests/FontLayoutTests.cpp" "${CORE[@]}" -framework Cocoa -framework CoreText -licucore \
   -o "$ROOT/.build/font-layout-tests"
 
-clang -fobjc-arc -Oz -Wall -Wextra -mmacosx-version-min=12.0 -arch "$ARCH" -I "$ROOT/Sources" \
+clang -fobjc-arc -Oz -Wall -Wextra -mmacosx-version-min=12.0 -arch "$ARCH" -I "$ROOT/Sources" -I "$ROOT/Sources/FontLayout" \
   "$ROOT/Tests/TextDisplayTests.m" "$ROOT/Sources/GATextDisplay.m" \
   -framework Cocoa -framework CoreText -o "$ROOT/.build/text-display-tests"
 UI_SOURCES=()
 for SOURCE in "$ROOT"/Sources/*.m; do
   if [[ "$SOURCE" != "$ROOT/Sources/main.m" ]]; then UI_SOURCES+=("$SOURCE"); fi
 done
-clang -fobjc-arc -flto -Wl,-dead_strip -Oz -Wall -Wextra -mmacosx-version-min=12.0 -arch "$ARCH" -I "$ROOT/Sources" \
+clang -fobjc-arc -flto -Wl,-dead_strip -Oz -Wall -Wextra -mmacosx-version-min=12.0 -arch "$ARCH" -I "$ROOT/Sources" -I "$ROOT/Sources/FontLayout" \
   "$ROOT/Tests/SidebarStateTests.m" "${UI_SOURCES[@]}" "$LAYOUT"/*.o -lc++ \
   -framework Cocoa -framework CoreText -framework UniformTypeIdentifiers -licucore \
   -o "$ROOT/.build/sidebar-state-tests"
 
-clang -fobjc-arc -flto -Wl,-dead_strip -Oz -Wall -Wextra -mmacosx-version-min=12.0 -arch "$ARCH" -I "$ROOT/Sources" \
+clang -fobjc-arc -flto -Wl,-dead_strip -Oz -Wall -Wextra -mmacosx-version-min=12.0 -arch "$ARCH" -I "$ROOT/Sources" -I "$ROOT/Sources/FontLayout" \
   "$ROOT/Tests/NativeHitTests.m" "$ROOT/Tests/ReferenceNativeTextHit.m" \
   "$ROOT/Sources/GAFontEngine.m" "$ROOT/Sources/GAGlyphSelection.m" "$ROOT/Sources/GADisplayGroups.m" \
   "$ROOT/Sources/GAFontResource.m" "$ROOT/Sources/GAUnicode.m" "$ROOT/Sources/GATextQueryModel.m" \

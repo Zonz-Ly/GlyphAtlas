@@ -550,3 +550,11 @@ Added a distinct-glyph control: vrt2 actively substitutes U+3002 but does not co
 ## Unified quote vertical-feature priority — 2026-10-26
 
 At the user's request, general layout prediction and the curly-quote helper now share Resource::verticalFeature(branch): select vrt2 when present, otherwise vert. An uncovered glyph no longer triggers a per-glyph vert fallback. Existing AAT handling and the quote display override remain in place. A targeted command-line probe reused the four earlier TTFs and passed 40 assertions comparing helper and layout results for upright punctuation and all four quotes. Only the changed adapter and probe were compiled; no App/ZIP build or broad suite rerun. The earlier feature-switch trial and newline-preservation changes still await their deferred integrated validation.
+
+## Core organization, localized Help and optimized icon — 2026-10-26
+
+Moved the C++/Objective-C++ core, its headers and compile-font-layout.sh into Sources/FontLayout at the user's request; removed the now-empty top-level scripts directory and updated build/test entry points. Kept the user's current direct-to-dist build workflow and O2 preference, restoring the missing core compilation/link and retaining LTO/dead stripping.
+
+Synchronized English README with the user's Chinese revision. All 13 locale catalogs now describe the default-enabled layout switches and variable-font panel; Help includes 13 paragraphs. Removed the Use prefix in every menu localization. Apple CoreText's local OpenType.loctable supplied the feature names; the user explicitly chose the clearer Chinese overrides 上下文替代 (Taiwan/Hong Kong) and 上下文替换 (Simplified Chinese).
+
+Preassembled Resources/AppIcon.icns from the seven supplied size-specific PNGs without resampling. Verified all ten standard/Retina slots preserve their source bytes and that iconutil extracts ten images. Builds now copy the committed icon instead of regenerating it. Catalog/README consistency, CLI compilation and 74 model, 13 display and 29 sidebar checks passed; no App/ZIP build.

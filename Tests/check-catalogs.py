@@ -39,9 +39,15 @@ assert references <= english.keys() | plural_keys, f'Unknown localization keys: 
 
 section = (ROOT / 'README.md').read_text().split('## 使用\n', 1)[1].split('\n## ', 1)[0]
 usage = [re.sub(r'`([^`]+)`', r'\1', line[2:]) for line in section.splitlines() if line.startswith('- ')]
-assert len(usage) == 12
+assert len(usage) == 13
 for locale in ['zh-Hant', 'zh-HK']:
-    assert [catalogs[locale][f'Help.{i:02}'] for i in range(1, 13)] == usage, f'{locale}: Help no longer matches README 使用'
+    assert [catalogs[locale][f'Help.{i:02}'] for i in range(1, 14)] == usage, f'{locale}: Help no longer matches README 使用'
+english_section = (ROOT / 'README.md').read_text().split('## Usage\n', 1)[1].split('\n## ', 1)[0]
+english_usage = [re.sub(r'`([^`]+)`', r'\1', line[2:]) for line in english_section.splitlines() if line.startswith('- ')]
+assert [english[f'Help.{i:02}'] for i in range(1, 14)] == english_usage, 'English Help no longer matches README Usage'
+assert catalogs['zh-Hans']['Contextual Alternates'] == '上下文替换'
+for locale in ['zh-Hant', 'zh-HK']:
+    assert catalogs[locale]['Contextual Alternates'] == '上下文替代'
 for locale in ['zh-Hant', 'zh-HK', 'zh-Hans']:
     assert catalogs[locale]['All Glyphs'] == '全部字', locale
 for key, value in {'Left': '靠左', 'Right': '靠右', 'Top': '靠上', 'Bottom': '靠下', 'Justified': '兩端'}.items():

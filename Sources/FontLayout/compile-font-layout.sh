@@ -1,11 +1,12 @@
 #!/bin/bash
 set -euo pipefail
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+CORE="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$(cd "$CORE/../.." && pwd)"
 ARCH="$1"
 OUT="$2"
 MODE="${3:-release}"
 mkdir -p "$OUT"
-FLAGS=(-std=c++17 -Wall -Wextra -mmacosx-version-min=12.0 -arch "$ARCH" -I "$ROOT/Sources")
+FLAGS=(-std=c++17 -Wall -Wextra -mmacosx-version-min=12.0 -arch "$ARCH" -I "$ROOT/Sources" -I "$CORE")
 case "$MODE" in
   release) FLAGS+=(-DGA_FONT_LAYOUT_TESTING=0) ;;
   test) FLAGS+=(-DGA_FONT_LAYOUT_TESTING=1) ;;
@@ -27,7 +28,7 @@ if [[ ! -f "$CONFIGURATION_FILE" || "$(cat "$CONFIGURATION_FILE")" != "$CONFIGUR
   # translation-unit list. Never link obsolete objects from the other version.
   rm -f "$OUT"/*.o "$CONFIGURATION_FILE"
 fi
-for SOURCE in "$ROOT"/Sources/*.cpp "$ROOT"/Sources/*.mm; do
+for SOURCE in "$CORE"/*.cpp "$CORE"/*.mm; do
   OBJECT="$OUT/$(basename "${SOURCE%.*}").o"
   if [[ "$REBUILD" == false && -f "$OBJECT" && "$OBJECT" -nt "$SOURCE" && "$OBJECT" -nt "$0" && -z "$(find "$ROOT/Sources" -name '*.h' -newer "$OBJECT" -print -quit)" ]]; then continue; fi
   if [[ "$SOURCE" == *.mm ]]; then

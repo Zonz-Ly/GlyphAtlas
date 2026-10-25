@@ -15,9 +15,9 @@ for SOURCE in "$ROOT"/Sources/*.m; do
   [[ "$(basename "$SOURCE")" == main.m ]] || SOURCES+=("$SOURCE")
 done
 LAYOUT="$ROOT/.build/font-layout-$(uname -m)"
-bash "$ROOT/scripts/compile-font-layout.sh" "$(uname -m)" "$LAYOUT"
+bash "$ROOT/Sources/FontLayout/compile-font-layout.sh" "$(uname -m)" "$LAYOUT"
 clang -fobjc-arc -flto -Wl,-dead_strip -mmacosx-version-min=12.0 -Wall -Wextra \
-  -I "$ROOT/Sources" -framework Cocoa -framework CoreText \
+  -I "$ROOT/Sources" -I "$ROOT/Sources/FontLayout" -framework Cocoa -framework CoreText \
   -framework UniformTypeIdentifiers -licucore \
   "${SOURCES[@]}" "$ROOT/Tests/LocalizationSmoke.m" "$LAYOUT"/*.o -lc++ \
   -o "$APP/Contents/MacOS/GlyphAtlas"

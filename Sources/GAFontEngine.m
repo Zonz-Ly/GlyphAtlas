@@ -1,6 +1,6 @@
 #import "GAFontEngine.h"
 #import "GAUnicode.h"
-#import "GASubstitutionEngine.h"
+#import "FontLayout/GASubstitutionEngine.h"
 #import <AppKit/AppKit.h>
 
 const CGFloat GAFontShapingSize = 200.0;

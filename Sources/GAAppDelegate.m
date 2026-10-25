@@ -466,13 +466,13 @@
 
 - (void)addViewAlignmentItemsToMenu:(NSMenu *)menu {
     NSMenuItem *contextual = [[NSMenuItem alloc]
-        initWithTitle:NSLocalizedString(@"Use Contextual Alternates", @"Use Contextual Alternates")
+        initWithTitle:NSLocalizedString(@"Contextual Alternates", @"Contextual Alternates")
                action:@selector(toggleContextualAlternates:)
         keyEquivalent:@"5"];
     contextual.target = self;
     [menu addItem:contextual];
     NSMenuItem *ligatures =
-        [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Use Ligatures", @"Use Ligatures")
+        [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Ligatures", @"Ligatures")
                                    action:@selector(toggleLigatures:)
                             keyEquivalent:@"6"];
     ligatures.target = self;
@@ -665,7 +665,8 @@
         NSLocalizedString(@"Help.09", @"Usage paragraph 9"),
         NSLocalizedString(@"Help.10", @"Usage paragraph 10"),
         NSLocalizedString(@"Help.11", @"Usage paragraph 11"),
-        NSLocalizedString(@"Help.12", @"Usage paragraph 12")
+        NSLocalizedString(@"Help.12", @"Usage paragraph 12"),
+        NSLocalizedString(@"Help.13", @"Usage paragraph 13")
     ];
     alert.informativeText = [@"· " stringByAppendingString:[paragraphs componentsJoinedByString:@"\n· "]];
     [alert addButtonWithTitle:NSLocalizedString(@"OK", @"OK")];
