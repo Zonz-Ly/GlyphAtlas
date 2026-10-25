@@ -475,7 +475,7 @@ buildDisplayGroupsFromBaseGroups:
 | --- | --- |
 | `GAFontResource` / `GAFontInstance` | 纯 CoreText 按默认坐标归并资源，保存实例菜单与轴；多资源 TTC 才显示选择 sheet |
 | `GANormalizedFont` | 共同非默认坐标→默认坐标后 `CFEqual(CTFont)`，不经过 CGFont |
-| `GAVariationViewController` / `GAVariationSlider` | 「可變」面板；系统 margins 与控件 intrinsic size 布局，数字框固定 66pt；方向键 ±1，Shift+方向键 ±10；滑杆连续更新 |
+| `GAVariationViewController` / `GAVariationSlider` | 「可變」面板；系统 margins 与控件 intrinsic size 布局，数字框固定 70pt；方向键 ±1，Shift+方向键 ±10；滑杆连续更新 |
 | `GAFeatureVariations`（private） | 每资源解析一次条件、替代 Feature 偏移、fvar/avar；以盒差集避开优先记录已覆盖区域，找出每个可达分支的代表坐标 |
 | `GADiscoveryFonts`（private） | 资源级扫描字体集合：默认坐标优先，再加其余可达条件分支；扫描字体不反向引用集合，避免循环持有 |
 | `GAFontDocument.rawScanContent:` | 扫描各分支并合并 GID、来源与覆盖范围；只有默认坐标的基础结果标记 base。条件替换作为列表选项，不自动替换单字画布的选定 GID |
@@ -486,8 +486,8 @@ buildDisplayGroupsFromBaseGroups:
 | `GAAllGlyphsView.setDocument:` | 每个窗口只建立一次资源 inventory；后续只替换 fontBox 并使度量缓存失效。已删除换字体重建/回顶路径 |
 | `popoverShouldDetach:` | 仅返回 YES，使用 NSPopover 自带的同外观 detached window 与同一内容控制器；不提供自订窗口；按钮可唤回已拖出的窗口，主窗口关闭时关闭 Popover |
 
-- 「可變」按钮为 secondaryLabelColor，恢复最初的 borderless 原生按钮；不设置 bezelStyle，不添加方形容器或宽高约束。用户已放弃强制调整该处原生外观的宽度。
-- Popover 默认 320pt 宽，超过五轴滚动。菜单使用 CTFontCopyName 的非本地化 style name，不使用 full name 或 CTFontCopyLocalizedName，避免系统自动翻译部分样式造成中英混杂。轴控件按 intrinsic size 与系统间距排列，滚动文档使用 layoutMarginsGuide 给控件外缘留白；不将 slider 高度硬设为 20pt，不强行贴齐裁切边缘。数字框固定 66pt，方向键 ±1，Shift+方向键 ±10，并限制在轴的 min/max 范围内。
+- 「可變」按钮为 secondaryLabelColor，恢复最初的 borderless 原生按钮；不设置 bezelStyle，不添加方形容器或宽高约束。用户已放弃强制调整该处原生外观的宽度。按钮与字体名称的 NSStackView.spacing 为 5pt，不另设按钮 customSpacing；字形名称本身使用约束布局，没有另一个 NSStackView.spacing。
+- Popover 默认 320pt 宽，超过五轴滚动。菜单使用 CTFontCopyName 的非本地化 style name，不使用 full name 或 CTFontCopyLocalizedName，避免系统自动翻译部分样式造成中英混杂。轴控件按 intrinsic size 排列，数字框底端到滑杆顶端、滑杆底端到下一条轴顶端的约束间距均为 0.25 倍系统标准间距；名称和数字框之间的水平间距仍至少为系统标准间距。滚动文档左右使用 layoutMarginsGuide 给控件外缘留白；不将 slider 高度硬设为 20pt，不强行贴齐裁切边缘。文档顶端到第一条轴为系统上边距减 10pt；最后一条轴底端到文档底端为系统下边距减 15pt，均以文档 layoutMarginsGuide 为基准。数字框固定 70pt，方向键 ±1，Shift+方向键 ±10，并限制在轴的 min/max 范围内。
 - 附着中的 NSPopover 没有原生用户拖边缩放，本次按用户要求不添加自订拖曳手柄。contentSize 可由程序设置；detach 后保持系统原生外观，不为拉宽另建 NSPanel，也不修改系统窗口 styleMask。内容控制器 title 为空。附着时按系统 titled window 度量预留标题栏空间，菜单上方留白比上一版减少 18pt（原生 detach 后也保留这项间距调整）；popoverDidShow: 记录原始窗口和内容高度，popoverDidDetach: 保持原窗口总高度并消耗预留空间。
 - 调轴时列表 GID 与顺序不变。选取自然保留，已删除切轴专用 pending selection/跳回流程；输入变化、正常激活与新扫描结果仍走原列表策略。
 - 单字画布始终绘制选定 GID；例如 k 不会因跨条件变为 k.jump，选择 k.jump 后低字重仍画 k.jump 的轮廓。多字布局仍由当前坐标的 CoreText/TextKit 处理。

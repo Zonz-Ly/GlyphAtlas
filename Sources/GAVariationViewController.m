@@ -136,19 +136,19 @@ static const CGFloat GAVariationTopSpacingReduction = 18;
             [value.leadingAnchor constraintGreaterThanOrEqualToSystemSpacingAfterAnchor:label.trailingAnchor multiplier:1],
             [value.trailingAnchor constraintEqualToAnchor:row.trailingAnchor],
             [value.topAnchor constraintEqualToAnchor:row.topAnchor],
-            [value.widthAnchor constraintEqualToConstant:66],
+            [value.widthAnchor constraintEqualToConstant:70],
             [slider.leadingAnchor constraintEqualToAnchor:row.leadingAnchor],
             [slider.trailingAnchor constraintEqualToAnchor:row.trailingAnchor],
-            [slider.topAnchor constraintEqualToSystemSpacingBelowAnchor:value.bottomAnchor multiplier:0.5],
+            [slider.topAnchor constraintEqualToSystemSpacingBelowAnchor:value.bottomAnchor multiplier:0.25],
             [slider.bottomAnchor constraintEqualToAnchor:row.bottomAnchor],
         ]];
         if (i == 0) {
-            [row.topAnchor constraintEqualToAnchor:axisMargins.topAnchor].active = YES;
+            [row.topAnchor constraintEqualToAnchor:axisMargins.topAnchor constant:-10].active = YES;
         } else {
-            [row.topAnchor constraintEqualToSystemSpacingBelowAnchor:rows[i - 1].bottomAnchor multiplier:0.5].active = YES;
+            [row.topAnchor constraintEqualToSystemSpacingBelowAnchor:rows[i - 1].bottomAnchor multiplier:0.25].active = YES;
         }
         if (i + 1 == self.resource.axes.count) {
-            [row.bottomAnchor constraintEqualToAnchor:axisMargins.bottomAnchor].active = YES;
+            [row.bottomAnchor constraintEqualToAnchor:axisMargins.bottomAnchor constant:15].active = YES;
         }
     }
     NSLayoutGuide *margins = self.view.layoutMarginsGuide;
@@ -213,8 +213,10 @@ static const CGFloat GAVariationTopSpacingReduction = 18;
     NSNumberFormatter *formatter = (NSNumberFormatter *)field.formatter;
     NSNumber *number = [formatter numberFromString:textView.string];
     if (number == nil) return YES;
-    BOOL shift = (NSApp.currentEvent.modifierFlags & NSEventModifierFlagShift) != 0 ||
-        command == @selector(moveUpAndModifySelection:) || command == @selector(moveDownAndModifySelection:);
+    // The field editor encodes Shift in the command selector; Command and
+    // Option produce different selectors.
+    BOOL shift = command == @selector(moveUpAndModifySelection:) ||
+        command == @selector(moveDownAndModifySelection:);
     double step = shift ? 10 : 1;
     [self changeAxisAtIndex:(NSUInteger)field.tag value:number.doubleValue + (up ? step : -step) committed:YES];
     textView.string = [formatter stringForObjectValue:field.objectValue] ?: field.stringValue;

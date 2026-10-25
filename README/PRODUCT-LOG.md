@@ -455,3 +455,35 @@ Only the queried glyph's contextual forms should appear without typing their sur
 Added CLI tests for incomplete/complete direct and extension ligature input, AAT morx/mort fi, literal GID sequences, and actual Zapfino. A pure-core test constructs a contextual root calling a nested ligature, proving single-glyph catalogue exclusion while complete input still executes. Model checks again require no ligature candidate at all before selecting the necessary unencoded input; the earlier weaker combination-only helper was removed.
 
 Validation: 378 substitution/resource assertions, 373 layout assertions, 52 model assertions, 7 display-data assertions, 31,759 core checks and 24,731 deterministic mutations passed; ASan/UBSan passed 103 fixture fonts. Thirteen localization catalogs and the release-selector audit pass. Universal arm64/x86_64 build has no warnings; unsigned executable 1,027,744 bytes, signed 1,078,656 bytes, ZIP 707,818 bytes. Staging-signature verification passed; the ZIP comes directly from staging. No GUI, installation, extraction check or push was performed. The four approved cleanup items remain complete in fbf61ae; the clarification is a separate following commit.
+
+### VF numeric field width (2026-10-25)
+
+The user increased the fixed numeric field width from 66pt to 70pt. No other behavior changed. Built and packaged only; no tests or UI verification.
+
+### VF spacing adjustment (2026-10-25)
+
+Set the toolbar stack spacing between the Variable button and font name to 0pt. There is no separate NSStackView spacing for glyph names; their existing constraints are unchanged. Reduce the bottom whitespace inside the variation-axis scroll document by 18pt, through the last row's bottom-margin constraint so the content fitting height shrinks accordingly. Built and packaged only, without tests or UI verification.
+
+### VF zero vertical spacing (2026-10-25)
+
+Set both the numeric-field-to-slider vertical spacing and the slider-to-next-axis vertical spacing to 0pt, replacing their previous half-system-spacing constraints. Other spacing remains unchanged. Built and packaged only; no tests or UI verification.
+
+### VF fractional system spacing (2026-10-25)
+
+Set numeric-field-to-slider, slider-to-next-axis, and scroll-document-top-to-first-axis spacing to 0.25 times system standard spacing. Set last-axis-to-document-bottom spacing to 0.5 times system standard spacing, replacing the previous bottom margin minus 18pt. Horizontal margins and the preset popup top reservation are unchanged. Built and packaged only, without tests or UI verification.
+
+### VF document edge margins (2026-10-25)
+
+Set the first axis top to the document layoutMarginsGuide top minus 10pt, and the last axis bottom to its bottom plus 10pt, reducing both system document edge margins by 10pt. The two internal vertical gaps remain 0.25 times system standard spacing. Built and packaged only, without tests or UI verification.
+
+### VF bottom and toolbar spacing (2026-10-25)
+
+Reduce the last-axis-to-document-bottom gap to the system bottom margin minus 15pt. Restore the toolbar stack spacing between the Variable button and font name to 5pt. Other spacing remains unchanged. Built and packaged only; no tests or UI verification.
+
+### Independent VF button spacing (2026-10-25)
+
+Set the font title stack default spacing to 0pt and override only the spacing after the Variable button to 5pt with NSStackView setCustomSpacing:afterView:. No additional stack or button styling is introduced. Built and packaged only; no tests or UI verification.
+
+### Revert independent VF button spacing (2026-10-25)
+
+The user requested the immediately previous version. Restore the font title stack spacing to 5pt and remove the custom spacing override after the Variable button. Other changes, including the document bottom system margin minus 15pt, remain unchanged. Built and packaged only; no tests or UI verification.
