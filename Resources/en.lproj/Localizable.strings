@@ -59,7 +59,6 @@
 "Glyph canvas" = "Glyph canvas";
 "Text and alternate glyph list" = "Text and alternate glyph list";
 "CONTROL CHARACTER" = "CONTROL CHARACTER";
-"actual" = "actual";
 "Help.01" = "Open a font, or drag one onto the app's window or Dock icon. Recently used fonts are supported.";
 "Help.02" = "Type one or more characters in the sidebar to see all associated glyphs. Use ⌥⏎ to insert a line break.";
 "Help.03" = "Double-click a glyph, or select it and press ⏎, to replace the default glyph and show that glyph's substitution. Press and hold ⇧ together to add that glyph.";

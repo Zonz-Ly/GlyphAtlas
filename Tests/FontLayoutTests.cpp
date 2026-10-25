@@ -208,6 +208,8 @@ void exercise(Tag name, const Bytes &bytes) {
     if (name == tag('G', 'S', 'U', 'B')) {
         OpenType program(table);
         program.substitute(buffer, GDEF{}, settings, 0, &trace);
+        for (Glyph glyph : {2, 3})
+            program.relatedSubstitutions(glyph, GDEF{});
     } else if (name == tag('G', 'P', 'O', 'S')) {
         OpenType program(table, true);
         program.position(buffer, GDEF{}, settings, metrics);

@@ -42,8 +42,9 @@ the project; the app does not read private system string tables at runtime.
   reads this metadata for the standard About panel, along with the app's icon,
   name, and version. The panel does not supply custom credits.
 - Keep font names, glyph names, glyph IDs, Unicode standard character names,
-  and OpenType/AAT feature tags intact. The internal `actual` scan marker is
-  translated only when displayed, leaving scanning and deduplication unchanged.
+  and OpenType/AAT feature tags intact. Display the synthetic fallback marker
+  `actual` verbatim too; it has no localization key. Prefer recorded feature tags
+  whenever the execution trace or table catalogue supplies them.
 - Chinese Help paragraphs (`Help.01`–`Help.12`) follow README's 使用 section.
   Taiwan and Hong Kong use that text verbatim (without Markdown formatting);
   Simplified Chinese uses its character conversion. Keep the original Help alert

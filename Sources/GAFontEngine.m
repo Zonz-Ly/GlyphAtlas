@@ -42,6 +42,12 @@ static NSString *GACopyString(CFStringRef _Nullable string) {
     if (source.length == 0) {
         return;
     }
+    if ([source isEqualToString:@"actual"]) {
+        if (self.mutableFeatureSources.count > 0)
+            return;
+    } else {
+        [self.mutableFeatureSources removeObject:@"actual"];
+    }
     if ([self.mutableFeatureSources containsObject:source]) {
         return;
     }
@@ -388,14 +394,17 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
     BOOL single = groups.count == 1;
     if (single) {
         NSMutableArray *baseGlyphs = [NSMutableArray array];
+        NSMutableOrderedSet *baseSources = [NSMutableOrderedSet orderedSet];
         for (GASubstitutionMatch *match in matches)
-            if (match.base)
+            if (match.base) {
                 [baseGlyphs addObjectsFromArray:match.glyphIDs];
+                [baseSources addObjectsFromArray:match.sources];
+            }
         GAScanCandidate *base = [[GAScanCandidate alloc] init];
         base.glyphIDs = baseGlyphs;
         base.fontBox = _fontBox;
         base.positions = [_substitutionEngine positionsForGlyphIDs:base.glyphIDs content:content];
-        base.sources = @[];
+        base.sources = baseSources.array;
         base.base = YES;
         base.sourceRange = NSMakeRange(0, content.length);
         base.targetOffset = 0;
@@ -489,10 +498,8 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
                 existing.fromGlyphSeed = YES;
                 existing.sourceTextRange = sourceRange;
             }
+            [existing addFeatureSources:candidate.sources ?: @[]];
             if (!existing.isBase) {
-                if (candidate.sources.count > 0) {
-                    [existing addFeatureSources:candidate.sources];
-                }
                 if (candidate.ligature) {
                     existing.ligature = YES;
                     existing.sourceTextRange = sourceRange;

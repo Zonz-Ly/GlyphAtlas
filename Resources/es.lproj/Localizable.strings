@@ -59,7 +59,6 @@
 "Glyph canvas" = "Lienzo de glifos";
 "Text and alternate glyph list" = "Lista de texto y glifos alternativos";
 "CONTROL CHARACTER" = "CARÁCTER DE CONTROL";
-"actual" = "composición real";
 "Help.01" = "Abre un tipo de letra o arrástralo a la ventana de la app o a su icono en el Dock. También se admiten los tipos de letra usados recientemente.";
 "Help.02" = "Introduce uno o varios caracteres en la barra lateral para ver todos los glifos asociados. Usa ⌥⏎ para insertar un salto de línea.";
 "Help.03" = "Haz doble clic en un glifo, o selecciónalo y pulsa Retorno, para sustituir el glifo predeterminado y mostrar sus alternativas. Mantén pulsada la tecla Mayúsculas al hacerlo para añadir el glifo.";

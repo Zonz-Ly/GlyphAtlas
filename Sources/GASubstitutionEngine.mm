@@ -132,10 +132,16 @@ void merge(NSMutableDictionary *seen, NSMutableArray<GASubstitutionMatch *> *mat
         [matches addObject:match];
     }
     match.base |= base;
-    if (match.base)
-        match.sources = @[];
-    else if (source.length && ![match.sources containsObject:source])
-        match.sources = [match.sources arrayByAddingObject:source];
+    if (source.length) {
+        if (![source isEqualToString:@"actual"]) {
+            NSMutableArray *sources = [match.sources mutableCopy];
+            [sources removeObject:@"actual"];
+            if (![sources containsObject:source])
+                [sources addObject:source];
+            match.sources = sources;
+        } else if (!match.sources.count)
+            match.sources = @[ source ];
+    }
 }
 Buffer literalBuffer(const std::vector<Glyph> &glyphs) {
     Buffer buffer;
@@ -172,6 +178,7 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
 }
 @property(nonatomic, strong) NSCache<id, NSDictionary *> *cache;
 @property(nonatomic, strong) NSMutableOrderedSet<NSString *> *errors;
+@property(nonatomic, strong) NSCache<NSNumber *, NSArray<NSDictionary *> *> *relatedCache;
 @end
 @implementation GAFontProgram
 - (instancetype)initWithFont:(CTFontRef)font {
@@ -182,6 +189,9 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
         for (const auto &message : resource->diagnostics)
             [_errors addObject:@(message.c_str())];
         _cache = [[NSCache alloc] init];
+        _relatedCache = [[NSCache alloc] init];
+        _relatedCache.countLimit = 2048;
+        _relatedCache.totalCostLimit = 16 * 1024 * 1024;
         _cache.countLimit = 2048;
         _cache.totalCostLimit = 32 * 1024 * 1024;
     }
@@ -192,6 +202,7 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
 @interface GASubstitutionEngine ()
 @property(nonatomic, strong) GAFontProgram *program;
 @property(nonatomic, copy) NSDictionary<NSNumber *, NSNumber *> *coordinates;
+- (NSArray<NSDictionary *> *)relatedOutputs:(Glyph)glyph;
 - (NSDictionary *)discoverContent:(NSString *)text
                        selections:(NSArray<GAGlyphSelectionRun *> *)selections;
 @end
@@ -239,6 +250,26 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
                 @"engine" : @(r.aat.name().c_str())
             }];
     return result;
+}
+- (NSArray<NSDictionary *> *)relatedOutputs:(Glyph)glyph {
+    NSArray *cached = [self.program.relatedCache objectForKey:@(glyph)];
+    if (cached)
+        return cached;
+    NSMutableArray *outputs = [NSMutableArray array];
+    try {
+        const auto &r = *self.program->resource;
+        for (const auto &output : r.gsub.relatedSubstitutions(glyph, r.gdef)) {
+            std::string label = tagName(output.feature);
+            if (output.value > 1)
+                label += " " + std::to_string(output.value);
+            [outputs
+                addObject:@{@"glyphs" : glyphArray(output.glyphs), @"source" : @(label.c_str())}];
+        }
+    } catch (const InvalidTable &error) {
+        [self recordError:error];
+    }
+    [self.program.relatedCache setObject:outputs forKey:@(glyph) cost:outputs.count * 128];
+    return outputs;
 }
 - (NSDictionary *)discoverContent:(NSString *)text
                        selections:(NSArray<GAGlyphSelectionRun *> *)selections {
@@ -299,16 +330,20 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
                         }
                         if (settings.rtl)
                             std::reverse(items.begin(), items.end());
-                        std::string label = domain.apple ? sourceName(r, domain)
-                                            : plan.first ? tagName(plan.first)
-                                                         : "actual";
-                        if (plan.second > 1)
-                            label += " " + std::to_string(plan.second);
-                        for (const auto &cluster : clusters(items))
-                            merge(seen, matches, cluster.source, cluster.glyphs, @(label.c_str()),
-                                  base);
-                        if (items.empty() && !run.source.empty())
-                            merge(seen, matches, run.source, {}, @(label.c_str()), base);
+                        for (const auto &cluster : clusters(items)) {
+                            merge(seen, matches, cluster.source, cluster.glyphs, nil, base);
+                            for (const auto &change : trace.changes)
+                                if (change.source.start < cluster.source.end &&
+                                    change.source.end > cluster.source.start)
+                                    merge(seen, matches, cluster.source, cluster.glyphs,
+                                          @(change.feature.c_str()), base);
+                        }
+                        if (items.empty() && !run.source.empty()) {
+                            merge(seen, matches, run.source, {}, nil, base);
+                            for (const auto &change : trace.changes)
+                                merge(seen, matches, run.source, {}, @(change.feature.c_str()),
+                                      base);
+                        }
                         for (auto scope : trace.windows)
                             [scopes
                                 addObject:[NSValue
@@ -318,6 +353,18 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
             }
         }
     }
+    // Context-free inventory: expose only the queried component's replacement,
+    // preserving other GIDs belonging to the same atomic input cluster.
+    for (const auto &run : runs)
+        for (const auto &cluster : clusters(run.glyphs))
+            for (size_t i = 0; i < cluster.glyphs.size(); i++)
+                for (NSDictionary *output in [self relatedOutputs:cluster.glyphs[i]]) {
+                    auto sequence = cluster.glyphs;
+                    auto replacement = glyphVector(output[@"glyphs"]);
+                    sequence.erase(sequence.begin() + i);
+                    sequence.insert(sequence.begin() + i, replacement.begin(), replacement.end());
+                    merge(seen, matches, cluster.source, sequence, output[@"source"], NO);
+                }
     // Direct single/alternate families include unencoded outputs and language
     // alternatives that are not selected by this text's default language system.
     NSArray *bases = [matches copy];
@@ -402,11 +449,12 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
                 merge(seen, matches, span, glyphVector(m.glyphIDs),
                       m.sources.firstObject ?: (base ? nil : @"actual"), base);
                 GASubstitutionMatch *target = seen[matchKey(span, m.glyphIDs)];
-                if (!target.base) {
+                {
                     NSMutableOrderedSet *sources =
                         [NSMutableOrderedSet orderedSetWithArray:target.sources];
                     [sources addObjectsFromArray:m.sources];
-                    target.sources = sources.array;
+                    [sources removeObject:@"actual"];
+                    target.sources = sources.count ? sources.array : target.sources;
                 }
             }
             for (NSValue *value in result[@"spans"]) {
@@ -566,12 +614,10 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
                         Buffer items = literalBuffer(original);
                         Trace trace;
                         r.substitute(items, domain, settings, &trace);
-                        std::string label = domain.apple ? sourceName(r, domain)
-                                            : plan.first ? tagName(plan.first)
-                                                         : "actual";
-                        if (plan.second > 1)
-                            label += " " + std::to_string(plan.second);
-                        merge(seen, matches, whole, identifiers(items), @(label.c_str()), NO);
+                        merge(seen, matches, whole, identifiers(items), nil, NO);
+                        for (const auto &change : trace.changes)
+                            merge(seen, matches, whole, identifiers(items),
+                                  @(change.feature.c_str()), NO);
                         for (const auto &change : trace.changes) {
                             if (change.source.end > original.size())
                                 continue;
@@ -591,11 +637,21 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
                         for (auto output : r.gsub.family(original[component], li, r.gdef)) {
                             auto sequence = original;
                             sequence[component] = output.first;
+                            if (sequence == original)
+                                continue;
                             std::string label = tagName(feature.name);
                             if (output.second > 1)
                                 label += " " + std::to_string(output.second);
                             merge(seen, matches, whole, sequence, @(label.c_str()), NO);
                         }
+        for (size_t i = 0; i < original.size(); i++)
+            for (NSDictionary *output in [self relatedOutputs:original[i]]) {
+                auto sequence = original;
+                auto replacement = glyphVector(output[@"glyphs"]);
+                sequence.erase(sequence.begin() + i);
+                sequence.insert(sequence.begin() + i, replacement.begin(), replacement.end());
+                merge(seen, matches, whole, sequence, output[@"source"], NO);
+            }
         [self.program.cache setObject:@{@"matches" : matches}
                                forKey:key
                                  cost:glyphIDs.count * 2 + matches.count * 128];

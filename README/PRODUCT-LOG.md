@@ -418,3 +418,18 @@ Performance findings: reverse alternate-family lookup is indexed once per resour
 Universal arm64/x86_64 builds complete without warnings, targeting macOS 12.0. Final unsigned universal link output is 1,027,776 bytes, signed app executable 1,078,688 bytes, and ZIP 706,289 bytes. The previous optimized HarfBuzz branch measured 1,899,136 / 1,950,048 / 1,173,542 bytes respectively. Both linker maps and exported symbols contain no HarfBuzz. Old's 81 baseline files remain byte-for-byte unchanged.
 
 Runtime tests ran on arm64; x86_64 was compiled only. No GUI, NSApplication smoke test, app launch, installation or ZIP extraction verification was performed. GUI acceptance remains with the user. Full specialized script shaping and advanced positioning formats have explicit limits in GLOSSARY; supported lookup types are not a claim of complete HarfBuzz behavior equivalence.
+
+
+## Context-independent glyph candidates and sidebar fixes — 2026-10-25
+
+A GSUB catalogue now follows feature-reachable lookup actions for each queried input GID, across every FeatureVariations branch. Context actions retain the affected input position: LucidaSubmono `W` lists `W.w0` and `W.w1` without typing `i`, with `calt` provenance, and excludes the neighboring `i.t1`. Literal unencoded seeds use the same catalogue. Potential single-glyph candidates keep a single source range; actual cross-character combinations still require execution against the real paragraph/selected GIDs. This is a table-edge catalogue, not general symbolic execution of every combination; complex ambiguous nested length-changing programs and AAT state machines still depend on the actual-context executor. The detailed boundary is recorded in GLOSSARY.
+
+Default/base results retain recorded feature sources through discovery, model merging and selection display. Known tags replace synthetic `actual`, and source labels are displayed verbatim in all languages. The old `actual` localization key was removed from all thirteen catalogs. `actual` is an application fallback, never a claimed GSUB feature.
+
+The sidebar table uses a frame-sized document view, invalidates delegate row heights after reload, realizes its last row, and uses NSClipView's own bounds constraint for scrolling. No GUI was used; the user will verify actual long-list scrolling.
+
+CLI validation: 351 substitution/resource assertions, 373 additional layout assertions, 46 model assertions, 7 display-data assertions, and 31,751 core checks over 24,731 deterministic truncated/mutated executions. ASan/UBSan passed 103 fixture fonts and selected-GID neighbor paths; mutation tests now exercise the new catalogue too. All thirteen localization catalogs pass with 75 strings plus one plural entry. Old's 81 baseline files remain unchanged.
+
+The universal release built without warnings for arm64 and x86_64 (only arm64 execution was tested). Unsigned executable: 1,044,448 bytes; signed bundle executable: 1,111,744 bytes; ZIP: 717,817 bytes. The temporary staging bundle passed strict signing verification before archiving. After copying back to this FileProvider directory, FinderInfo metadata is reattached to the loose app root and a second strict check there rejects that metadata; clearing it did not prevent reattachment. The ZIP was created directly from the verified staging app; no extraction validation was performed, as requested. No GUI, installation or push occurred.
+
+A separate optional cleanup audit is in CLEANUP-REVIEW.md; the four items are awaiting the user's selection and were not silently folded into these fixes.

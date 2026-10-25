@@ -401,7 +401,9 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
     GASidebarTableView *tableView = [[GASidebarTableView alloc] initWithFrame:NSZeroRect];
     tableView.sidebarController = self;
     self.tableView = tableView;
-    self.tableView.translatesAutoresizingMaskIntoConstraints = NO;
+    self.tableView.autoresizingMask = NSViewWidthSizable;
+    self.tableView.usesAutomaticRowHeights = NO;
+    self.tableView.rowHeight = 44;
     self.tableView.headerView = nil;
     self.tableView.style = NSTableViewStyleSourceList;
     self.tableView.rowSizeStyle = NSTableViewRowSizeStyleCustom;
@@ -945,10 +947,9 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
 
 - (void)scrollClipViewToY:(CGFloat)y {
     NSClipView *clipView = self.scrollView.contentView;
-    CGFloat maximum = MAX(0.0, self.tableView.frame.size.height -
-                               clipView.bounds.size.height);
-    y = MIN(MAX(0.0, y), maximum);
-    [clipView scrollToPoint:NSMakePoint(clipView.bounds.origin.x, y)];
+    NSRect bounds = clipView.bounds;
+    bounds.origin.y = y;
+    [clipView scrollToPoint:[clipView constrainBoundsRect:bounds].origin];
     [self.scrollView reflectScrolledClipView:clipView];
 }
 
@@ -1082,7 +1083,7 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
     self.rows = GARowsForGroups(groups);
 
     self.suppressSelectionCallback = YES;
-    [self.tableView reloadData];
+    [self reloadTableGeometry];
 
     BOOL hasPending = self.pendingSelectionGlyphKey.length > 0;
     if (hasPending) {
@@ -1154,7 +1155,7 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
     self.rows = GARowsForGroups(groups);
 
     self.suppressSelectionCallback = YES;
-    [self.tableView reloadData];
+    [self reloadTableGeometry];
 
     BOOL hasPending = self.pendingSelectionGlyphKey.length > 0;
     if (hasPending) {
@@ -1193,21 +1194,32 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
     [self restoreScrollOrigin:scrollOrigin];
 }
 
+- (void)reloadTableGeometry {
+    [self.tableView reloadData];
+    if (self.rows.count) {
+        [NSAnimationContext beginGrouping];
+        NSAnimationContext.currentContext.duration = 0;
+        NSIndexSet *allRows = [NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, self.rows.count)];
+        [self.tableView noteHeightOfRowsWithIndexesChanged:allRows];
+        [NSAnimationContext endGrouping];
+        // rectOfRow: realizes the final row before a scroll position is clamped.
+        [self.tableView rectOfRow:(NSInteger)self.rows.count - 1];
+    }
+    [self.tableView tile];
+}
+
 - (void)restoreScrollOrigin:(NSPoint)origin {
-    CGFloat maxY = MAX(0.0, self.tableView.frame.size.height -
-                            self.scrollView.contentView.bounds.size.height);
-    CGFloat maxX = MAX(0.0, self.tableView.frame.size.width -
-                            self.scrollView.contentView.bounds.size.width);
-    NSPoint clamped = NSMakePoint(MIN(MAX(0.0, origin.x), maxX),
-                                  MIN(MAX(0.0, origin.y), maxY));
-    [self.scrollView.contentView scrollToPoint:clamped];
+    NSClipView *clip = self.scrollView.contentView;
+    NSRect bounds = clip.bounds;
+    bounds.origin = origin;
+    [clip scrollToPoint:[clip constrainBoundsRect:bounds].origin];
     [self.scrollView reflectScrolledClipView:self.scrollView.contentView];
 }
 
 - (void)reloadRowsPreservingSelection {
     NSInteger selectedRow = self.tableView.selectedRow;
     self.suppressSelectionCallback = YES;
-    [self.tableView reloadData];
+    [self reloadTableGeometry];
     if (selectedRow >= 0 && selectedRow < (NSInteger)self.rows.count) {
         [self.tableView selectRowIndexes:[NSIndexSet indexSetWithIndex:(NSUInteger)selectedRow]
                     byExtendingSelection:NO];

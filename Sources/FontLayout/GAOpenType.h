@@ -57,6 +57,11 @@ struct Settings {
     std::map<Tag, unsigned> features;
     bool vertical = false, rtl = false;
 };
+struct RelatedSubstitution {
+    std::vector<Glyph> glyphs;
+    Tag feature = 0;
+    unsigned value = 1;
+};
 struct LookupStep {
     unsigned lookup = 0, value = 1;
     Tag feature = 0;
@@ -86,6 +91,7 @@ class OpenType {
     std::vector<LookupStep> plan(const Settings &settings, size_t branch = 0) const;
     std::vector<std::pair<Glyph, unsigned>> family(Glyph seed, unsigned lookup,
                                                    const GDEF &gdef) const;
+    std::vector<RelatedSubstitution> relatedSubstitutions(Glyph seed, const GDEF &gdef) const;
     void substitute(Buffer &buffer, const GDEF &gdef, const Settings &settings, size_t branch,
                     Trace *trace = nullptr) const;
     void substituteLookups(Buffer &buffer, const GDEF &gdef, const std::vector<LookupStep> &steps,

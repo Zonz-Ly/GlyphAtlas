@@ -59,7 +59,6 @@
 "Glyph canvas" = "Glyphenfläche";
 "Text and alternate glyph list" = "Liste der Zeichen und alternativen Glyphen";
 "CONTROL CHARACTER" = "STEUERZEICHEN";
-"actual" = "tatsächlicher Satz";
 "Help.01" = "Öffne eine Schrift oder ziehe sie auf das App-Fenster oder das Dock-Symbol. Zuletzt benutzte Schriften werden ebenfalls unterstützt.";
 "Help.02" = "Gib ein oder mehrere Zeichen in der Seitenleiste ein, um alle zugehörigen Glyphen zu sehen. Mit ⌥⏎ fügst du einen Zeilenumbruch ein.";
 "Help.03" = "Doppelklicke auf eine Glyphe oder wähle sie aus und drücke Return, um die Standardglyphe zu ersetzen und die Alternativen dieser Glyphe anzuzeigen. Halte dabei die Umschalttaste gedrückt, um die Glyphe hinzuzufügen.";

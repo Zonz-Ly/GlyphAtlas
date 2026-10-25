@@ -41,6 +41,20 @@ for group in ('cases','aat-cases'):
 print('OK: all GSUB types/formats and morx/mort subtable types 0/1/2/4/5',flush=True)
 r=run(F/'nested-alternate.ttf','ab','--shape','--feature','test=2');check(r['glyphs']==[19,3],'nested alternate value two')
 r=run(F/'nested-alternate.ttf','ab');check(any(x['glyphs']==[19] and x['range']==[0,1] for x in r['matches']),'discovers second nested alternate')
+# Context inventory belongs to the affected glyph, independent of typed witnesses.
+for name in ('chain1','chain2','chain3'):
+    r=run(F/(name+'.ttf'),'b')
+    check(any(m['glyphs']==[20] and m['sources']==['test'] for m in r['matches']),name+' context-free affected glyph')
+    check(not any(m['glyphs']==[20] for m in run(F/(name+'.ttf'),'a')['matches']),name+' excludes neighboring output')
+    check(run(F/(name+'.ttf'),'aby','--shape','--feature','test')['glyphs']==[2,3,10],name+' catalogue does not change actual execution')
+for name in ('context-expand','context-delete'):
+    check(any(m['glyphs']==[21] and 'test' in m['sources'] for m in run(F/(name+'.ttf'),'b')['matches']),name+' catalogue follows shifted sequence index')
+r=run(F/'nested-alternate.ttf','a')
+check(any(m['glyphs']==[19] and m['sources']==['test 2'] for m in r['matches']),'nested alternate without neighboring text')
+r=run(F/'reverse.ttf','a')
+check(any(m['glyphs']==[18] and m['sources']==['test'] for m in r['matches']),'reverse context without neighboring text')
+r=run(F/'unencoded-neighbor.ttf','ab','--seed','0:1=19')
+check(any(m['glyphs']==[22] and m['range']==[0,2] and m['sources']==['liga'] for m in r['matches']),'default ligature retains actual feature provenance')
 r=run(F/'ignore-base.ttf','a');check(not any(x['glyphs']==[18] for x in r['matches']),'family index respects GDEF flags')
 for kind in ('truncated','bad-offset','recursive'):
     r=run(F/('malformed-'+kind+'.ttf'),'aba');check('matches' in r,'malformed table handled safely')
@@ -73,6 +87,16 @@ for name,path,cases in fonts:
         scan=run(path,'邊');spec=next(x for x in scan['features'] if x['tag']=='aalt');found={tuple(x['glyphs']) for x in scan['matches']}
         # Check every declared aalt selector against execution, not just a sample.
         for index in range(1,spec['max']+1):check(tuple(run(path,'邊','--shape','--feature',f'aalt={index}')['glyphs']) in found,'Hiragino aalt '+str(index))
+    if name=='LucidaSubmono':
+        w=run(path,'W');i=run(path,'i');wi=run(path,'Wi')
+        wforms={n for m in w['matches'] for n in m['names']}
+        check({'W.w0','W.w1'}<=wforms and 'i.t1' not in wforms and 'W.w2' not in wforms,'W catalogue contains only its own contextual forms')
+        check(not any(n.startswith('W.') for m in i['matches'] for n in m['names']),'i catalogue excludes W forms')
+        check(all(m['sources']==['calt'] for m in w['matches'] if m['names'] in (['W.w0'],['W.w1'])),'context catalogue preserves calt')
+        for names in (['W.w1'],['i.t1']):
+            check(any(m['names']==names and m['sources']==['calt'] for m in wi['matches']),'default Wi preserves calt rather than synthetic actual')
+        model=run(path,'Wi','--model')
+        check(any(v['names']==['W.w1'] and v['sources']==['calt'] for g in model['groups'] for v in g['variants']),'production model preserves base feature provenance')
     if name=='Zapfino':
         scan=run(path,'ffi');found={(tuple(x['range']),tuple(x['names'])) for x in scan['matches']}
         check(((0,3),('ffi',)) in found and ((0,2),('ff',)) in found and ((1,2),('fi',)) in found,'Zapfino overlapping ligatures')

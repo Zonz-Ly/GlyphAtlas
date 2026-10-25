@@ -33,7 +33,7 @@ for axis,offset in [(100,30),(400,40),(900,50)]:
 for font in ('unencoded-neighbor.ttf','morx-unencoded-neighbor.ttf','mort-unencoded-neighbor.ttf'):
     text='ab' if font.startswith('unencoded') else 'ai'
     plain=run(F/font,text)
-    check(not any(m['glyphs']==[22] for m in plain['matches']),'ordinary text does not reach unencoded rule')
+    check(not any(m['glyphs']==[22] and m['range']==[0,2] for m in plain['matches']),'ordinary text does not form unencoded combination')
     literal=run(F/font,text,'--seed','0:1=19')
     check(any(m['glyphs']==[22] and m['range']==[0,2] for m in literal['matches']),'literal seed crosses into neighbor')
 for glyph,want in [(2,None),(3,20)]:

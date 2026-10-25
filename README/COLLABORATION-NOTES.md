@@ -377,3 +377,13 @@ bash Tests/compare-old.sh
 - CLI 例：`.build/gsub-cli --font Tests/Fixtures/unencoded-neighbor.ttf --text ab --seed 0:1=19 --model`。`--seed start:length=gids` 的范围为 UTF-16，支持多项；省略 `--model` 查看引擎原始发现。带种子的 `--model` 会输出生产列表构建器的最终数据。
 - 合并时加入上述两个模块，并合并 worker 的 `updateText:selections:` / `rawScanContent:selections:` 调用。原 UI 持久选择类型从旧文件移到了共享文件；不要重复保留 class 或 attribute 常量定义。
 - 测试矩阵现含 331 个引擎/资源断言、373 个额外布局断言、46 个模型断言和 7 个显示数据断言；额外有纯 C++ 变异执行及 sanitizer。最终构建/体积记录看 PRODUCT-LOG 的最新段落。
+
+
+### 上下文候选与待清理审查（2026-10-25）
+
+- 最新用户澄清：输入 W 时只列出 W 自己在各种上下文中的替换字形，不列整个 Wi 输出，也不是枚举全字体。LucidaSubmono 的 Wi 是 `calt`，结果 W.w1/i.t1；不要凭外观猜 `liga`。
+- 新 `GARelatedSubstitutions.cpp` 与实际 GSUB 执行器分开，沿 feature 可达路径给查询 GID 建立静态候选，并合并所有 FV 分支。没有被 feature 引用的 lookup 不算候选；未编码 GID 一样可查询。能力边界见 GLOSSARY，不要宣称 AAT 已有无上下文全状态目录。
+- 原测试中“没有上下文就没有候选”的断言已改成：单字候选可以存在，但不应凭空产生跨字来源范围的组合。保留实际 shape 的独立断言。
+- 清除默认/base 输出来源是旧版 UI 规则遗留的问题，已修复引擎、模型和显示数据的合并路径。来源用原始 tag；无来源时才保留 `actual`，13 份本地化不再翻译它。
+- 长侧栏重新计算行高和原生可滚范围；GUI 按约定留给用户验收，不写模拟数学测试冒充滚动验收。
+- 用户新要求：额外冗余清理先检查再询问。审查见 CLEANUP-REVIEW.md，已提出异步选择；未收到明确选择前不做这四项可选清理。必要功能修正继续完成。

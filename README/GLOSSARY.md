@@ -514,6 +514,7 @@ buildDisplayGroupsFromBaseGroups:
 | `GACmap` | Unicode cmap 0/2/4/6/8/10/12/13、UVS 14、symbol 与 MacRoman fallback；不回退到其他字体 |
 | `GAGlyphBuffer` | 字面 GID、UTF-16 来源范围、稳定 token 身份、连字组件、变化记录、执行/输出预算；GDEF 过滤 |
 | `GAOpenType` | GSUB/GPOS 的脚本、语言、feature、lookup、上下文模式与 FeatureVariations 程序；alternate 反向 family 索引只建一次 |
+| `GARelatedSubstitutions` | 按查询 GID 遍历 feature 可达的 GSUB 动作，映射嵌套动作的目标位置；不要求输入上下文，合并全部 FeatureVariations 分支 |
 | `GASubstitution` | GSUB 1–8；嵌套动作按每次替换后的输入位置执行，处理一对多、零输出、过滤、反向链与递归保护 |
 | `GAAAT` | Apple lookup 0/2/4/6/8/10；morx/mort 0/1/2/4/5、16 种重排、状态/标记/栈/插入、方向、段尾动作和 chain selectors |
 | `GAPositioning` | GPOS 1–9：单字/成对/连写/mark 附着及上下文定位；定位路径没有替换操作 |
@@ -524,7 +525,7 @@ buildDisplayGroupsFromBaseGroups:
 | `GADisplayGroups` | 独立于窗口的列表数据构建；保留跨选择范围的新连字与选择字形本身的上下文结果，只对同来源/同 GID 的重复结果去重 |
 | `GASubstitutionEngine.mm` | Objective-C 接口、CoreText 表字节/原生 advance 适配、资源共享、发现策略、来源合并和 NSCache；没有 CTLine/CTRun 扫描 |
 
-每个字体资源共享不可变表程序及 family 索引；每次执行独立持有 buffer、状态、预算。切轴只绑定新的 CTFont/原生度量与定位，沿用条件并集缓存、GID、列表顺序和选择。缓存为 NSCache（2048 项/32 MiB 软限制）。解析/执行失败通过线程安全 `diagnostics` 暴露，损坏的可选定位程序回退到原生 advance，不在后台线程抛出未处理异常。
+每个字体资源共享不可变表程序及 family 索引；每次执行独立持有 buffer、状态、预算。切轴只绑定新的 CTFont/原生度量与定位，沿用条件并集缓存、GID、列表顺序和选择。文字/字面查询缓存为 NSCache（2048 项/32 MiB 软限制）；按 GID 的静态候选目录另用 NSCache（2048 项/16 MiB 软限制）。解析/执行失败通过线程安全 `diagnostics` 暴露，损坏的可选定位程序回退到原生 advance，不在后台线程抛出未处理异常。
 
 文字查询仍是不同单字与每段一个多字任务。GSUB 在实际匹配时记录前文/输入/后文范围；AAT 使用状态转换、标记、栈和段尾动作记录相依岛，再只枚举岛内的 grapheme 窗口。相依范围可能覆盖整段，没有人为的上下文长度截断。feature/selector 分别枚举，不穷举所有可选设置的笛卡尔积。
 
@@ -541,3 +542,14 @@ buildDisplayGroupsFromBaseGroups:
 旧 `GAOTProgram`、HarfBuzz callback、identity-cmap seed、CoreText feature-font 扫描及 `Sources/GASubstitutionEngine.m` 都属于上一版；当前接口实现为 `.mm`，对应 private core 位于 `Sources/FontLayout/`。
 
 规范来源：[OpenType common formats](https://learn.microsoft.com/en-us/typography/opentype/spec/chapter2)、[GSUB](https://learn.microsoft.com/en-us/typography/opentype/spec/gsub)、[GPOS](https://learn.microsoft.com/en-us/typography/opentype/spec/gpos)、[Apple morx](https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6morx.html)、[Apple mort](https://developer.apple.com/fonts/TrueType-Reference-Manual/RM06/Chap6mort.html)。
+
+
+### 单字的上下文候选与来源（2026-10-25）
+
+GSUB 查询增加与当前上下文无关的候选目录：从原始输入 GID 出发，只沿 feature 关联的 lookup/嵌套动作读取输出，保留动作针对的输入位置。输入 LucidaSubmono 的 `W` 即可列出 `W.w0`、`W.w1`（`calt`），不需要输入 `i`；不会把 `i.t1` 或整对 `W.w1+i.t1` 放到 W 的单字行。没有 feature 路径引用的孤立 lookup 不作为候选。目录包含所有 GSUB FeatureVariations 分支，切轴不重扫。
+
+静态候选与实际组合分开：单字的潜在替换并不代表原文已满足上下文或形成连字；真实跨字组合仍由段落执行产生，保留完整来源范围。目录读取直接替换边，不是任意 feature 组合或上下文程序的通用符号执行器；嵌套动作中此前的直接一对多/删除，在输入可唯一确定时更新 SequenceIndex 的原始归属。复杂多候选/多阶段长度变化仍由实际上下文执行处理。morx/mort 继续使用其状态机执行路径，尚没有无上下文的全状态静态目录。
+
+`actual` 是应用的备援标记，不是 GSUB feature tag。执行 Trace/静态目录有 `liga`、`calt` 等来源时直接保留，默认输出与基础候选也不再清掉来源；已知来源会替换 `actual`。所有来源均原文显示，`actual` 也不翻译。
+
+侧栏的表格 document view 使用原生 frame/autoresizing 布局；reload 后显式失效所有行高并 tile，滚动范围由 NSClipView 的 constrainBoundsRect: 计算。该修复已编译，实际长列表滚动由用户做 GUI 验收；本轮没有启动窗口。

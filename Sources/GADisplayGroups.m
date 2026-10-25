@@ -76,8 +76,7 @@ NSArray<GACharacterGroup *> *GABuildDisplayGroups(NSArray<GACharacterGroup *> *g
                             break;
                         }
                     if (existing) {
-                        if (!existing.base)
-                            [existing addFeatureSources:candidate.featureSources];
+                        [existing addFeatureSources:candidate.featureSources];
                         continue;
                     }
                     GAGlyphVariant *copy = [document rebindVariant:candidate
