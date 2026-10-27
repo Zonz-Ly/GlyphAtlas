@@ -8,7 +8,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly) BOOL showsMetrics;
 @property (nonatomic, readonly) NSTextAlignment textAlignment;
 @property (nonatomic, readonly) BOOL verticalWriting;
-/// Both optional native shaping switches default to NO.
+/// Both optional native shaping switches default to YES.
 @property(nonatomic, readonly) BOOL usesContextualAlternates;
 @property(nonatomic, readonly) BOOL usesLigatures;
 - (void)loadFontAtURL:(NSURL *)url;

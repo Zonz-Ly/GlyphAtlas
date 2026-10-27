@@ -13,20 +13,20 @@ struct AATSelector {
 };
 class AAT {
     struct Subtable {
-        unsigned type = 0;
-        uint32_t coverage = 0, flags = 0;
+        unsigned type;
+        uint32_t coverage, flags;
         View data;
     };
     struct Feature {
         AATSelector selector;
-        uint32_t enable = 0, disable = 0;
+        uint32_t enable, disable;
     };
     struct Chain {
-        uint32_t defaults = 0;
+        uint32_t defaults;
         std::vector<Feature> features;
         std::vector<Subtable> subtables;
     };
-    bool extended_ = true;
+    bool extended_;
     std::vector<Chain> chains_;
     std::vector<AATSelector> selectors_;
 

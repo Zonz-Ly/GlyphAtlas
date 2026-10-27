@@ -100,7 +100,7 @@ AAT::AAT(View table, bool extended) : extended_(extended) {
 }
 namespace {
 struct Entry {
-    unsigned state = 0, flags = 0, first = 0xffff, second = 0xffff;
+    unsigned state, flags, first = 0xffff, second = 0xffff;
 };
 class Machine {
     View data_;
@@ -326,8 +326,7 @@ class Runner {
                 pending = {pos};
             }
             if (value & 0x80000000) {
-                if (!pending.empty())
-                    stack_.push_back(buffer_[pending.back()].identity);
+                stack_.push_back(buffer_[pending.back()].identity);
                 break;
             }
         }

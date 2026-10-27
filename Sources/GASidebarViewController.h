@@ -22,12 +22,10 @@ typedef NS_ENUM(NSInteger, GAPendingSelectionScroll) {
 /// Selected range in the field editor, or NSNotFound when the field is not
 /// being edited.
 @property (nonatomic, readonly) NSRange inputSelectionRange;
+/// Whether the sidebar input's field editor is its window's first responder.
+@property (nonatomic, readonly, getter=isInputFocused) BOOL inputFocused;
 
 - (void)setAttributedText:(NSAttributedString *)attributedText;
-/// Rebinds the same visual row sequence, including shifted source ranges,
-/// without reloading the table, changing the selected row or scrolling.
-/// Returns NO if the inventory changed or a normal activation is pending.
-- (BOOL)updateGroupsWithSameRows:(NSArray<GACharacterGroup *> *)groups;
 - (void)setGroups:(NSArray<GACharacterGroup *> *)groups;
 /// Publishes a text/list snapshot, preserving visible rows across source edits.
 - (void)updateGroups:(NSArray<GACharacterGroup *> *)groups sourceText:(NSString *)text;
@@ -51,6 +49,8 @@ typedef NS_ENUM(NSInteger, GAPendingSelectionScroll) {
 /// the window can keep line breaks as marked U+23CE characters.
 - (nullable NSTextView *)fieldEditorForControl:(id _Nullable)control;
 - (void)focusInput;
+/// Return focus to the sidebar glyph list.
+- (void)focusGlyphList;
 - (void)setGlyphListDimmed:(BOOL)dimmed;
 
 @end

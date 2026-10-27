@@ -3,6 +3,27 @@
 #import "GAGlyphViews.h"
 #import "GAUnicode.h"
 
+@interface GARowItem : NSObject
+@property (nonatomic, strong, nonnull) GACharacterGroup *group;
+@property (nonatomic, strong, nonnull) GAGlyphVariant *variant;
+@end
+
+@implementation GARowItem
+@end
+
+static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups) {
+    NSMutableArray<GARowItem *> *rows = [NSMutableArray array];
+    for (GACharacterGroup *group in groups) {
+        for (GAGlyphVariant *variant in group.variants) {
+            GARowItem *variantRow = [[GARowItem alloc] init];
+            variantRow.group = group;
+            variantRow.variant = variant;
+            [rows addObject:variantRow];
+        }
+    }
+    return rows;
+}
+
 @interface GASidebarViewController (CommandArrowNavigation)
 - (void)selectCurrentGroupBase;
 - (void)selectNextGroupBase;
@@ -30,8 +51,9 @@
         return;
     }
     if (commandOnly &&
-        [event.charactersIgnoringModifiers.lowercaseString isEqualToString:@"c"]) {
-        [self.sidebarController copySelectedGlyphEncoding];
+        [event.charactersIgnoringModifiers.lowercaseString isEqualToString:@"c"] &&
+        ![self.sidebarController selectedGlyphHasEncoding]) {
+        NSBeep();
         return;
     }
     if (commandOnly && event.keyCode == 126) { // Command-Up
@@ -79,6 +101,10 @@
 @property (nonatomic, strong, nullable) NSLayoutConstraint *searchTopConstraint;
 @property (nonatomic) BOOL suppressTextChangeCallback;
 @property (nonatomic, strong, nullable) GASearchFieldEditor *searchFieldEditor;
+/// Rebinds the same visual row sequence, including shifted source ranges,
+/// without reloading the table, changing the selected row or scrolling.
+/// Returns NO if the inventory changed or a normal activation is pending.
+- (BOOL)updateGroupsWithSameRows:(NSArray<GACharacterGroup *> *)groups;
 @end
 
 // Map unchanged source spans across the edit between two published texts.
@@ -222,7 +248,7 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
 }
 
 /// Returns only the attributes this app understands: the default font,
-/// the app-owned foreground color, and selection runs. Everything else
+/// the app-owned foreground color, selection runs, and line-break markers. Everything else
 /// (pasted colors, backgrounds, paragraph styles, links, attachments) is
 /// discarded.
 - (NSAttributedString *)plainCopyOfAttributedText:(NSAttributedString *)text {
@@ -315,6 +341,11 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
     return editor != nil ? editor.selectedRange : NSMakeRange(NSNotFound, 0);
 }
 
+- (BOOL)isInputFocused {
+    NSText *editor = self.searchField.currentEditor;
+    return editor != nil && self.searchField.window.firstResponder == editor;
+}
+
 - (void)setAttributedText:(NSAttributedString *)attributedText {
     NSAttributedString *fieldText = GAFieldTextFromModelText(attributedText);
     NSAttributedString *normalized = [self plainCopyOfAttributedText:fieldText];
@@ -343,7 +374,7 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
 - (void)selectGlyphKeyAfterNextReload:(NSString *)glyphKey
                             textRange:(NSRange)textRange
                                scroll:(GAPendingSelectionScroll)scroll {
-    self.pendingSelectionGlyphKey = [glyphKey copy];
+    self.pendingSelectionGlyphKey = glyphKey;
     self.pendingSelectionTextRange = textRange;
     self.pendingSelectionScroll = scroll;
 }
@@ -359,9 +390,6 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
     NSInteger row = self.tableView.selectedRow;
     if (row < 0 || row >= (NSInteger)self.rows.count) return nil;
     GARowItem *item = self.rows[(NSUInteger)row];
-    if (item.variant == nil || item.group == nil) {
-        return nil;
-    }
     return item;
 }
 
@@ -369,7 +397,6 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
                  modifiers:(NSEventModifierFlags)modifiers {
     if (row < 0 || row >= (NSInteger)self.rows.count) return;
     GARowItem *item = self.rows[(NSUInteger)row];
-    if (item.variant == nil || item.group == nil) return;
     if (GAModifiersAre(modifiers, NSEventModifierFlagShift)) {
         if (self.onGlyphShiftActivated) {
             self.onGlyphShiftActivated(item.group, item.variant);
@@ -434,6 +461,10 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
     [self prepareFieldEditor];
 }
 
+- (void)focusGlyphList {
+    [self.tableView.window makeFirstResponder:self.tableView];
+}
+
 /// The window asks for a field editor when a control starts editing. Only the
 /// search field gets the custom editor; other controls keep the default one.
 - (NSTextView *)fieldEditorForControl:(id)control {
@@ -476,12 +507,9 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
 - (BOOL)control:(NSControl *)control
     textView:(NSTextView *)textView
     doCommandBySelector:(SEL)commandSelector {
-    if (commandSelector == @selector(cancelOperation:)) {
-        [self.tableView.window makeFirstResponder:self.tableView];
-        return YES;
-    }
-    if (commandSelector == @selector(insertNewline:)) {
-        [self.tableView.window makeFirstResponder:self.tableView];
+    if (commandSelector == @selector(cancelOperation:) ||
+        commandSelector == @selector(insertNewline:)) {
+        [self focusGlyphList];
         return YES;
     }
     if (commandSelector == @selector(insertNewlineIgnoringFieldEditor:)) {
@@ -513,9 +541,6 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
         return;
     }
     GARowItem *item = self.rows[(NSUInteger)row];
-    if (item.group == nil) {
-        return;
-    }
     NSUInteger groupIndex = [self.groups indexOfObjectIdenticalTo:item.group];
     if (groupIndex == NSNotFound) return;
     if (item.variant.isBase) {
@@ -535,9 +560,6 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
         return;
     }
     GARowItem *item = self.rows[(NSUInteger)row];
-    if (item.group == nil) {
-        return;
-    }
     NSUInteger groupIndex = [self.groups indexOfObjectIdenticalTo:item.group];
     if (groupIndex != NSNotFound && groupIndex + 1 < self.groups.count) {
         [self selectBaseRowForGroupAtIndex:groupIndex + 1];
@@ -580,19 +602,6 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
         }
     }
     return NSNotFound;
-}
-
-static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups) {
-    NSMutableArray<GARowItem *> *rows = [NSMutableArray array];
-    for (GACharacterGroup *group in groups) {
-        for (GAGlyphVariant *variant in group.variants) {
-            GARowItem *variantRow = [[GARowItem alloc] init];
-            variantRow.group = group;
-            variantRow.variant = variant;
-            [rows addObject:variantRow];
-        }
-    }
-    return rows;
 }
 
 /// Finds the group at an exact source range.
@@ -703,21 +712,11 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
     GACharacterGroup *group = self.rows[(NSUInteger)row].group;
     NSInteger first = row;
     NSInteger last = row;
-    if (group != nil) {
-        first = NSNotFound;
-        last = NSNotFound;
-        for (NSInteger index = 0; index < (NSInteger)self.rows.count; index++) {
-            if (self.rows[(NSUInteger)index].group == group) {
-                if (first == NSNotFound) {
-                    first = index;
-                }
-                last = index;
-            }
+    for (NSInteger index = 0; index < (NSInteger)self.rows.count; index++) {
+        if (self.rows[(NSUInteger)index].group == group) {
+            first = MIN(first, index);
+            last = index;
         }
-    }
-    if (first == NSNotFound || last == NSNotFound) {
-        [self.tableView scrollRowToVisible:row];
-        return;
     }
     [self.tableView rectOfRow:first];
     [self.tableView rectOfRow:last];
@@ -978,7 +977,7 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
     if (same) {
         return;
     }
-    self.lastNotifiedGlyphKey = [key copy];
+    self.lastNotifiedGlyphKey = key;
     self.lastNotifiedRange = range;
     self.onSelectionChanged(self.selectedVariant);
 }

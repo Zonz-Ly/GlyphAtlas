@@ -1,4 +1,6 @@
 #import "GATextPreparation.h"
+#import "GAGlyphSelection.h"
+#include "GACmap.h"
 #include <cctype>
 extern "C" {
 int32_t uscript_getScript(int32_t, int32_t *);
@@ -12,7 +14,7 @@ uint8_t ubidi_getLevelAt(const void *, int32_t);
 void ubidi_close(void *);
 }
 namespace ga::layout {
-Tag scriptTag(NSString *name) {
+static Tag scriptTag(NSString *name) {
     std::string s = name.UTF8String ?: "";
     if (s.size() != 4)
         return tag('D', 'F', 'L', 'T');
@@ -26,27 +28,6 @@ Tag scriptTag(NSString *name) {
     if (s == "zyyy" || s == "zinh" || s == "zzzz" || s == "dflt")
         return tag('D', 'F', 'L', 'T');
     return tag(s);
-}
-Tag languageTag(NSString *name) {
-    if (!name.length)
-        return 0;
-    std::string language = name.UTF8String ?: "";
-    if (language.size() == 4) {
-        std::transform(language.begin(), language.end(), language.begin(),
-                       [](unsigned char c) { return char(std::toupper(c)); });
-        return tag(language);
-    }
-    // OT language tags that do not follow the language's ISO spelling.
-    static const std::map<std::string, std::string> known = {
-        {"en", "ENG "},      {"ja", "JAN "},      {"ko", "KOR "},    {"zh", "ZHS "},
-        {"zh-Hans", "ZHS "}, {"zh-Hant", "ZHT "}, {"zh-TW", "ZHT "}, {"zh-HK", "ZHH "},
-        {"bg", "BGR "},      {"sr", "SRB "},      {"ru", "RUS "},    {"ar", "ARA "},
-        {"fa", "FAR "},      {"ur", "URD "},      {"he", "IWR "},    {"tr", "TRK "},
-        {"de", "DEU "},      {"fr", "FRA "},      {"el", "ELL "},    {"hi", "HIN "},
-        {"th", "THA "},      {"vi", "VIT "},      {"es", "ESP "},    {"it", "ITA "},
-        {"pt", "PTG "},      {"pl", "PLK "},      {"nl", "NLD "},    {"ro", "ROM "}};
-    auto found = known.find(language);
-    return found == known.end() ? 0 : tag(found->second);
 }
 static std::vector<uint32_t> scalars(NSString *text) {
     std::vector<uint32_t> result;
@@ -99,7 +80,7 @@ std::vector<TextRun> prepareText(NSString *text, const Cmap &cmap,
         // composition is useful for combining sequences, but must not erase an
         // explicitly selected glyph that the font can represent.
         if (!original.empty() && cmap.nominal(original.front()) &&
-            (original.size() == 1 || (original.size() > 1 && variationSelector(original[1]))))
+            (original.size() == 1 || variationSelector(original[1])))
             composed = source;
         auto values = scalars(composed);
         bool supported = true;
@@ -196,7 +177,7 @@ std::vector<TextRun> prepareText(NSString *text, const Cmap &cmap,
             paragraphStart = true;
             continue;
         }
-        if (paragraphStart || runs.empty() || runs.back().script != group.script ||
+        if (paragraphStart || runs.back().script != group.script ||
             runs.back().level != group.level)
             runs.push_back({{}, group.source, group.script, group.level});
         paragraphStart = false;
@@ -246,31 +227,5 @@ std::vector<TextRun> prepareText(NSString *text, const Cmap &cmap,
         }
     }
     return runs;
-}
-std::vector<size_t> visualRunOrder(const std::vector<TextRun> &runs) {
-    std::vector<size_t> result;
-    unsigned highest = 0, lowestOdd = UINT_MAX;
-    for (size_t i = 0; i < runs.size(); i++) {
-        result.push_back(i);
-        highest = std::max(highest, unsigned(runs[i].level));
-        if (runs[i].level & 1)
-            lowestOdd = std::min(lowestOdd, unsigned(runs[i].level));
-    }
-    if (lowestOdd == UINT_MAX)
-        return result;
-    for (unsigned level = highest;; level--) {
-        for (size_t start = 0; start < result.size();) {
-            while (start < result.size() && runs[result[start]].level < level)
-                start++;
-            size_t end = start;
-            while (end < result.size() && runs[result[end]].level >= level)
-                end++;
-            std::reverse(result.begin() + start, result.begin() + end);
-            start = end;
-        }
-        if (level == lowestOdd)
-            break;
-    }
-    return result;
 }
 } // namespace ga::layout

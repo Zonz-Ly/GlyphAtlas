@@ -2,7 +2,12 @@
 #import <CoreText/CoreText.h>
 #import <Foundation/Foundation.h>
 
+@class GAFontDocument, GAGlyphLayoutRun;
+
 NS_ASSUME_NONNULL_BEGIN
+
+#pragma mark - Display copy
+
 /// Native display settings only. Candidate discovery is independent of these
 /// switches. Keep the native ligature channel enabled; this font controls the
 /// two optional features independently.
@@ -21,4 +26,14 @@ FOUNDATION_EXPORT void
 GAReplaceSeedDisplayRange(NSMutableAttributedString *display,
                           NSMutableArray<NSNumber *> *sourceIndices,
                           NSRange sourceRange, NSAttributedString *replacement);
+
+#pragma mark - Hit mapping
+
+/// Uses TextKit only for line boundaries. Glyph selection uses our table programs.
+FOUNDATION_EXPORT NSArray<GAGlyphLayoutRun *> *
+GAPredictDisplayGlyphRuns(NSTextLayoutManager *layout, NSArray *pins, GAFontDocument *document,
+                          BOOL contextual, BOOL ligatures, BOOL vertical);
+FOUNDATION_EXPORT NSArray<GAGlyphLayoutRun *> *
+GAMapGlyphLayoutRuns(NSArray<GAGlyphLayoutRun *> *hits, NSArray<NSNumber *> *sourceIndices,
+                     NSArray<NSValue *> *atomicRanges, NSString *sourceText);
 NS_ASSUME_NONNULL_END

@@ -33,9 +33,6 @@ FOUNDATION_EXPORT NSString *const GAGlyphSelectionAttributeName;
 @property(nonatomic, strong) GAGlyphSelection *selection;
 @end
 
-/// Fully contained runs, copied with ranges relative to the requested window.
-FOUNDATION_EXPORT NSArray<GAGlyphSelectionRun *> *
-GAGlyphSelectionsInRange(NSArray<GAGlyphSelectionRun *> *runs, NSRange range);
 /// Immutable query identity: text plus ranges and literal GIDs, without labels.
 @interface GAGlyphQueryIdentity : NSObject <NSCopying>
 @end

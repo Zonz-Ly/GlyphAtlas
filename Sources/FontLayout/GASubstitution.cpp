@@ -17,6 +17,13 @@ struct Rule {
     Span scope;
 };
 
+std::string featureLabel(const LookupStep &step) {
+    auto label = tagName(step.feature);
+    if (step.value > 1)
+        label += " " + std::to_string(step.value);
+    return label;
+}
+
 // Replaying a contextual rule with another nested choice preserves all later
 // actions and their updated SequenceIndex mappings, rather than saving a GID
 // snapshot halfway through that rule.
@@ -72,8 +79,7 @@ class Substitution {
     }
     Applied contextual(const Pattern &pattern, const Lookup &lookup, size_t at,
                        const LookupStep &step) {
-        Span scope;
-        auto input = match(pattern, buffer_, at, gdef_, lookup, &scope);
+        auto input = match(pattern, buffer_, at, gdef_, lookup);
         if (!input)
             return {};
         Frame frame{*input};
@@ -86,8 +92,7 @@ class Substitution {
         return {true, next};
     }
     Applied ligate(const Pattern &pattern, const Lookup &lookup, size_t at) {
-        Span scope;
-        auto positions = match(pattern, buffer_, at, gdef_, lookup, &scope);
+        auto positions = match(pattern, buffer_, at, gdef_, lookup);
         if (!positions)
             return {};
         Item ligature = buffer_[at];
@@ -166,8 +171,7 @@ class Substitution {
                 if (result.matched)
                     return result;
             } else if (sub.type == 8) {
-                Span scope;
-                if (!match(pattern, buffer_, at, gdef_, lookup, &scope))
+                if (!match(pattern, buffer_, at, gdef_, lookup))
                     continue;
                 View d = sub.data;
                 size_t p = 6 + d.u16(4) * 2;
@@ -210,9 +214,7 @@ class Substitution {
                 Buffer before = trace_ ? buffer_ : Buffer{};
                 result = subtable(*rule.subtable, lookup, at, step, rule.pattern);
                 if (trace_) {
-                    auto label = tagName(step.feature);
-                    if (step.value > 1) label += " " + std::to_string(step.value);
-                    trace_->changed(before, buffer_, label);
+                    trace_->changed(before, buffer_, featureLabel(step));
                 }
             }
         } else {
@@ -267,9 +269,7 @@ class Substitution {
         Buffer before = buffer_;
         subtable(*rule.subtable, lookups_[step.lookup], at, step, rule.pattern);
         if (trace_) {
-            auto label = tagName(step.feature);
-            if (step.value > 1) label += " " + std::to_string(step.value);
-            trace_->changed(before, buffer_, label);
+            trace_->changed(before, buffer_, featureLabel(step));
         }
         active_.pop_back();
     }
@@ -293,10 +293,7 @@ class Substitution {
                     i = result.matched ? result.next : i + 1;
                 }
             if (trace_) {
-                auto label = tagName(step.feature);
-                if (step.value > 1)
-                    label += " " + std::to_string(step.value);
-                trace_->changed(before, buffer_, label);
+                trace_->changed(before, buffer_, featureLabel(step));
             }
         }
     }

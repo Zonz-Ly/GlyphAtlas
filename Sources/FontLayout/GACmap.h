@@ -5,8 +5,8 @@ namespace ga::layout {
 class Cmap {
     struct Subtable {
         View data;
-        bool symbol = false, macRoman = false;
-        unsigned rank = 0;
+        bool symbol, macRoman;
+        unsigned rank;
     };
     std::vector<Subtable> subtables_;
     View variation_;

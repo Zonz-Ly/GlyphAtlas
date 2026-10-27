@@ -49,7 +49,7 @@ static void predicates(std::vector<Predicate> &result, View table, size_t at, un
             result.push_back(Predicate::covered(table.offset16(at + i * 2)));
     }
 }
-std::vector<Pattern> readContexts(View sub, unsigned type) {
+static std::vector<Pattern> readContexts(View sub, unsigned type) {
     const bool chained = type == 6;
     unsigned format = sub.u16(0);
     std::vector<Pattern> result;
@@ -66,7 +66,7 @@ std::vector<Pattern> readContexts(View sub, unsigned type) {
         cursor += 2;
         if (!input)
             throw InvalidTable("empty context input");
-        unsigned actionCount = 0;
+        unsigned actionCount;
         if (!chained) {
             actionCount = sub.u16(cursor);
             cursor += 2;
@@ -131,7 +131,7 @@ std::vector<Pattern> readContexts(View sub, unsigned type) {
             cursor += 2;
             if (!input)
                 throw InvalidTable("empty context input");
-            unsigned actionCount = 0;
+            unsigned actionCount;
             if (!chained) {
                 actionCount = rule.u16(cursor);
                 cursor += 2;
@@ -253,14 +253,12 @@ static std::vector<Script> readScripts(View list) {
 static void indexPatterns(Subtable &s) {
     for (unsigned i = 0; i < s.patterns.size(); i++) {
         const auto &p = s.patterns[i];
-        if (p.input.empty())
-            continue;
         const auto &first = p.input.front();
         auto glyphs = first.kind == Predicate::Kind::Exact ? std::vector<Glyph>{Glyph(first.value)}
                       : first.kind == Predicate::Kind::Coverage ? first.coverage.glyphs()
                                                                 : p.firstCoverage.glyphs();
         for (Glyph g : glyphs)
-            if (first.matches(g) && (!p.firstCoverage || p.firstCoverage.contains(g)))
+            if (first.matches(g))
                 s.starts[g].push_back(i);
     }
 }

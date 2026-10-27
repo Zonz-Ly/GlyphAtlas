@@ -6,9 +6,22 @@
 
 @interface GADetailContainerView : NSView
 @property (nonatomic, copy, nullable) NSMenu *(^menuProvider)(void);
+@property (nonatomic, copy, nullable) void (^resizeHandler)(void (^changes)(void));
 @end
 
 @implementation GADetailContainerView
+
+- (void)setFrameSize:(NSSize)newSize {
+    if (self.resizeHandler == nil || NSEqualSizes(self.frame.size, newSize)) {
+        [super setFrameSize:newSize];
+        return;
+    }
+    self.resizeHandler(^{
+        [super setFrameSize:newSize];
+        self.needsLayout = YES;
+        [self layoutSubtreeIfNeeded];
+    });
+}
 
 - (NSMenu *)menuForEvent:(NSEvent *)event {
     return self.menuProvider != nil ? self.menuProvider() : nil;
@@ -73,6 +86,16 @@
     }
 
     __weak typeof(self) weakSelf = self;
+    GADetailContainerView *container = (GADetailContainerView *)self.view;
+    container.resizeHandler = ^(void (^changes)(void)) {
+        GADetailViewController *controller = weakSelf;
+        NSScrollView *scrollView = controller.viewMode == GAViewModeMultiCharacter
+            ? controller.multiScrollView : nil;
+        GAPreserveScrollPosition(scrollView, ^{
+            changes();
+            [controller updateMultiLayout];
+        });
+    };
     self.allGlyphsView.onGlyphDoubleClick = ^(GAAllGlyphEntry *entry) {
         if (weakSelf.onAllGlyphDoubleClick != nil) {
             weakSelf.onAllGlyphDoubleClick(entry);

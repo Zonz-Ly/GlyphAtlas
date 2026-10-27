@@ -1,7 +1,11 @@
 #import <Foundation/Foundation.h>
 #import <CoreText/CoreText.h>
+#import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 
 NS_ASSUME_NONNULL_BEGIN
+
+FOUNDATION_EXPORT NSArray<UTType *> *GAFontContentTypes(void);
+FOUNDATION_EXPORT BOOL GAFontURLIsFont(NSURL *url);
 
 @interface GAFontInstance : NSObject
 @property (nonatomic, copy, readonly) NSString *name;

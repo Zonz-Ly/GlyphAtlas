@@ -1,9 +1,11 @@
 #pragma once
 #import <Foundation/Foundation.h>
-#import "GAGlyphSelection.h"
-#include "GACmap.h"
-#include "GAOpenType.h"
+#include "GAGlyphBuffer.h"
+
+@class GAGlyphSelectionRun;
+
 namespace ga::layout {
+class Cmap;
 struct TextRun {
     Buffer glyphs;
     Span source;
@@ -12,7 +14,4 @@ struct TextRun {
 };
 std::vector<TextRun> prepareText(NSString *text, const Cmap &cmap,
                                  NSArray<GAGlyphSelectionRun *> *selections = nil);
-Tag scriptTag(NSString *script);
-Tag languageTag(NSString *language);
-std::vector<size_t> visualRunOrder(const std::vector<TextRun> &runs);
 } // namespace ga::layout

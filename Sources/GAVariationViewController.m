@@ -1,36 +1,26 @@
 #import "GAVariationViewController.h"
+#import "GAFontResource.h"
+#import "GAInputFocus.h"
 #import <math.h>
 
-static const CGFloat GAVariationTopSpacingReduction = 18;
-
-@interface GAVariationSlider : NSSlider
-@property (nonatomic, copy) void (^onTrackingEnded)(void);
-@property (nonatomic, readonly) BOOL trackingVariation;
+@interface GAVariationBackgroundView : NSView
 @end
-@implementation GAVariationSlider
-- (void)mouseDown:(NSEvent *)event {
-    _trackingVariation = YES;
-    [super mouseDown:event];
-    _trackingVariation = NO;
-    if (self.onTrackingEnded) self.onTrackingEnded();
-}
+@implementation GAVariationBackgroundView
+- (BOOL)acceptsFirstResponder { return YES; }
 @end
 
-@interface GAVariationContentView : NSView
+@interface GAVariationContentView : GAVariationBackgroundView
 @end
 @implementation GAVariationContentView
 - (BOOL)isFlipped { return YES; }
 @end
 
 @interface GAVariationViewController () <NSTextFieldDelegate>
-@property (nonatomic) BOOL hasPendingCommit;
-@property (nonatomic, strong) GAFontResource *resource;
+@property (nonatomic, strong, readonly) GAFontResource *resource;
 @property (nonatomic, copy) NSDictionary<NSNumber *, NSNumber *> *coordinates;
 @property (nonatomic, strong) NSPopUpButton *instancePopup;
-@property (nonatomic, strong) NSMutableArray<NSSlider *> *sliders;
-@property (nonatomic, strong) NSMutableArray<NSTextField *> *valueFields;
-@property (nonatomic, strong) NSLayoutConstraint *titlebarReservation;
-@property (nonatomic) CGFloat reservedTitlebarHeight;
+@property (nonatomic, strong, readonly) NSMutableArray<NSSlider *> *sliders;
+@property (nonatomic, strong, readonly) NSMutableArray<NSTextField *> *valueFields;
 @end
 
 @implementation GAVariationViewController
@@ -50,11 +40,10 @@ static const CGFloat GAVariationTopSpacingReduction = 18;
     CGFloat width = 320;
     CGFloat axisHeight = 48;
     CGFloat contentHeight = self.resource.axes.count * axisHeight;
-    NSRect titlebarFrame = [NSWindow frameRectForContentRect:NSMakeRect(0, 0, width, 100)
-                                                  styleMask:NSWindowStyleMaskTitled];
-    self.reservedTitlebarHeight = NSHeight(titlebarFrame) - 100;
-    CGFloat height = 100 + MIN(contentHeight, axisHeight * 5) + self.reservedTitlebarHeight;
-    self.view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, width, height)];
+    CGFloat height = 100 + MIN(contentHeight, axisHeight * 5);
+    GAVariationBackgroundView *background = [[GAVariationBackgroundView alloc]
+        initWithFrame:NSMakeRect(0, 0, width, height)];
+    self.view = background;
     self.view.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
     self.instancePopup = [[NSPopUpButton alloc] initWithFrame:NSZeroRect pullsDown:NO];
     self.instancePopup.translatesAutoresizingMaskIntoConstraints = NO;
@@ -83,7 +72,6 @@ static const CGFloat GAVariationTopSpacingReduction = 18;
         [content.topAnchor constraintEqualToAnchor:scroll.contentView.topAnchor],
         [content.widthAnchor constraintEqualToAnchor:scroll.contentView.widthAnchor],
     ]];
-    NSLayoutGuide *axisMargins = content.layoutMarginsGuide;
     NSMutableArray<NSView *> *rows = [NSMutableArray array];
     for (NSUInteger i = 0; i < self.resource.axes.count; i++) {
         NSDictionary *axis = self.resource.axes[i];
@@ -100,21 +88,19 @@ static const CGFloat GAVariationTopSpacingReduction = 18;
         label.toolTip = name;
         [label setContentCompressionResistancePriority:NSLayoutPriorityDefaultLow forOrientation:NSLayoutConstraintOrientationHorizontal];
         [row addSubview:label];
-        GAVariationSlider *slider = [GAVariationSlider sliderWithValue:minimum minValue:minimum maxValue:maximum target:self action:@selector(changeSlider:)];
+        NSSlider *slider = [NSSlider sliderWithValue:minimum minValue:minimum maxValue:maximum target:self action:@selector(changeAxisValue:)];
         slider.translatesAutoresizingMaskIntoConstraints = NO;
         slider.tag = (NSInteger)i;
         slider.continuous = YES;
-        __weak typeof(self) weakSelf = self;
-        slider.onTrackingEnded = ^{ [weakSelf publishCoordinates:weakSelf.coordinates committed:YES]; };
         slider.enabled = maximum > minimum;
         slider.accessibilityLabel = name;
         [row addSubview:slider];
         [self.sliders addObject:slider];
-        NSTextField *value = [[NSTextField alloc] initWithFrame:NSZeroRect];
+        NSTextField *value = [[GAInputTextField alloc] initWithFrame:NSZeroRect];
         value.translatesAutoresizingMaskIntoConstraints = NO;
         value.tag = (NSInteger)i;
         value.target = self;
-        value.action = @selector(changeValue:);
+        value.action = @selector(changeAxisValue:);
         value.delegate = self;
         value.cell.sendsActionOnEndEditing = YES;
         value.alignment = NSTextAlignmentRight;
@@ -129,35 +115,33 @@ static const CGFloat GAVariationTopSpacingReduction = 18;
         [row addSubview:value];
         [self.valueFields addObject:value];
         [NSLayoutConstraint activateConstraints:@[
-            [row.leadingAnchor constraintEqualToAnchor:axisMargins.leadingAnchor],
-            [row.trailingAnchor constraintEqualToAnchor:axisMargins.trailingAnchor],
+            [row.leadingAnchor constraintEqualToAnchor:content.leadingAnchor constant:20],
+            [row.trailingAnchor constraintEqualToAnchor:content.trailingAnchor constant:-20],
             [label.leadingAnchor constraintEqualToAnchor:row.leadingAnchor],
             [label.firstBaselineAnchor constraintEqualToAnchor:value.firstBaselineAnchor],
             [value.leadingAnchor constraintGreaterThanOrEqualToSystemSpacingAfterAnchor:label.trailingAnchor multiplier:1],
             [value.trailingAnchor constraintEqualToAnchor:row.trailingAnchor],
             [value.topAnchor constraintEqualToAnchor:row.topAnchor],
-            [value.widthAnchor constraintEqualToConstant:70],
+            [value.widthAnchor constraintEqualToConstant:75],
             [slider.leadingAnchor constraintEqualToAnchor:row.leadingAnchor],
             [slider.trailingAnchor constraintEqualToAnchor:row.trailingAnchor],
-            [slider.topAnchor constraintEqualToSystemSpacingBelowAnchor:value.bottomAnchor multiplier:0.25],
+            [slider.topAnchor constraintEqualToAnchor:value.bottomAnchor constant:4],
             [slider.bottomAnchor constraintEqualToAnchor:row.bottomAnchor],
         ]];
         if (i == 0) {
-            [row.topAnchor constraintEqualToAnchor:axisMargins.topAnchor constant:-10].active = YES;
+            [row.topAnchor constraintEqualToAnchor:content.topAnchor constant:12].active = YES;
         } else {
-            [row.topAnchor constraintEqualToSystemSpacingBelowAnchor:rows[i - 1].bottomAnchor multiplier:0.25].active = YES;
+            [row.topAnchor constraintEqualToAnchor:rows[i - 1].bottomAnchor constant:4].active = YES;
         }
         if (i + 1 == self.resource.axes.count) {
-            [row.bottomAnchor constraintEqualToAnchor:axisMargins.bottomAnchor constant:15].active = YES;
+            [row.bottomAnchor constraintEqualToAnchor:content.bottomAnchor constant:-18].active = YES;
         }
     }
     NSLayoutGuide *margins = self.view.layoutMarginsGuide;
-    self.titlebarReservation = [self.instancePopup.topAnchor constraintEqualToAnchor:margins.topAnchor
-                                                                          constant:self.reservedTitlebarHeight - GAVariationTopSpacingReduction];
     [NSLayoutConstraint activateConstraints:@[
         [self.instancePopup.leadingAnchor constraintEqualToAnchor:margins.leadingAnchor],
         [self.instancePopup.trailingAnchor constraintEqualToAnchor:margins.trailingAnchor],
-        self.titlebarReservation,
+        [self.instancePopup.topAnchor constraintEqualToAnchor:self.view.topAnchor constant:20],
         [scroll.topAnchor constraintEqualToAnchor:self.instancePopup.bottomAnchor],
         [scroll.leadingAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.leadingAnchor],
         [scroll.trailingAnchor constraintEqualToAnchor:self.view.safeAreaLayoutGuide.trailingAnchor],
@@ -172,16 +156,9 @@ static const CGFloat GAVariationTopSpacingReduction = 18;
     NSLayoutConstraint *viewportHeight = [scroll.heightAnchor constraintEqualToConstant:visibleHeight];
     viewportHeight.active = YES;
     [self.view setFrameSize:NSMakeSize(width, self.view.fittingSize.height)];
-    // The viewport may lose the title bar's height when AppKit detaches it.
-    // Its content is allowed to shrink by exactly that reserved amount.
+    // Fit the initial viewport, then let it adapt to the native window's content size.
     viewportHeight.active = NO;
     [self updateControls];
-}
-
-- (void)didDetachWithPreviousContentHeight:(CGFloat)height {
-    CGFloat consumedHeight = MAX(0, height - NSHeight(self.view.bounds));
-    self.titlebarReservation.constant = MAX(0, self.reservedTitlebarHeight - consumedHeight) - GAVariationTopSpacingReduction;
-    [self.view layoutSubtreeIfNeeded];
 }
 
 - (void)updateControls {
@@ -205,7 +182,21 @@ static const CGFloat GAVariationTopSpacingReduction = 18;
     }
 }
 
+- (void)prepareWindowFocus {
+    self.view.window.initialFirstResponder = self.view;
+    [self focusWindow];
+}
+
+- (void)focusWindow {
+    [self.view.window makeFirstResponder:nil];
+}
+
 - (BOOL)control:(NSControl *)control textView:(NSTextView *)textView doCommandBySelector:(SEL)command {
+    if (command == @selector(insertNewline:) || command == @selector(cancelOperation:)) {
+        // Only request focus loss; leave validation and end editing to AppKit.
+        [self focusWindow];
+        return YES;
+    }
     BOOL up = command == @selector(moveUp:) || command == @selector(moveUpAndModifySelection:);
     BOOL down = command == @selector(moveDown:) || command == @selector(moveDownAndModifySelection:);
     if (!up && !down) return NO;
@@ -218,43 +209,37 @@ static const CGFloat GAVariationTopSpacingReduction = 18;
     BOOL shift = command == @selector(moveUpAndModifySelection:) ||
         command == @selector(moveDownAndModifySelection:);
     double step = shift ? 10 : 1;
-    [self changeAxisAtIndex:(NSUInteger)field.tag value:number.doubleValue + (up ? step : -step) committed:YES];
+    [self changeAxisAtIndex:(NSUInteger)field.tag value:number.doubleValue + (up ? step : -step)];
     textView.string = [formatter stringForObjectValue:field.objectValue] ?: field.stringValue;
     textView.selectedRange = NSMakeRange(0, textView.string.length);
     return YES;
 }
 
-- (void)publishCoordinates:(NSDictionary *)coordinates committed:(BOOL)committed {
-    if ([self.coordinates isEqualToDictionary:coordinates] && !(committed && self.hasPendingCommit)) return;
-    self.hasPendingCommit = !committed;
+- (void)publishCoordinates:(NSDictionary *)coordinates {
+    if ([self.coordinates isEqualToDictionary:coordinates]) return;
     self.coordinates = coordinates;
     [self updateControls];
-    if (self.onCoordinatesChanged) self.onCoordinatesChanged(coordinates, committed);
+    if (self.onCoordinatesChanged) self.onCoordinatesChanged(coordinates);
 }
 
 - (void)selectInstance:(NSPopUpButton *)sender {
     NSInteger i = sender.indexOfSelectedItem - 1;
     if (i >= 0 && i < (NSInteger)self.resource.instances.count) {
-        [self publishCoordinates:self.resource.instances[(NSUInteger)i].coordinates committed:YES];
+        [self publishCoordinates:self.resource.instances[(NSUInteger)i].coordinates];
     }
 }
 
-- (void)changeAxisAtIndex:(NSUInteger)index value:(double)value committed:(BOOL)committed {
+- (void)changeAxisAtIndex:(NSUInteger)index value:(double)value {
     if (!isfinite(value)) return;
     NSDictionary *axis = self.resource.axes[index];
     double minimum = [axis[(__bridge NSString *)kCTFontVariationAxisMinimumValueKey] doubleValue];
     double maximum = [axis[(__bridge NSString *)kCTFontVariationAxisMaximumValueKey] doubleValue];
     NSMutableDictionary *coordinates = [self.coordinates mutableCopy];
     coordinates[axis[(__bridge NSString *)kCTFontVariationAxisIdentifierKey]] = @(MIN(maximum, MAX(minimum, value)));
-    [self publishCoordinates:coordinates committed:committed];
+    [self publishCoordinates:coordinates];
 }
 
-- (void)changeSlider:(NSSlider *)sender {
-    BOOL committed = ![(GAVariationSlider *)sender trackingVariation];
-    [self changeAxisAtIndex:(NSUInteger)sender.tag value:sender.doubleValue committed:committed];
-}
-
-- (void)changeValue:(NSTextField *)sender {
-    [self changeAxisAtIndex:(NSUInteger)sender.tag value:sender.doubleValue committed:YES];
+- (void)changeAxisValue:(NSControl *)sender {
+    [self changeAxisAtIndex:(NSUInteger)sender.tag value:sender.doubleValue];
 }
 @end

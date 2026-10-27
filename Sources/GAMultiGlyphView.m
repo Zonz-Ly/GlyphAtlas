@@ -2,7 +2,6 @@
 #import "GAGlyphCanvasView.h"
 #import "GAUnicode.h"
 #import "GATextDisplay.h"
-#import "GATextHitMap.h"
 #import <CoreText/CoreText.h>
 #import <math.h>
 
@@ -57,14 +56,16 @@ static NSColor *GAResolvedColor(NSColor *color, NSAppearance *appearance) {
 
 @interface GAMultiGlyphView ()
 @property (nonatomic, strong) GAMultiTextView *textView;
-@property (nonatomic, copy) NSString *text;
+@property (nonatomic, copy, readonly) NSString *text;
 @property (nonatomic, copy) NSArray<NSNumber *> *displaySourceIndices;
 @property(nonatomic, copy) NSArray *displayGlyphSelections;
-@property (nonatomic, copy) NSArray<GACharacterGroup *> *groups;
+@property (nonatomic, copy, readonly) NSArray<GACharacterGroup *> *groups;
 @property(nonatomic, copy, nullable) NSArray<GAGlyphLayoutRun *> *glyphHits;
 @property (nonatomic) NSSize pageContentSize;
 @property (nonatomic) CGFloat textScale;
 @property (nonatomic) CGFloat magnificationStartTextScale;
+/// The page in the view's own coordinates, including the current page inset.
+- (NSRect)pageRect;
 @end
 
 @implementation GAMultiGlyphView
@@ -222,10 +223,8 @@ static NSColor *GAResolvedColor(NSColor *color, NSAppearance *appearance) {
 #pragma mark - Layout
 
 - (NSFont *)fontAtSize:(CGFloat)size {
+    // rebuildLayout only calls this with a document.
     GAFontDocument *document = self.document;
-    if (document == nil) {
-        return nil;
-    }
     return (__bridge_transfer NSFont *)GACopyTextDisplayFont(
         document.fontBox.font, size, self.usesContextualAlternates, self.usesLigatures);
 }
@@ -297,10 +296,10 @@ static NSColor *GAResolvedColor(NSColor *color, NSAppearance *appearance) {
     return nil;
 }
 
+// The caller excludes explicit seeds and inserted ligature groups.
 - (nullable NSNumber *)verticalQuoteGlyphForGroup:(GACharacterGroup *)group
                                              font:(NSFont *)font {
-    if (!self.vertical || group.seeded || group.insertedLigature ||
-        group.text.length != 1) {
+    if (!self.vertical || group.text.length != 1) {
         return nil;
     }
     unichar quote = [group.text characterAtIndex:0];

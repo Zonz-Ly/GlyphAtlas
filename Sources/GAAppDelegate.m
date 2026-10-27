@@ -1,6 +1,6 @@
 #import "GAAppDelegate.h"
 #import "GAMainWindowController.h"
-#import "GAFontTypes.h"
+#import "GAFontResource.h"
 
 @interface GAAppDelegate () <NSMenuDelegate>
 @property (nonatomic, strong) NSMutableArray<GAMainWindowController *> *windowControllers;
@@ -411,7 +411,7 @@
     }
     [menu addItem:[NSMenuItem separatorItem]];
 
-    NSMenuItem *metrics = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Show Metrics", @"Show Metrics")
+    NSMenuItem *metrics = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Show Bounding Box", @"Show Bounding Box")
                                                      action:@selector(toggleShowMetrics:)
                                               keyEquivalent:@"4"];
     metrics.target = self;
@@ -430,7 +430,7 @@
     zoomIn.target = self;
     [menu addItem:zoomIn];
     NSMenuItem *metricsZoomIn =
-        [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Metrics Zoom In", @"Metrics Zoom In")
+        [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Bounding Box Zoom In", @"Bounding Box Zoom In")
                                    action:@selector(zoomMetricsIn:)
                             keyEquivalent:@"+"];
     metricsZoomIn.target = self;
@@ -445,7 +445,7 @@
     zoomOut.target = self;
     [menu addItem:zoomOut];
     NSMenuItem *metricsZoomOut =
-        [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Metrics Zoom Out", @"Metrics Zoom Out")
+        [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Bounding Box Zoom Out", @"Bounding Box Zoom Out")
                                    action:@selector(zoomMetricsOut:)
                             keyEquivalent:@"-"];
     metricsZoomOut.target = self;
@@ -597,11 +597,11 @@
     }
     if (action == @selector(toggleShowMetrics:)) {
         item.state = controller.showsMetrics ? NSControlStateValueOn : NSControlStateValueOff;
-        return controller.viewMode != GAViewModeAllGlyphs;
+        return GAViewModeSupportsMetrics(controller.viewMode);
     }
     if (action == @selector(zoomMetricsIn:) ||
         action == @selector(zoomMetricsOut:)) {
-        return controller.viewMode == GAViewModeMultiCharacter;
+        return GAViewModeSupportsTextLayout(controller.viewMode);
     }
     if (action == @selector(zoomIn:) ||
         action == @selector(zoomOut:) ||
@@ -618,12 +618,12 @@
             case NSTextAlignmentRight: item.title = vertical ? NSLocalizedString(@"Bottom", @"Bottom") : NSLocalizedString(@"Right", @"Right"); break;
             default: item.title = NSLocalizedString(@"Justified", @"Justified"); break;
         }
-        return controller.viewMode == GAViewModeMultiCharacter;
+        return GAViewModeSupportsTextLayout(controller.viewMode);
     }
     if (action == @selector(toggleWritingDirection:)) {
         item.state = controller.verticalWriting
             ? NSControlStateValueOn : NSControlStateValueOff;
-        return controller.viewMode == GAViewModeMultiCharacter;
+        return GAViewModeSupportsTextLayout(controller.viewMode);
     }
     return YES;
 }

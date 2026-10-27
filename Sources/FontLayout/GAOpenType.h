@@ -16,7 +16,7 @@ struct Predicate {
     bool matches(Glyph glyph) const;
 };
 struct LookupRecord {
-    unsigned sequence = 0, lookup = 0;
+    unsigned sequence, lookup;
 };
 struct Pattern {
     Coverage firstCoverage;
@@ -25,7 +25,7 @@ struct Pattern {
     std::vector<Glyph> replacement;
 };
 struct Subtable {
-    unsigned type = 0;
+    unsigned type;
     View data;
     Coverage coverage;
     std::vector<Pattern> patterns;
@@ -39,17 +39,17 @@ struct Lookup : LookupFlags {
     bool reverse = false;
 };
 struct Feature {
-    Tag name = 0;
+    Tag name;
     std::vector<unsigned> lookups;
     unsigned maximum = 1;
 };
 struct Language {
-    Tag name = 0;
+    Tag name;
     std::vector<unsigned> features;
-    unsigned required = 0xffff;
+    unsigned required;
 };
 struct Script {
-    Tag name = 0;
+    Tag name;
     std::vector<Language> languages;
 };
 struct Settings {
@@ -70,7 +70,7 @@ struct LookupStep {
     bool explicitValue = false;
 };
 class OpenType {
-    bool positioning_ = false;
+    bool positioning_;
     View data_;
     std::vector<Lookup> lookups_;
     std::vector<std::vector<Feature>> branches_;
@@ -78,9 +78,6 @@ class OpenType {
 
   public:
     explicit OpenType(View table = {}, bool positioning = false);
-    const std::vector<Lookup> &lookups() const {
-        return lookups_;
-    }
     const std::vector<Feature> &features(size_t branch = 0) const;
     const std::vector<Script> &scripts() const {
         return scripts_;
@@ -99,10 +96,19 @@ class OpenType {
     void position(Buffer &buffer, const GDEF &gdef, const Settings &settings,
                   const Metrics &metrics, size_t branch = 0) const;
 };
+// Legacy pair/class kerning supplements positioning only when GPOS/kerx does
+// not own the relevant kern feature. Table offsets include the subtable header.
+class Kerning {
+    View kern_, kerx_;
+
+  public:
+    explicit Kerning(View kern = {}, View kerx = {}) : kern_(kern), kerx_(kerx) {}
+    void position(Buffer &buffer, const Settings &settings, const GDEF &gdef) const;
+};
+
 // Shared context matching for substitution and positioning lookup formats.
 std::optional<std::vector<size_t>> match(const Pattern &pattern, const Buffer &buffer, size_t start,
                                          const GDEF &gdef, LookupFlags flags,
                                          Span *scope = nullptr);
 std::vector<Glyph> substitutionOutputs(const Subtable &subtable, Glyph glyph);
-std::vector<Pattern> readContexts(View subtable, unsigned type);
 } // namespace ga::layout
