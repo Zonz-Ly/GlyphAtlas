@@ -33,11 +33,10 @@ A native macOS font and alternate-glyph inspector. Type text to see every altern
 
 ## Limitations
 
-- The GSUB and other font feature parsers are developed in-house. They work independently of CoreText and aim to match its behavior, though results may differ from those exposed by CoreText.
+- Some font feature parsers, such as GSUB, are developed in-house. Their actual results are not guaranteed to match what CoreText exposes exactly, but so far testing has not shown any issues.
 - Glyph names depend on the font's glyph-name data (`post` table or CFF charset); when CoreText returns no usable name, the app shows `GID`.
 - Metrics come from CoreText: glyph width uses the horizontal advance. When `vmtx`/`vhea` is present, glyph height uses the vertical advance; otherwise it uses `ascent + descent`.
-- Multi-Character layout and its metrics are provided by the system NSTextView; some effects are out of our control, yet it reflects the true rendering behavior of macOS.
-- When the sidebar holds a lot of items, clicking gets twitchy and items sometimes fly around, courtesy of Apple. Use the arrow keys instead.
+- Multi-Character layout and its metrics are provided by the system TextView; some effects are out of our control, for example, some required features such as `ccmp` cannot be disabled.
 - Because of a system title-bar limitation, double-clicking the top of an All Glyphs window zooms the window; it can't be prevented, so don't be startled.
 
 ## Build
@@ -77,19 +76,18 @@ ARCHS=x86_64 ./build.sh
 - 使用方向鍵 `↑`／`↓` 選擇上下字形，使用 `⌘↑`／`⌘↓` 選擇上下默認字形，使用 `⌥↑`／`⌥↓` 選擇字形列表中的第一個和最後一個字形。
 - 使用 `⌘C` 複製選中字形的所有編碼字符。
 - 鼠標在 Unicode 上靜置時顯示該 Unicode 標準規定的字符名稱。
-- 默認打开全部字形, 可以點右鍵切換或使用 `⌘1` 單字形、`⌘2` 多字符、`⌘3` 全部字。
+- 默認打开全部字, 可以點右鍵切換或使用 `⌘1` 單字形、`⌘2` 多字符、`⌘3` 全部字。
 - 在多字符中點一下字形就能查看替換字。默認開啟上下文替代和連字，點右鍵或使用 `⌘5`、`⌘6` 開關。支持豎排，點右鍵或使用 `⌘7` 切換。
 - 在全部字中點兩下字形可以添加到已有文字中，在側邊欄中點一下字形還會在全部字中閃一閃。
-- 用 `⌘+`／`⌘−` 來放大或縮小字形，用 `⌥⌘+`／`⌥⌘−` 來在多字符模式中放大或縮小邊距。也可以使用觸控板撐捏。
+- 用 `⌘+`／`⌘−` 來放大或縮小字形，用 `⌥⌘+`／`⌥⌘−` 來在多字符中放大或縮小邊距。也可以使用觸控板撐捏。
 - 用陰影表示字形寬度高度和排版行高行距，用可用 `⌘4` 隱藏。
 - 打開可變字體時，在紅綠燈旁邊會有一個可變參數設置面板，還可以拖出來固定。選中數字後還可以按 `↑`／`↓` 或 `⇧↑`／`⇧↓` 調整數值。
 - 有做暗黑模式，但要小心點到實心字形會眼瞎瞎喔。
 
 ## 限制
 
-- GSUB 等特性解析器自主研發，不依賴但匹配 CoreText。實際結果不能保證和 CoreText 暴露的完全一致。
+- GSUB 等部分特性解析器自主研發，雖然實際結果不能保證和 CoreText 暴露的完全一致，但是目前測下來沒問題。
 - 字形名稱取決於字體的 glyph name 數據（post 表或 CFF charset）；CoreText 沒有可用名稱時顯示 GID。
 - 度量數據來自 CoreText：字寬來自水平 advance。字高有 `vmtx`/`vhea` 時來自垂直 advance；無則使用 `ascent + descent`。
-- 多字符排版及其度量由系統 NSTextView 提供，部分效果不可控但卻能反映真實的 macOS 渲染效果。
-- 當側邊欄東西很多很多的時候，點起來會抽抽，有時還會飛，這是林檎幹的。用方向鍵代替操作可解。
+- 多字符排版及其度量由系統 TextView 提供，部分效果不可控，比如 `ccmp` 等部分強制特性無法關閉。
 - 由於系統標題欄限制，在全部字的窗口最上面點兩下會放大窗口，阻止不了，被嚇到不要意外。
