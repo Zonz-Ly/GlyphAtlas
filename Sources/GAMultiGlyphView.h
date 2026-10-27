@@ -9,18 +9,16 @@ NS_ASSUME_NONNULL_BEGIN
 /// draws the page behind the text and owns the scroll/zoom geometry.
 @interface GAMultiGlyphView : NSView
 @property (nonatomic, strong, nullable) GAFontDocument *document;
-/// Fraction of the viewport used as the page margin. Default 0.11.
+/// Fraction of the viewport used as the page margin. Shares the single-glyph
+/// canvas default: two zoom-outs from a full page.
 @property (nonatomic) CGFloat sideInsetFraction;
 /// Whether the definition page and its shadow are drawn. Default YES.
 @property (nonatomic) BOOL showsMetrics;
 /// Called after the inset changes so sibling views can share one zoom state.
 @property (nonatomic, copy, nullable) void (^onSideInsetFractionChanged)(CGFloat fraction);
-/// Called after the text scale changes so the controller can keep the page
-/// centred in the scroll view.
-@property (nonatomic, copy, nullable) void (^onTextScaleChanged)(void);
 @property (nonatomic) NSTextAlignment textAlignment;
 @property (nonatomic) BOOL vertical;
-/// Both optional native shaping switches default to NO.
+/// Both optional native shaping switches default to YES.
 @property(nonatomic) BOOL usesContextualAlternates;
 @property(nonatomic) BOOL usesLigatures;
 /// Visible size of the enclosing scroll view; drives wrapping and margins.
@@ -36,9 +34,6 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)zoomTextIn;
 - (void)zoomTextOut;
 - (void)resetTextZoom;
-/// The page in the view's own coordinates; used to keep the scroll view
-/// centred on the page while zooming.
-- (NSRect)pageRect;
 
 @end
 

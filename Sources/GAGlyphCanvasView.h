@@ -28,6 +28,11 @@ CGFloat GAClampSideInsetFraction(CGFloat fraction);
 /// Page fraction (1 - 2 * inset) for a pinch, 1:1 with the gesture.
 CGFloat GACanvasPageFractionForMagnification(CGFloat startPage, CGFloat magnification);
 
+/// Applies a geometry change while preserving both scrollbar positions.
+/// A missing scroll view or an axis without a scroll range is treated as centered.
+FOUNDATION_EXPORT void GAPreserveScrollPosition(NSScrollView * _Nullable scrollView,
+                                                 void (^changes)(void));
+
 @interface GAGlyphCanvasView : NSView
 @property (nonatomic, strong, nullable) GAGlyphVariant *variant;
 /// Fraction of the canvas width/height used as page inset. Default: two

@@ -1,6 +1,7 @@
 /* Standard commands follow macOS terminology. App-specific text and Help are translated here. */
 
 "File" = "Ablage";
+"Copy to Font Book" = "In die Schriftsammlung kopieren";
 "Open Recent" = "Benutzte Dokumente";
 "Clear Menu" = "Einträge löschen";
 "Close Window" = "Fenster schließen";
@@ -43,9 +44,9 @@
 "Single Glyph" = "Einzelne Glyphe";
 "Multi-Character" = "Mehrere Zeichen";
 "All Glyphs" = "Alle Glyphen";
-"Show Metrics" = "Metriken einblenden";
-"Metrics Zoom In" = "Ränder vergrößern";
-"Metrics Zoom Out" = "Ränder verkleinern";
+"Show Bounding Box" = "Begrenzungsrahmen einblenden";
+"Bounding Box Zoom In" = "Begrenzungsrahmen vergrößern";
+"Bounding Box Zoom Out" = "Begrenzungsrahmen verkleinern";
 "Vertical" = "Vertikal";
 "Enter text" = "Text eingeben";
 "Font Name" = "Schriftname";
@@ -68,8 +69,8 @@
 "Help.07" = "Standardmäßig ist „Alle Glyphen“ aktiv. Wechsle die Ansicht per Rechtsklick oder mit ⌘1 zu „Einzelne Glyphe“, ⌘2 zu „Mehrere Zeichen“ und ⌘3 zu „Alle Glyphen“.";
 "Help.08" = "Klicke in „Mehrere Zeichen“ auf eine Glyphe, um ihre Varianten anzuzeigen. „Kontextvarianten“ und „Ligaturen“ sind standardmäßig aktiviert. Schalte sie per Rechtsklick oder mit ⌘5 und ⌘6 um. Vertikale Schrift lässt sich per Rechtsklick oder mit ⌘7 umschalten.";
 "Help.09" = "Doppelklicke in „Alle Glyphen“ auf eine Glyphe, um sie an den vorhandenen Text anzuhängen. Ein Klick auf eine Glyphe in der Seitenleiste lässt sie auch in der Gesamtübersicht blinken.";
-"Help.10" = "Mit ⌘+/⌘- vergrößerst oder verkleinerst du Glyphen; mit ⌥⌘+/⌥⌘- änderst du die Ränder in „Mehrere Zeichen“. Auch die Zoomgeste auf dem Trackpad funktioniert.";
-"Help.11" = "Der Seitenschatten zeigt Breite und Höhe der Glyphe sowie Zeilenhöhe und Durchschuss des Satzes. Mit ⌘4 blendest du ihn aus.";
+"Help.10" = "Mit ⌘+/⌘- vergrößerst oder verkleinerst du Glyphen; mit ⌥⌘+/⌥⌘- änderst du den Begrenzungsrahmen in „Mehrere Zeichen“. Auch die Zoomgeste auf dem Trackpad funktioniert.";
+"Help.11" = "Der Begrenzungsrahmen und sein Schatten zeigen Breite und Höhe der Glyphe sowie Zeilenhöhe und Durchschuss des Satzes. Mit ⌘4 blendest du sie aus.";
 "Help.12" = "Beim Öffnen einer variablen Schrift erscheint neben den Fenstersteuerungen ein Variationsfenster. Ziehe es heraus, damit es geöffnet bleibt. Wähle einen Zahlenwert aus und passe ihn mit ↑/↓ oder ⇧↑/⇧↓ an.";
 "Help.13" = "Der Dunkelmodus wird unterstützt. Aber Vorsicht: Ein Klick auf eine vollständig ausgefüllte Glyphe kann blenden.";
 

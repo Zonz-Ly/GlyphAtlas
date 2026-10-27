@@ -1,6 +1,7 @@
 /* Standard commands follow macOS terminology. App-specific text and Help are translated here. */
 
 "File" = "File";
+"Copy to Font Book" = "Copy to Font Book";
 "Open Recent" = "Open Recent";
 "Clear Menu" = "Clear Menu";
 "Close Window" = "Close Window";
@@ -43,9 +44,9 @@
 "Single Glyph" = "Single Glyph";
 "Multi-Character" = "Multi-Character";
 "All Glyphs" = "All Glyphs";
-"Show Metrics" = "Show Metrics";
-"Metrics Zoom In" = "Metrics Zoom In";
-"Metrics Zoom Out" = "Metrics Zoom Out";
+"Show Bounding Box" = "Show Bounding Box";
+"Bounding Box Zoom In" = "Bounding Box Zoom In";
+"Bounding Box Zoom Out" = "Bounding Box Zoom Out";
 "Vertical" = "Vertical";
 "Enter text" = "Enter text";
 "Font Name" = "Font Name";
@@ -68,8 +69,8 @@
 "Help.07" = "All Glyphs is the default. Right-click to switch views, or press ⌘1 for Single Glyph, ⌘2 for Multi-Character, or ⌘3 for All Glyphs.";
 "Help.08" = "In Multi-Character, click a glyph to view its alternates. Contextual Alternates and Ligatures are on by default; toggle them with a right-click or ⌘5 and ⌘6. Vertical writing is supported; right-click or press ⌘7 to switch.";
 "Help.09" = "In All Glyphs, double-click a glyph to add it to the existing text. Clicking a glyph in the sidebar also makes it blink there.";
-"Help.10" = "Use ⌘+/⌘- to zoom the glyphs, and ⌥⌘+/⌥⌘- to resize the margins in Multi-Character. Trackpad pinch also works.";
-"Help.11" = "The page shadow shows the glyph's width and height, as well as the layout's line height and leading; press ⌘4 to hide it.";
+"Help.10" = "Use ⌘+/⌘- to zoom the glyphs, and ⌥⌘+/⌥⌘- to resize the bounding box in Multi-Character. Trackpad pinch also works.";
+"Help.11" = "The bounding box and its shadow show the glyph's width and height, as well as the layout's line height and leading; press ⌘4 to hide them.";
 "Help.12" = "When you open a variable font, a variation panel appears beside the window controls. Drag it out to keep it open. Select a numeric value and use ↑/↓ or ⇧↑/⇧↓ to adjust it.";
 "Help.13" = "Dark mode is supported, but be careful: clicking a solid glyph can dazzle you.";
 

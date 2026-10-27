@@ -1,6 +1,7 @@
 /* Standard commands follow macOS terminology. App-specific text and Help are translated here. */
 
 "File" = "Fichier";
+"Copy to Font Book" = "Copier vers Livre des polices";
 "Open Recent" = "Ouvrir l’élément récent";
 "Clear Menu" = "Effacer le menu";
 "Close Window" = "Fermer la fenêtre";
@@ -43,9 +44,9 @@
 "Single Glyph" = "Glyphe unique";
 "Multi-Character" = "Plusieurs caractères";
 "All Glyphs" = "Tous les glyphes";
-"Show Metrics" = "Afficher les métriques";
-"Metrics Zoom In" = "Agrandir les marges";
-"Metrics Zoom Out" = "Réduire les marges";
+"Show Bounding Box" = "Afficher le cadre englobant";
+"Bounding Box Zoom In" = "Agrandir le cadre englobant";
+"Bounding Box Zoom Out" = "Réduire le cadre englobant";
 "Vertical" = "Vertical";
 "Enter text" = "Saisir du texte";
 "Font Name" = "Nom de la police";
@@ -68,8 +69,8 @@
 "Help.07" = "« Tous les glyphes » est la vue par défaut. Changez de vue par un clic droit, ou utilisez ⌘1 pour « Glyphe unique », ⌘2 pour « Plusieurs caractères » et ⌘3 pour « Tous les glyphes ».";
 "Help.08" = "Dans « Plusieurs caractères », cliquez sur un glyphe pour voir ses variantes. Les alternatives contextuelles et les ligatures sont activées par défaut ; basculez-les par un clic droit ou avec ⌘5 et ⌘6. Changez le sens d’écriture par un clic droit ou avec ⌘7.";
 "Help.09" = "Dans « Tous les glyphes », cliquez deux fois sur un glyphe pour l’ajouter au texte existant. Cliquer sur un glyphe dans la barre latérale le fait également clignoter dans la vue d’ensemble.";
-"Help.10" = "Utilisez ⌘+/⌘- pour agrandir ou réduire les glyphes, et ⌥⌘+/⌥⌘- pour ajuster les marges dans « Plusieurs caractères ». Le pincement sur le trackpad fonctionne également.";
-"Help.11" = "L’ombre de la page indique la largeur et la hauteur du glyphe, ainsi que la hauteur de ligne et l’interligne de la composition. Appuyez sur ⌘4 pour la masquer.";
+"Help.10" = "Utilisez ⌘+/⌘- pour agrandir ou réduire les glyphes, et ⌥⌘+/⌥⌘- pour ajuster le cadre englobant dans « Plusieurs caractères ». Le pincement sur le trackpad fonctionne également.";
+"Help.11" = "Le cadre englobant et son ombre indiquent la largeur et la hauteur du glyphe, ainsi que la hauteur de ligne et l’interligne de la composition. Appuyez sur ⌘4 pour les masquer.";
 "Help.12" = "À l’ouverture d’une police variable, un panneau de variation apparaît près des boutons de la fenêtre. Détachez-le en le faisant glisser pour le garder ouvert. Sélectionnez une valeur numérique et ajustez-la avec ↑/↓ ou ⇧↑/⇧↓.";
 "Help.13" = "Le mode sombre est pris en charge. Mais attention : cliquer sur un glyphe plein peut vous éblouir.";
 

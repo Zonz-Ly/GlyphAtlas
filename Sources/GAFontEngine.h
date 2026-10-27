@@ -27,7 +27,7 @@ FOUNDATION_EXPORT const CGFloat GAFontShapingSize;
 /// Optional shaping origins for drawing. May be empty; drawing consumers treat
 /// missing entries as CGPointZero.
 @property (nonatomic, copy) NSArray<NSValue *> *positions;
-@property (nonatomic, copy) NSArray<NSString *> *featureSources;
+@property (nonatomic, copy, readonly) NSArray<NSString *> *featureSources;
 - (void)addFeatureSources:(NSArray<NSString *> *)sources;
 @property (nonatomic, getter=isBase) BOOL base;
 @property (nonatomic, copy) NSArray<NSNumber *> *unicodeScalars;
@@ -38,6 +38,10 @@ FOUNDATION_EXPORT const CGFloat GAFontShapingSize;
 @property (nonatomic) NSRange sourceTextRange;
 @property (nonatomic, readonly) NSString *glyphKey;
 @end
+
+/// Draws a nonempty variant using the context's current drawing state.
+/// Missing origins are CGPointZero; callers manage transforms, color and state.
+FOUNDATION_EXPORT void GADrawGlyphVariant(GAGlyphVariant *variant, CGContextRef context);
 
 /// The page used to place a glyph, in font units. `size` is the horizontal
 /// advance × the page height; `baseline` is measured up from the page's bottom
@@ -64,13 +68,11 @@ typedef struct {
 /// Splits text into one group per composed character, preserving UTF-16 ranges.
 FOUNDATION_EXPORT NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text);
 
-/// A range-independent scan result for one input context. The cache stores
-/// these, keyed by text and explicit glyph selections; a range-bound GAGlyphVariant is created only
-/// when the result is applied to the current text.
+/// One candidate from a complete text query. Source ranges and target group
+/// indices refer to that input; applying the result needs no substring offset.
 @interface GAScanCandidate : NSObject
 @property (nonatomic, copy) NSArray<NSNumber *> *glyphIDs;
 @property (nonatomic, copy) NSArray<NSValue *> *positions;
-@property (nonatomic, strong) GAFontBox *fontBox;
 @property (nonatomic, copy) NSArray<NSString *> *sources;
 @property (nonatomic, getter=isBase) BOOL base;
 @property (nonatomic, getter=isLigature) BOOL ligature;
@@ -78,8 +80,8 @@ FOUNDATION_EXPORT NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text);
 @property(nonatomic) BOOL fromGlyphSeed;
 /// UTF-16 range of the cluster relative to the scanned content.
 @property (nonatomic) NSRange sourceRange;
-/// Composed-character index of the target group relative to the content.
-@property (nonatomic) NSUInteger targetOffset;
+/// Index of the target composed-character group in the full input.
+@property (nonatomic) NSUInteger targetGroupIndex;
 @end
 
 @interface GARawScanResult : NSObject
@@ -104,32 +106,21 @@ FOUNDATION_EXPORT NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text);
 /// All GIDs in the font, including glyphs without Unicode mappings.
 - (NSArray<GAAllGlyphEntry *> *)allGlyphEntries;
 
-/// Scans one content (a composed character or a multi-character context) and
-/// returns range-independent candidates. Safe to cache by content.
-- (GARawScanResult *)rawScanContent:(NSString *)content;
+/// Scans the complete input text with its explicit glyph selections.
+/// The underlying query cache is keyed by both text and those selections.
 - (GARawScanResult *)rawScanContent:(NSString *)content
                          selections:(NSArray<GAGlyphSelectionRun *> *)selections;
 
-/// Applies a raw scan result to the current groups. Each candidate targets the
-/// group at startGroupIndex + targetOffset; ligature source ranges are resolved
-/// against contentRange. The group variants are updated in place.
+/// Applies a full-text result to its composed-character groups in place.
+/// Candidates use targetGroupIndex; source ranges already refer to the full text.
 - (void)applyRawResult:(GARawScanResult *)result
-          contentRange:(NSRange)contentRange
-       startGroupIndex:(NSUInteger)startGroupIndex
                 groups:(NSArray<GACharacterGroup *> *)groups;
 
-- (NSArray<GAGlyphLayoutRun *> *)layoutRunsForText:(NSString *)text
-                                        contextual:(BOOL)contextual
-                                         ligatures:(BOOL)ligatures
-                                          vertical:(BOOL)vertical;
 - (NSArray<GACharacterGroup *> *)analyzeGlyphIDs:(NSArray<NSNumber *> *)glyphIDs;
 
-/// GSUB `vert` single-substitution output for a glyph, if the font has one.
+/// Single-GID vertical-substitution output from GSUB `vert`/`vrt2` or AAT,
+/// if the font's programs produce one.
 - (nullable NSNumber *)verticalSubstituteForGlyph:(CGGlyph)glyph;
-
-/// Raw ink bounding box of a variant, from glyf/CFF through
-/// CTFontGetBoundingRectsForGlyphs. Returns CGRectZero for zero-ink glyphs.
-+ (CGRect)inkBoundsForVariant:(GAGlyphVariant *)variant;
 
 /// Page, baseline and ink for a variant, in font units. With
 /// `usesVerticalMetrics` YES the height is the vmtx/vhea vertical advance and
@@ -138,14 +129,6 @@ FOUNDATION_EXPORT NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text);
 /// and sidebar thumbnails).
 + (GAGlyphPage)pageForVariant:(GAGlyphVariant *)variant
            usesVerticalMetrics:(BOOL)usesVerticalMetrics;
-
-/// Advance width/height in font units. Width is the horizontal advance.
-/// Height is the vmtx/vhea vertical advance, with ascent + descent as fallback.
-+ (CGSize)advanceInFontUnitsForVariant:(GAGlyphVariant *)variant;
-
-/// Whether the font has both vmtx and vhea tables.
-+ (BOOL)variantHasVerticalMetrics:(GAGlyphVariant *)variant;
-+ (CGFloat)verticalTopSideBearingForVariant:(GAGlyphVariant *)variant;
 
 @end
 

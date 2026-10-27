@@ -1,6 +1,6 @@
 #import "GAAppDelegate.h"
 #import "GAMainWindowController.h"
-#import "GAFontTypes.h"
+#import "GAFontResource.h"
 
 @interface GAAppDelegate () <NSMenuDelegate>
 @property (nonatomic, strong) NSMutableArray<GAMainWindowController *> *windowControllers;
@@ -314,11 +314,17 @@
     NSMenu *fileMenu = [[NSMenu alloc] initWithTitle:NSLocalizedString(@"File", @"File")];
     fileItem.submenu = fileMenu;
 
-    NSMenuItem *open = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Open Font…", @"Open Font…")
-                                                  action:@selector(openFont:)
-                                           keyEquivalent:@"o"];
+    NSMenuItem *open = [fileMenu
+        addItemWithTitle:NSLocalizedString(@"Open Font…", @"Open Font…")
+                  action:@selector(openFont:)
+           keyEquivalent:@"o"];
     open.target = self;
-    [fileMenu addItem:open];
+
+    NSMenuItem *openWithNewShortcut = [open copy];
+    openWithNewShortcut.keyEquivalent = @"n";
+    openWithNewShortcut.hidden = YES;
+    openWithNewShortcut.allowsKeyEquivalentWhenHidden = YES;
+    [fileMenu addItem:openWithNewShortcut];
 
     NSMenuItem *recentItem = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Open Recent", @"Open Recent")
                                                         action:nil
@@ -329,6 +335,12 @@
     self.recentMenu = recentMenu;
     [fileMenu addItem:recentItem];
     [self rebuildRecentMenu];
+
+    NSMenuItem *copyToFontBook = [fileMenu
+        addItemWithTitle:NSLocalizedString(@"Copy to Font Book", @"Copy to Font Book")
+                  action:@selector(copyToFontBook:)
+           keyEquivalent:@""];
+    copyToFontBook.target = self;
 
     [fileMenu addItem:[NSMenuItem separatorItem]];
 
@@ -345,14 +357,15 @@
     NSMenu *editMenu = [[NSMenu alloc] initWithTitle:NSLocalizedString(@"Edit", @"Edit")];
     editItem.submenu = editMenu;
 
-    [editMenu addItem:[self menuItem:NSLocalizedString(@"Undo", @"Undo") action:@selector(undo:) key:@"z" modifiers:NSEventModifierFlagCommand]];
-    [editMenu addItem:[self menuItem:NSLocalizedString(@"Redo", @"Redo") action:@selector(redo:) key:@"z" modifiers:(NSEventModifierFlagCommand | NSEventModifierFlagShift)]];
+    [editMenu addItemWithTitle:NSLocalizedString(@"Undo", @"Undo") action:@selector(undo:) keyEquivalent:@"z"];
+    NSMenuItem *redo = [editMenu addItemWithTitle:NSLocalizedString(@"Redo", @"Redo") action:@selector(redo:) keyEquivalent:@"z"];
+    redo.keyEquivalentModifierMask = NSEventModifierFlagCommand | NSEventModifierFlagShift;
     [editMenu addItem:[NSMenuItem separatorItem]];
-    [editMenu addItem:[self menuItem:NSLocalizedString(@"Cut", @"Cut") action:@selector(cut:) key:@"x" modifiers:NSEventModifierFlagCommand]];
-    [editMenu addItem:[self menuItem:NSLocalizedString(@"Copy", @"Copy") action:@selector(copy:) key:@"c" modifiers:NSEventModifierFlagCommand]];
-    [editMenu addItem:[self menuItem:NSLocalizedString(@"Paste", @"Paste") action:@selector(paste:) key:@"v" modifiers:NSEventModifierFlagCommand]];
-    [editMenu addItem:[self menuItem:NSLocalizedString(@"Delete", @"Delete") action:@selector(delete:) key:@"" modifiers:0]];
-    [editMenu addItem:[self menuItem:NSLocalizedString(@"Select All", @"Select All") action:@selector(selectAll:) key:@"a" modifiers:NSEventModifierFlagCommand]];
+    [editMenu addItemWithTitle:NSLocalizedString(@"Cut", @"Cut") action:@selector(cut:) keyEquivalent:@"x"];
+    [editMenu addItemWithTitle:NSLocalizedString(@"Copy", @"Copy") action:@selector(copy:) keyEquivalent:@"c"];
+    [editMenu addItemWithTitle:NSLocalizedString(@"Paste", @"Paste") action:@selector(paste:) keyEquivalent:@"v"];
+    [editMenu addItemWithTitle:NSLocalizedString(@"Delete", @"Delete") action:@selector(delete:) keyEquivalent:@""];
+    [editMenu addItemWithTitle:NSLocalizedString(@"Select All", @"Select All") action:@selector(selectAll:) keyEquivalent:@"a"];
 
     // View
     NSMenuItem *viewItem = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"View", @"View")
@@ -370,10 +383,10 @@
     windowItem.submenu = windowMenu;
     NSApp.windowsMenu = windowMenu;
 
-    [windowMenu addItem:[self menuItem:NSLocalizedString(@"Minimize", @"Minimize") action:@selector(performMiniaturize:) key:@"m" modifiers:NSEventModifierFlagCommand]];
-    [windowMenu addItem:[self menuItem:NSLocalizedString(@"Zoom", @"Zoom") action:@selector(performZoom:) key:@"" modifiers:0]];
+    [windowMenu addItemWithTitle:NSLocalizedString(@"Minimize", @"Minimize") action:@selector(performMiniaturize:) keyEquivalent:@"m"];
+    [windowMenu addItemWithTitle:NSLocalizedString(@"Zoom", @"Zoom") action:@selector(performZoom:) keyEquivalent:@""];
     [windowMenu addItem:[NSMenuItem separatorItem]];
-    [windowMenu addItem:[self menuItem:NSLocalizedString(@"Bring All to Front", @"Bring All to Front") action:@selector(arrangeInFront:) key:@"" modifiers:0]];
+    [windowMenu addItemWithTitle:NSLocalizedString(@"Bring All to Front", @"Bring All to Front") action:@selector(arrangeInFront:) keyEquivalent:@""];
 
     // Help
     NSMenuItem *helpItem = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Help", @"Help")
@@ -411,7 +424,7 @@
     }
     [menu addItem:[NSMenuItem separatorItem]];
 
-    NSMenuItem *metrics = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Show Metrics", @"Show Metrics")
+    NSMenuItem *metrics = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Show Bounding Box", @"Show Bounding Box")
                                                      action:@selector(toggleShowMetrics:)
                                               keyEquivalent:@"4"];
     metrics.target = self;
@@ -430,7 +443,7 @@
     zoomIn.target = self;
     [menu addItem:zoomIn];
     NSMenuItem *metricsZoomIn =
-        [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Metrics Zoom In", @"Metrics Zoom In")
+        [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Bounding Box Zoom In", @"Bounding Box Zoom In")
                                    action:@selector(zoomMetricsIn:)
                             keyEquivalent:@"+"];
     metricsZoomIn.target = self;
@@ -445,7 +458,7 @@
     zoomOut.target = self;
     [menu addItem:zoomOut];
     NSMenuItem *metricsZoomOut =
-        [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Metrics Zoom Out", @"Metrics Zoom Out")
+        [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Bounding Box Zoom Out", @"Bounding Box Zoom Out")
                                    action:@selector(zoomMetricsOut:)
                             keyEquivalent:@"-"];
     metricsZoomOut.target = self;
@@ -465,24 +478,21 @@
 }
 
 - (void)addViewAlignmentItemsToMenu:(NSMenu *)menu {
-    NSMenuItem *contextual = [[NSMenuItem alloc]
-        initWithTitle:NSLocalizedString(@"Contextual Alternates", @"Contextual Alternates")
-               action:@selector(toggleContextualAlternates:)
-        keyEquivalent:@"5"];
+    NSMenuItem *contextual = [menu
+        addItemWithTitle:NSLocalizedString(@"Contextual Alternates", @"Contextual Alternates")
+                  action:@selector(toggleContextualAlternates:)
+           keyEquivalent:@"5"];
     contextual.target = self;
-    [menu addItem:contextual];
-    NSMenuItem *ligatures =
-        [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Ligatures", @"Ligatures")
-                                   action:@selector(toggleLigatures:)
-                            keyEquivalent:@"6"];
+    NSMenuItem *ligatures = [menu
+        addItemWithTitle:NSLocalizedString(@"Ligatures", @"Ligatures")
+                  action:@selector(toggleLigatures:)
+           keyEquivalent:@"6"];
     ligatures.target = self;
-    [menu addItem:ligatures];
-    NSMenuItem *verticalItem =
-        [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Vertical", @"Vertical")
-                                   action:@selector(toggleWritingDirection:)
-                            keyEquivalent:@"7"];
+    NSMenuItem *verticalItem = [menu
+        addItemWithTitle:NSLocalizedString(@"Vertical", @"Vertical")
+                  action:@selector(toggleWritingDirection:)
+           keyEquivalent:@"7"];
     verticalItem.target = self;
-    [menu addItem:verticalItem];
 
     NSMenuItem *alignmentItem = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Text Alignment", @"Text Alignment")
                                                            action:nil
@@ -583,6 +593,9 @@
     if (controller == nil) {
         return NO;
     }
+    if (action == @selector(copyToFontBook:)) {
+        return controller.fontURL != nil;
+    }
     if (action == @selector(switchViewMode:)) {
         item.state = controller.viewMode == (GAViewMode)item.tag
             ? NSControlStateValueOn : NSControlStateValueOff;
@@ -597,11 +610,11 @@
     }
     if (action == @selector(toggleShowMetrics:)) {
         item.state = controller.showsMetrics ? NSControlStateValueOn : NSControlStateValueOff;
-        return controller.viewMode != GAViewModeAllGlyphs;
+        return GAViewModeSupportsMetrics(controller.viewMode);
     }
     if (action == @selector(zoomMetricsIn:) ||
         action == @selector(zoomMetricsOut:)) {
-        return controller.viewMode == GAViewModeMultiCharacter;
+        return GAViewModeSupportsTextLayout(controller.viewMode);
     }
     if (action == @selector(zoomIn:) ||
         action == @selector(zoomOut:) ||
@@ -618,29 +631,37 @@
             case NSTextAlignmentRight: item.title = vertical ? NSLocalizedString(@"Bottom", @"Bottom") : NSLocalizedString(@"Right", @"Right"); break;
             default: item.title = NSLocalizedString(@"Justified", @"Justified"); break;
         }
-        return controller.viewMode == GAViewModeMultiCharacter;
+        return GAViewModeSupportsTextLayout(controller.viewMode);
     }
     if (action == @selector(toggleWritingDirection:)) {
         item.state = controller.verticalWriting
             ? NSControlStateValueOn : NSControlStateValueOff;
-        return controller.viewMode == GAViewModeMultiCharacter;
+        return GAViewModeSupportsTextLayout(controller.viewMode);
     }
     return YES;
-}
-
-- (NSMenuItem *)menuItem:(NSString *)title
-                  action:(SEL)action
-                     key:(NSString *)key
-               modifiers:(NSEventModifierFlags)modifiers {
-    NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:title action:action keyEquivalent:key];
-    item.keyEquivalentModifierMask = modifiers;
-    return item;
 }
 
 #pragma mark - Menu actions
 
 - (void)openFont:(id)sender {
     [self showOpenPanel];
+}
+
+- (void)copyToFontBook:(id)sender {
+    NSURL *fontURL = self.activeMainWindowController.fontURL;
+    if (fontURL == nil)
+        return;
+    NSURL *directory = [NSURL fileURLWithPath:
+        [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Fonts"] isDirectory:YES];
+    NSURL *destination = [directory URLByAppendingPathComponent:fontURL.lastPathComponent];
+    if ([fontURL.URLByResolvingSymlinksInPath isEqual:destination.URLByResolvingSymlinksInPath])
+        return;
+    NSFileManager *files = [NSFileManager defaultManager];
+    NSError *error = nil;
+    if (![files createDirectoryAtURL:directory withIntermediateDirectories:YES
+                         attributes:nil error:&error] ||
+        ![files copyItemAtURL:fontURL toURL:destination error:&error])
+        [NSApp presentError:error];
 }
 
 - (void)showAbout:(id)sender {

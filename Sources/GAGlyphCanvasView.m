@@ -76,10 +76,59 @@ NSRect GAInsetRectByFraction(NSRect rect, CGFloat fraction) {
     return NSInsetRect(rect, insetX, insetY);
 }
 
-void GADrawPage(NSRect page, NSAppearance *appearance) {
+// Ask the clip view for its actual limits, including any content insets.
+// The views use custom content sizing rather than NSScrollView magnification.
+static NSRect GAScrollPositionLimits(NSScrollView *scrollView) {
+    NSClipView *clip = scrollView.contentView;
+    NSRect document = scrollView.documentView.frame;
+    NSRect proposed = clip.bounds;
+    proposed.origin = NSMakePoint(NSMinX(document) - NSWidth(proposed),
+                                  NSMinY(document) - NSHeight(proposed));
+    NSPoint minimum = [clip constrainBoundsRect:proposed].origin;
+    proposed.origin = NSMakePoint(NSMaxX(document), NSMaxY(document));
+    NSPoint maximum = [clip constrainBoundsRect:proposed].origin;
+    return NSMakeRect(minimum.x, minimum.y, MAX(0, maximum.x - minimum.x),
+                       MAX(0, maximum.y - minimum.y));
+}
+
+static NSPoint GACaptureScrollPosition(NSScrollView *scrollView) {
+    NSRect bounds = scrollView.contentView.bounds;
+    if (scrollView.documentView == nil || NSWidth(bounds) <= 0 || NSHeight(bounds) <= 0)
+        return NSMakePoint(0.5, 0.5);
+    NSRect limits = GAScrollPositionLimits(scrollView);
+    return NSMakePoint(NSWidth(limits) > 0.5
+                           ? MIN(1, MAX(0, (NSMinX(bounds) - NSMinX(limits)) / NSWidth(limits))) : 0.5,
+                       NSHeight(limits) > 0.5
+                           ? MIN(1, MAX(0, (NSMinY(bounds) - NSMinY(limits)) / NSHeight(limits))) : 0.5);
+}
+
+static void GARestoreScrollPosition(NSScrollView *scrollView, NSPoint position) {
+    if (scrollView.documentView == nil) return;
+    [scrollView layoutSubtreeIfNeeded];
+    NSClipView *clip = scrollView.contentView;
+    if (NSWidth(clip.bounds) <= 0 || NSHeight(clip.bounds) <= 0) return;
+    NSRect limits = GAScrollPositionLimits(scrollView);
+    NSRect proposed = clip.bounds;
+    proposed.origin = NSMakePoint(NSMinX(limits) + MIN(1, MAX(0, position.x)) * NSWidth(limits),
+                                  NSMinY(limits) + MIN(1, MAX(0, position.y)) * NSHeight(limits));
+    [clip scrollToPoint:[clip constrainBoundsRect:proposed].origin];
+    [scrollView reflectScrolledClipView:clip];
+}
+
+void GAPreserveScrollPosition(NSScrollView *scrollView, void (^changes)(void)) {
+    NSPoint position = GACaptureScrollPosition(scrollView);
+    changes();
+    GARestoreScrollPosition(scrollView, position);
+}
+
+static BOOL GAAppearanceIsDark(NSAppearance *appearance) {
     NSString *match = [appearance bestMatchFromAppearancesWithNames:
         @[NSAppearanceNameAqua, NSAppearanceNameDarkAqua]];
-    BOOL darkAppearance = [match isEqualToString:NSAppearanceNameDarkAqua];
+    return [match isEqualToString:NSAppearanceNameDarkAqua];
+}
+
+void GADrawPage(NSRect page, NSAppearance *appearance) {
+    BOOL darkAppearance = GAAppearanceIsDark(appearance);
     [NSGraphicsContext saveGraphicsState];
     NSShadow *shadow = [[NSShadow alloc] init];
     shadow.shadowColor = [[NSColor blackColor]
@@ -95,9 +144,7 @@ void GADrawPage(NSRect page, NSAppearance *appearance) {
 NSColor *GACanvasBackgroundColor(void) {
     return [NSColor colorWithName:@"GACanvasBackground"
                   dynamicProvider:^NSColor *(NSAppearance *appearance) {
-        NSString *match = [appearance bestMatchFromAppearancesWithNames:
-            @[NSAppearanceNameAqua, NSAppearanceNameDarkAqua]];
-        return [match isEqualToString:NSAppearanceNameDarkAqua]
+        return GAAppearanceIsDark(appearance)
             ? [NSColor colorWithSRGBRed:(60.0 / 255.0)
                                    green:(60.0 / 255.0)
                                     blue:(60.0 / 255.0)
@@ -109,9 +156,7 @@ NSColor *GACanvasBackgroundColor(void) {
 NSColor *GAGlyphForegroundColor(void) {
     return [NSColor colorWithName:@"GAGlyphForeground"
                   dynamicProvider:^NSColor *(NSAppearance *appearance) {
-        NSString *match = [appearance bestMatchFromAppearancesWithNames:
-            @[NSAppearanceNameAqua, NSAppearanceNameDarkAqua]];
-        CGFloat component = [match isEqualToString:NSAppearanceNameDarkAqua]
+        CGFloat component = GAAppearanceIsDark(appearance)
             ? (0xEE / 255.0) : (0x22 / 255.0);
         return [NSColor colorWithSRGBRed:component
                                    green:component
@@ -162,11 +207,13 @@ NSColor *GAGlyphForegroundColor(void) {
     if (fabs(clamped - _sideInsetFraction) < 1e-9) {
         return;
     }
-    _sideInsetFraction = clamped;
-    [self setNeedsDisplay:YES];
-    if (self.onSideInsetFractionChanged) {
-        self.onSideInsetFractionChanged(clamped);
-    }
+    GAPreserveScrollPosition(self.enclosingScrollView, ^{
+        self->_sideInsetFraction = clamped;
+        [self setNeedsDisplay:YES];
+        if (self.onSideInsetFractionChanged) {
+            self.onSideInsetFractionChanged(clamped);
+        }
+    });
 }
 
 - (void)setShowsMetrics:(BOOL)showsMetrics {
@@ -250,8 +297,8 @@ NSColor *GAGlyphForegroundColor(void) {
         NSRect candidatePage = NSMakeRect(candidatePageX, candidatePageY,
                                           candidatePageWidth, candidatePageHeight);
 
-        // The page stays inside the 11% inset; the ink may use the full
-        // main view, so the two constraints produce a shared shift range.
+        // The page stays inside the current content inset; the ink may use the
+        // full main view, so the two constraints produce a shared shift range.
         CGFloat minX = NSMinX(contentRect) - NSMinX(candidatePage);
         CGFloat maxX = NSMaxX(contentRect) - NSMaxX(candidatePage);
         CGFloat minY = NSMinY(contentRect) - NSMinY(candidatePage);
@@ -308,8 +355,8 @@ NSColor *GAGlyphForegroundColor(void) {
         scale = constrainedScale * GACanvasScaleEpsilon;
     }
 
-    CGFloat shiftX = 0;
-    CGFloat shiftY = 0;
+    CGFloat shiftX;
+    CGFloat shiftY;
     if (!translationForScale(scale, &shiftX, &shiftY)) {
         return;
     }
@@ -330,17 +377,6 @@ NSColor *GAGlyphForegroundColor(void) {
         return;
     }
 
-    CGGlyph *glyphs = calloc(count, sizeof(CGGlyph));
-    CGPoint *positions = calloc(count, sizeof(CGPoint));
-    for (NSUInteger index = 0; index < count; index++) {
-        glyphs[index] = (CGGlyph)variant.glyphIDs[index].unsignedShortValue;
-        CGPoint position = CGPointZero;
-        if (index < variant.positions.count) {
-            position = variant.positions[index].pointValue;
-        }
-        positions[index] = position;
-    }
-
     CGContextRef context = NSGraphicsContext.currentContext.CGContext;
     CGContextSaveGState(context);
     // The page keeps its metric size; the baseline comes from the font metrics.
@@ -348,11 +384,8 @@ NSColor *GAGlyphForegroundColor(void) {
     CGContextScaleCTM(context, glyphScale, glyphScale);
     CGContextSetTextMatrix(context, CGAffineTransformIdentity);
     CGContextSetFillColorWithColor(context, GAGlyphForegroundColor().CGColor);
-    CTFontDrawGlyphs(font, glyphs, positions, count, context);
+    GADrawGlyphVariant(variant, context);
     CGContextRestoreGState(context);
-
-    free(glyphs);
-    free(positions);
 }
 
 @end

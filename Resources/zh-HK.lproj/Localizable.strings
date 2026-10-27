@@ -2,6 +2,7 @@
 /* Help follows README.md 使用; Traditional Chinese is verbatim, Simplified Chinese is converted. */
 
 "File" = "檔案";
+"Copy to Font Book" = "拷貝到字體簿";
 "Open Recent" = "開啟最近項目";
 "Clear Menu" = "清除選單";
 "Close Window" = "關閉視窗";
@@ -44,9 +45,9 @@
 "Single Glyph" = "單字形";
 "Multi-Character" = "多字元";
 "All Glyphs" = "全部字";
-"Show Metrics" = "顯示度量";
-"Metrics Zoom In" = "放大邊距";
-"Metrics Zoom Out" = "縮小邊距";
+"Show Bounding Box" = "顯示邊界框";
+"Bounding Box Zoom In" = "放大邊界框";
+"Bounding Box Zoom Out" = "縮小邊界框";
 "Vertical" = "豎排";
 "Enter text" = "輸入文字";
 "Font Name" = "字體名稱";
@@ -69,8 +70,8 @@
 "Help.07" = "默認打开全部字形, 可以點右鍵切換或使用 ⌘1 單字形、⌘2 多字符、⌘3 全部字。";
 "Help.08" = "在多字符中點一下字形就能查看替換字。默認開啟上下文替代和連字，點右鍵或使用 ⌘5、⌘6 開關。支持豎排，點右鍵或使用 ⌘7 切換。";
 "Help.09" = "在全部字中點兩下字形可以添加到已有文字中，在側邊欄中點一下字形還會在全部字中閃一閃。";
-"Help.10" = "用 ⌘+／⌘− 來放大或縮小字形，用 ⌥⌘+／⌥⌘− 來在多字符模式中放大或縮小邊距。也可以使用觸控板撐捏。";
-"Help.11" = "用陰影表示字形寬度高度和排版行高行距，用可用 ⌘4 隱藏。";
+"Help.10" = "用 ⌘+／⌘− 來放大或縮小字形，用 ⌥⌘+／⌥⌘− 來在多字符模式中放大或縮小邊界框。也可以使用觸控板撐捏。";
+"Help.11" = "用邊界框及其陰影表示字形寬度高度和排版行高行距，用可用 ⌘4 隱藏。";
 "Help.12" = "打開可變字體時，在紅綠燈旁邊會有一個可變參數設置面板，還可以拖出來固定。選中數字後還可以按 ↑／↓ 或 ⇧↑／⇧↓ 調整數值。";
 "Help.13" = "有做暗黑模式，但要小心點到實心字形會眼瞎瞎喔。";
 

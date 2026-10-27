@@ -3,9 +3,6 @@ NSString *const GAGlyphSelectionAttributeName = @"com.zonz.GlyphAtlas.glyphSelec
 
 #pragma mark - GAGlyphSelection
 
-@implementation GAGlyphLayoutRun
-@end
-
 @implementation GAGlyphSelection
 
 - (instancetype)initWithSourceText:(NSString *)sourceText
@@ -26,28 +23,6 @@ NSString *const GAGlyphSelectionAttributeName = @"com.zonz.GlyphAtlas.glyphSelec
 
 @implementation GAGlyphSelectionRun
 @end
-NSArray<GAGlyphSelectionRun *> *GAGlyphSelectionsInRange(NSArray<GAGlyphSelectionRun *> *runs,
-                                                         NSRange range) {
-    NSMutableArray *result = [NSMutableArray array];
-    for (GAGlyphSelectionRun *run in runs) {
-        if (run.range.location < range.location || run.range.length == 0)
-            continue;
-        NSUInteger offset = run.range.location - range.location;
-        if (offset > range.length || run.range.length > range.length - offset)
-            continue;
-        GAGlyphSelectionRun *copy = [[GAGlyphSelectionRun alloc] init];
-        copy.range = NSMakeRange(offset, run.range.length);
-        copy.selection = run.selection;
-        [result addObject:copy];
-    }
-    [result
-        sortUsingComparator:^NSComparisonResult(GAGlyphSelectionRun *a, GAGlyphSelectionRun *b) {
-          return a.range.location < b.range.location   ? NSOrderedAscending
-                 : a.range.location > b.range.location ? NSOrderedDescending
-                                                       : NSOrderedSame;
-        }];
-    return result;
-}
 @interface GAGlyphQueryIdentity ()
 @property(nonatomic, copy) NSArray *components;
 @property(nonatomic) NSUInteger contentHash;

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>“%@” contains %lu fonts. Choose a style to inspect.</key>
+	<dict>
+		<key>NSStringLocalizedFormatKey</key>
+		<string>“%1$@” chứa %2$#@fonts@. Chọn kiểu để kiểm tra.</string>
+		<key>fonts</key>
+		<dict>
+			<key>NSStringFormatSpecTypeKey</key>
+			<string>NSStringPluralRuleType</string>
+			<key>NSStringFormatValueTypeKey</key>
+			<string>lu</string>
+			<key>other</key>
+			<string>%lu phông chữ</string>
+		</dict>
+	</dict>
+</dict>
+</plist>

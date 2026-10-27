@@ -117,7 +117,7 @@ class Coverage {
         if (format != 1 && format != 2)
             throw InvalidTable("unknown coverage format");
         data_.array(4, count, format == 1 ? 2 : 6);
-        unsigned previous = 0, index = 0;
+        unsigned previous, index = 0;
         for (unsigned i = 0; i < count; i++) {
             size_t p = 4 + size_t(i) * (format == 1 ? 2 : 6);
             unsigned first = data_.u16(p), last = format == 1 ? first : data_.u16(p + 2);
@@ -157,14 +157,13 @@ class Coverage {
         std::vector<Glyph> result;
         if (!data_)
             return result;
+        auto format = data_.u16(0);
         for (unsigned i = 0, n = data_.u16(2); i < n; i++) {
-            if (data_.u16(0) == 1)
+            if (format == 1)
                 result.push_back(data_.u16(4 + i * 2));
             else {
                 size_t p = 4 + i * 6;
                 unsigned first = data_.u16(p), last = data_.u16(p + 2);
-                if (first > last)
-                    throw InvalidTable("reversed coverage range");
                 for (unsigned g = first; g <= last; g++)
                     result.push_back(Glyph(g));
             }
@@ -180,12 +179,13 @@ class ClassDef {
     explicit ClassDef(View data) : data_(data) {
         if (!data_)
             return;
-        if (data_.u16(0) == 1)
+        auto format = data_.u16(0);
+        if (format == 1)
             data_.array(6, data_.u16(4), 2);
-        else if (data_.u16(0) == 2) {
+        else if (format == 2) {
             unsigned count = data_.u16(2);
             data_.array(4, count, 6);
-            unsigned previous = 0;
+            unsigned previous;
             for (unsigned i = 0; i < count; i++) {
                 size_t p = 4 + size_t(i) * 6;
                 unsigned first = data_.u16(p), last = data_.u16(p + 2);

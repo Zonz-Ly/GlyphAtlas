@@ -6,9 +6,22 @@
 
 @interface GADetailContainerView : NSView
 @property (nonatomic, copy, nullable) NSMenu *(^menuProvider)(void);
+@property (nonatomic, copy, nullable) void (^resizeHandler)(void (^changes)(void));
 @end
 
 @implementation GADetailContainerView
+
+- (void)setFrameSize:(NSSize)newSize {
+    if (self.resizeHandler == nil || NSEqualSizes(self.frame.size, newSize)) {
+        [super setFrameSize:newSize];
+        return;
+    }
+    self.resizeHandler(^{
+        [super setFrameSize:newSize];
+        self.needsLayout = YES;
+        [self layoutSubtreeIfNeeded];
+    });
+}
 
 - (NSMenu *)menuForEvent:(NSEvent *)event {
     return self.menuProvider != nil ? self.menuProvider() : nil;
@@ -73,6 +86,16 @@
     }
 
     __weak typeof(self) weakSelf = self;
+    GADetailContainerView *container = (GADetailContainerView *)self.view;
+    container.resizeHandler = ^(void (^changes)(void)) {
+        GADetailViewController *controller = weakSelf;
+        NSScrollView *scrollView = controller.viewMode == GAViewModeMultiCharacter
+            ? controller.multiScrollView : nil;
+        GAPreserveScrollPosition(scrollView, ^{
+            changes();
+            [controller updateMultiLayout];
+        });
+    };
     self.allGlyphsView.onGlyphDoubleClick = ^(GAAllGlyphEntry *entry) {
         if (weakSelf.onAllGlyphDoubleClick != nil) {
             weakSelf.onAllGlyphDoubleClick(entry);
@@ -85,16 +108,12 @@
     self.multiView.onContentSizeChanged = ^{
         [weakSelf updateMultiLayout];
     };
-    self.multiView.onTextScaleChanged = ^{
-        [weakSelf centerMultiScrollOnPage];
-    };
     // One canvas, one zoom: whichever view is pinched, both keep the value.
     self.canvasView.onSideInsetFractionChanged = ^(CGFloat fraction) {
         weakSelf.multiView.sideInsetFraction = fraction;
     };
     self.multiView.onSideInsetFractionChanged = ^(CGFloat fraction) {
         weakSelf.canvasView.sideInsetFraction = fraction;
-        [weakSelf centerMultiScrollOnPage];
     };
 
     NSMenu *contextMenu = [NSApp.delegate respondsToSelector:@selector(viewMenuForContext)]
@@ -248,21 +267,10 @@
     // Actual Size resets both zooms in this mode: the text scale (pinch and
     // keyboard) and the shared page inset (trackpad). Resetting only the text
     // made the command look dead after a page pinch.
-    [self.multiView resetTextZoom];
-    self.canvasInsetFraction = GACanvasDefaultSideInsetFraction;
-}
-
-/// Keep the page centre under the viewport centre after a zoom, so the scroll
-/// thumbs stay in the middle instead of jumping to an edge.
-- (void)centerMultiScrollOnPage {
-    if (!self.isViewLoaded || self.multiScrollView.hidden) {
-        return;
-    }
-    NSSize viewport = self.multiScrollView.contentSize;
-    NSRect page = [self.multiView pageRect];
-    NSPoint point = NSMakePoint(NSMidX(page) - viewport.width * 0.5,
-                                NSMidY(page) - viewport.height * 0.5);
-    [self scrollMultiToPoint:point];
+    GAPreserveScrollPosition(self.multiScrollView, ^{
+        [self.multiView resetTextZoom];
+        self.canvasInsetFraction = GACanvasDefaultSideInsetFraction;
+    });
 }
 
 @end

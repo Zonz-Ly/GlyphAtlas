@@ -3,6 +3,27 @@
 #import "GAGlyphViews.h"
 #import "GAUnicode.h"
 
+@interface GARowItem : NSObject
+@property (nonatomic, strong, nonnull) GACharacterGroup *group;
+@property (nonatomic, strong, nonnull) GAGlyphVariant *variant;
+@end
+
+@implementation GARowItem
+@end
+
+static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups) {
+    NSMutableArray<GARowItem *> *rows = [NSMutableArray array];
+    for (GACharacterGroup *group in groups) {
+        for (GAGlyphVariant *variant in group.variants) {
+            GARowItem *variantRow = [[GARowItem alloc] init];
+            variantRow.group = group;
+            variantRow.variant = variant;
+            [rows addObject:variantRow];
+        }
+    }
+    return rows;
+}
+
 @interface GASidebarViewController (CommandArrowNavigation)
 - (void)selectCurrentGroupBase;
 - (void)selectNextGroupBase;
@@ -30,8 +51,9 @@
         return;
     }
     if (commandOnly &&
-        [event.charactersIgnoringModifiers.lowercaseString isEqualToString:@"c"]) {
-        [self.sidebarController copySelectedGlyphEncoding];
+        [event.charactersIgnoringModifiers.lowercaseString isEqualToString:@"c"] &&
+        ![self.sidebarController selectedGlyphHasEncoding]) {
+        NSBeep();
         return;
     }
     if (commandOnly && event.keyCode == 126) { // Command-Up
@@ -66,6 +88,7 @@
 @property (nonatomic, strong) NSScrollView *scrollView;
 @property (nonatomic, strong) NSArray<GACharacterGroup *> *groups;
 @property (nonatomic, strong) NSArray<GARowItem *> *rows;
+@property (nonatomic, copy, nullable) NSString *displayedText;
 @property (nonatomic, strong, nullable) GAGlyphVariant *selectedVariant;
 @property (nonatomic) NSRange selectedVariantTextRange;
 @property (nonatomic) BOOL suppressSelectionCallback;
@@ -78,7 +101,42 @@
 @property (nonatomic, strong, nullable) NSLayoutConstraint *searchTopConstraint;
 @property (nonatomic) BOOL suppressTextChangeCallback;
 @property (nonatomic, strong, nullable) GASearchFieldEditor *searchFieldEditor;
+/// Rebinds the same visual row sequence, including shifted source ranges,
+/// without reloading the table, changing the selected row or scrolling.
+/// Returns NO if the inventory changed or a normal activation is pending.
+- (BOOL)updateGroupsWithSameRows:(NSArray<GACharacterGroup *> *)groups;
 @end
+
+// Map unchanged source spans across the edit between two published texts.
+// Intersecting spans were replaced/deleted and must not bind to another character.
+typedef struct {
+    NSRange changed;
+    NSInteger shift;
+} GASourceEdit;
+
+static GASourceEdit GASourceEditBetween(NSString *before, NSString *after) {
+    if (before == nil || after == nil || [before isEqualToString:after])
+        return (GASourceEdit){ NSMakeRange(NSNotFound, 0), 0 };
+    NSUInteger prefix = 0, suffix = 0;
+    NSUInteger common = MIN(before.length, after.length);
+    while (prefix < common && [before characterAtIndex:prefix] == [after characterAtIndex:prefix])
+        prefix++;
+    while (suffix < common - prefix &&
+           [before characterAtIndex:before.length - suffix - 1] ==
+               [after characterAtIndex:after.length - suffix - 1])
+        suffix++;
+    return (GASourceEdit){ NSMakeRange(prefix, before.length - prefix - suffix),
+                          (NSInteger)after.length - (NSInteger)before.length };
+}
+
+static NSRange GARemapSourceRange(NSRange range, GASourceEdit edit) {
+    if (range.location == NSNotFound || edit.changed.location == NSNotFound ||
+        NSMaxRange(range) <= edit.changed.location)
+        return range;
+    if (range.location >= NSMaxRange(edit.changed))
+        return NSMakeRange((NSUInteger)((NSInteger)range.location + edit.shift), range.length);
+    return NSMakeRange(NSNotFound, 0);
+}
 
 static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
 
@@ -190,7 +248,7 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
 }
 
 /// Returns only the attributes this app understands: the default font,
-/// the app-owned foreground color, and selection runs. Everything else
+/// the app-owned foreground color, selection runs, and line-break markers. Everything else
 /// (pasted colors, backgrounds, paragraph styles, links, attachments) is
 /// discarded.
 - (NSAttributedString *)plainCopyOfAttributedText:(NSAttributedString *)text {
@@ -283,6 +341,11 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
     return editor != nil ? editor.selectedRange : NSMakeRange(NSNotFound, 0);
 }
 
+- (BOOL)isInputFocused {
+    NSText *editor = self.searchField.currentEditor;
+    return editor != nil && self.searchField.window.firstResponder == editor;
+}
+
 - (void)setAttributedText:(NSAttributedString *)attributedText {
     NSAttributedString *fieldText = GAFieldTextFromModelText(attributedText);
     NSAttributedString *normalized = [self plainCopyOfAttributedText:fieldText];
@@ -311,7 +374,7 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
 - (void)selectGlyphKeyAfterNextReload:(NSString *)glyphKey
                             textRange:(NSRange)textRange
                                scroll:(GAPendingSelectionScroll)scroll {
-    self.pendingSelectionGlyphKey = [glyphKey copy];
+    self.pendingSelectionGlyphKey = glyphKey;
     self.pendingSelectionTextRange = textRange;
     self.pendingSelectionScroll = scroll;
 }
@@ -327,9 +390,6 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
     NSInteger row = self.tableView.selectedRow;
     if (row < 0 || row >= (NSInteger)self.rows.count) return nil;
     GARowItem *item = self.rows[(NSUInteger)row];
-    if (item.variant == nil || item.group == nil) {
-        return nil;
-    }
     return item;
 }
 
@@ -337,7 +397,6 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
                  modifiers:(NSEventModifierFlags)modifiers {
     if (row < 0 || row >= (NSInteger)self.rows.count) return;
     GARowItem *item = self.rows[(NSUInteger)row];
-    if (item.variant == nil || item.group == nil) return;
     if (GAModifiersAre(modifiers, NSEventModifierFlagShift)) {
         if (self.onGlyphShiftActivated) {
             self.onGlyphShiftActivated(item.group, item.variant);
@@ -402,6 +461,10 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
     [self prepareFieldEditor];
 }
 
+- (void)focusGlyphList {
+    [self.tableView.window makeFirstResponder:self.tableView];
+}
+
 /// The window asks for a field editor when a control starts editing. Only the
 /// search field gets the custom editor; other controls keep the default one.
 - (NSTextView *)fieldEditorForControl:(id)control {
@@ -444,12 +507,9 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
 - (BOOL)control:(NSControl *)control
     textView:(NSTextView *)textView
     doCommandBySelector:(SEL)commandSelector {
-    if (commandSelector == @selector(cancelOperation:)) {
-        [self.tableView.window makeFirstResponder:self.tableView];
-        return YES;
-    }
-    if (commandSelector == @selector(insertNewline:)) {
-        [self.tableView.window makeFirstResponder:self.tableView];
+    if (commandSelector == @selector(cancelOperation:) ||
+        commandSelector == @selector(insertNewline:)) {
+        [self focusGlyphList];
         return YES;
     }
     if (commandSelector == @selector(insertNewlineIgnoringFieldEditor:)) {
@@ -481,9 +541,6 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
         return;
     }
     GARowItem *item = self.rows[(NSUInteger)row];
-    if (item.group == nil) {
-        return;
-    }
     NSUInteger groupIndex = [self.groups indexOfObjectIdenticalTo:item.group];
     if (groupIndex == NSNotFound) return;
     if (item.variant.isBase) {
@@ -503,9 +560,6 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
         return;
     }
     GARowItem *item = self.rows[(NSUInteger)row];
-    if (item.group == nil) {
-        return;
-    }
     NSUInteger groupIndex = [self.groups indexOfObjectIdenticalTo:item.group];
     if (groupIndex != NSNotFound && groupIndex + 1 < self.groups.count) {
         [self selectBaseRowForGroupAtIndex:groupIndex + 1];
@@ -550,21 +604,7 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
     return NSNotFound;
 }
 
-static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups) {
-    NSMutableArray<GARowItem *> *rows = [NSMutableArray array];
-    for (GACharacterGroup *group in groups) {
-        for (GAGlyphVariant *variant in group.variants) {
-            GARowItem *variantRow = [[GARowItem alloc] init];
-            variantRow.group = group;
-            variantRow.variant = variant;
-            [rows addObject:variantRow];
-        }
-    }
-    return rows;
-}
-
-/// Scrolls so the selected row's whole character group is visible when it
-/// fits; otherwise only the selected row is brought into view.
+/// Finds the group at an exact source range.
 - (GACharacterGroup *)groupForTextRange:(NSRange)textRange {
     if (textRange.length == 0) {
         return nil;
@@ -608,10 +648,10 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
     return NSNotFound;
 }
 
-- (void)scrollClipViewToY:(CGFloat)y {
+- (void)scrollTableToY:(CGFloat)y {
     NSClipView *clipView = self.scrollView.contentView;
     NSRect bounds = clipView.bounds;
-    bounds.origin.y = y;
+    bounds.origin.y += y - NSMinY(clipView.documentVisibleRect);
     [clipView scrollToPoint:[clipView constrainBoundsRect:bounds].origin];
     [self.scrollView reflectScrolledClipView:clipView];
 }
@@ -622,10 +662,10 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
     }
     [self.tableView layoutSubtreeIfNeeded];
     NSRect rowRect = [self.tableView rectOfRow:row];
-    if (NSIntersectsRect(rowRect, self.tableView.visibleRect)) {
+    if (NSIntersectsRect(rowRect, self.scrollView.contentView.documentVisibleRect)) {
         return;
     }
-    [self scrollClipViewToY:NSMinY(rowRect)];
+    [self scrollTableToY:NSMinY(rowRect)];
 }
 
 /// Resolves a pending selection against the current rows. Returns YES when it
@@ -661,46 +701,37 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
     if (row < 0 || row >= (NSInteger)self.rows.count) {
         return;
     }
+    // Decide before centering: a visible selection never needs navigation.
+    if (self.isViewLoaded) [self.view.window.contentView layoutSubtreeIfNeeded];
+    [self.tableView layoutSubtreeIfNeeded];
+    NSRect selectedRect = [self.tableView rectOfRow:row];
+    NSRect visibleRect = self.scrollView.contentView.documentVisibleRect;
+    if (NSMinY(selectedRect) >= NSMinY(visibleRect) &&
+        NSMaxY(selectedRect) <= NSMaxY(visibleRect)) return;
+
     GACharacterGroup *group = self.rows[(NSUInteger)row].group;
     NSInteger first = row;
     NSInteger last = row;
-    if (group != nil) {
-        first = NSNotFound;
-        last = NSNotFound;
-        for (NSInteger index = 0; index < (NSInteger)self.rows.count; index++) {
-            if (self.rows[(NSUInteger)index].group == group) {
-                if (first == NSNotFound) {
-                    first = index;
-                }
-                last = index;
-            }
+    for (NSInteger index = 0; index < (NSInteger)self.rows.count; index++) {
+        if (self.rows[(NSUInteger)index].group == group) {
+            first = MIN(first, index);
+            last = index;
         }
     }
-    if (first == NSNotFound || last == NSNotFound) {
-        [self.tableView scrollRowToVisible:row];
-        return;
-    }
-    [self.tableView layoutSubtreeIfNeeded];
     [self.tableView rectOfRow:first];
     [self.tableView rectOfRow:last];
     NSRect firstRect = [self.tableView rectOfRow:first];
     NSRect lastRect = [self.tableView rectOfRow:last];
-    NSRect visibleRect = self.tableView.visibleRect;
-    CGFloat groupHeight = NSMaxY(lastRect) - NSMinY(firstRect);
-    if (groupHeight > NSHeight(visibleRect)) {
-        // Group is taller than the visible area: always align its top.
-        // scrollRowToVisible:first only makes the row visible; if it is already
-        // visible it does nothing, and a selection below may sit at the bottom.
-        // Move the clip view to the group's top explicitly.
-        [self scrollClipViewToY:NSMinY(firstRect)];
-    } else if (NSMinY(firstRect) < NSMinY(visibleRect)) {
-        // Group top is above the visible area: align the top.
-        [self.tableView scrollRowToVisible:first];
-    } else if (NSMaxY(lastRect) > NSMaxY(visibleRect)) {
-        // Group bottom is below the visible area: align the bottom.
-        [self.tableView scrollRowToVisible:last];
-    }
-    // Otherwise both edges are visible: do nothing.
+    visibleRect = self.scrollView.contentView.documentVisibleRect;
+    CGFloat groupCenter = (NSMinY(firstRect) + NSMaxY(lastRect)) * 0.5;
+    [self scrollTableToY:groupCenter - NSHeight(visibleRect) * 0.5];
+    // Only the selected row decides the minimal correction after centering.
+    selectedRect = [self.tableView rectOfRow:row];
+    visibleRect = self.scrollView.contentView.documentVisibleRect;
+    if (NSMinY(selectedRect) < NSMinY(visibleRect))
+        [self scrollTableToY:NSMinY(selectedRect)];
+    else if (NSMaxY(selectedRect) > NSMaxY(visibleRect))
+        [self scrollTableToY:NSMaxY(selectedRect) - NSHeight(visibleRect)];
 }
 
 - (BOOL)updateGroupsWithSameRows:(NSArray<GACharacterGroup *> *)groups {
@@ -754,12 +785,6 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
         self.selectedVariant = row.variant;
         self.selectedVariantTextRange = range;
         [self scrollGroupContainingRow:index];
-        // Preserve group scrolling; only reveal a selected row below the viewport.
-        NSRect selectedRect = [self.tableView rectOfRow:(NSInteger)index];
-        NSRect visibleRect = self.tableView.visibleRect;
-        if (NSMaxY(selectedRect) > NSMaxY(visibleRect)) {
-            [self scrollClipViewToY:NSMaxY(selectedRect) - NSHeight(visibleRect)];
-        }
         self.suppressSelectionCallback = NO;
         [self notifySelection];
         return YES;
@@ -767,13 +792,26 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
     return NO;
 }
 
+- (void)updateGroups:(NSArray<GACharacterGroup *> *)groups sourceText:(NSString *)text {
+    if ([self updateGroupsWithSameRows:groups]) {
+        self.displayedText = text;
+        return;
+    }
+    [self setGroups:groups sourceText:text];
+}
+
 - (void)setGroups:(NSArray<GACharacterGroup *> *)groups {
+    [self setGroups:groups sourceText:nil];
+}
+
+- (void)setGroups:(NSArray<GACharacterGroup *> *)groups sourceText:(NSString *)text {
     [NSAnimationContext beginGrouping];
     NSAnimationContext.currentContext.duration = 0;
     @try {
         NSDictionary *scrollAnchor = [self captureScrollAnchor];
         NSString *oldGlyphKey = nil;
-        NSRange oldGroupRange = self.selectedVariantTextRange;
+        NSRange oldGroupRange = GARemapSourceRange(self.selectedVariantTextRange,
+            GASourceEditBetween(self.displayedText, text));
         if (self.selectedVariant != nil) {
             oldGlyphKey = self.selectedVariant.glyphKey;
         } else {
@@ -781,6 +819,7 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
         }
 
         _groups = [groups copy];
+        self.displayedText = text;
         self.rows = GARowsForGroups(groups);
 
         self.suppressSelectionCallback = YES;
@@ -859,27 +898,48 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
 - (NSDictionary *)captureScrollAnchor {
     NSPoint origin = self.scrollView.contentView.bounds.origin;
     NSRange visible = [self.tableView rowsInRect:self.tableView.visibleRect];
-    NSMutableDictionary *anchor = [@{@"origin" : [NSValue valueWithPoint:origin]} mutableCopy];
-    if (visible.length && visible.location < self.rows.count) {
-        GARowItem *row = self.rows[visible.location];
-        anchor[@"key"] = row.variant.glyphKey;
-        anchor[@"range"] = [NSValue valueWithRange:row.group.textRange];
-        anchor[@"offset"] = @(origin.y - NSMinY([self.tableView rectOfRow:visible.location]));
+    NSMutableArray *rows = [NSMutableArray array];
+    if (visible.location != NSNotFound) {
+        for (NSUInteger i = visible.location; i < MIN(self.rows.count, NSMaxRange(visible)); i++) {
+            GARowItem *row = self.rows[i];
+            [rows addObject:@{
+                @"key" : row.variant.glyphKey,
+                @"range" : [NSValue valueWithRange:row.group.textRange],
+                @"text" : row.group.text,
+                @"ligature" : @(row.group.insertedLigature),
+                @"offset" : @(NSMinY(self.scrollView.contentView.documentVisibleRect) -
+                               NSMinY([self.tableView rectOfRow:(NSInteger)i]))
+            }];
+        }
     }
+    NSMutableDictionary *anchor = [@{@"origin" : [NSValue valueWithPoint:origin],
+                                     @"rows" : rows} mutableCopy];
+    if (self.displayedText != nil) anchor[@"text"] = self.displayedText;
     return anchor;
 }
 
 - (void)restoreScrollAnchor:(NSDictionary *)anchor {
     NSPoint origin = [anchor[@"origin"] pointValue];
-    if (anchor[@"key"]) {
-        GACharacterGroup *group = [self groupForTextRange:[anchor[@"range"] rangeValue]];
-        NSInteger row = [self rowForGlyphKey:anchor[@"key"] inGroup:group];
+    GASourceEdit edit = GASourceEditBetween(anchor[@"text"], self.displayedText);
+    for (NSDictionary *visible in anchor[@"rows"]) {
+        NSRange range = GARemapSourceRange([visible[@"range"] rangeValue], edit);
+        GACharacterGroup *group = nil;
+        for (GACharacterGroup *candidate in self.groups)
+            if (NSEqualRanges(candidate.textRange, range) &&
+                [candidate.text isEqualToString:visible[@"text"]] &&
+                candidate.insertedLigature == [visible[@"ligature"] boolValue]) {
+                group = candidate;
+                break;
+            }
+        if (group == nil) continue;
+        NSInteger row = [self rowForGlyphKey:visible[@"key"] inGroup:group];
         if (row == NSNotFound && group.variants.count)
             row = [self rowForGlyphKey:group.variants.firstObject.glyphKey inGroup:group];
-        if (row != NSNotFound) {
-            NSRect rect = [self.tableView rectOfRow:row];
-            origin.y = NSMinY(rect) + MIN([anchor[@"offset"] doubleValue], NSHeight(rect) - 1);
-        }
+        if (row == NSNotFound) continue;
+        NSRect rect = [self.tableView rectOfRow:row];
+        CGFloat target = NSMinY(rect) + MIN([visible[@"offset"] doubleValue], NSHeight(rect) - 1);
+        origin.y += target - NSMinY(self.scrollView.contentView.documentVisibleRect);
+        break;
     }
     [self restoreScrollOrigin:origin];
 }
@@ -917,7 +977,7 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
     if (same) {
         return;
     }
-    self.lastNotifiedGlyphKey = [key copy];
+    self.lastNotifiedGlyphKey = key;
     self.lastNotifiedRange = range;
     self.onSelectionChanged(self.selectedVariant);
 }

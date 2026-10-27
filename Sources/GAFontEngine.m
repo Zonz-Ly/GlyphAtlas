@@ -4,11 +4,13 @@
 #import <AppKit/AppKit.h>
 
 const CGFloat GAFontShapingSize = 200.0;
-static NSString *GACopyString(CFStringRef _Nullable string) {
-    if (string == NULL) {
-        return @"";
+
+static NSString *GAGlyphKeyForGlyphIDs(NSArray<NSNumber *> *glyphIDs) {
+    NSMutableArray<NSString *> *parts = [NSMutableArray arrayWithCapacity:glyphIDs.count];
+    for (NSNumber *glyph in glyphIDs) {
+        [parts addObject:glyph.stringValue];
     }
-    return CFBridgingRelease(string);
+    return parts.count ? [parts componentsJoinedByString:@","] : @"∅";
 }
 
 #pragma mark - GAAllGlyphEntry
@@ -19,11 +21,12 @@ static NSString *GACopyString(CFStringRef _Nullable string) {
 #pragma mark - GAGlyphVariant
 
 @interface GAGlyphVariant ()
-@property (nonatomic, strong) NSMutableArray<NSString *> *mutableFeatureSources;
 - (void)addFeatureSource:(NSString *)source;
 @end
 
-@implementation GAGlyphVariant
+@implementation GAGlyphVariant {
+    NSMutableArray<NSString *> *_mutableFeatureSources;
+}
 
 - (instancetype)init {
     self = [super init];
@@ -42,17 +45,14 @@ static NSString *GACopyString(CFStringRef _Nullable string) {
     if (source.length == 0) {
         return;
     }
-    if ([self.mutableFeatureSources containsObject:source]) {
-        return;
-    }
     NSString *tag = [source componentsSeparatedByString:@" "].firstObject;
-    for (NSString *existing in self.mutableFeatureSources) {
+    for (NSString *existing in _mutableFeatureSources) {
         if ([[existing componentsSeparatedByString:@" "].firstObject isEqualToString:tag]) {
             return;
         }
     }
-    [self.mutableFeatureSources addObject:source];
-    self.featureSources = [self.mutableFeatureSources copy];
+    [_mutableFeatureSources addObject:source];
+    _featureSources = [_mutableFeatureSources copy];
 }
 
 - (void)addFeatureSources:(NSArray<NSString *> *)sources {
@@ -62,14 +62,25 @@ static NSString *GACopyString(CFStringRef _Nullable string) {
 }
 
 - (NSString *)glyphKey {
-    NSMutableArray<NSString *> *parts = [NSMutableArray arrayWithCapacity:self.glyphIDs.count];
-    for (NSNumber *glyph in self.glyphIDs) {
-        [parts addObject:glyph.stringValue];
-    }
-    return parts.count ? [parts componentsJoinedByString:@","] : @"∅";
+    return GAGlyphKeyForGlyphIDs(self.glyphIDs);
 }
 
 @end
+
+void GADrawGlyphVariant(GAGlyphVariant *variant, CGContextRef context) {
+    NSUInteger count = variant.glyphIDs.count;
+    CGGlyph *glyphs = calloc(count, sizeof(CGGlyph));
+    CGPoint *positions = calloc(count, sizeof(CGPoint));
+    for (NSUInteger index = 0; index < count; index++) {
+        glyphs[index] = (CGGlyph)variant.glyphIDs[index].unsignedShortValue;
+        positions[index] = index < variant.positions.count
+            ? variant.positions[index].pointValue
+            : CGPointZero;
+    }
+    CTFontDrawGlyphs(variant.fontBox.font, glyphs, positions, count, context);
+    free(glyphs);
+    free(positions);
+}
 
 #pragma mark - GACharacterGroup
 
@@ -97,7 +108,6 @@ static NSString *GACopyString(CFStringRef _Nullable string) {
 - (void)dealloc {
     if (_font) {
         CFRelease(_font);
-        _font = NULL;
     }
 }
 
@@ -151,10 +161,21 @@ NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text) {
 @interface GAFontDocument ()
 - (instancetype)initWithDescriptor:(CTFontDescriptorRef)descriptor URL:(NSURL *)url
                     sourceDocument:(GAFontDocument *)source NS_DESIGNATED_INITIALIZER;
+/// Raw ink bounding box of a variant, from glyf/CFF through
+/// CTFontGetBoundingRectsForGlyphs. Returns CGRectZero for zero-ink glyphs.
++ (CGRect)inkBoundsForVariant:(GAGlyphVariant *)variant;
+
+/// Advance width/height in font units. Width is the horizontal advance.
+/// Requires vmtx/vhea; the caller checks their presence before using this method.
++ (CGSize)advanceInFontUnitsForVariant:(GAGlyphVariant *)variant;
+
+/// Requires a nonempty variant. Reports vmtx/vhea availability and the first
+/// glyph's top bearing; missing bearing records yield zero.
++ (BOOL)verticalMetricsForVariant:(GAGlyphVariant *)variant
+                 topSideBearing:(CGFloat *)topSideBearing;
 @end
 
 @implementation GAFontDocument {
-    CTFontDescriptorRef _descriptor;
     CTFontRef _font;
     GAFontBox *_fontBox;
     GASubstitutionEngine *_substitutionEngine;
@@ -171,17 +192,19 @@ NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text) {
     self = [super init];
     if (!self)
         return nil;
-    _descriptor = CTFontDescriptorCreateCopyWithAttributes(
+    CTFontDescriptorRef configured = CTFontDescriptorCreateCopyWithAttributes(
         descriptor,
         (__bridge CFDictionaryRef) @{(__bridge NSString *)kCTFontCascadeListAttribute : @[]});
-    _font = CTFontCreateWithFontDescriptor(_descriptor, GAFontShapingSize, NULL);
+    _font = CTFontCreateWithFontDescriptor(configured, GAFontShapingSize, NULL);
+    if (configured)
+        CFRelease(configured);
     if (_font == NULL)
         return nil;
     _fontBox = [[GAFontBox alloc] initWithFont:_font];
     _fontURL = [url copy];
-    _fullName = GACopyString(CTFontCopyFullName(_font));
+    _fullName = CFBridgingRelease(CTFontCopyFullName(_font));
     if (!_fullName.length)
-        _fullName = GACopyString(CTFontCopyPostScriptName(_font));
+        _fullName = CFBridgingRelease(CTFontCopyPostScriptName(_font));
     if (!_fullName.length)
         _fullName = NSLocalizedString(@"Untitled Font", @"Font name fallback");
     NSDictionary *coordinates =
@@ -201,8 +224,6 @@ NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text) {
 - (void)dealloc {
     if (_font)
         CFRelease(_font);
-    if (_descriptor)
-        CFRelease(_descriptor);
 }
 - (GAFontDocument *)documentWithDescriptor:(CTFontDescriptorRef)descriptor {
     return [[GAFontDocument alloc] initWithDescriptor:descriptor URL:_fontURL sourceDocument:self];
@@ -212,7 +233,6 @@ NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text) {
     for (GAScanCandidate *old in result.candidates) {
         GAScanCandidate *c = [[GAScanCandidate alloc] init];
         c.glyphIDs = old.glyphIDs;
-        c.fontBox = _fontBox;
         NSString *source = NSMaxRange(old.sourceRange) <= content.length
                                ? [content substringWithRange:old.sourceRange]
                                : content;
@@ -222,7 +242,7 @@ NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text) {
         c.ligature = old.ligature;
         c.fromGlyphSeed = old.fromGlyphSeed;
         c.sourceRange = old.sourceRange;
-        c.targetOffset = old.targetOffset;
+        c.targetGroupIndex = old.targetGroupIndex;
         [candidates addObject:c];
     }
     GARawScanResult *rebound = [[GARawScanResult alloc] init];
@@ -304,10 +324,8 @@ NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text) {
     }
 }
 
+/// Checks a nonempty glyph name; the caller handles missing names.
 static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
-    if (name.length == 0) {
-        return YES;
-    }
     static NSRegularExpression *gidPattern;
     static NSRegularExpression *temporaryPattern;
     static NSRegularExpression *variationPattern;
@@ -327,24 +345,15 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
             options:NSRegularExpressionCaseInsensitive error:nil];
     });
     NSRange range = NSMakeRange(0, name.length);
-    if ([gidPattern firstMatchInString:name options:0 range:range] != nil) {
-        return YES;
-    }
-    if ([temporaryPattern firstMatchInString:name options:0 range:range] != nil) {
-        return YES;
-    }
-    if ([variationPattern firstMatchInString:name options:0 range:range] != nil) {
-        return YES;
-    }
-    if ([multiUnicodePattern firstMatchInString:name options:0 range:range] != nil) {
-        return YES;
-    }
-    return NO;
+    return [gidPattern firstMatchInString:name options:0 range:range] != nil ||
+           [temporaryPattern firstMatchInString:name options:0 range:range] != nil ||
+           [variationPattern firstMatchInString:name options:0 range:range] != nil ||
+           [multiUnicodePattern firstMatchInString:name options:0 range:range] != nil;
 }
 
 - (void)decorateVariant:(GAGlyphVariant *)variant
           withUnicodeMap:(NSDictionary<NSNumber *, NSArray<NSNumber *> *> *)map {
-    NSMutableOrderedSet<NSNumber *> *scalars = [NSMutableOrderedSet orderedSet];
+    NSMutableSet<NSNumber *> *scalars = [NSMutableSet set];
     NSMutableArray<NSString *> *glyphNames = [NSMutableArray array];
 
     for (NSNumber *glyphNumber in variant.glyphIDs) {
@@ -354,8 +363,7 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
         }
 
         CGGlyph glyph = (CGGlyph)glyphNumber.unsignedShortValue;
-        CFStringRef glyphName = CTFontCopyNameForGlyph(_font, glyph);
-        NSString *name = glyphName ? CFBridgingRelease(glyphName) : @"";
+        NSString *name = CFBridgingRelease(CTFontCopyNameForGlyph(_font, glyph));
         if (name.length > 0 && !GAGlyphNameLooksSynthetic(name)) {
             [glyphNames addObject:name];
         } else {
@@ -363,19 +371,14 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
         }
     }
 
-    NSArray<NSNumber *> *sortedScalars = [scalars.array sortedArrayUsingComparator:
-        ^NSComparisonResult(NSNumber *a, NSNumber *b) {
-            return [a compare:b];
-        }];
+    NSArray<NSNumber *> *sortedScalars =
+        [scalars.allObjects sortedArrayUsingSelector:@selector(compare:)];
     variant.unicodeScalars = sortedScalars;
-    variant.glyphName = glyphNames.count ? [glyphNames componentsJoinedByString:@"/"] : @"∅";
+    variant.glyphName = [glyphNames componentsJoinedByString:@"/"];
 }
 
 #pragma mark - Font substitution discovery
 
-- (GARawScanResult *)rawScanContent:(NSString *)content {
-    return [self rawScanContent:content selections:@[]];
-}
 - (GARawScanResult *)rawScanContent:(NSString *)content
                          selections:(NSArray<GAGlyphSelectionRun *> *)selections {
     NSArray<GACharacterGroup *> *groups = GAGroupsForText(content);
@@ -385,7 +388,6 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
     for (GASubstitutionMatch *match in matches) {
         if (!match.sourceRange.length || NSMaxRange(match.sourceRange) > content.length)
             continue;
-        NSUInteger first = NSNotFound, last = NSNotFound;
         NSUInteger lo = 0, hi = groups.count;
         while (lo < hi) {
             NSUInteger mid = (lo + hi) / 2;
@@ -394,8 +396,7 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
             else
                 hi = mid;
         }
-        first = lo;
-        lo = first;
+        NSUInteger first = lo;
         hi = groups.count;
         while (lo < hi) {
             NSUInteger mid = (lo + hi) / 2;
@@ -404,21 +405,18 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
             else
                 hi = mid;
         }
-        last = lo ? lo - 1 : NSNotFound;
+        NSUInteger last = lo ? lo - 1 : NSNotFound;
         if (first >= groups.count)
-            first = NSNotFound;
-        if (first == NSNotFound)
             continue;
         GAScanCandidate *c = [[GAScanCandidate alloc] init];
         c.glyphIDs = match.glyphIDs;
-        c.fontBox = _fontBox;
         c.positions = [_substitutionEngine
             positionsForGlyphIDs:c.glyphIDs
                          content:[content substringWithRange:match.sourceRange]];
-        c.sources = match.sources ?: @[];
+        c.sources = match.sources;
         c.sourceRange = match.sourceRange;
         c.fromGlyphSeed = selections.count > 0;
-        c.targetOffset = last;
+        c.targetGroupIndex = last;
         c.ligature = first != last;
         c.base = match.base && first == last;
         [candidates addObject:c];
@@ -429,34 +427,22 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
 }
 
 - (void)applyRawResult:(GARawScanResult *)result
-          contentRange:(NSRange)contentRange
-       startGroupIndex:(NSUInteger)startGroupIndex
                 groups:(NSArray<GACharacterGroup *> *)groups {
     for (GAScanCandidate *candidate in result.candidates) {
-        NSUInteger target = startGroupIndex + candidate.targetOffset;
+        NSUInteger target = candidate.targetGroupIndex;
         if (target >= groups.count) {
             continue;
         }
         GACharacterGroup *group = groups[target];
         NSMutableArray<GAGlyphVariant *> *variants =
-            [group.variants mutableCopy] ?: [NSMutableArray array];
-        NSMutableString *parts = [NSMutableString string];
-        for (NSNumber *glyph in candidate.glyphIDs) {
-            if (parts.length > 0)
-                [parts appendString:@","];
-            [parts appendString:glyph.stringValue];
-        }
-        NSString *key = parts.length ? parts : @"∅";
-        NSRange sourceRange = NSMakeRange(0, 0);
-        if (candidate.ligature || candidate.fromGlyphSeed)
-            sourceRange = NSMakeRange(contentRange.location + candidate.sourceRange.location,
-                                      candidate.sourceRange.length);
+            [group.variants mutableCopy];
+        NSString *key = GAGlyphKeyForGlyphIDs(candidate.glyphIDs);
         GAGlyphVariant *existing = nil;
         for (GAGlyphVariant *variant in variants) {
             if (![variant.glyphKey isEqualToString:key] ||
                 variant.isLigature != candidate.isLigature)
                 continue;
-            if (candidate.isLigature && !NSEqualRanges(variant.sourceTextRange, sourceRange))
+            if (candidate.isLigature && !NSEqualRanges(variant.sourceTextRange, candidate.sourceRange))
                 continue;
             existing = variant;
             break;
@@ -464,29 +450,22 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
         if (existing != nil) {
             if (candidate.fromGlyphSeed) {
                 existing.fromGlyphSeed = YES;
-                existing.sourceTextRange = sourceRange;
+                existing.sourceTextRange = candidate.sourceRange;
             }
-            [existing addFeatureSources:candidate.sources ?: @[]];
-            if (!existing.isBase) {
-                if (candidate.ligature) {
-                    existing.ligature = YES;
-                    existing.sourceTextRange = sourceRange;
-                }
-            }
+            [existing addFeatureSources:candidate.sources];
             continue;
         }
         GAGlyphVariant *variant = [[GAGlyphVariant alloc] init];
-        variant.fontBox = candidate.fontBox;
+        variant.fontBox = _fontBox;
         variant.glyphIDs = candidate.glyphIDs;
-        variant.positions = candidate.positions ?: @[];
-        [variant addFeatureSources:candidate.sources ?: @[]];
+        variant.positions = candidate.positions;
+        [variant addFeatureSources:candidate.sources];
         variant.base = candidate.isBase;
         variant.fromGlyphSeed = candidate.fromGlyphSeed;
-        if (candidate.fromGlyphSeed)
-            variant.sourceTextRange = sourceRange;
+        if (candidate.fromGlyphSeed || candidate.ligature)
+            variant.sourceTextRange = candidate.sourceRange;
         if (candidate.ligature) {
             variant.ligature = YES;
-            variant.sourceTextRange = sourceRange;
         }
         [self decorateVariant:variant withUnicodeMap:self.unicodeMap];
         if (candidate.isBase && variant.unicodeScalars.count == 0) {
@@ -518,15 +497,6 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
 - (NSNumber *)verticalSubstituteForGlyph:(CGGlyph)glyph {
     return [_substitutionEngine verticalGlyph:glyph];
 }
-- (NSArray<GAGlyphLayoutRun *> *)layoutRunsForText:(NSString *)text
-                                        contextual:(BOOL)contextual
-                                         ligatures:(BOOL)ligatures
-                                          vertical:(BOOL)vertical {
-    return [_substitutionEngine layoutRunsForText:text
-                                       contextual:contextual
-                                        ligatures:ligatures
-                                         vertical:vertical];
-}
 - (NSArray<GACharacterGroup *> *)analyzeGlyphIDs:(NSArray<NSNumber *> *)glyphIDs {
     if (!glyphIDs.count)
         return @[];
@@ -535,7 +505,7 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
         GAGlyphVariant *v = [[GAGlyphVariant alloc] init];
         v.fontBox = _fontBox;
         v.glyphIDs = match.glyphIDs;
-        v.positions = [_substitutionEngine positionsForGlyphIDs:v.glyphIDs];
+        v.positions = [_substitutionEngine positionsForGlyphIDs:v.glyphIDs content:@""];
         [v addFeatureSources:match.sources];
         v.base = match.base;
         [self decorateVariant:v withUnicodeMap:self.unicodeMap];
@@ -543,7 +513,6 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
     }
     GACharacterGroup *group = [[GACharacterGroup alloc] init];
     group.text = @"";
-    group.textRange = NSMakeRange(0, 0);
     group.variants = variants;
     return @[ group ];
 }
@@ -625,18 +594,15 @@ static CGFloat GAAdvanceWidthInFontUnits(CTFontRef font,
 
     // inkBoundsForVariant works in shaping points; the page is in font units.
     CGRect ink = [self inkBoundsForVariant:variant];
-    if (CGRectIsNull(ink) || CGRectIsEmpty(ink)) {
-        ink = CGRectZero;
-    } else {
-        ink = CGRectMake(CGRectGetMinX(ink) * shapeToUnits,
-                         CGRectGetMinY(ink) * shapeToUnits,
-                         CGRectGetWidth(ink) * shapeToUnits,
-                         CGRectGetHeight(ink) * shapeToUnits);
-    }
+    ink = CGRectMake(CGRectGetMinX(ink) * shapeToUnits,
+                     CGRectGetMinY(ink) * shapeToUnits,
+                     CGRectGetWidth(ink) * shapeToUnits,
+                     CGRectGetHeight(ink) * shapeToUnits);
     BOOL hasInk = !CGRectIsEmpty(ink);
 
+    CGFloat topSideBearing;
     BOOL hasVertical = usesVerticalMetrics &&
-        [self variantHasVerticalMetrics:variant];
+        [self verticalMetricsForVariant:variant topSideBearing:&topSideBearing];
     CGFloat width;
     CGFloat height;
     if (hasVertical) {
@@ -658,7 +624,6 @@ static CGFloat GAAdvanceWidthInFontUnits(CTFontRef font,
 
     CGFloat baseline;
     if (hasVertical) {
-        CGFloat topSideBearing = [self verticalTopSideBearingForVariant:variant];
         baseline = height - topSideBearing - CGRectGetMaxY(ink);
     } else {
         baseline = CTFontGetDescent(font) * shapeToUnits;
@@ -670,31 +635,22 @@ static CGFloat GAAdvanceWidthInFontUnits(CTFontRef font,
     return page;
 }
 
-+ (BOOL)variantHasVerticalMetrics:(GAGlyphVariant *)variant {
-    NSData *vmtx = CFBridgingRelease(CTFontCopyTable(variant.fontBox.font,
-                                                     kCTFontTableVmtx, 0));
-    NSData *vhea = CFBridgingRelease(CTFontCopyTable(variant.fontBox.font,
-                                                     kCTFontTableVhea, 0));
-    return vmtx.length >= 4 && vhea.length >= 36;
-}
-
-+ (CGFloat)verticalTopSideBearingForVariant:(GAGlyphVariant *)variant {
-    if (variant.glyphIDs.count == 0) {
-        return 0;
-    }
++ (BOOL)verticalMetricsForVariant:(GAGlyphVariant *)variant
+                 topSideBearing:(CGFloat *)topSideBearing {
+    *topSideBearing = 0;
     NSData *vmtx = CFBridgingRelease(CTFontCopyTable(variant.fontBox.font,
                                                      kCTFontTableVmtx, 0));
     NSData *vhea = CFBridgingRelease(CTFontCopyTable(variant.fontBox.font,
                                                      kCTFontTableVhea, 0));
     if (vmtx.length < 4 || vhea.length < 36) {
-        return 0;
+        return NO;
     }
     const uint8_t *vmtxBytes = vmtx.bytes;
     const uint8_t *vheaBytes = vhea.bytes;
     NSUInteger vmtxLength = vmtx.length;
     uint16_t numberOfVMetrics = (uint16_t)((vheaBytes[34] << 8) | vheaBytes[35]);
     if (numberOfVMetrics == 0) {
-        return 0;
+        return YES;
     }
     NSUInteger glyphID = variant.glyphIDs.firstObject.unsignedIntegerValue;
     NSUInteger offset;
@@ -705,9 +661,10 @@ static CGFloat GAAdvanceWidthInFontUnits(CTFontRef font,
                  (glyphID - numberOfVMetrics) * 2;
     }
     if (offset + 2 > vmtxLength) {
-        return 0;
+        return YES;
     }
-    return (CGFloat)(int16_t)((vmtxBytes[offset] << 8) | vmtxBytes[offset + 1]);
+    *topSideBearing = (CGFloat)(int16_t)((vmtxBytes[offset] << 8) | vmtxBytes[offset + 1]);
+    return YES;
 }
 
 + (CGSize)advanceInFontUnitsForVariant:(GAGlyphVariant *)variant {
@@ -720,23 +677,19 @@ static CGFloat GAAdvanceWidthInFontUnits(CTFontRef font,
     CGFloat width = GAAdvanceWidthInFontUnits(font, variant.glyphIDs);
 
     CGFloat height = 0;
-    if ([self variantHasVerticalMetrics:variant]) {
-        CGGlyph *glyphs = calloc(count, sizeof(CGGlyph));
-        for (NSUInteger index = 0; index < count; index++) {
-            glyphs[index] = (CGGlyph)variant.glyphIDs[index].unsignedShortValue;
-        }
-        CGSize *vAdvances = calloc(count, sizeof(CGSize));
-        CTFontGetAdvancesForGlyphs(font, kCTFontOrientationVertical,
-                                   glyphs, vAdvances, (CFIndex)count);
-        for (NSUInteger index = 0; index < count; index++) {
-            // CoreText puts the vertical advance in CGSize.width.
-            height += MAX(vAdvances[index].width, vAdvances[index].height);
-        }
-        free(vAdvances);
-        free(glyphs);
-    } else {
-        height = CTFontGetAscent(font) + CTFontGetDescent(font);
+    CGGlyph *glyphs = calloc(count, sizeof(CGGlyph));
+    for (NSUInteger index = 0; index < count; index++) {
+        glyphs[index] = (CGGlyph)variant.glyphIDs[index].unsignedShortValue;
     }
+    CGSize *vAdvances = calloc(count, sizeof(CGSize));
+    CTFontGetAdvancesForGlyphs(font, kCTFontOrientationVertical,
+                               glyphs, vAdvances, (CFIndex)count);
+    for (NSUInteger index = 0; index < count; index++) {
+        // CoreText puts the vertical advance in CGSize.width.
+        height += MAX(vAdvances[index].width, vAdvances[index].height);
+    }
+    free(vAdvances);
+    free(glyphs);
     return CGSizeMake(width, height * factor);
 }
 

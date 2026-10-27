@@ -1,4 +1,5 @@
 #import "GASidebarInput.h"
+#import "GAInputFocus.h"
 #import "GAGlyphSelection.h"
 
 /// YES when the shortcut modifiers in `modifiers` are exactly `expected`.
@@ -39,14 +40,11 @@ static NSAttributedString *GAMarkerTextFromString(NSString *string,
   NSMutableIndexSet *markers = [NSMutableIndexSet indexSet];
   for (NSUInteger index = 0; index < string.length; index++) {
     unichar character = [string characterAtIndex:index];
-    if (character == '\r') {
-      if (index + 1 < string.length &&
+    if (character == '\r' || character == '\n') {
+      if (character == '\r' && index + 1 < string.length &&
           [string characterAtIndex:index + 1] == '\n') {
         index++;
       }
-      [markers addIndex:converted.length];
-      [converted appendString:GALineBreakCharacter];
-    } else if (character == '\n') {
       [markers addIndex:converted.length];
       [converted appendString:GALineBreakCharacter];
     } else {
@@ -171,11 +169,8 @@ NSAttributedString *GAFieldTextFromModelText(NSAttributedString *modelText) {
   } else if ([string isKindOfClass:[NSString class]]) {
     inserted = string;
   }
-  if (inserted.length == 0) {
-    [super insertText:string replacementRange:replacementRange];
-    return;
-  }
-  if ([inserted rangeOfCharacterFromSet:[NSCharacterSet newlineCharacterSet]]
+  if (inserted.length == 0 ||
+      [inserted rangeOfCharacterFromSet:[NSCharacterSet newlineCharacterSet]]
           .location == NSNotFound) {
     [super insertText:string replacementRange:replacementRange];
     return;
@@ -263,7 +258,7 @@ NSAttributedString *GAFieldTextFromModelText(NSAttributedString *modelText) {
 /// text inset on both edges without changing the field's frame, font or text.
 static const CGFloat GASearchFieldTextInset = 9.0;
 
-@interface GASearchFieldCell : NSSearchFieldCell
+@interface GASearchFieldCell : GAInputSearchFieldCell
 @end
 
 @implementation GASearchFieldCell
@@ -308,43 +303,32 @@ NSAttributedString *GANormalizedSidebarInput(NSAttributedString *source,
   NSMutableAttributedString *storage =
       [[NSMutableAttributedString alloc] initWithString:source.string];
   NSRange all = NSMakeRange(0, storage.length);
-  NSMutableArray<NSValue *> *runRanges = [NSMutableArray array];
-  NSMutableArray<GAGlyphSelection *> *runValues = [NSMutableArray array];
-  [source enumerateAttribute:GAGlyphSelectionAttributeName
-                     inRange:NSMakeRange(0, source.length)
-                     options:0
-                  usingBlock:^(id value, NSRange range, BOOL *stop) {
-                    (void)stop;
-                    if ([value isKindOfClass:GAGlyphSelection.class]) {
-                      [runRanges addObject:[NSValue valueWithRange:range]];
-                      [runValues addObject:value];
-                    }
-                  }];
-  NSMutableArray<NSValue *> *markerRanges = [NSMutableArray array];
-  [source enumerateAttribute:GALineBreakAttributeName
-                     inRange:all
-                     options:0
-                  usingBlock:^(id value, NSRange range, BOOL *stop) {
-                    (void)stop;
-                    if (value != nil) {
-                      [markerRanges addObject:[NSValue valueWithRange:range]];
-                    }
-                  }];
-
   [storage beginEditing];
   [storage setAttributes:@{
     NSFontAttributeName : font,
     NSForegroundColorAttributeName : color,
   }
                    range:all];
-  for (NSUInteger index = 0; index < runRanges.count; index++) {
-    [storage addAttribute:GAGlyphSelectionAttributeName
-                    value:runValues[index]
-                    range:runRanges[index].rangeValue];
-  }
-  for (NSValue *value in markerRanges) {
-    GASetLineBreakMarker(storage, value.rangeValue);
-  }
+  [source enumerateAttribute:GAGlyphSelectionAttributeName
+                     inRange:NSMakeRange(0, source.length)
+                     options:0
+                  usingBlock:^(id value, NSRange range, BOOL *stop) {
+                    (void)stop;
+                    if ([value isKindOfClass:GAGlyphSelection.class]) {
+                      [storage addAttribute:GAGlyphSelectionAttributeName
+                                      value:value
+                                      range:range];
+                    }
+                  }];
+  [source enumerateAttribute:GALineBreakAttributeName
+                     inRange:all
+                     options:0
+                  usingBlock:^(id value, NSRange range, BOOL *stop) {
+                    (void)stop;
+                    if (value != nil) {
+                      GASetLineBreakMarker(storage, range);
+                    }
+                  }];
   [storage endEditing];
   return storage;
 }

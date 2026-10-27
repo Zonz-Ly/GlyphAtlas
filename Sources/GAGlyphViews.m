@@ -1,4 +1,5 @@
 #import "GAGlyphViews.h"
+#import "GAFontEngine.h"
 #import "GAUnicode.h"
 
 static const CGFloat GAVariantNameHeight = 16.0;
@@ -9,15 +10,18 @@ static const CGFloat GAGlyphSide = 34.0;
 static const CGFloat GAVariantHorizontalInset = 4.0;
 static const CGFloat GACodeLineHeight = 13.0;
 
-@implementation GARowItem
-@end
-
 #pragma mark - Glyph view
+
+/// Draws only the glyph itself. Native table rows provide selection and
+/// background; this view deliberately does not draw chrome.
+@interface GAGlyphView : NSView
+@property (nonatomic, strong, nullable) GAGlyphVariant *variant;
+- (void)setBackgroundStyle:(NSBackgroundStyle)backgroundStyle;
+@end
 
 @implementation GAGlyphView {
     NSBackgroundStyle _backgroundStyle;
     GAGlyphPage _glyphPage;
-    BOOL _hasGlyphPage;
 }
 
 - (instancetype)initWithFrame:(NSRect)frameRect {
@@ -34,7 +38,6 @@ static const CGFloat GACodeLineHeight = 13.0;
 
 - (void)setVariant:(GAGlyphVariant *)variant {
     _variant = variant;
-    _hasGlyphPage = variant != nil;
     if (variant != nil) {
         _glyphPage = [GAFontDocument pageForVariant:variant
                                  usesVerticalMetrics:NO];
@@ -48,7 +51,7 @@ static const CGFloat GACodeLineHeight = 13.0;
 }
 
 - (void)drawRect:(NSRect)dirtyRect {
-    if (!_hasGlyphPage || self.variant == nil) {
+    if (self.variant == nil) {
         return;
     }
     NSColor *color = _backgroundStyle == NSBackgroundStyleEmphasized
@@ -72,26 +75,14 @@ static const CGFloat GACodeLineHeight = 13.0;
     CGFloat originY = NSMidY(self.bounds) - pageHeight * 0.5 +
         _glyphPage.baseline * unitScale;
 
-    CGGlyph *glyphs = calloc(count, sizeof(CGGlyph));
-    CGPoint *positions = calloc(count, sizeof(CGPoint));
-    for (NSUInteger index = 0; index < count; index++) {
-        glyphs[index] = (CGGlyph)variant.glyphIDs[index].unsignedShortValue;
-        positions[index] = index < variant.positions.count
-            ? variant.positions[index].pointValue
-            : CGPointZero;
-    }
-
     CGContextRef context = NSGraphicsContext.currentContext.CGContext;
     CGContextSaveGState(context);
     CGContextTranslateCTM(context, originX, originY);
     CGContextScaleCTM(context, scale, scale);
     CGContextSetTextMatrix(context, CGAffineTransformIdentity);
     CGContextSetFillColorWithColor(context, color.CGColor);
-    CTFontDrawGlyphs(variant.fontBox.font, glyphs, positions, count, context);
+    GADrawGlyphVariant(variant, context);
     CGContextRestoreGState(context);
-
-    free(glyphs);
-    free(positions);
 }
 
 @end
@@ -103,10 +94,10 @@ static const CGFloat GABadgeGap = 3.0;
 static const CGFloat GABadgeHorizontalPadding = 4.0;
 
 @interface GAUnicodeBadgeView : NSView
-@property (nonatomic, copy) NSString *text;
+@property (nonatomic, copy, readonly) NSString *text;
 @property (nonatomic) NSBackgroundStyle backgroundStyle;
 - (instancetype)initWithText:(NSString *)text toolTip:(NSString *)toolTip;
-- (CGFloat)badgeWidth;
++ (CGFloat)widthForText:(NSString *)text;
 @end
 
 @implementation GAUnicodeBadgeView
@@ -121,12 +112,12 @@ static const CGFloat GABadgeHorizontalPadding = 4.0;
     return self;
 }
 
-- (CGFloat)badgeWidth {
++ (CGFloat)widthForText:(NSString *)text {
     NSDictionary *attributes = @{
         NSFontAttributeName: [NSFont monospacedDigitSystemFontOfSize:10
                                                               weight:NSFontWeightRegular],
     };
-    return ceil([self.text sizeWithAttributes:attributes].width) +
+    return ceil([text sizeWithAttributes:attributes].width) +
            GABadgeHorizontalPadding * 2;
 }
 
@@ -169,7 +160,13 @@ static const CGFloat GABadgeHorizontalPadding = 4.0;
 
 @end
 
-@interface GAUnicodeCodesView ()
+/// A vertical column of native Unicode code badges. Each badge has its own
+/// tooltip with that scalar's Unicode name.
+@interface GAUnicodeCodesView : NSView
+@property (nonatomic, copy, nonnull) NSArray<NSNumber *> *unicodeScalars;
+- (void)setBackgroundStyle:(NSBackgroundStyle)backgroundStyle;
++ (CGFloat)heightForScalars:(NSArray<NSNumber *> * _Nonnull)scalars;
++ (CGFloat)widthForScalars:(NSArray<NSNumber *> * _Nonnull)scalars;
 @property (nonatomic, strong) NSMutableArray<GAUnicodeBadgeView *> *labels;
 @property (nonatomic) NSBackgroundStyle backgroundStyle;
 @end
@@ -208,7 +205,7 @@ static const CGFloat GABadgeHorizontalPadding = 4.0;
         [codes addObject:text];
         NSString *name = GAUnicodeNameForScalar(scalar);
         GAUnicodeBadgeView *badge = [[GAUnicodeBadgeView alloc]
-            initWithText:text toolTip:name.length > 0 ? name : text];
+            initWithText:text toolTip:name];
         badge.backgroundStyle = self.backgroundStyle;
         [self addSubview:badge];
         [self.labels addObject:badge];
@@ -236,7 +233,7 @@ static const CGFloat GABadgeHorizontalPadding = 4.0;
     CGFloat y = 0;
     CGFloat width = MAX(1.0, self.bounds.size.width);
     for (GAUnicodeBadgeView *badge in self.labels) {
-        CGFloat badgeWidth = [badge badgeWidth];
+        CGFloat badgeWidth = [GAUnicodeBadgeView widthForText:badge.text];
         badge.frame = NSMakeRect(width - badgeWidth, y, badgeWidth, GABadgeHeight);
         y += GABadgeHeight + GABadgeGap;
     }
@@ -250,14 +247,10 @@ static const CGFloat GABadgeHorizontalPadding = 4.0;
 }
 
 + (CGFloat)widthForScalars:(NSArray<NSNumber *> *)scalars {
-    NSFont *font = [NSFont monospacedDigitSystemFontOfSize:10
-                                                    weight:NSFontWeightRegular];
-    NSDictionary *attributes = @{NSFontAttributeName: font};
     CGFloat width = 0;
     for (NSNumber *scalarNumber in scalars) {
         NSString *text = [self codeTextForScalar:scalarNumber.unsignedIntValue];
-        width = MAX(width, ceil([text sizeWithAttributes:attributes].width) +
-                           GABadgeHorizontalPadding * 2);
+        width = MAX(width, [GAUnicodeBadgeView widthForText:text]);
     }
     return width;
 }
@@ -276,6 +269,7 @@ static const CGFloat GABadgeHorizontalPadding = 4.0;
 @property (nonatomic, strong) NSLayoutConstraint *sourceHeightConstraint;
 @property (nonatomic, strong) NSLayoutConstraint *codesWidthConstraint;
 @property (nonatomic, strong) NSLayoutConstraint *codesHeightConstraint;
+- (void)applyBackgroundStyle:(NSBackgroundStyle)backgroundStyle;
 @end
 
 @implementation GAVariantCellView
@@ -284,12 +278,16 @@ static const CGFloat GABadgeHorizontalPadding = 4.0;
     return variant.featureSources.count > 0 ? GACodeLineHeight : 0;
 }
 
-+ (CGFloat)rowHeightForVariant:(GAGlyphVariant *)variant {
-    CGFloat sourceHeight = [self sourceHeightForVariant:variant];
++ (CGFloat)nameBlockHeightForVariant:(GAGlyphVariant *)variant {
     CGFloat nameHeight = GAVariantNameHeight;
     if (variant.featureSources.count > 0) {
-        nameHeight += 1.0 + sourceHeight;
+        nameHeight += 1.0 + [self sourceHeightForVariant:variant];
     }
+    return nameHeight;
+}
+
++ (CGFloat)rowHeightForVariant:(GAGlyphVariant *)variant {
+    CGFloat nameHeight = [self nameBlockHeightForVariant:variant];
     CGFloat codeHeight = [GAUnicodeCodesView heightForScalars:variant.unicodeScalars];
     CGFloat contentHeight = MAX(nameHeight, codeHeight);
     return MAX(44.0, contentHeight + GAVariantVerticalPadding * 2);
@@ -375,7 +373,7 @@ static const CGFloat GABadgeHorizontalPadding = 4.0;
                                                : NSFontWeightRegular];
     self.nameLabel.toolTip = name;
 
-    NSArray<NSString *> *sources = variant.featureSources ?: @[];
+    NSArray<NSString *> *sources = variant.featureSources;
     NSString *sourceText = [sources componentsJoinedByString:@", "];
     self.sourceLabel.stringValue = sourceText;
     self.sourceLabel.toolTip = sources.count > 0 ? sourceText : nil;
@@ -391,40 +389,32 @@ static const CGFloat GABadgeHorizontalPadding = 4.0;
     self.codesView.hidden = codeHeight <= 0;
 
     CGFloat rowHeight = [self.class rowHeightForVariant:variant];
-    CGFloat contentHeight = GAVariantNameHeight;
-    if (sources.count > 0) {
-        contentHeight += 1.0 + [self.class sourceHeightForVariant:variant];
-    }
+    CGFloat contentHeight = [self.class nameBlockHeightForVariant:variant];
     self.nameTopConstraint.constant = MAX(5.0, (rowHeight - contentHeight) * 0.5);
 
-    [self.glyphView setBackgroundStyle:self.backgroundStyle];
-    [self.sourceLabel setTextColor:self.backgroundStyle == NSBackgroundStyleEmphasized
-        ? [NSColor alternateSelectedControlTextColor]
-        : [NSColor secondaryLabelColor]];
-    [self.codesView setBackgroundStyle:self.backgroundStyle];
+    [self applyBackgroundStyle:self.backgroundStyle];
 
     NSMutableArray<NSString *> *descriptionParts = [NSMutableArray arrayWithObject:name];
     if (sources.count > 0) {
         [descriptionParts addObject:sourceText];
     }
     if (variant.unicodeScalars.count > 0) {
-        NSMutableArray<NSString *> *codeStrings = [NSMutableArray array];
-        for (NSNumber *scalar in variant.unicodeScalars) {
-            [codeStrings addObject:[NSString stringWithFormat:@"%04X",
-                                    scalar.unsignedIntValue]];
-        }
-        [descriptionParts addObject:[codeStrings componentsJoinedByString:@", "]];
+        [descriptionParts addObject:self.codesView.accessibilityLabel];
     }
     self.accessibilityLabel = [descriptionParts componentsJoinedByString:@", "];
 }
 
-- (void)setBackgroundStyle:(NSBackgroundStyle)backgroundStyle {
-    [super setBackgroundStyle:backgroundStyle];
+- (void)applyBackgroundStyle:(NSBackgroundStyle)backgroundStyle {
     [self.glyphView setBackgroundStyle:backgroundStyle];
     [self.sourceLabel setTextColor:backgroundStyle == NSBackgroundStyleEmphasized
         ? [NSColor alternateSelectedControlTextColor]
         : [NSColor secondaryLabelColor]];
     [self.codesView setBackgroundStyle:backgroundStyle];
+}
+
+- (void)setBackgroundStyle:(NSBackgroundStyle)backgroundStyle {
+    [super setBackgroundStyle:backgroundStyle];
+    [self applyBackgroundStyle:backgroundStyle];
 }
 
 @end

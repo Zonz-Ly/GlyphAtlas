@@ -19,7 +19,7 @@ std::vector<Cluster> clusters(const Buffer &buffer) {
         auto found = std::upper_bound(
             result.begin(), result.end(), item.source.start,
             [](uint32_t start, const Cluster &cluster) { return start < cluster.source.start; });
-        if (found != result.begin() && item.glyph != 0xffff)
+        if (item.glyph != 0xffff)
             (found - 1)->glyphs.push_back(item.glyph);
     }
     return result;
@@ -57,15 +57,17 @@ GDEF::GDEF(View table) {
     table.require(0, 12);
     glyphClasses = ClassDef(table.offset16(4));
     markAttachmentClasses = ClassDef(table.offset16(10));
-    if (table.u32(0) >= 0x10002) {
+    auto version = table.u32(0);
+    if (version >= 0x10002) {
         View sets = table.offset16(12);
         if (sets) {
-            sets.array(4, sets.u16(2), 4);
-            for (unsigned i = 0; i < sets.u16(2); i++)
+            unsigned count = sets.u16(2);
+            sets.array(4, count, 4);
+            for (unsigned i = 0; i < count; i++)
                 markSets.emplace_back(sets.offset32(4 + i * 4));
         }
     }
-    if (table.u32(0) >= 0x10003)
+    if (version >= 0x10003)
         variations = table.offset32(14);
 }
 bool GDEF::included(Glyph glyph, unsigned flags, unsigned markSet) const {

@@ -5,9 +5,9 @@
 namespace ga::layout {
 namespace {
 struct Output {
-    unsigned position = 0, value = 1;
+    unsigned position, value;
     std::vector<Glyph> glyphs;
-    bool directFamily = false;
+    bool directFamily;
 };
 // A table catalogue, independent of the current text. Positions identify the
 // glyph affected by a nested action, so a rule for W+i contributes W's outputs
@@ -56,8 +56,6 @@ class Catalogue {
         for (const auto &sub : program.subtables) {
             if (!sub.coverage.contains(glyph))
                 continue;
-            if (sub.type == 1 || sub.type == 3)
-                return;
             if (sub.type != 2)
                 return;
             size_t count = substitutionOutputs(sub, glyph).size();

@@ -1,6 +1,7 @@
 /* Standard commands follow macOS terminology. App-specific text and Help are translated here. */
 
 "File" = "Archivo";
+"Copy to Font Book" = "Copiar a Catálogo Tipográfico";
 "Open Recent" = "Abrir recientes";
 "Clear Menu" = "Vaciar menú";
 "Close Window" = "Cerrar ventana";
@@ -43,9 +44,9 @@
 "Single Glyph" = "Un solo glifo";
 "Multi-Character" = "Varios caracteres";
 "All Glyphs" = "Todos los glifos";
-"Show Metrics" = "Mostrar métricas";
-"Metrics Zoom In" = "Ampliar márgenes";
-"Metrics Zoom Out" = "Reducir márgenes";
+"Show Bounding Box" = "Mostrar cuadro delimitador";
+"Bounding Box Zoom In" = "Ampliar cuadro delimitador";
+"Bounding Box Zoom Out" = "Reducir cuadro delimitador";
 "Vertical" = "Vertical";
 "Enter text" = "Introducir texto";
 "Font Name" = "Nombre del tipo de letra";
@@ -68,8 +69,8 @@
 "Help.07" = "La vista predeterminada es «Todos los glifos». Cámbiala con un clic secundario, o pulsa ⌘1 para «Un solo glifo», ⌘2 para «Varios caracteres» o ⌘3 para «Todos los glifos».";
 "Help.08" = "En « Varios caracteres », haz clic en un glifo para ver sus alternativas. Las alternativas contextuales y las ligaduras están activadas por omisión; cámbialas con un clic secundario o con ⌘5 y ⌘6. Cambia la dirección de escritura con un clic secundario o con ⌘7.";
 "Help.09" = "En «Todos los glifos», haz doble clic en un glifo para añadirlo al texto existente. Al hacer clic en un glifo de la barra lateral, también parpadea en la vista completa.";
-"Help.10" = "Usa ⌘+/⌘- para ampliar o reducir los glifos y ⌥⌘+/⌥⌘- para ajustar los márgenes en «Varios caracteres». También puedes usar el gesto de pellizco en el trackpad.";
-"Help.11" = "La sombra de la página indica la anchura y altura del glifo, así como la altura de línea y el interlineado de la composición. Pulsa ⌘4 para ocultarla.";
+"Help.10" = "Usa ⌘+/⌘- para ampliar o reducir los glifos y ⌥⌘+/⌥⌘- para ajustar el cuadro delimitador en «Varios caracteres». También puedes usar el gesto de pellizco en el trackpad.";
+"Help.11" = "El cuadro delimitador y su sombra indican la anchura y altura del glifo, así como la altura de línea y el interlineado de la composición. Pulsa ⌘4 para ocultarlos.";
 "Help.12" = "Al abrir un tipo de letra variable, aparece un panel de variación junto a los controles de la ventana. Arrástralo fuera para mantenerlo abierto. Selecciona un valor numérico y ajústalo con ↑/↓ o ⇧↑/⇧↓.";
 "Help.13" = "Se admite el modo oscuro. Pero ten cuidado: hacer clic en un glifo sólido puede deslumbrarte.";
 

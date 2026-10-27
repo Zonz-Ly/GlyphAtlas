@@ -11,6 +11,33 @@ struct Applied {
     size_t next = 0;
 };
 
+struct Rule {
+    const Subtable *subtable;
+    std::optional<unsigned> pattern;
+    Span scope;
+};
+
+std::string featureLabel(const LookupStep &step) {
+    auto label = tagName(step.feature);
+    if (step.value > 1)
+        label += " " + std::to_string(step.value);
+    return label;
+}
+
+// Replaying a contextual rule with another nested choice preserves all later
+// actions and their updated SequenceIndex mappings, rather than saving a GID
+// snapshot halfway through that rule.
+struct Decisions {
+    std::vector<size_t> selected, counts;
+    size_t choose(size_t count) {
+        size_t at = counts.size();
+        counts.push_back(count);
+        size_t choice = at < selected.size() ? selected[at] : 0;
+        if (choice >= count) throw InvalidTable("invalid discovery decision");
+        return choice;
+    }
+};
+
 // One invocation owns all mutable state. The parsed OpenType program is shared
 // read-only across text queries, coordinate changes and worker threads.
 class Substitution {
@@ -18,6 +45,7 @@ class Substitution {
     const GDEF &gdef_;
     Buffer &buffer_;
     Trace *trace_;
+    Decisions *decisions_;
     Budget ownedBudget_;
     Budget &budget_;
     Tag activeFeature_ = 0;
@@ -49,56 +77,9 @@ class Substitution {
         begin = buffer_.erase(begin, begin + removed);
         buffer_.insert(begin, inserted.begin(), inserted.end());
     }
-    // Query every matching rule before execution consumes any components.
-    // Alternatives overlap naturally; no text slicing or reshaping is needed.
-    void collect(const LookupStep &step, std::optional<size_t> onlyAt = {}) {
-        if (!trace_ || !trace_->inventory || active_.size() >= 64)
-            return;
-        const auto &lookup = lookups_[step.lookup];
-        auto indices = onlyAt ? std::vector<size_t>{*onlyAt} : visible(buffer_, gdef_, lookup);
-        std::string label = tagName(step.feature);
-        if (step.value > 1)
-            label += " " + std::to_string(step.value);
-        for (const auto &sub : lookup.subtables)
-            for (size_t start : indices) {
-                if (!allowed(buffer_[start], step))
-                    continue;
-                auto candidates = sub.starts.find(buffer_[start].glyph);
-                if (candidates == sub.starts.end())
-                    continue;
-                for (unsigned pi : candidates->second) {
-                    budget_.step();
-                    const auto &pattern = sub.patterns[pi];
-                    if (!match(pattern, buffer_, start, gdef_, lookup))
-                        continue;
-                    Buffer candidate = buffer_;
-                    Trace alternatives;
-                    alternatives.inventory = true;
-                    Substitution preview(lookups_, gdef_, candidate, &alternatives, &budget_);
-                    preview.active_ = active_;
-                    preview.activeFeature_ = step.feature;
-                    auto key =
-                        std::make_tuple(step.lookup, buffer_[start].identity, buffer_[start].glyph);
-                    if (std::find(preview.active_.begin(), preview.active_.end(), key) ==
-                        preview.active_.end())
-                        preview.active_.push_back(key);
-                    Applied result;
-                    if (sub.type == 4)
-                        result = preview.ligate(pattern, lookup, start);
-                    else if (sub.type == 5 || sub.type == 6)
-                        result = preview.contextual(pattern, lookup, start, step);
-                    if (result.matched) {
-                        trace_->changed(buffer_, candidate, label);
-                        trace_->changes.insert(trace_->changes.end(), alternatives.changes.begin(),
-                                               alternatives.changes.end());
-                    }
-                }
-            }
-    }
     Applied contextual(const Pattern &pattern, const Lookup &lookup, size_t at,
                        const LookupStep &step) {
-        Span scope;
-        auto input = match(pattern, buffer_, at, gdef_, lookup, &scope);
+        auto input = match(pattern, buffer_, at, gdef_, lookup);
         if (!input)
             return {};
         Frame frame{*input};
@@ -111,8 +92,7 @@ class Substitution {
         return {true, next};
     }
     Applied ligate(const Pattern &pattern, const Lookup &lookup, size_t at) {
-        Span scope;
-        auto positions = match(pattern, buffer_, at, gdef_, lookup, &scope);
+        auto positions = match(pattern, buffer_, at, gdef_, lookup);
         if (!positions)
             return {};
         Item ligature = buffer_[at];
@@ -147,7 +127,8 @@ class Substitution {
         splice(at, 1, {ligature});
         return {true, at + 1};
     }
-    Applied subtable(const Subtable &sub, const Lookup &lookup, size_t at, const LookupStep &step) {
+    Applied subtable(const Subtable &sub, const Lookup &lookup, size_t at, const LookupStep &step,
+                     std::optional<unsigned> onlyPattern = {}) {
         budget_.step();
         if (at >= buffer_.size())
             return {};
@@ -178,6 +159,7 @@ class Substitution {
         if (candidates == sub.starts.end())
             return {};
         for (unsigned pi : candidates->second) {
+            if (onlyPattern && pi != *onlyPattern) continue;
             budget_.step();
             const auto &pattern = sub.patterns[pi];
             if (sub.type == 4) {
@@ -189,8 +171,7 @@ class Substitution {
                 if (result.matched)
                     return result;
             } else if (sub.type == 8) {
-                Span scope;
-                if (!match(pattern, buffer_, at, gdef_, lookup, &scope))
+                if (!match(pattern, buffer_, at, gdef_, lookup))
                     continue;
                 View d = sub.data;
                 size_t p = 6 + d.u16(4) * 2;
@@ -225,12 +206,22 @@ class Substitution {
             return {};
         active_.push_back(key);
         LookupStep step{index, value, activeFeature_, true};
-        collect(step, at);
         Applied result;
-        for (const auto &sub : lookup.subtables) {
-            result = subtable(sub, lookup, at, step);
-            if (result.matched)
-                break;
+        if (decisions_) {
+            auto choices = rules(step, at);
+            if (!choices.empty()) {
+                const auto &rule = choices[decisions_->choose(choices.size())];
+                Buffer before = trace_ ? buffer_ : Buffer{};
+                result = subtable(*rule.subtable, lookup, at, step, rule.pattern);
+                if (trace_) {
+                    trace_->changed(before, buffer_, featureLabel(step));
+                }
+            }
+        } else {
+            for (const auto &sub : lookup.subtables) {
+                result = subtable(sub, lookup, at, step);
+                if (result.matched) break;
+            }
         }
         active_.pop_back();
         return result;
@@ -238,8 +229,8 @@ class Substitution {
 
   public:
     Substitution(const std::vector<Lookup> &lookups, const GDEF &gdef, Buffer &buffer, Trace *trace,
-                 Budget *budget = nullptr)
-        : lookups_(lookups), gdef_(gdef), buffer_(buffer), trace_(trace),
+                 Budget *budget = nullptr, Decisions *decisions = nullptr)
+        : lookups_(lookups), gdef_(gdef), buffer_(buffer), trace_(trace), decisions_(decisions),
           ownedBudget_(buffer.size()), budget_(budget ? *budget : ownedBudget_) {
         for (auto &item : buffer_) {
             if (!item.identity)
@@ -248,11 +239,44 @@ class Substitution {
                 nextIdentity_ = std::max(nextIdentity_, item.identity + 1);
         }
     }
+    std::vector<Rule> rules(const LookupStep &step, size_t at) {
+        std::vector<Rule> result;
+        const auto &lookup = lookups_[step.lookup];
+        if (at >= buffer_.size() || !allowed(buffer_[at], step) ||
+            !accepts(gdef_, lookup, buffer_[at])) return result;
+        for (const auto &sub : lookup.subtables) {
+            if (sub.type <= 3) {
+                if (!sub.coverage.contains(buffer_[at].glyph)) continue;
+                if (sub.type == 3 && (!step.value ||
+                    step.value > substitutionOutputs(sub, buffer_[at].glyph).size())) continue;
+                result.push_back({&sub, {}, buffer_[at].source});
+                continue;
+            }
+            auto candidates = sub.starts.find(buffer_[at].glyph);
+            if (candidates == sub.starts.end()) continue;
+            for (unsigned pi : candidates->second) {
+                budget_.step();
+                Span scope;
+                if (match(sub.patterns[pi], buffer_, at, gdef_, lookup, &scope))
+                    result.push_back({&sub, pi, scope});
+            }
+        }
+        return result;
+    }
+    void applyRule(const LookupStep &step, size_t at, const Rule &rule) {
+        activeFeature_ = step.feature;
+        active_.push_back({step.lookup, buffer_[at].identity, buffer_[at].glyph});
+        Buffer before = buffer_;
+        subtable(*rule.subtable, lookups_[step.lookup], at, step, rule.pattern);
+        if (trace_) {
+            trace_->changed(before, buffer_, featureLabel(step));
+        }
+        active_.pop_back();
+    }
     void run(const std::vector<LookupStep> &plan) {
         for (const auto &step : plan) {
             activeFeature_ = step.feature;
             const auto &lookup = lookups_[step.lookup];
-            collect(step);
             Buffer before = trace_ ? buffer_ : Buffer{};
             if (lookup.reverse) {
                 for (size_t i = buffer_.size(); i > 0; i--)
@@ -269,14 +293,138 @@ class Substitution {
                     i = result.matched ? result.next : i + 1;
                 }
             if (trace_) {
-                auto label = tagName(step.feature);
-                if (step.value > 1)
-                    label += " " + std::to_string(step.value);
-                trace_->changed(before, buffer_, label);
+                trace_->changed(before, buffer_, featureLabel(step));
             }
         }
     }
 };
+// Enumerate nested choices within one matched rule. Each replay finishes
+// the entire contextual action list before handing its state to the pipeline.
+template <typename Visitor>
+void visitRuleOutputs(const std::vector<Lookup> &lookups, const GDEF &gdef,
+                      const Buffer &input, const LookupStep &step, size_t at,
+                      const Rule &rule, Budget &budget, Visitor &&visit) {
+    std::vector<std::vector<size_t>> pending(1);
+    while (!pending.empty()) {
+        budget.step();
+        Decisions decisions{std::move(pending.back()), {}};
+        pending.pop_back();
+        Buffer output = input;
+        Trace found;
+        Substitution preview(lookups, gdef, output, &found, &budget, &decisions);
+        preview.applyRule(step, at, rule);
+        visit(std::move(output), found);
+        for (size_t i = decisions.selected.size(); i < decisions.counts.size(); i++)
+            for (size_t choice = 1; choice < decisions.counts[i]; choice++) {
+                auto path = decisions.selected;
+                path.resize(i, 0);
+                path.push_back(choice);
+                pending.push_back(std::move(path));
+            }
+    }
+}
+
+using Origins = std::map<Span, std::set<std::string>>;
+struct CandidateState {
+    Buffer items;
+    std::optional<Span> focus;
+    Origins origins;
+};
+bool intersects(Span a, Span b) {
+    return a.start < b.end && b.start < a.end;
+}
+std::vector<uint64_t> stateKey(const CandidateState &state) {
+    std::vector<uint64_t> key;
+    key.push_back(state.focus ? 1 : 0);
+    if (state.focus) { key.push_back(state.focus->start); key.push_back(state.focus->end); }
+    for (const auto &item : state.items) {
+        key.insert(key.end(), {item.glyph, item.source.start, item.source.end,
+                              item.scalar, item.form, item.ignorable,
+                              uint64_t(item.component + 1), item.components.size()});
+        for (Span source : item.components) { key.push_back(source.start); key.push_back(source.end); }
+    }
+    return key;
+}
+
+// Inventory states are peers. Every matched candidate continues at the next
+// lookup with its full context and source ownership intact. A focus limits
+// subsequent forks to related changes; independent candidate combinations
+// are not enumerated as whole-paragraph permutations.
+void discover(const std::vector<Lookup> &lookups, const GDEF &gdef, Buffer &buffer,
+              const std::vector<LookupStep> &steps, Trace &trace) {
+    Budget budget(buffer.size());
+    std::vector<CandidateState> states{{buffer, {}, {}}};
+    std::set<std::tuple<Span, std::vector<Glyph>, std::string>> recorded;
+    auto record = [&](const Trace &found, const Origins &origins) {
+        auto add = [&](Change change) {
+            if (recorded.emplace(change.source, change.glyphs, change.feature).second)
+                trace.changes.push_back(std::move(change));
+        };
+        for (const auto &change : found.changes) {
+            add(change);
+            for (const auto &[source, features] : origins)
+                if (intersects(source, change.source))
+                    for (const auto &feature : features)
+                        add({change.source, change.glyphs, feature});
+        }
+    };
+    auto remember = [](CandidateState &state, const Trace &found) {
+        for (const auto &change : found.changes)
+            state.origins[change.source].insert(change.feature);
+    };
+    for (const auto &step : steps) {
+        std::vector<CandidateState> next;
+        std::map<std::vector<uint64_t>, size_t> seen;
+        size_t queuedGlyphs = 0;
+        auto append = [&](CandidateState state) {
+            budget.step();
+            auto [at, inserted] = seen.emplace(stateKey(state), next.size());
+            if (inserted) {
+                if (state.items.size() > budget.maxGlyphs - queuedGlyphs)
+                    throw InvalidTable("font discovery state budget exhausted");
+                queuedGlyphs += state.items.size();
+                next.push_back(std::move(state));
+            }
+            else for (const auto &[source, features] : state.origins)
+                next[at->second].origins[source].insert(features.begin(), features.end());
+        };
+        for (const auto &state : states) {
+            Buffer input = state.items;
+            Substitution matcher(lookups, gdef, input, nullptr, &budget);
+            for (size_t at : visible(input, gdef, lookups[step.lookup])) {
+                for (const auto &rule : matcher.rules(step, at)) {
+                    unsigned type = rule.subtable->type;
+                    if (type != 4 && type != 5 && type != 6) continue;
+                    // A branch can affect a later rule through its backtrack or
+                    // lookahead even when that rule changes a different glyph.
+                    if (state.focus && !intersects(*state.focus, rule.scope)) continue;
+                    visitRuleOutputs(lookups, gdef, input, step, at, rule, budget,
+                        [&](Buffer items, const Trace &found) {
+                            Trace difference;
+                            difference.changed(input, items, tagName(step.feature));
+                            std::optional<Span> changed;
+                            for (const auto &change : difference.changes)
+                                changed = changed ? unite(*changed, change.source) : change.source;
+                            record(found, state.origins);
+                            if (!changed) return;
+                            CandidateState candidate{std::move(items),
+                                state.focus ? unite(*state.focus, *changed) : *changed, state.origins};
+                            remember(candidate, found);
+                            append(std::move(candidate));
+                        });
+                }
+            }
+            CandidateState applied = state;
+            Trace found;
+            Substitution(lookups, gdef, applied.items, &found, &budget).run({step});
+            record(found, state.origins);
+            remember(applied, found);
+            if (!state.focus) buffer = applied.items;
+            append(std::move(applied));
+        }
+        states = std::move(next);
+    }
+}
 } // namespace
 void OpenType::substitute(Buffer &buffer, const GDEF &gdef, const Settings &settings, size_t branch,
                           Trace *trace) const {
@@ -291,6 +439,9 @@ void OpenType::substituteLookups(Buffer &buffer, const GDEF &gdef,
     for (auto step : steps)
         if (step.lookup >= lookups_.size())
             throw InvalidTable("lookup index outside list");
-    Substitution(lookups_, gdef, buffer, trace).run(steps);
+    if (trace && trace->inventory)
+        discover(lookups_, gdef, buffer, steps, *trace);
+    else
+        Substitution(lookups_, gdef, buffer, trace).run(steps);
 }
 } // namespace ga::layout

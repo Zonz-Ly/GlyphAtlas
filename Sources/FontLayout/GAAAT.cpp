@@ -100,7 +100,7 @@ AAT::AAT(View table, bool extended) : extended_(extended) {
 }
 namespace {
 struct Entry {
-    unsigned state = 0, flags = 0, first = 0xffff, second = 0xffff;
+    unsigned state, flags, first = 0xffff, second = 0xffff;
 };
 class Machine {
     View data_;
@@ -326,8 +326,7 @@ class Runner {
                 pending = {pos};
             }
             if (value & 0x80000000) {
-                if (!pending.empty())
-                    stack_.push_back(buffer_[pending.back()].identity);
+                stack_.push_back(buffer_[pending.back()].identity);
                 break;
             }
         }
@@ -508,23 +507,17 @@ bool AAT::hasVerticalSubstitutions() const {
 }
 void AAT::substitute(Buffer &buffer, std::optional<AATSelector> selector, bool rtl, bool vertical,
                      Trace *trace, bool verticalSubstitutionsOnly) const {
-    applyFeatures(buffer,
-                  selector ? std::vector<AATSelector>{*selector} : std::vector<AATSelector>{}, rtl,
-                  vertical, trace, verticalSubstitutionsOnly);
-}
-void AAT::applyFeatures(Buffer &buffer, const std::vector<AATSelector> &selectors, bool rtl,
-                        bool vertical, Trace *trace, bool verticalSubstitutionsOnly) const {
     std::string label = name();
     const Buffer original = trace && trace->inventory ? buffer : Buffer{};
     const auto originalClusters = clusters(original);
     Budget discoveryBudget(buffer.size());
     std::set<std::tuple<Span, std::vector<Glyph>, std::string>> recorded;
-    for (const auto &selector : selectors)
-        label += ":" + std::to_string(selector.type) + ":" + std::to_string(selector.setting);
+    if (selector)
+        label += ":" + std::to_string(selector->type) + ":" + std::to_string(selector->setting);
     for (const auto &chain : chains_) {
         uint32_t flags = chain.defaults;
         for (const auto &feature : chain.features)
-            if (std::find(selectors.begin(), selectors.end(), feature.selector) != selectors.end())
+            if (selector && feature.selector == *selector)
                 flags = (flags & feature.disable) | feature.enable;
         for (const auto &sub : chain.subtables) {
             if (!(sub.flags & flags))
@@ -532,9 +525,7 @@ void AAT::applyFeatures(Buffer &buffer, const std::vector<AATSelector> &selector
             if (verticalSubstitutionsOnly) {
                 bool directional = !(sub.coverage & 0x20000000) && (sub.coverage & 0x80000000);
                 bool selected =
-                    (sub.flags & flags & ~chain.defaults) &&
-                    std::any_of(selectors.begin(), selectors.end(),
-                                [](AATSelector selector) { return selector.type == 4; });
+                    (sub.flags & flags & ~chain.defaults) && selector && selector->type == 4;
                 if (!directional && !selected)
                     continue;
             }

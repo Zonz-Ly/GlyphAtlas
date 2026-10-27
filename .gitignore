@@ -1,6 +1,5 @@
 .build/
 dist/
+README/
 .DS_Store
-/Tests/
-/LOCALIZATION.md
-/README/
+.gitignore

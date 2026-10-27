@@ -2,12 +2,11 @@
 #import "GADetailViewController.h"
 #import "GASidebarViewController.h"
 #import "GAFontEngine.h"
-#import "GADisplayGroups.h"
 #import "GATextQueryModel.h"
 #import "GAUnicode.h"
-#import "GAFontTypes.h"
 #import "GAFontResource.h"
 #import "GAVariationViewController.h"
+#import "GAInputFocus.h"
 #import <CoreText/CoreText.h>
 #import <math.h>
 
@@ -76,12 +75,14 @@ static BOOL GAGroupIsMissing(GACharacterGroup *group, NSString *text) {
 }
 
 - (BOOL)performDragOperation:(id<NSDraggingInfo>)sender {
-    NSURL *url = [self fontURLsFromDraggingInfo:sender].firstObject;
-    if (url == nil) {
+    NSArray<NSURL *> *urls = [self fontURLsFromDraggingInfo:sender];
+    if (urls.count == 0) {
         return NO;
     }
-    if (self.onFontDrop) {
-        self.onFontDrop(url);
+    for (NSURL *url in urls) {
+        if (self.onFontDrop) {
+            self.onFontDrop(url);
+        }
     }
     return YES;
 }
@@ -122,7 +123,6 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 @interface GAScanDisplaySnapshot : NSObject
 @property (nonatomic, strong) NSArray<GACharacterGroup *> *display;
 @property (nonatomic, copy) NSString *text;
-@property (nonatomic) NSUInteger generation;
 @property (nonatomic, copy, nullable) NSString *multiText;
 @property (nonatomic, strong, nullable) NSArray<GACharacterGroup *> *multiGroups;
 @property (nonatomic, strong, nullable) NSMapTable<GACharacterGroup *, GACharacterGroup *> *multiGroupSources;
@@ -143,7 +143,6 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 @property (nonatomic, strong) NSButton *variationButton;
 @property (nonatomic, strong) NSPopover *variationPopover;
 @property (nonatomic) CGFloat attachedVariationWindowHeight;
-@property (nonatomic) CGFloat attachedVariationContentHeight;
 @property (nonatomic, strong, nullable) GAFontResource *fontResource;
 @property (nonatomic, copy) NSDictionary<NSNumber *, NSNumber *> *variationCoordinates;
 @property (nonatomic) NSUInteger fontLoadGeneration;
@@ -156,7 +155,6 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 @property (nonatomic, copy, nullable) NSArray<GAGlyphSelectionRun *> *pendingWorkerSelections;
 @property (nonatomic) NSUInteger workerGeneration;
 @property (nonatomic) BOOL didFocusInitialField;
-@property (nonatomic, strong, nullable) NSArray<GACharacterGroup *> *displayGroups;
 @property (nonatomic, copy) NSString *multiText;
 @property (nonatomic, strong) NSArray<GACharacterGroup *> *multiGroups;
 /// Multi-view groups are filtered copies; map each copy back to its sidebar
@@ -169,7 +167,6 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 @property (nonatomic, strong, nullable) GAGlyphVariant *lastSelectedVariant;
 /// Set by an all-glyph double-click append; consumed by the next reveal.
 @property (nonatomic) BOOL appendRevealPending;
-@property (nonatomic) BOOL didSetInitialSidebarWidth;
 @end
 
 @implementation GAMainWindowController
@@ -211,6 +208,11 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
         [window center];
     }
     return self;
+}
+
+- (void)dealloc {
+    [NSNotificationCenter.defaultCenter removeObserver:self
+                                                 name:GAInputBlankClickNotification object:nil];
 }
 
 - (void)configureInterfaceWithWindow:(NSWindow *)window {
@@ -262,7 +264,6 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
                                              target:self action:@selector(showVariations:)];
     self.variationButton.bordered = NO;
     self.variationButton.hidden = YES;
-    self.variationButton.contentTintColor = [NSColor secondaryLabelColor];
     self.variationButton.toolTip = NSLocalizedString(@"Variable", @"Variable font controls");
     self.variationButton.accessibilityLabel = self.variationButton.toolTip;
     self.fontTitleView = [NSStackView stackViewWithViews:@[self.variationButton, self.titleFontNameField]];
@@ -279,6 +280,8 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
     window.toolbarStyle = NSWindowToolbarStyleUnifiedCompact;
 
     __weak typeof(self) weakSelf = self;
+    [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(handleInputBlankClick:)
+                                              name:GAInputBlankClickNotification object:nil];
     self.sidebarViewController.onTextChanged = ^{
         [weakSelf scheduleAnalysis];
     };
@@ -449,10 +452,7 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
         return;
     }
     self.didFocusInitialField = YES;
-    if (!self.didSetInitialSidebarWidth) {
-        self.didSetInitialSidebarWidth = YES;
-        [self.splitViewController.splitView setPosition:200 ofDividerAtIndex:0];
-    }
+    [self.splitViewController.splitView setPosition:200 ofDividerAtIndex:0];
     [self.sidebarViewController focusInput];
 }
 
@@ -466,6 +466,20 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 }
 
 #pragma mark - Toolbar
+
+- (void)handleInputBlankClick:(NSNotification *)notification {
+    NSEvent *event = notification.object;
+    NSWindow *window = event.window;
+    if (window == nil) return;
+    BOOL mainClick = window == self.window;
+    if (!mainClick && window != self.variationPopover.contentViewController.view.window) return;
+    if (!GAEndInputEditingOutsideWindow(window)) return;
+    if (mainClick) {
+        [self.sidebarViewController focusGlyphList];
+    } else {
+        [(GAVariationViewController *)self.variationPopover.contentViewController focusWindow];
+    }
+}
 
 - (NSArray<NSToolbarItemIdentifier> *)toolbarDefaultItemIdentifiers:(NSToolbar *)toolbar {
     return @[@"GAFontName", NSToolbarSidebarTrackingSeparatorItemIdentifier];
@@ -491,6 +505,8 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
     item.label = NSLocalizedString(@"Font Name", @"Font Name");
     item.paletteLabel = NSLocalizedString(@"Font Name", @"Font Name");
     item.view = self.fontTitleView;
+    // Keep the custom title and Variable button free of toolbar glass.
+    item.bordered = NO;
     CGFloat titleHeight = MAX(22, self.titleFontNameField.fittingSize.height);
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
@@ -501,6 +517,10 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 }
 
 #pragma mark - Opening fonts
+
+- (NSURL *)fontURL {
+    return self.fontDocument.fontURL;
+}
 
 - (void)loadFontAtURL:(NSURL *)url {
     CFArrayRef array = CTFontManagerCreateFontDescriptorsFromURL((__bridge CFURLRef)url);
@@ -566,10 +586,9 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
     GAVariationViewController *controller = [[GAVariationViewController alloc]
         initWithResource:self.fontResource coordinates:self.variationCoordinates];
     __weak typeof(self) weakSelf = self;
-    controller.onCoordinatesChanged = ^(NSDictionary *coordinates, BOOL committed) {
+    controller.onCoordinatesChanged = ^(NSDictionary *coordinates) {
         __strong typeof(weakSelf) self = weakSelf;
         if (self == nil) return;
-        (void)committed;
         if ([self.variationCoordinates isEqualToDictionary:coordinates]) return;
         self.variationCoordinates = coordinates;
         CTFontDescriptorRef descriptor = [self.fontResource copyDescriptorWithCoordinates:coordinates];
@@ -593,7 +612,8 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
     if (notification.object != self.variationPopover) return;
     NSView *content = self.variationPopover.contentViewController.view;
     self.attachedVariationWindowHeight = NSHeight(content.window.frame);
-    self.attachedVariationContentHeight = NSHeight(content.bounds);
+    [(GAVariationViewController *)self.variationPopover.contentViewController
+        prepareWindowFocus];
 }
 
 - (void)popoverDidDetach:(NSPopover *)popover {
@@ -604,7 +624,15 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
     frame.size.height = self.attachedVariationWindowHeight;
     [window setFrame:frame display:YES];
     [(GAVariationViewController *)popover.contentViewController
-        didDetachWithPreviousContentHeight:self.attachedVariationContentHeight];
+        prepareWindowFocus];
+}
+
+- (void)popoverDidClose:(NSNotification *)notification {
+    if (notification.object != self.variationPopover) return;
+    if ([notification.userInfo[NSPopoverCloseReasonKey]
+            isEqual:NSPopoverCloseReasonDetachToWindow]) return;
+    if (self.sidebarViewController.inputFocused) return;
+    [self.sidebarViewController focusGlyphList];
 }
 
 - (void)windowWillClose:(NSNotification *)notification {
@@ -737,6 +765,9 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
                                     source.length);
             } else {
                 match = GAFindUniqueSubstring(current, source);
+                if (match.location != NSNotFound) {
+                    match.location += range.location;
+                }
             }
             if (match.location != NSNotFound) {
                 run.range = match;
@@ -963,7 +994,6 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 - (void)clearScanDisplay {
     [self.sidebarViewController setGroups:@[]];
     [self.detailViewController setVariant:nil];
-    self.displayGroups = @[];
     self.multiText = @"";
     self.multiGroups = @[];
     self.multiGroupSources = [NSMapTable weakToStrongObjectsMapTable];
@@ -1022,7 +1052,6 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
     GAScanDisplaySnapshot *snapshot = [[GAScanDisplaySnapshot alloc] init];
     snapshot.display = display;
     snapshot.text = text;
-    snapshot.generation = generation;
     snapshot.multiText = multiText;
     snapshot.multiGroups = multiGroups;
     snapshot.multiGroupSources = multiSources;
@@ -1040,9 +1069,7 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
     if (![snapshot.text isEqualToString:self.sidebarViewController.text]) {
         return;
     }
-    self.displayGroups = snapshot.display;
-    if (![self.sidebarViewController updateGroupsWithSameRows:snapshot.display])
-        [self.sidebarViewController setGroups:snapshot.display];
+    [self.sidebarViewController updateGroups:snapshot.display sourceText:snapshot.text];
     self.multiText = snapshot.multiText ?: @"";
     self.multiGroups = snapshot.multiGroups ?: @[];
     self.multiGroupSources = snapshot.multiGroupSources;

@@ -409,7 +409,19 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
     }
     _document = document;
     self.grid.fontBox = document.fontBox;
-    [self.grid setNeedsDisplay:YES];
+}
+
+- (void)setFrameSize:(NSSize)newSize {
+    if (self.scrollView == nil || NSEqualSizes(self.frame.size, newSize)) {
+        [super setFrameSize:newSize];
+        return;
+    }
+    // Capture before the clip view changes size, and restore after grid reflow.
+    GAPreserveScrollPosition(self.scrollView, ^{
+        [super setFrameSize:newSize];
+        self.needsLayout = YES;
+        [self layoutSubtreeIfNeeded];
+    });
 }
 
 - (void)layout {
@@ -428,23 +440,27 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
     if (recognizer.state == NSGestureRecognizerStateBegan) {
         self.magnificationStartScale = self.cellScale;
     } else if (recognizer.state == NSGestureRecognizerStateChanged) {
-        self.cellScale = GAAllGlyphsClampScale(
-            self.magnificationStartScale * (1.0 + recognizer.magnification));
+        self.cellScale = self.magnificationStartScale * (1.0 + recognizer.magnification);
     }
 }
 
 - (void)setCellScale:(CGFloat)cellScale {
-    _cellScale = cellScale;
-    self.grid.cellScale = cellScale;
-    [self.grid updateLayoutForWidth:NSWidth(self.bounds)];
+    CGFloat clamped = GAAllGlyphsClampScale(cellScale);
+    if (fabs(clamped - _cellScale) < 1e-9) return;
+    [self layoutSubtreeIfNeeded];
+    GAPreserveScrollPosition(self.scrollView, ^{
+        self->_cellScale = clamped;
+        self.grid.cellScale = clamped;
+        [self.grid updateLayoutForWidth:NSWidth(self.bounds)];
+    });
 }
 
 - (void)zoomIn {
-    self.cellScale = GAAllGlyphsClampScale(self.cellScale * GAGlyphZoomStep);
+    self.cellScale = self.cellScale * GAGlyphZoomStep;
 }
 
 - (void)zoomOut {
-    self.cellScale = GAAllGlyphsClampScale(self.cellScale / GAGlyphZoomStep);
+    self.cellScale = self.cellScale / GAGlyphZoomStep;
 }
 
 - (void)resetZoom {

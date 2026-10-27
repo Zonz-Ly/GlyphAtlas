@@ -2,7 +2,6 @@
 #import "GAGlyphCanvasView.h"
 #import "GAUnicode.h"
 #import "GATextDisplay.h"
-#import "GATextHitMap.h"
 #import <CoreText/CoreText.h>
 #import <math.h>
 
@@ -32,7 +31,6 @@ static CGFloat GAMultiClampTextScale(CGFloat scale) {
     [self addCursorRect:self.bounds cursor:[NSCursor arrowCursor]];
 }
 
-
 - (BOOL)acceptsFirstResponder {
     return NO;
 }
@@ -43,7 +41,7 @@ static CGFloat GAMultiClampTextScale(CGFloat scale) {
 
 @end
 
-#pragma mark - Seed image
+#pragma mark - Color
 
 static NSColor *GAResolvedColor(NSColor *color, NSAppearance *appearance) {
     __block NSColor *resolved = color;
@@ -57,14 +55,15 @@ static NSColor *GAResolvedColor(NSColor *color, NSAppearance *appearance) {
 
 @interface GAMultiGlyphView ()
 @property (nonatomic, strong) GAMultiTextView *textView;
-@property (nonatomic, copy) NSString *text;
+@property (nonatomic, copy, readonly) NSString *text;
 @property (nonatomic, copy) NSArray<NSNumber *> *displaySourceIndices;
-@property(nonatomic, copy) NSArray *displayGlyphSelections;
-@property (nonatomic, copy) NSArray<GACharacterGroup *> *groups;
-@property(nonatomic, copy, nullable) NSArray<GAGlyphLayoutRun *> *glyphHits;
+@property (nonatomic, copy, readonly) NSArray<GACharacterGroup *> *groups;
+@property(nonatomic, copy) NSArray<GAGlyphLayoutRun *> *glyphHits;
 @property (nonatomic) NSSize pageContentSize;
 @property (nonatomic) CGFloat textScale;
 @property (nonatomic) CGFloat magnificationStartTextScale;
+/// The page in the view's own coordinates, including the current page inset.
+- (NSRect)pageRect;
 @end
 
 @implementation GAMultiGlyphView
@@ -74,6 +73,7 @@ static NSColor *GAResolvedColor(NSColor *color, NSAppearance *appearance) {
     if (self) {
         _text = @"";
         _groups = @[];
+        _glyphHits = @[];
         _sideInsetFraction = GACanvasDefaultSideInsetFraction;
         _showsMetrics = YES;
         _textScale = 1.0;
@@ -90,6 +90,7 @@ static NSColor *GAResolvedColor(NSColor *color, NSAppearance *appearance) {
         textView.textContainer.widthTracksTextView = NO;
         textView.verticallyResizable = NO;
         textView.menu = nil;
+        textView.textLayoutManager.requiresCTLineRef = YES;
         self.textView = textView;
         [self addSubview:textView];
 
@@ -127,11 +128,13 @@ static NSColor *GAResolvedColor(NSColor *color, NSAppearance *appearance) {
     if (fabs(clamped - _sideInsetFraction) < 1e-9) {
         return;
     }
-    _sideInsetFraction = clamped;
-    [self rebuildLayout];
-    if (self.onSideInsetFractionChanged) {
-        self.onSideInsetFractionChanged(clamped);
-    }
+    GAPreserveScrollPosition(self.enclosingScrollView, ^{
+        self->_sideInsetFraction = clamped;
+        [self rebuildLayout];
+        if (self.onSideInsetFractionChanged) {
+            self.onSideInsetFractionChanged(clamped);
+        }
+    });
 }
 
 - (void)setShowsMetrics:(BOOL)showsMetrics {
@@ -140,11 +143,12 @@ static NSColor *GAResolvedColor(NSColor *color, NSAppearance *appearance) {
 }
 
 - (void)setTextScale:(CGFloat)textScale {
-    _textScale = GAMultiClampTextScale(textScale);
-    [self rebuildLayout];
-    if (self.onTextScaleChanged) {
-        self.onTextScaleChanged();
-    }
+    CGFloat clamped = GAMultiClampTextScale(textScale);
+    if (fabs(clamped - _textScale) < 1e-9) return;
+    GAPreserveScrollPosition(self.enclosingScrollView, ^{
+        self->_textScale = clamped;
+        [self rebuildLayout];
+    });
 }
 
 - (void)setTextAlignment:(NSTextAlignment)textAlignment {
@@ -219,10 +223,8 @@ static NSColor *GAResolvedColor(NSColor *color, NSAppearance *appearance) {
 #pragma mark - Layout
 
 - (NSFont *)fontAtSize:(CGFloat)size {
+    // rebuildLayout only calls this with a document.
     GAFontDocument *document = self.document;
-    if (document == nil) {
-        return nil;
-    }
     return (__bridge_transfer NSFont *)GACopyTextDisplayFont(
         document.fontBox.font, size, self.usesContextualAlternates, self.usesLigatures);
 }
@@ -294,10 +296,10 @@ static NSColor *GAResolvedColor(NSColor *color, NSAppearance *appearance) {
     return nil;
 }
 
+// The caller excludes explicit seeds and inserted ligature groups.
 - (nullable NSNumber *)verticalQuoteGlyphForGroup:(GACharacterGroup *)group
                                              font:(NSFont *)font {
-    if (!self.vertical || group.seeded || group.insertedLigature ||
-        group.text.length != 1) {
+    if (!self.vertical || group.text.length != 1) {
         return nil;
     }
     unichar quote = [group.text characterAtIndex:0];
@@ -346,19 +348,13 @@ static NSColor *GAResolvedColor(NSColor *color, NSAppearance *appearance) {
         NSForegroundColorAttributeName :
             GAResolvedColor(GAGlyphForegroundColor(), self.effectiveAppearance),
         NSParagraphStyleAttributeName : paragraph,
-        // Native TextKit owns shaping. Explicit glyph selections remain seeds.
-        // Optional features live on the font; do not disable the shaping channel.
-        NSLigatureAttributeName : @1,
     };
 
     NSMutableAttributedString *display =
         [[NSMutableAttributedString alloc] initWithString:self.text attributes:attributes];
     NSMutableArray<NSNumber *> *sourceIndices = [NSMutableArray arrayWithCapacity:self.text.length];
-    NSMutableArray *pins = [NSMutableArray arrayWithCapacity:self.text.length];
-    for (NSUInteger i = 0; i < self.text.length; i++) {
+    for (NSUInteger i = 0; i < self.text.length; i++)
         [sourceIndices addObject:@(i)];
-        [pins addObject:NSNull.null];
-    }
     // Descending replacements leave earlier source ranges valid even when a
     // multiple substitution expands one source character into several glyphs.
     NSArray *ordered = [self.groups
@@ -375,66 +371,30 @@ static NSColor *GAResolvedColor(NSColor *color, NSAppearance *appearance) {
         if (variant.glyphIDs.count == 0) {
             continue;
         }
-        if (group.seeded && variant.glyphIDs.count > 1) {
-            NSString *source = [self.text substringWithRange:group.textRange];
-            NSString *base =
-                [source substringWithRange:[source rangeOfComposedCharacterSequenceAtIndex:0]];
-            NSMutableArray *components = [NSMutableArray array];
-            NSAttributedString *sequence = GACreateSeedDisplayString(
-                variant.glyphIDs, base, font, attributes, ^NSString *(CGGlyph glyph) {
-                  NSString *alias =
-                      [self replacementBaseForOriginal:base glyph:glyph font:font] ?: base;
-                  GAGlyphSelection *pin = [[GAGlyphSelection alloc] initWithSourceText:alias
-                                                                              glyphIDs:@[ @(glyph) ]
-                                                                        featureSources:@[]
-                                                                              ligature:NO];
-                  for (NSUInteger i = 0; i < alias.length; i++)
-                      [components addObject:pin];
-                  return alias;
-                });
-            if (sequence) {
-                GAReplaceSeedDisplayRange(display, sourceIndices, group.textRange, sequence);
-                [pins replaceObjectsInRange:group.textRange withObjectsFromArray:components];
-            }
-            continue;
+        NSArray<NSNumber *> *glyphIDs = variant.glyphIDs;
+        NSString *base = [self.text substringWithRange:group.textRange];
+        if (group.seeded) {
+            if (glyphIDs.count > 1)
+                base = [base substringWithRange:[base rangeOfComposedCharacterSequenceAtIndex:0]];
+        } else {
+            NSNumber *vertical = [self verticalQuoteGlyphForGroup:group font:font];
+            if (!vertical)
+                continue;
+            glyphIDs = @[vertical];
         }
-        // A seed affects only its own group; other quote groups still use vert.
-        NSNumber *displayGlyph = group.seeded ? variant.glyphIDs.firstObject
-                                              : [self verticalQuoteGlyphForGroup:group font:font];
-        if (displayGlyph == nil) {
-            continue;
-        }
-        CGGlyph glyph = (CGGlyph)displayGlyph.unsignedShortValue;
-        NSString *original = [self.text substringWithRange:group.textRange];
-        NSString *baseString =
-            [self replacementBaseForOriginal:original glyph:glyph font:font] ?: original;
-        NSGlyphInfo *info = [NSGlyphInfo glyphInfoWithGlyph:glyph
-                                                    forFont:font
-                                                 baseString:baseString];
-        if (info != nil) {
-            NSMutableAttributedString *component =
-                [[NSMutableAttributedString alloc] initWithString:baseString attributes:attributes];
-            [component addAttribute:NSGlyphInfoAttributeName
-                              value:info
-                              range:NSMakeRange(0, component.length)];
-            GAReplaceSeedDisplayRange(display, sourceIndices, group.textRange, component);
-            GAGlyphSelection *pin = [[GAGlyphSelection alloc] initWithSourceText:baseString
-                                                                        glyphIDs:@[ @(glyph) ]
-                                                                  featureSources:@[]
-                                                                        ligature:NO];
-            NSMutableArray *components = [NSMutableArray array];
-            for (NSUInteger i = 0; i < baseString.length; i++)
-                [components addObject:pin];
-            [pins replaceObjectsInRange:group.textRange withObjectsFromArray:components];
-        }
+        NSAttributedString *replacement = GACreateGlyphDisplayString(
+            glyphIDs, base, font, attributes, ^NSString *(CGGlyph glyph) {
+                return [self replacementBaseForOriginal:base glyph:glyph font:font];
+            });
+        if (replacement)
+            GAReplaceSeedDisplayRange(display, sourceIndices, group.textRange, replacement);
     }
     self.displaySourceIndices = sourceIndices;
-    self.displayGlyphSelections = pins;
     return display;
 }
 
 - (void)rebuildLayout {
-    self.glyphHits = nil;
+    self.glyphHits = @[];
     self.pageContentSize = NSZeroSize;
     NSRect area = [self pageArea];
     NSFont *font = nil;
@@ -470,6 +430,13 @@ static NSColor *GAResolvedColor(NSColor *color, NSAppearance *appearance) {
     self.textView.textStorage.attributedString = [self displayAttributedStringForFont:font];
     [self.textView.textLayoutManager
         ensureLayoutForBounds:NSMakeRect(0, 0, lineLength, 1000000.0)];
+
+    NSMutableArray *atomic = [NSMutableArray array];
+    for (GACharacterGroup *group in self.groups)
+        if (group.seeded)
+            [atomic addObject:[NSValue valueWithRange:group.textRange]];
+    self.glyphHits = GAReadDisplayGlyphRuns(self.textView.textLayoutManager,
+                                           self.displaySourceIndices, atomic, self.text);
 
     NSRect usage = self.textView.textLayoutManager.usageBoundsForTextContainer;
     CGFloat pageWidth = self.vertical ? MAX(1.0, ceil(usage.size.height)) : page.width;
@@ -560,20 +527,6 @@ static NSColor *GAResolvedColor(NSColor *color, NSAppearance *appearance) {
     [self.window performWindowDragWithEvent:event];
 }
 
-- (NSArray<GAGlyphLayoutRun *> *)resolvedGlyphHits {
-    if (self.glyphHits)
-        return self.glyphHits;
-    NSArray *display = GAPredictDisplayGlyphRuns(
-        self.textView.textLayoutManager, self.displayGlyphSelections, self.document,
-        self.usesContextualAlternates, self.usesLigatures, self.vertical);
-    NSMutableArray *atomic = [NSMutableArray array];
-    for (GACharacterGroup *group in self.groups)
-        if (group.seeded)
-            [atomic addObject:[NSValue valueWithRange:group.textRange]];
-    self.glyphHits = GAMapGlyphLayoutRuns(display, self.displaySourceIndices, atomic, self.text);
-    return self.glyphHits;
-}
-
 - (void)selectGroupAtPoint:(NSPoint)point {
     if (self.textView.hidden) {
         return;
@@ -617,17 +570,7 @@ static NSColor *GAResolvedColor(NSColor *color, NSAppearance *appearance) {
         return;
     }
     NSUInteger sourceIndex = self.displaySourceIndices[(NSUInteger)hitIndex].unsignedIntegerValue;
-    // Vertical substitutions are active independently of the optional switches.
-    if (!self.vertical && !self.usesContextualAlternates && !self.usesLigatures) {
-        for (GACharacterGroup *group in self.groups)
-            if (NSLocationInRange(sourceIndex, group.textRange)) {
-                NSArray *ids = group.variants.firstObject.glyphIDs;
-                if (self.onGlyphSelected)
-                    self.onGlyphSelected(ids, group.textRange);
-                return;
-            }
-    }
-    for (GAGlyphLayoutRun *hit in [self resolvedGlyphHits])
+    for (GAGlyphLayoutRun *hit in self.glyphHits)
         if (NSLocationInRange(sourceIndex, hit.range)) {
             if (self.onGlyphSelected)
                 self.onGlyphSelected(hit.glyphIDs, hit.range);
