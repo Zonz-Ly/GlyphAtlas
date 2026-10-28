@@ -699,10 +699,11 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
             });
             [self.detailViewController setFontDocument:document];
             if (!preserve && self.onFontLoaded != nil) self.onFontLoaded(document.fontURL ?: url);
-            self.window.title = document.fullName;
+            NSString *displayName = self.fontResource.usesFamilyName ? self.fontResource.name : document.fullName;
+            self.window.title = displayName;
             self.window.subtitle = document.fontURL.lastPathComponent ?: @"";
-            self.titleFontNameField.stringValue = document.fullName;
-            self.titleFontNameField.toolTip = document.fullName;
+            self.titleFontNameField.stringValue = displayName;
+            self.titleFontNameField.toolTip = displayName;
             [self.titleFontNameField invalidateIntrinsicContentSize];
             if (!preserve) [self.sidebarViewController setGroups:@[]];
             if (selected != nil) {

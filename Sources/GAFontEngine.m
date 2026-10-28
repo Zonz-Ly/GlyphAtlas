@@ -199,7 +199,7 @@ NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text) {
         return nil;
     _fontBox = [[GAFontBox alloc] initWithFont:_font];
     _fontURL = [url copy];
-    _fullName = CFBridgingRelease(CTFontCopyFullName(_font));
+    _fullName = CFBridgingRelease(CTFontCopyDisplayName(_font));
     if (!_fullName.length)
         _fullName = CFBridgingRelease(CTFontCopyPostScriptName(_font));
     if (!_fullName.length)

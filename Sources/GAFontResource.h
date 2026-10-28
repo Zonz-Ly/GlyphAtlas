@@ -16,6 +16,8 @@ FOUNDATION_EXPORT BOOL GAFontURLIsFont(NSURL *url);
 @interface GAFontResource : NSObject
 @property (nonatomic, readonly) CTFontDescriptorRef defaultDescriptor;
 @property (nonatomic, copy, readonly) NSString *name;
+/// Whether this VF uses a localized family name unique among the remaining resources.
+@property (nonatomic, readonly) BOOL usesFamilyName;
 @property (nonatomic, copy, readonly) NSArray<NSDictionary *> *axes;
 @property (nonatomic, copy, readonly) NSDictionary<NSNumber *, NSNumber *> *defaultCoordinates;
 @property (nonatomic, copy, readonly) NSArray<GAFontInstance *> *instances;

@@ -67,6 +67,7 @@ static CTFontRef GANormalizedFont(CTFontDescriptorRef descriptor,
 + (NSArray<GAFontResource *> *)resourcesFromDescriptors:(NSArray *)descriptors {
     NSMutableArray *remaining = [descriptors mutableCopy];
     NSMutableArray<GAFontResource *> *resources = [NSMutableArray array];
+    NSMutableDictionary<NSString *, NSMutableArray<GAFontResource *> *> *families = [NSMutableDictionary dictionary];
     while (remaining.count > 0) {
         id first = remaining.firstObject;
         CTFontRef original = CTFontCreateWithFontDescriptor(
@@ -89,10 +90,16 @@ static CTFontRef GANormalizedFont(CTFontDescriptorRef descriptor,
         resource->_axes = [axes copy];
         resource->_defaultCoordinates = [defaults copy];
         resource->_defaultDescriptor = CTFontCopyFontDescriptor(base);
-        resource->_name = CFBridgingRelease(CTFontCopyFullName(base)) ?: NSLocalizedString(@"Untitled Font", @"Font name fallback");
-        NSMutableArray *members = [NSMutableArray arrayWithObject:first];
+        resource->_name = CFBridgingRelease(CTFontCopyDisplayName(base)) ?: NSLocalizedString(@"Untitled Font", @"Font name fallback");
+        NSString *familyName = CFBridgingRelease(CTFontCopyLocalizedName(base, kCTFontFamilyNameKey, NULL));
+        if (familyName.length > 0) {
+            if (families[familyName] == nil) families[familyName] = [NSMutableArray array];
+            [families[familyName] addObject:resource];
+        }
+        NSMutableArray<GAFontInstance *> *instances = [NSMutableArray array];
         [remaining removeObjectAtIndex:0];
         if (axes.count > 0) {
+            NSMutableArray *members = [NSMutableArray arrayWithObject:first];
             NSMutableIndexSet *matches = [NSMutableIndexSet indexSet];
             for (NSUInteger i = 0; i < remaining.count; i++) {
                 CTFontRef candidate = GANormalizedFont(
@@ -104,10 +111,7 @@ static CTFontRef GANormalizedFont(CTFontDescriptorRef descriptor,
                 CFRelease(candidate);
             }
             [remaining removeObjectsAtIndexes:matches];
-        }
-        NSMutableArray<GAFontInstance *> *instances = [NSMutableArray array];
-        BOOL containsDefault = NO;
-        if (axes.count > 0) {
+            BOOL containsDefault = NO;
             for (id member in members) {
                 CTFontDescriptorRef descriptor = CTFontDescriptorCreateCopyWithAttributes(
                     (__bridge CTFontDescriptorRef)member,
@@ -136,6 +140,14 @@ static CTFontRef GANormalizedFont(CTFontDescriptorRef descriptor,
         [resources addObject:resource];
         CFRelease(base);
         CFRelease(original);
+    }
+    for (NSString *familyName in families) {
+        NSArray<GAFontResource *> *members = families[familyName];
+        if (members.count != 1) continue;
+        GAFontResource *resource = members.firstObject;
+        if (resource.axes.count == 0) continue;
+        resource->_name = familyName;
+        resource->_usesFamilyName = YES;
     }
     return resources;
 }
