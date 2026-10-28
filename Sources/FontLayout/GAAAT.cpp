@@ -225,15 +225,6 @@ class Runner {
                 return i;
         return buffer_.size();
     }
-    void merge(size_t first, size_t last) {
-        if (first >= last || last > buffer_.size())
-            return;
-        Span span = buffer_[first].source;
-        for (size_t i = first + 1; i < last; i++)
-            span = unite(span, buffer_[i].source);
-        for (size_t i = first; i < last; i++)
-            buffer_[i].source = span;
-    }
     void rearrange(unsigned verb) {
         if (first_ >= last_ || last_ > buffer_.size())
             return;
@@ -244,7 +235,11 @@ class Runner {
         unsigned h = heads[verb], t = tails[verb];
         if (last_ - first_ < h + t)
             return;
-        merge(first_, last_);
+        Span span = buffer_[first_].source;
+        for (size_t i = first_ + 1; i < last_; i++)
+            span = unite(span, buffer_[i].source);
+        for (size_t i = first_; i < last_; i++)
+            buffer_[i].source = span;
         Buffer head(buffer_.begin() + first_, buffer_.begin() + first_ + h),
             tail(buffer_.begin() + last_ - t, buffer_.begin() + last_);
         bool flipHead = verb == 5 || verb == 11 || verb == 13 || verb == 15,

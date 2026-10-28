@@ -17,18 +17,19 @@ A native macOS font and alternate-glyph inspector. Type text to see every altern
 
 ## Usage
 
-- Open a font, or drag one onto the app's window or Dock icon. Recently used files are supported.
+- Open a font, or drag one onto the app's window or Dock icon. Recently opened items are supported.
+- Use the menu bar to copy the font open in the current window to your user Fonts folder in one click.
+- When you open a variable font, a variation panel appears beside the window controls. Drag it out to keep it open. Select a numeric value and use `↑`/`↓` or `⇧↑`/`⇧↓` to adjust it.
 - Type one or more characters in the sidebar to see all associated glyphs. Use `⌥⏎` to insert a line break.
-- Double-click a glyph, or select it and press `⏎`, to replace the default glyph and show that glyph's substitution. Press and hold `⇧` together to add that glyph.
+- Double-click a glyph, or select it and press `⏎`, to replace the default glyph and show its alternates. Hold `⇧` while doing this to add the glyph.
 - Use `↑`/`↓` to move between glyphs, `⌘↑`/`⌘↓` to move between base glyphs, and `⌥↑`/`⌥↓` to jump to the first or last glyph in the list.
 - Use `⌘C` to copy all encoded characters of the selected glyph.
 - Hover over a Unicode badge to see the character name defined by the Unicode standard.
 - All Glyphs is the default. Right-click to switch views, or press `⌘1` for Single Glyph, `⌘2` for Multi-Character, or `⌘3` for All Glyphs.
 - In Multi-Character, click a glyph to view its alternates. Contextual Alternates and Ligatures are on by default; toggle them with a right-click or `⌘5` and `⌘6`. Vertical writing is supported; right-click or press `⌘7` to switch.
 - In All Glyphs, double-click a glyph to add it to the existing text. Clicking a glyph in the sidebar also makes it blink there.
-- Use `⌘+`/`⌘-` to zoom the glyphs, and `⌥⌘+`/`⌥⌘-` to resize the bounding box in Multi-Character. Trackpad pinch also works.
-- The bounding box and its shadow show the glyph's width and height, as well as the layout's line height and leading; press `⌘4` to hide them.
-- When you open a variable font, a variation panel appears beside the window controls. Drag it out to keep it open. Select a numeric value and use `↑`/`↓` or `⇧↑`/`⇧↓` to adjust it.
+- Use `⌘+`/`⌘−` to zoom the glyphs, and `⌥⌘+`/`⌥⌘−` to increase or decrease the margins in Multi-Character. Trackpad pinch also works.
+- The shadow indicates the glyph's width and height, as well as the layout's line height and leading; press `⌘4` to hide it.
 - Dark mode is supported, but be careful: clicking a solid glyph can dazzle you.
 
 ## Limitations

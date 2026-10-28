@@ -61,18 +61,19 @@
 "Text and alternate glyph list" = "Lista de texto y glifos alternativos";
 "CONTROL CHARACTER" = "CARÁCTER DE CONTROL";
 "Help.01" = "Abre un tipo de letra o arrástralo a la ventana de la app o a su icono en el Dock. También se admiten los archivos usados recientemente.";
-"Help.02" = "Introduce uno o varios caracteres en la barra lateral para ver todos los glifos asociados. Usa ⌥⏎ para insertar un salto de línea.";
-"Help.03" = "Haz doble clic en un glifo, o selecciónalo y pulsa Retorno, para sustituir el glifo predeterminado y mostrar sus alternativas. Mantén pulsada la tecla Mayúsculas al hacerlo para añadir el glifo.";
-"Help.04" = "Usa ↑/↓ para moverte entre glifos, ⌘↑/⌘↓ entre glifos base y ⌥↑/⌥↓ para ir al primer o al último glifo de la lista.";
-"Help.05" = "Usa ⌘C para copiar todos los caracteres codificados del glifo seleccionado.";
-"Help.06" = "Sitúa el puntero sobre una etiqueta Unicode para ver el nombre del carácter definido por el estándar Unicode.";
-"Help.07" = "La vista predeterminada es «Todos los glifos». Cámbiala con un clic secundario, o pulsa ⌘1 para «Un solo glifo», ⌘2 para «Varios caracteres» o ⌘3 para «Todos los glifos».";
-"Help.08" = "En « Varios caracteres », haz clic en un glifo para ver sus alternativas. Las alternativas contextuales y las ligaduras están activadas por omisión; cámbialas con un clic secundario o con ⌘5 y ⌘6. Cambia la dirección de escritura con un clic secundario o con ⌘7.";
-"Help.09" = "En «Todos los glifos», haz doble clic en un glifo para añadirlo al texto existente. Al hacer clic en un glifo de la barra lateral, también parpadea en la vista completa.";
-"Help.10" = "Usa ⌘+/⌘- para ampliar o reducir los glifos y ⌥⌘+/⌥⌘- para ajustar el cuadro delimitador en «Varios caracteres». También puedes usar el gesto de pellizco en el trackpad.";
-"Help.11" = "El cuadro delimitador y su sombra indican la anchura y altura del glifo, así como la altura de línea y el interlineado de la composición. Pulsa ⌘4 para ocultarlos.";
-"Help.12" = "Al abrir un tipo de letra variable, aparece un panel de variación junto a los controles de la ventana. Arrástralo fuera para mantenerlo abierto. Selecciona un valor numérico y ajústalo con ↑/↓ o ⇧↑/⇧↓.";
-"Help.13" = "Se admite el modo oscuro. Pero ten cuidado: hacer clic en un glifo sólido puede deslumbrarte.";
+"Help.02" = "Desde la barra de menús, copia con un clic el tipo de letra abierto en la ventana actual a tu carpeta de tipos de letra de usuario.";
+"Help.03" = "Al abrir un tipo de letra variable, aparece un panel de variación junto a los controles de la ventana. Arrástralo fuera para mantenerlo abierto. Selecciona un valor numérico y ajústalo con ↑/↓ o ⇧↑/⇧↓.";
+"Help.04" = "Introduce uno o varios caracteres en la barra lateral para ver todos los glifos asociados. Usa ⌥⏎ para insertar un salto de línea.";
+"Help.05" = "Haz doble clic en un glifo, o selecciónalo y pulsa Retorno, para sustituir el glifo predeterminado y mostrar sus alternativas. Mantén pulsada la tecla Mayúsculas al hacerlo para añadir el glifo.";
+"Help.06" = "Usa ↑/↓ para moverte entre glifos, ⌘↑/⌘↓ entre glifos base y ⌥↑/⌥↓ para ir al primer o al último glifo de la lista.";
+"Help.07" = "Usa ⌘C para copiar todos los caracteres codificados del glifo seleccionado.";
+"Help.08" = "Sitúa el puntero sobre una etiqueta Unicode para ver el nombre del carácter definido por el estándar Unicode.";
+"Help.09" = "La vista predeterminada es «Todos los glifos». Cámbiala con un clic secundario, o pulsa ⌘1 para «Un solo glifo», ⌘2 para «Varios caracteres» o ⌘3 para «Todos los glifos».";
+"Help.10" = "En « Varios caracteres », haz clic en un glifo para ver sus alternativas. Las alternativas contextuales y las ligaduras están activadas por omisión; cámbialas con un clic secundario o con ⌘5 y ⌘6. Cambia la dirección de escritura con un clic secundario o con ⌘7.";
+"Help.11" = "En «Todos los glifos», haz doble clic en un glifo para añadirlo al texto existente. Al hacer clic en un glifo de la barra lateral, también parpadea en la vista completa.";
+"Help.12" = "Usa ⌘+/⌘− para ampliar o reducir los glifos y ⌥⌘+/⌥⌘− para aumentar o reducir los márgenes en «Varios caracteres». También puedes usar el gesto de pellizco en el trackpad.";
+"Help.13" = "La sombra indica la anchura y altura del glifo, así como la altura de línea y el interlineado de la composición. Pulsa ⌘4 para ocultarla.";
+"Help.14" = "Se admite el modo oscuro. Pero ten cuidado: hacer clic en un glifo sólido puede deslumbrarte.";
 
 /* Variable font controls. */
 "Variable" = "Variable";

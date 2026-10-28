@@ -66,7 +66,7 @@ for LOCALIZATION in "$ROOT"/Resources/*.lproj; do
   cp -R "$LOCALIZATION" "$BUNDLE/Resources/"
 done
 
-cp "$ROOT/Resources/AppIcon.icns" "$BUNDLE/Resources/AppIcon.icns"
+cp "$ROOT/Resources/AppIcon.icns" "$ROOT/Resources/Assets.car" "$BUNDLE/Resources/"
 chmod +x "$BUNDLE/MacOS/GlyphAtlas"
 
 plutil -lint "$BUNDLE/Info.plist" \

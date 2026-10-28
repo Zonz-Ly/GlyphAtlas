@@ -61,18 +61,19 @@
 "Text and alternate glyph list" = "Lista de texto e glifos alternativos";
 "CONTROL CHARACTER" = "CARACTERE DE CONTROLE";
 "Help.01" = "Abra uma fonte ou arraste-a para a janela do app ou seu ícone no Dock. Arquivos usados recentemente também são compatíveis.";
-"Help.02" = "Digite um ou mais caracteres na barra lateral para ver todos os glifos associados. Use ⌥⏎ para inserir uma quebra de linha.";
-"Help.03" = "Clique duas vezes em um glifo, ou selecione-o e pressione Return, para substituir o glifo padrão e mostrar suas alternativas. Mantenha Shift pressionado ao fazer isso para adicionar o glifo.";
-"Help.04" = "Use ↑/↓ para navegar entre glifos, ⌘↑/⌘↓ entre glifos de base e ⌥↑/⌥↓ para ir ao primeiro ou ao último glifo da lista.";
-"Help.05" = "Use ⌘C para copiar todos os caracteres codificados do glifo selecionado.";
-"Help.06" = "Mantenha o cursor sobre uma etiqueta Unicode para ver o nome do caractere definido pelo padrão Unicode.";
-"Help.07" = "A visualização padrão é “Todos os Glifos”. Alterne com um clique secundário ou use ⌘1 para “Glifo Único”, ⌘2 para “Vários Caracteres” e ⌘3 para “Todos os Glifos”.";
-"Help.08" = "Em “Vários Caracteres”, clique em um glifo para ver suas alternativas. As alternativas contextuais e as ligaduras estão ativadas por padrão; alterne-as com um clique secundário ou com ⌘5 e ⌘6. Alterne a direção da escrita com um clique secundário ou com ⌘7.";
-"Help.09" = "Em “Todos os Glifos”, clique duas vezes em um glifo para adicioná-lo ao texto existente. Clicar em um glifo na barra lateral também o faz piscar na visualização completa.";
-"Help.10" = "Use ⌘+/⌘- para ampliar ou reduzir os glifos e ⌥⌘+/⌥⌘- para ajustar a caixa delimitadora em “Vários Caracteres”. O gesto de pinça no trackpad também funciona.";
-"Help.11" = "A caixa delimitadora e sua sombra mostram a largura e a altura do glifo, além da altura da linha e da entrelinha da composição. Pressione ⌘4 para ocultá-las.";
-"Help.12" = "Ao abrir uma fonte variável, um painel de variações aparece ao lado dos controles da janela. Arraste-o para fora para mantê-lo aberto. Selecione um valor numérico e ajuste-o com ↑/↓ ou ⇧↑/⇧↓.";
-"Help.13" = "O Modo Escuro é compatível. Mas cuidado: clicar em um glifo sólido pode ofuscar seus olhos.";
+"Help.02" = "Na barra de menus, copie com um clique a fonte aberta na janela atual para a pasta de fontes do seu usuário.";
+"Help.03" = "Ao abrir uma fonte variável, um painel de variações aparece ao lado dos controles da janela. Arraste-o para fora para mantê-lo aberto. Selecione um valor numérico e ajuste-o com ↑/↓ ou ⇧↑/⇧↓.";
+"Help.04" = "Digite um ou mais caracteres na barra lateral para ver todos os glifos associados. Use ⌥⏎ para inserir uma quebra de linha.";
+"Help.05" = "Clique duas vezes em um glifo, ou selecione-o e pressione Return, para substituir o glifo padrão e mostrar suas alternativas. Mantenha Shift pressionado ao fazer isso para adicionar o glifo.";
+"Help.06" = "Use ↑/↓ para navegar entre glifos, ⌘↑/⌘↓ entre glifos de base e ⌥↑/⌥↓ para ir ao primeiro ou ao último glifo da lista.";
+"Help.07" = "Use ⌘C para copiar todos os caracteres codificados do glifo selecionado.";
+"Help.08" = "Mantenha o cursor sobre uma etiqueta Unicode para ver o nome do caractere definido pelo padrão Unicode.";
+"Help.09" = "A visualização padrão é “Todos os Glifos”. Alterne com um clique secundário ou use ⌘1 para “Glifo Único”, ⌘2 para “Vários Caracteres” e ⌘3 para “Todos os Glifos”.";
+"Help.10" = "Em “Vários Caracteres”, clique em um glifo para ver suas alternativas. As alternativas contextuais e as ligaduras estão ativadas por padrão; alterne-as com um clique secundário ou com ⌘5 e ⌘6. Alterne a direção da escrita com um clique secundário ou com ⌘7.";
+"Help.11" = "Em “Todos os Glifos”, clique duas vezes em um glifo para adicioná-lo ao texto existente. Clicar em um glifo na barra lateral também o faz piscar na visualização completa.";
+"Help.12" = "Use ⌘+/⌘− para ampliar ou reduzir os glifos e ⌥⌘+/⌥⌘− para aumentar ou reduzir as margens em “Vários Caracteres”. O gesto de pinça no trackpad também funciona.";
+"Help.13" = "A sombra mostra a largura e a altura do glifo, além da altura da linha e da entrelinha da composição. Pressione ⌘4 para ocultá-la.";
+"Help.14" = "O Modo Escuro é compatível. Mas cuidado: clicar em um glifo sólido pode ofuscar seus olhos.";
 
 /* Variable font controls. */
 "Variable" = "Variável";

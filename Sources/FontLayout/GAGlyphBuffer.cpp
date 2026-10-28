@@ -26,12 +26,12 @@ std::vector<Cluster> clusters(const Buffer &buffer) {
 }
 void Trace::changed(const Buffer &before, const Buffer &after, const std::string &feature) {
     auto old = clusters(before), next = clusters(after);
-    std::map<Span, std::vector<Glyph>> prior;
-    for (const auto &cluster : old)
-        prior.emplace(cluster.source, cluster.glyphs);
+    // clusters preserves Span ordering; lower_bound also keeps the first equal span.
     for (const auto &cluster : next) {
-        auto found = prior.find(cluster.source);
-        if (found == prior.end() || found->second != cluster.glyphs)
+        auto found = std::lower_bound(
+            old.begin(), old.end(), cluster.source,
+            [](const Cluster &item, Span source) { return item.source < source; });
+        if (found == old.end() || !(found->source == cluster.source) || found->glyphs != cluster.glyphs)
             changes.push_back({cluster.source, cluster.glyphs, feature});
     }
     // Prefix maxima allow each old interval to be tested independently, even

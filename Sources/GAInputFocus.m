@@ -49,7 +49,6 @@ static BOOL GAIsBlankAreaClick(NSEvent *event) {
 + (instancetype)sharedMonitor;
 - (void)removeMonitor;
 - (void)installMonitor;
-- (void)handleMouseEvent:(NSEvent *)event;
 @end
 
 @implementation GAInputClickMonitor
@@ -68,19 +67,15 @@ static BOOL GAIsBlankAreaClick(NSEvent *event) {
 
 - (void)installMonitor {
     if (self.monitor != nil) return;
-    __weak typeof(self) weakSelf = self;
     self.monitor = [NSEvent addLocalMonitorForEventsMatchingMask:
         NSEventMaskLeftMouseDown
         handler:^NSEvent *(NSEvent *event) {
-            [weakSelf handleMouseEvent:event];
+            if (GAIsBlankAreaClick(event)) {
+                [NSNotificationCenter.defaultCenter postNotificationName:GAInputBlankClickNotification
+                                                                  object:event];
+            }
             return event;
         }];
-}
-
-- (void)handleMouseEvent:(NSEvent *)event {
-    if (!GAIsBlankAreaClick(event)) return;
-    [NSNotificationCenter.defaultCenter postNotificationName:GAInputBlankClickNotification
-                                                      object:event];
 }
 @end
 

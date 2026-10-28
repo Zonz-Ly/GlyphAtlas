@@ -1,17 +1,8 @@
 #import "GAFontEngine.h"
-#import "GAUnicode.h"
 #import "FontLayout/GASubstitutionEngine.h"
 #import <AppKit/AppKit.h>
 
 const CGFloat GAFontShapingSize = 200.0;
-
-static NSString *GAGlyphKeyForGlyphIDs(NSArray<NSNumber *> *glyphIDs) {
-    NSMutableArray<NSString *> *parts = [NSMutableArray arrayWithCapacity:glyphIDs.count];
-    for (NSNumber *glyph in glyphIDs) {
-        [parts addObject:glyph.stringValue];
-    }
-    return parts.count ? [parts componentsJoinedByString:@","] : @"∅";
-}
 
 #pragma mark - GAAllGlyphEntry
 
@@ -62,7 +53,12 @@ static NSString *GAGlyphKeyForGlyphIDs(NSArray<NSNumber *> *glyphIDs) {
 }
 
 - (NSString *)glyphKey {
-    return GAGlyphKeyForGlyphIDs(self.glyphIDs);
+    NSArray<NSNumber *> *glyphIDs = self.glyphIDs;
+    NSMutableArray<NSString *> *parts = [NSMutableArray arrayWithCapacity:glyphIDs.count];
+    for (NSNumber *glyph in glyphIDs) {
+        [parts addObject:glyph.stringValue];
+    }
+    return parts.count ? [parts componentsJoinedByString:@","] : @"∅";
 }
 
 @end
@@ -161,11 +157,12 @@ NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text) {
 @interface GAFontDocument ()
 - (instancetype)initWithDescriptor:(CTFontDescriptorRef)descriptor URL:(NSURL *)url
                     sourceDocument:(GAFontDocument *)source NS_DESIGNATED_INITIALIZER;
-/// Raw ink bounding box of a variant, from glyf/CFF through
+/// Raw ink bounding box of a nonempty variant, from glyf/CFF through
 /// CTFontGetBoundingRectsForGlyphs. Returns CGRectZero for zero-ink glyphs.
 + (CGRect)inkBoundsForVariant:(GAGlyphVariant *)variant;
 
-/// Advance width/height in font units. Width is the horizontal advance.
+/// Advance width/height of a nonempty variant in font units.
+/// Width is the horizontal advance.
 /// Requires vmtx/vhea; the caller checks their presence before using this method.
 + (CGSize)advanceInFontUnitsForVariant:(GAGlyphVariant *)variant;
 
@@ -436,10 +433,9 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
         GACharacterGroup *group = groups[target];
         NSMutableArray<GAGlyphVariant *> *variants =
             [group.variants mutableCopy];
-        NSString *key = GAGlyphKeyForGlyphIDs(candidate.glyphIDs);
         GAGlyphVariant *existing = nil;
         for (GAGlyphVariant *variant in variants) {
-            if (![variant.glyphKey isEqualToString:key] ||
+            if (![variant.glyphIDs isEqualToArray:candidate.glyphIDs] ||
                 variant.isLigature != candidate.isLigature)
                 continue;
             if (candidate.isLigature && !NSEqualRanges(variant.sourceTextRange, candidate.sourceRange))
@@ -521,9 +517,6 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
 
 + (CGRect)inkBoundsForVariant:(GAGlyphVariant *)variant {
     NSUInteger count = variant.glyphIDs.count;
-    if (count == 0) {
-        return CGRectZero;
-    }
     CGGlyph *glyphs = calloc(count, sizeof(CGGlyph));
     for (NSUInteger index = 0; index < count; index++) {
         glyphs[index] = (CGGlyph)variant.glyphIDs[index].unsignedShortValue;
@@ -669,9 +662,6 @@ static CGFloat GAAdvanceWidthInFontUnits(CTFontRef font,
 
 + (CGSize)advanceInFontUnitsForVariant:(GAGlyphVariant *)variant {
     NSUInteger count = variant.glyphIDs.count;
-    if (count == 0) {
-        return CGSizeZero;
-    }
     CTFontRef font = variant.fontBox.font;
     CGFloat factor = CTFontGetUnitsPerEm(font) / GAFontShapingSize;
     CGFloat width = GAAdvanceWidthInFontUnits(font, variant.glyphIDs);

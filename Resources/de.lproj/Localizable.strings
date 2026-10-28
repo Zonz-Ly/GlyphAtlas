@@ -61,18 +61,19 @@
 "Text and alternate glyph list" = "Liste der Zeichen und alternativen Glyphen";
 "CONTROL CHARACTER" = "STEUERZEICHEN";
 "Help.01" = "Öffne eine Schrift oder ziehe sie auf das App-Fenster oder das Dock-Symbol. Zuletzt benutzte Dateien werden ebenfalls unterstützt.";
-"Help.02" = "Gib ein oder mehrere Zeichen in der Seitenleiste ein, um alle zugehörigen Glyphen zu sehen. Mit ⌥⏎ fügst du einen Zeilenumbruch ein.";
-"Help.03" = "Doppelklicke auf eine Glyphe oder wähle sie aus und drücke Return, um die Standardglyphe zu ersetzen und die Alternativen dieser Glyphe anzuzeigen. Halte dabei die Umschalttaste gedrückt, um die Glyphe hinzuzufügen.";
-"Help.04" = "Mit ↑/↓ wechselst du zwischen Glyphen, mit ⌘↑/⌘↓ zwischen Basisglyphen. Mit ⌥↑/⌥↓ springst du zur ersten oder letzten Glyphe der Liste.";
-"Help.05" = "Mit ⌘C kopierst du alle codierten Zeichen der ausgewählten Glyphe.";
-"Help.06" = "Bewege den Zeiger über eine Unicode-Kennzeichnung, um den im Unicode-Standard definierten Zeichennamen zu sehen.";
-"Help.07" = "Standardmäßig ist „Alle Glyphen“ aktiv. Wechsle die Ansicht per Rechtsklick oder mit ⌘1 zu „Einzelne Glyphe“, ⌘2 zu „Mehrere Zeichen“ und ⌘3 zu „Alle Glyphen“.";
-"Help.08" = "Klicke in „Mehrere Zeichen“ auf eine Glyphe, um ihre Varianten anzuzeigen. „Kontextvarianten“ und „Ligaturen“ sind standardmäßig aktiviert. Schalte sie per Rechtsklick oder mit ⌘5 und ⌘6 um. Vertikale Schrift lässt sich per Rechtsklick oder mit ⌘7 umschalten.";
-"Help.09" = "Doppelklicke in „Alle Glyphen“ auf eine Glyphe, um sie an den vorhandenen Text anzuhängen. Ein Klick auf eine Glyphe in der Seitenleiste lässt sie auch in der Gesamtübersicht blinken.";
-"Help.10" = "Mit ⌘+/⌘- vergrößerst oder verkleinerst du Glyphen; mit ⌥⌘+/⌥⌘- änderst du den Begrenzungsrahmen in „Mehrere Zeichen“. Auch die Zoomgeste auf dem Trackpad funktioniert.";
-"Help.11" = "Der Begrenzungsrahmen und sein Schatten zeigen Breite und Höhe der Glyphe sowie Zeilenhöhe und Durchschuss des Satzes. Mit ⌘4 blendest du sie aus.";
-"Help.12" = "Beim Öffnen einer variablen Schrift erscheint neben den Fenstersteuerungen ein Variationsfenster. Ziehe es heraus, damit es geöffnet bleibt. Wähle einen Zahlenwert aus und passe ihn mit ↑/↓ oder ⇧↑/⇧↓ an.";
-"Help.13" = "Der Dunkelmodus wird unterstützt. Aber Vorsicht: Ein Klick auf eine vollständig ausgefüllte Glyphe kann blenden.";
+"Help.02" = "Über die Menüleiste kannst du die im aktuellen Fenster geöffnete Schrift mit einem Klick in deinen Benutzerordner für Schriften kopieren.";
+"Help.03" = "Beim Öffnen einer variablen Schrift erscheint neben den Fenstersteuerungen ein Variationsfenster. Ziehe es heraus, damit es geöffnet bleibt. Wähle einen Zahlenwert aus und passe ihn mit ↑/↓ oder ⇧↑/⇧↓ an.";
+"Help.04" = "Gib ein oder mehrere Zeichen in der Seitenleiste ein, um alle zugehörigen Glyphen zu sehen. Mit ⌥⏎ fügst du einen Zeilenumbruch ein.";
+"Help.05" = "Doppelklicke auf eine Glyphe oder wähle sie aus und drücke Return, um die Standardglyphe zu ersetzen und die Alternativen dieser Glyphe anzuzeigen. Halte dabei die Umschalttaste gedrückt, um die Glyphe hinzuzufügen.";
+"Help.06" = "Mit ↑/↓ wechselst du zwischen Glyphen, mit ⌘↑/⌘↓ zwischen Basisglyphen. Mit ⌥↑/⌥↓ springst du zur ersten oder letzten Glyphe der Liste.";
+"Help.07" = "Mit ⌘C kopierst du alle codierten Zeichen der ausgewählten Glyphe.";
+"Help.08" = "Bewege den Zeiger über eine Unicode-Kennzeichnung, um den im Unicode-Standard definierten Zeichennamen zu sehen.";
+"Help.09" = "Standardmäßig ist „Alle Glyphen“ aktiv. Wechsle die Ansicht per Rechtsklick oder mit ⌘1 zu „Einzelne Glyphe“, ⌘2 zu „Mehrere Zeichen“ und ⌘3 zu „Alle Glyphen“.";
+"Help.10" = "Klicke in „Mehrere Zeichen“ auf eine Glyphe, um ihre Varianten anzuzeigen. „Kontextvarianten“ und „Ligaturen“ sind standardmäßig aktiviert. Schalte sie per Rechtsklick oder mit ⌘5 und ⌘6 um. Vertikale Schrift lässt sich per Rechtsklick oder mit ⌘7 umschalten.";
+"Help.11" = "Doppelklicke in „Alle Glyphen“ auf eine Glyphe, um sie an den vorhandenen Text anzuhängen. Ein Klick auf eine Glyphe in der Seitenleiste lässt sie auch in der Gesamtübersicht blinken.";
+"Help.12" = "Mit ⌘+/⌘− vergrößerst oder verkleinerst du Glyphen; mit ⌥⌘+/⌥⌘− vergrößerst oder verkleinerst du die Ränder in „Mehrere Zeichen“. Auch die Zoomgeste auf dem Trackpad funktioniert.";
+"Help.13" = "Der Schatten zeigt Breite und Höhe der Glyphe sowie Zeilenhöhe und Durchschuss des Satzes. Mit ⌘4 blendest du ihn aus.";
+"Help.14" = "Der Dunkelmodus wird unterstützt. Aber Vorsicht: Ein Klick auf eine vollständig ausgefüllte Glyphe kann blenden.";
 
 /* Variable font controls. */
 "Variable" = "Variabel";

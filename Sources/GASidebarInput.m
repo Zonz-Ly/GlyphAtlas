@@ -62,6 +62,22 @@ static NSAttributedString *GAMarkerTextFromString(NSString *string,
   return text;
 }
 
+/// Copies attributes across a length-preserving conversion, dropping old markers.
+static void GACopyAttributesWithoutLineBreakMarker(
+    NSAttributedString *source, NSMutableAttributedString *destination) {
+  [source
+      enumerateAttributesInRange:NSMakeRange(0, source.length)
+                         options:0
+                      usingBlock:^(
+                          NSDictionary<NSAttributedStringKey, id> *attrs,
+                          NSRange range, BOOL *stop) {
+                        (void)stop;
+                        NSMutableDictionary *clean = [attrs mutableCopy];
+                        [clean removeObjectForKey:GALineBreakAttributeName];
+                        [destination setAttributes:clean range:range];
+                      }];
+}
+
 /// Replaces the marker attribute with real line breaks for the model text.
 NSAttributedString *GAModelTextFromFieldText(NSAttributedString *fieldText) {
   if (fieldText.length == 0) {
@@ -89,17 +105,7 @@ NSAttributedString *GAModelTextFromFieldText(NSAttributedString *fieldText) {
   }
   NSMutableAttributedString *model =
       [[NSMutableAttributedString alloc] initWithString:string];
-  [fieldText
-      enumerateAttributesInRange:all
-                         options:0
-                      usingBlock:^(
-                          NSDictionary<NSAttributedStringKey, id> *attrs,
-                          NSRange range, BOOL *stop) {
-                        (void)stop;
-                        NSMutableDictionary *clean = [attrs mutableCopy];
-                        [clean removeObjectForKey:GALineBreakAttributeName];
-                        [model setAttributes:clean range:range];
-                      }];
+  GACopyAttributesWithoutLineBreakMarker(fieldText, model);
   return model;
 }
 
@@ -108,7 +114,6 @@ NSAttributedString *GAFieldTextFromModelText(NSAttributedString *modelText) {
   if (modelText.length == 0) {
     return [[NSAttributedString alloc] init];
   }
-  NSRange all = NSMakeRange(0, modelText.length);
   NSMutableString *string = [modelText.string mutableCopy];
   NSMutableIndexSet *markers = [NSMutableIndexSet indexSet];
   for (NSUInteger index = 0; index < string.length; index++) {
@@ -120,17 +125,7 @@ NSAttributedString *GAFieldTextFromModelText(NSAttributedString *modelText) {
   }
   NSMutableAttributedString *field =
       [[NSMutableAttributedString alloc] initWithString:string];
-  [modelText
-      enumerateAttributesInRange:all
-                         options:0
-                      usingBlock:^(
-                          NSDictionary<NSAttributedStringKey, id> *attrs,
-                          NSRange range, BOOL *stop) {
-                        (void)stop;
-                        NSMutableDictionary *clean = [attrs mutableCopy];
-                        [clean removeObjectForKey:GALineBreakAttributeName];
-                        [field setAttributes:clean range:range];
-                      }];
+  GACopyAttributesWithoutLineBreakMarker(modelText, field);
   [markers enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
     (void)stop;
     GASetLineBreakMarker(field, NSMakeRange(index, 1));

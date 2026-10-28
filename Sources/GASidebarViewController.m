@@ -260,14 +260,16 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
     if (editor == nil) {
         return;
     }
+    NSFont *font = [self inputFont];
+    NSColor *color = [self inputTextColor];
     // Allow programmatic attributes (selection runs), but keep user edits and
     // pastes plain so external formatting cannot enter the field.
     BOOL wasSuppressed = self.suppressTextChangeCallback;
     self.suppressTextChangeCallback = YES;
     editor.richText = NO;
     editor.typingAttributes = @{
-        NSFontAttributeName: [self inputFont],
-        NSForegroundColorAttributeName: [self inputTextColor],
+        NSFontAttributeName: font,
+        NSForegroundColorAttributeName: color,
     };
     self.suppressTextChangeCallback = wasSuppressed;
 
@@ -292,11 +294,11 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
                 continue;
             }
             if ([key isEqualToString:NSFontAttributeName] &&
-                [attrs[key] isEqual:[self inputFont]]) {
+                [attrs[key] isEqual:font]) {
                 continue;
             }
             if ([key isEqualToString:NSForegroundColorAttributeName] &&
-                [attrs[key] isEqual:[self inputTextColor]]) {
+                [attrs[key] isEqual:color]) {
                 continue;
             }
             needsNormalization = YES;
@@ -310,8 +312,7 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
 
     NSRange selection = editor.selectedRange;
     self.suppressTextChangeCallback = YES;
-    [storage setAttributedString:GANormalizedSidebarInput(storage, [self inputFont],
-                                                           [self inputTextColor])];
+    [storage setAttributedString:GANormalizedSidebarInput(storage, font, color)];
     if (selection.location != NSNotFound) {
         NSUInteger location = MIN(selection.location, storage.length);
         NSUInteger length = MIN(selection.length, storage.length - location);
@@ -365,13 +366,6 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
 }
 
 - (void)selectGlyphKeyAfterNextReload:(NSString *)glyphKey
-                            textRange:(NSRange)textRange {
-    [self selectGlyphKeyAfterNextReload:glyphKey
-                              textRange:textRange
-                                 scroll:GAPendingSelectionScrollGroup];
-}
-
-- (void)selectGlyphKeyAfterNextReload:(NSString *)glyphKey
                             textRange:(NSRange)textRange
                                scroll:(GAPendingSelectionScroll)scroll {
     self.pendingSelectionGlyphKey = glyphKey;
@@ -382,7 +376,10 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
 - (NSString *)selectedGlyphSourceText {
     GARowItem *row = [self selectedVariantRow];
     NSRange range = row.variant.sourceTextRange;
-    if (row.variant.isLigature && range.location != NSNotFound && NSMaxRange(range) <= self.text.length) return [self.text substringWithRange:range];
+    if (row.variant.isLigature && range.location != NSNotFound) {
+        NSString *text = self.text;
+        if (NSMaxRange(range) <= text.length) return [text substringWithRange:range];
+    }
     return row.group.text ?: @"";
 }
 
@@ -414,12 +411,12 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
 
 - (BOOL)selectedGlyphHasEncoding {
     GARowItem *item = [self selectedVariantRow];
-    return item != nil && item.variant.unicodeScalars.count > 0;
+    return item.variant.unicodeScalars.count > 0;
 }
 
 - (void)copySelectedGlyphEncoding {
     GARowItem *item = [self selectedVariantRow];
-    if (item == nil || item.variant.unicodeScalars.count == 0) {
+    if (item.variant.unicodeScalars.count == 0) {
         NSBeep();
         return;
     }
@@ -568,30 +565,19 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
 
 #pragma mark - Updating groups
 
-- (BOOL)group:(GACharacterGroup *)group containsGlyphKey:(NSString *)glyphKey {
-    for (GAGlyphVariant *variant in group.variants) {
-        if ([variant.glyphKey isEqualToString:glyphKey]) {
-            return YES;
-        }
-    }
-    return NO;
-}
-
-/// Finds the group that owns a restored selection. The text range is the
-/// post-replacement range, so it matches exactly. The glyph key is part of
-/// the match.
-- (GACharacterGroup *)groupForGlyphKey:(NSString *)glyphKey
-                             textRange:(NSRange)textRange {
+/// Restores the first row matching both the source range and glyph key.
+- (NSInteger)rowForGlyphKey:(NSString *)glyphKey textRange:(NSRange)textRange {
     if (textRange.length == 0) {
-        return nil;
+        return NSNotFound;
     }
-    for (GACharacterGroup *group in self.groups) {
-        if (NSEqualRanges(group.textRange, textRange) &&
-            [self group:group containsGlyphKey:glyphKey]) {
-            return group;
+    for (NSInteger index = 0; index < (NSInteger)self.rows.count; index++) {
+        GARowItem *item = self.rows[(NSUInteger)index];
+        if (NSEqualRanges(item.group.textRange, textRange) &&
+            [item.variant.glyphKey isEqualToString:glyphKey]) {
+            return index;
         }
     }
-    return nil;
+    return NSNotFound;
 }
 
 - (NSInteger)rowForGlyphKey:(NSString *)glyphKey inGroup:(GACharacterGroup *)group {
@@ -690,8 +676,6 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
     self.selectedVariant = self.rows[(NSUInteger)row].variant;
     self.selectedVariantTextRange = self.rows[(NSUInteger)row].group.textRange;
     self.pendingSelectionGlyphKey = nil;
-    self.pendingSelectionTextRange = NSMakeRange(NSNotFound, 0);
-    self.pendingSelectionScroll = GAPendingSelectionScrollGroup;
     self.suppressSelectionCallback = NO;
     [self notifySelection];
     return YES;
@@ -842,11 +826,7 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
 
         NSInteger rowToSelect = NSNotFound;
         if (oldGlyphKey.length > 0) {
-            GACharacterGroup *oldGroup = [self groupForGlyphKey:oldGlyphKey
-                                                      textRange:oldGroupRange];
-            if (oldGroup != nil) {
-                rowToSelect = [self rowForGlyphKey:oldGlyphKey inGroup:oldGroup];
-            }
+            rowToSelect = [self rowForGlyphKey:oldGlyphKey textRange:oldGroupRange];
         }
         // The selected text may have been deleted; fall back to the first base row.
         if (rowToSelect == NSNotFound) {
@@ -1024,10 +1004,8 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
         return;
     }
     // A manual click overrides any pending auto-selection from an append or
-    // activation; streamed snapshots must not snap the user back.
+    // activation; later list snapshots must not snap the user back.
     self.pendingSelectionGlyphKey = nil;
-    self.pendingSelectionTextRange = NSMakeRange(NSNotFound, 0);
-    self.pendingSelectionScroll = GAPendingSelectionScrollGroup;
     self.selectedVariant = self.rows[row].variant;
     self.selectedVariantTextRange = self.rows[row].group.textRange;
     [self notifySelection];

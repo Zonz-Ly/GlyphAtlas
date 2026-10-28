@@ -33,8 +33,6 @@ typedef NS_ENUM(NSInteger, GAPendingSelectionScroll) {
 /// Does not scroll when the selected row is already fully visible. Otherwise
 /// centers its character group, then minimally reveals the selected row.
 - (BOOL)selectGlyphIDs:(NSArray<NSNumber *> *)glyphIDs textRange:(NSRange)range;
-- (void)selectGlyphKeyAfterNextReload:(NSString *)glyphKey
-                            textRange:(NSRange)textRange;
 /// Explicit selection with a scroll policy. `Group` keeps the existing
 /// group-centering rules; `SelectedToTopIfNeeded` scrolls only when the
 /// selected row is completely outside the visible area, aligning it to the top.

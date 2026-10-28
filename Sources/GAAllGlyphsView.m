@@ -46,14 +46,14 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
 - (instancetype)initWithFrame:(NSRect)frameRect {
     self = [super initWithFrame:frameRect];
     if (self) {
-        _entries = @[];
-        _cellScale = 1.0;
         _columns = 1;
         _highlightIndex = NSNotFound;
-        _pageMetrics = [NSMutableData dataWithLength:0];
-        _pageMetricsValid = [NSMutableData dataWithLength:0];
     }
     return self;
+}
+
+- (void)dealloc {
+    [_highlightTimer invalidate];
 }
 
 - (void)setEntries:(NSArray<GAAllGlyphEntry *> *)entries {
@@ -84,13 +84,6 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
     return GAAllGlyphsBaseCell * self.cellScale;
 }
 
-- (CGFloat)minimumHeight {
-    if (self.enclosingScrollView == nil) {
-        return 0;
-    }
-    return self.enclosingScrollView.contentSize.height;
-}
-
 - (void)updateLayoutForWidth:(CGFloat)width {
     if (width < 1) {
         return;
@@ -104,8 +97,9 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
         : (self.entries.count + self.columns - 1) / self.columns;
     CGFloat height = self.topInset + 2 * GAAllGlyphsMargin + rows * cell +
         MAX(0, (NSInteger)rows - 1) * GAAllGlyphsGap;
-    CGFloat minimum = [self minimumHeight];
-    CGFloat target = MAX(height, minimum >= 1 ? minimum : 0);
+    NSScrollView *scrollView = self.enclosingScrollView;
+    CGFloat minimum = scrollView != nil ? scrollView.contentSize.height : 0;
+    CGFloat target = MAX(height, minimum);
     NSSize current = self.frame.size;
     if (fabs(current.width - width) > 0.5 || fabs(current.height - target) > 0.5) {
         self.frame = NSMakeRect(0, 0, width, target);
@@ -132,7 +126,7 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
     GAGlyphPage *pages = self.pageMetrics.mutableBytes;
     uint8_t *valid = self.pageMetricsValid.mutableBytes;
     if (!valid[index]) {
-        // Advance width × ascent + descent; cached per entry.
+        // Advance width × (ascent + descent); cached per entry.
         GAGlyphVariant *probe = [[GAGlyphVariant alloc] init];
         probe.fontBox = self.fontBox;
         probe.glyphIDs = @[self.entries[index].glyphID];
@@ -146,7 +140,7 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
                          page:(GAGlyphPage)page
                     unitScale:(CGFloat)unitScale {
     NSRect cell = [self rectForIndex:index];
-    // Centre the definition page; keep its baseline consistent with the canvas.
+    // Centre the advance-by-line-height page, preserving its horizontal baseline.
     CGFloat pageX = NSMidX(cell) - page.size.width * unitScale * 0.5;
     CGFloat pageY = NSMidY(cell) - page.size.height * unitScale * 0.5;
     return CGPointMake(pageX, pageY + (page.size.height - page.baseline) * unitScale);
@@ -193,14 +187,9 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
 }
 
 - (void)revealGlyph:(NSNumber *)glyphID quick:(BOOL)quick {
-    NSUInteger index = NSNotFound;
-    for (NSUInteger candidate = 0; candidate < self.entries.count; candidate++) {
-        if ([self.entries[candidate].glyphID isEqualToNumber:glyphID]) {
-            index = candidate;
-            break;
-        }
-    }
-    if (index == NSNotFound) {
+    // The complete inventory is in GID order, so each GID is its entry index.
+    NSUInteger index = glyphID.unsignedIntegerValue;
+    if (index >= self.entries.count) {
         return;
     }
     NSRect row = [self rectForIndex:index];
@@ -279,7 +268,6 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
     if (self.highlightElapsed >= end) {
         self.highlightAlpha = 0;
         self.highlightIndex = NSNotFound;
-        self.highlightAppendStyle = NO;
         [timer invalidate];
         self.highlightTimer = nil;
     }
@@ -321,7 +309,6 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
     NSUInteger lastIndex = MIN(self.entries.count, (lastRow + 1) * self.columns);
     NSColor *glyphColor = GAGlyphForegroundColor();
     CGContextRef context = NSGraphicsContext.currentContext.CGContext;
-    CGContextSetFillColorWithColor(context, glyphColor.CGColor);
 
     for (NSUInteger index = firstIndex; index < lastIndex; index++) {
         BOOL highlighted = index == self.highlightIndex && self.highlightAlpha > 0;

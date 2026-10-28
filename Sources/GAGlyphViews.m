@@ -160,11 +160,10 @@ static const CGFloat GABadgeHorizontalPadding = 4.0;
 
 @end
 
-/// A vertical column of native Unicode code badges. Each badge has its own
+/// A vertical column of Unicode code badges. Each badge has its own
 /// tooltip with that scalar's Unicode name.
 @interface GAUnicodeCodesView : NSView
 @property (nonatomic, copy, nonnull) NSArray<NSNumber *> *unicodeScalars;
-- (void)setBackgroundStyle:(NSBackgroundStyle)backgroundStyle;
 + (CGFloat)heightForScalars:(NSArray<NSNumber *> * _Nonnull)scalars;
 + (CGFloat)widthForScalars:(NSArray<NSNumber *> * _Nonnull)scalars;
 @property (nonatomic, strong) NSMutableArray<GAUnicodeBadgeView *> *labels;
@@ -211,14 +210,8 @@ static const CGFloat GABadgeHorizontalPadding = 4.0;
         [self.labels addObject:badge];
     }
     self.accessibilityLabel = [codes componentsJoinedByString:@", "];
-    [self invalidateIntrinsicContentSize];
     [self setNeedsLayout:YES];
     [self setNeedsDisplay:YES];
-}
-
-- (NSSize)intrinsicContentSize {
-    return NSMakeSize([self.class widthForScalars:self.unicodeScalars],
-                      [self.class heightForScalars:self.unicodeScalars]);
 }
 
 - (void)setBackgroundStyle:(NSBackgroundStyle)backgroundStyle {
@@ -300,7 +293,6 @@ static const CGFloat GABadgeHorizontalPadding = 4.0;
 
         _nameLabel = [NSTextField labelWithString:@""];
         _nameLabel.translatesAutoresizingMaskIntoConstraints = NO;
-        _nameLabel.font = [NSFont systemFontOfSize:12.5 weight:NSFontWeightRegular];
         _nameLabel.textColor = [NSColor labelColor];
         _nameLabel.lineBreakMode = NSLineBreakByTruncatingTail;
         _nameLabel.maximumNumberOfLines = 1;
@@ -390,7 +382,7 @@ static const CGFloat GABadgeHorizontalPadding = 4.0;
 
     CGFloat rowHeight = [self.class rowHeightForVariant:variant];
     CGFloat contentHeight = [self.class nameBlockHeightForVariant:variant];
-    self.nameTopConstraint.constant = MAX(5.0, (rowHeight - contentHeight) * 0.5);
+    self.nameTopConstraint.constant = (rowHeight - contentHeight) * 0.5;
 
     [self applyBackgroundStyle:self.backgroundStyle];
 

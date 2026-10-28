@@ -13,7 +13,6 @@
     self = [super init];
     if (self) {
         _document = document;
-        _text = @"";
         _groups = @[];
     }
     return self;
@@ -85,9 +84,6 @@ static GACharacterGroup *SelectionGroup(GAGlyphSelectionRun *run, GAFontDocument
     }
 
     [base addFeatureSources:selection.featureSources];
-    for (GAGlyphVariant *variant in storedGroup.variants) {
-        variant.base = (variant == base);
-    }
     if (selection.ligature) {
         base.ligature = YES;
         base.sourceTextRange = run.range;

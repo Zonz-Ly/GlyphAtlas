@@ -5,7 +5,6 @@
 #import "GAAppDelegate.h"
 
 @interface GADetailContainerView : NSView
-@property (nonatomic, copy, nullable) NSMenu *(^menuProvider)(void);
 @property (nonatomic, copy, nullable) void (^resizeHandler)(void (^changes)(void));
 @end
 
@@ -23,10 +22,6 @@
     });
 }
 
-- (NSMenu *)menuForEvent:(NSEvent *)event {
-    return self.menuProvider != nil ? self.menuProvider() : nil;
-}
-
 @end
 
 @interface GADetailViewController ()
@@ -40,16 +35,11 @@
 
 @implementation GADetailViewController
 
+#pragma mark - View creation
+
 - (void)loadView {
     GADetailContainerView *container =
         [[GADetailContainerView alloc] initWithFrame:NSMakeRect(0, 0, 900, 760)];
-    container.menuProvider = ^NSMenu *{
-        id delegate = NSApp.delegate;
-        if ([delegate respondsToSelector:@selector(viewMenuForContext)]) {
-            return [delegate viewMenuForContext];
-        }
-        return nil;
-    };
     self.view = container;
 }
 
@@ -118,12 +108,15 @@
 
     NSMenu *contextMenu = [NSApp.delegate respondsToSelector:@selector(viewMenuForContext)]
         ? [(GAAppDelegate *)NSApp.delegate viewMenuForContext] : nil;
+    self.view.menu = contextMenu;
     self.canvasView.menu = contextMenu;
     self.multiView.menu = contextMenu;
     self.allGlyphsView.menu = contextMenu;
 
     [self updateVisibleView];
 }
+
+#pragma mark - Layout
 
 - (void)viewDidLayout {
     [super viewDidLayout];
@@ -163,6 +156,8 @@
     [self updateMultiLayout];
 }
 
+#pragma mark - Shared display state
+
 - (void)setVariant:(GAGlyphVariant *)variant {
     self.canvasView.variant = variant;
 }
@@ -170,21 +165,6 @@
 - (void)setFontDocument:(GAFontDocument *)document {
     self.allGlyphsView.document = document;
     self.multiView.document = document;
-}
-
-- (void)scrollMultiToPoint:(NSPoint)point {
-    NSSize viewport = self.multiScrollView.contentSize;
-    NSSize document = self.multiView.frame.size;
-    point.x = MIN(MAX(0.0, point.x), MAX(0.0, document.width - viewport.width));
-    point.y = MIN(MAX(0.0, point.y), MAX(0.0, document.height - viewport.height));
-    [self.multiScrollView.contentView scrollToPoint:point];
-    [self.multiScrollView reflectScrolledClipView:self.multiScrollView.contentView];
-}
-
-- (void)setMultiText:(NSString *)text groups:(NSArray<GACharacterGroup *> *)groups {
-    NSPoint origin = self.multiScrollView.contentView.bounds.origin;
-    [self.multiView setText:text groups:groups];
-    [self scrollMultiToPoint:origin];
 }
 
 - (void)setShowsMetrics:(BOOL)showsMetrics {
@@ -200,6 +180,8 @@
     self.canvasView.sideInsetFraction = fraction;
     self.multiView.sideInsetFraction = fraction;
 }
+
+#pragma mark - Page zoom
 
 /// The page occupies (1 - 2 * inset) of the viewport. Keyboard zoom scales that
 /// fraction instead of the inset so the visual step stays constant.
@@ -222,6 +204,8 @@
     self.canvasInsetFraction = GACanvasDefaultSideInsetFraction;
 }
 
+#pragma mark - All glyphs
+
 - (void)zoomAllGlyphsIn {
     [self.allGlyphsView zoomIn];
 }
@@ -236,6 +220,23 @@
 
 - (void)revealAllGlyphID:(NSNumber *)glyphID quick:(BOOL)quick {
     [self.allGlyphsView revealGlyphID:glyphID quick:quick];
+}
+
+#pragma mark - Multi-character view
+
+- (void)scrollMultiToPoint:(NSPoint)point {
+    NSSize viewport = self.multiScrollView.contentSize;
+    NSSize document = self.multiView.frame.size;
+    point.x = MIN(MAX(0.0, point.x), MAX(0.0, document.width - viewport.width));
+    point.y = MIN(MAX(0.0, point.y), MAX(0.0, document.height - viewport.height));
+    [self.multiScrollView.contentView scrollToPoint:point];
+    [self.multiScrollView reflectScrolledClipView:self.multiScrollView.contentView];
+}
+
+- (void)setMultiText:(NSString *)text groups:(NSArray<GACharacterGroup *> *)groups {
+    NSPoint origin = self.multiScrollView.contentView.bounds.origin;
+    [self.multiView setText:text groups:groups];
+    [self scrollMultiToPoint:origin];
 }
 
 - (void)setTextAlignment:(NSTextAlignment)alignment {

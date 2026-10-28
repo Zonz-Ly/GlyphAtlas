@@ -61,18 +61,19 @@
 "Text and alternate glyph list" = "Liste du texte et des glyphes alternatifs";
 "CONTROL CHARACTER" = "CARACTÈRE DE CONTRÔLE";
 "Help.01" = "Ouvrez une police ou faites-la glisser sur la fenêtre de l’app ou son icône dans le Dock. Les fichiers récemment utilisés sont également pris en charge.";
-"Help.02" = "Saisissez un ou plusieurs caractères dans la barre latérale pour voir tous les glyphes associés. Utilisez ⌥⏎ pour insérer un saut de ligne.";
-"Help.03" = "Cliquez deux fois sur un glyphe, ou sélectionnez-le et appuyez sur Retour, pour remplacer le glyphe par défaut et afficher ses variantes. Maintenez la touche Maj pendant cette action pour ajouter le glyphe.";
-"Help.04" = "Utilisez ↑/↓ pour passer d’un glyphe à l’autre, ⌘↑/⌘↓ pour passer d’un glyphe de base à l’autre et ⌥↑/⌥↓ pour atteindre le premier ou le dernier glyphe de la liste.";
-"Help.05" = "Utilisez ⌘C pour copier tous les caractères encodés du glyphe sélectionné.";
-"Help.06" = "Survolez une étiquette Unicode pour voir le nom du caractère défini par la norme Unicode.";
-"Help.07" = "« Tous les glyphes » est la vue par défaut. Changez de vue par un clic droit, ou utilisez ⌘1 pour « Glyphe unique », ⌘2 pour « Plusieurs caractères » et ⌘3 pour « Tous les glyphes ».";
-"Help.08" = "Dans « Plusieurs caractères », cliquez sur un glyphe pour voir ses variantes. Les alternatives contextuelles et les ligatures sont activées par défaut ; basculez-les par un clic droit ou avec ⌘5 et ⌘6. Changez le sens d’écriture par un clic droit ou avec ⌘7.";
-"Help.09" = "Dans « Tous les glyphes », cliquez deux fois sur un glyphe pour l’ajouter au texte existant. Cliquer sur un glyphe dans la barre latérale le fait également clignoter dans la vue d’ensemble.";
-"Help.10" = "Utilisez ⌘+/⌘- pour agrandir ou réduire les glyphes, et ⌥⌘+/⌥⌘- pour ajuster le cadre englobant dans « Plusieurs caractères ». Le pincement sur le trackpad fonctionne également.";
-"Help.11" = "Le cadre englobant et son ombre indiquent la largeur et la hauteur du glyphe, ainsi que la hauteur de ligne et l’interligne de la composition. Appuyez sur ⌘4 pour les masquer.";
-"Help.12" = "À l’ouverture d’une police variable, un panneau de variation apparaît près des boutons de la fenêtre. Détachez-le en le faisant glisser pour le garder ouvert. Sélectionnez une valeur numérique et ajustez-la avec ↑/↓ ou ⇧↑/⇧↓.";
-"Help.13" = "Le mode sombre est pris en charge. Mais attention : cliquer sur un glyphe plein peut vous éblouir.";
+"Help.02" = "Depuis la barre des menus, copiez en un clic la police ouverte dans la fenêtre actuelle vers votre dossier de polices utilisateur.";
+"Help.03" = "À l’ouverture d’une police variable, un panneau de variation apparaît près des boutons de la fenêtre. Détachez-le en le faisant glisser pour le garder ouvert. Sélectionnez une valeur numérique et ajustez-la avec ↑/↓ ou ⇧↑/⇧↓.";
+"Help.04" = "Saisissez un ou plusieurs caractères dans la barre latérale pour voir tous les glyphes associés. Utilisez ⌥⏎ pour insérer un saut de ligne.";
+"Help.05" = "Cliquez deux fois sur un glyphe, ou sélectionnez-le et appuyez sur Retour, pour remplacer le glyphe par défaut et afficher ses variantes. Maintenez la touche Maj pendant cette action pour ajouter le glyphe.";
+"Help.06" = "Utilisez ↑/↓ pour passer d’un glyphe à l’autre, ⌘↑/⌘↓ pour passer d’un glyphe de base à l’autre et ⌥↑/⌥↓ pour atteindre le premier ou le dernier glyphe de la liste.";
+"Help.07" = "Utilisez ⌘C pour copier tous les caractères encodés du glyphe sélectionné.";
+"Help.08" = "Survolez une étiquette Unicode pour voir le nom du caractère défini par la norme Unicode.";
+"Help.09" = "« Tous les glyphes » est la vue par défaut. Changez de vue par un clic droit, ou utilisez ⌘1 pour « Glyphe unique », ⌘2 pour « Plusieurs caractères » et ⌘3 pour « Tous les glyphes ».";
+"Help.10" = "Dans « Plusieurs caractères », cliquez sur un glyphe pour voir ses variantes. Les alternatives contextuelles et les ligatures sont activées par défaut ; basculez-les par un clic droit ou avec ⌘5 et ⌘6. Changez le sens d’écriture par un clic droit ou avec ⌘7.";
+"Help.11" = "Dans « Tous les glyphes », cliquez deux fois sur un glyphe pour l’ajouter au texte existant. Cliquer sur un glyphe dans la barre latérale le fait également clignoter dans la vue d’ensemble.";
+"Help.12" = "Utilisez ⌘+/⌘− pour agrandir ou réduire les glyphes, et ⌥⌘+/⌥⌘− pour augmenter ou réduire les marges dans « Plusieurs caractères ». Le pincement sur le trackpad fonctionne également.";
+"Help.13" = "L’ombre indique la largeur et la hauteur du glyphe, ainsi que la hauteur de ligne et l’interligne de la composition. Appuyez sur ⌘4 pour la masquer.";
+"Help.14" = "Le mode sombre est pris en charge. Mais attention : cliquer sur un glyphe plein peut vous éblouir.";
 
 /* Variable font controls. */
 "Variable" = "Variable";

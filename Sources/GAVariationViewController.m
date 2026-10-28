@@ -54,8 +54,8 @@
     self.instancePopup.itemArray.firstObject.enabled = NO;
     self.instancePopup.autoenablesItems = NO;
     for (GAFontInstance *instance in self.resource.instances) {
-        // addItemWithTitle replaces duplicates, but distinct presets may share a name.
-        [self.instancePopup.menu addItem:[[NSMenuItem alloc] initWithTitle:instance.name action:nil keyEquivalent:@""]];
+        // Use NSMenu directly: NSPopUpButton replaces items with duplicate titles.
+        [self.instancePopup.menu addItemWithTitle:instance.name action:nil keyEquivalent:@""];
     }
     [self.view addSubview:self.instancePopup];
     NSScrollView *scroll = [[NSScrollView alloc] initWithFrame:NSZeroRect];
