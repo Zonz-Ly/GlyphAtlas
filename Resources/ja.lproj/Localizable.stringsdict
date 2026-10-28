@@ -2,10 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>“%@” contains %lu fonts. Choose a style to inspect.</key>
+	<key>“%@” contains %lu fonts.</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>
-		<string>「%1$@」には%2$#@fonts@が含まれています。確認するスタイルを選択してください。</string>
+		<string>「%1$@」には%2$#@fonts@が含まれています。</string>
 		<key>fonts</key>
 		<dict>
 			<key>NSStringFormatSpecTypeKey</key>

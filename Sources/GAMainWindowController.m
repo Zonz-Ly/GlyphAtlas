@@ -538,7 +538,7 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
     NSAlert *alert = [[NSAlert alloc] init];
     alert.messageText = NSLocalizedString(@"Choose Font Style", @"Choose Font Style");
     alert.informativeText = [NSString localizedStringWithFormat:
-        NSLocalizedString(@"“%@” contains %lu fonts. Choose a style to inspect.", @"Font collection choice"),
+        NSLocalizedString(@"“%@” contains %lu fonts.", @"Font collection choice"),
         url.lastPathComponent, (unsigned long)resources.count];
     [alert addButtonWithTitle:NSLocalizedString(@"Open", @"Open")];
     [alert addButtonWithTitle:NSLocalizedString(@"Cancel", @"Cancel")];
@@ -558,9 +558,11 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
     alert.accessoryView = popup;
     __weak typeof(self) weakSelf = self;
     [alert beginSheetModalForWindow:self.window completionHandler:^(NSModalResponse response) {
-        if (response == NSAlertFirstButtonReturn) {
-            [weakSelf loadResource:resources[(NSUInteger)popup.indexOfSelectedItem] url:url];
+        if (response != NSAlertFirstButtonReturn) {
+            [weakSelf.window close];
+            return;
         }
+        [weakSelf loadResource:resources[(NSUInteger)popup.indexOfSelectedItem] url:url];
     }];
 }
 

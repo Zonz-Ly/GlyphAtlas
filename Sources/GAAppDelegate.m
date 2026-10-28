@@ -659,8 +659,26 @@
     NSFileManager *files = [NSFileManager defaultManager];
     NSError *error = nil;
     if (![files createDirectoryAtURL:directory withIntermediateDirectories:YES
-                         attributes:nil error:&error] ||
-        ![files copyItemAtURL:fontURL toURL:destination error:&error])
+                         attributes:nil error:&error]) {
+        [NSApp presentError:error];
+        return;
+    }
+    // Keep same-named fonts side by side instead of failing the copy.
+    if ([files fileExistsAtPath:destination.path]) {
+        NSString *baseName = fontURL.lastPathComponent.stringByDeletingPathExtension;
+        NSString *extension = fontURL.pathExtension;
+        NSUInteger suffix = 2;
+        do {
+            NSString *name = extension.length > 0
+                ? [NSString stringWithFormat:@"%@ %lu.%@",
+                    baseName, (unsigned long)suffix, extension]
+                : [NSString stringWithFormat:@"%@ %lu",
+                    baseName, (unsigned long)suffix];
+            destination = [directory URLByAppendingPathComponent:name];
+            suffix++;
+        } while ([files fileExistsAtPath:destination.path]);
+    }
+    if (![files copyItemAtURL:fontURL toURL:destination error:&error])
         [NSApp presentError:error];
 }
 
@@ -689,7 +707,7 @@
         NSLocalizedString(@"Help.12", @"Usage paragraph 12"),
         NSLocalizedString(@"Help.13", @"Usage paragraph 13")
     ];
-    alert.informativeText = [@"· " stringByAppendingString:[paragraphs componentsJoinedByString:@"\n· "]];
+    alert.informativeText = [@"• " stringByAppendingString:[paragraphs componentsJoinedByString:@"\n• "]];
     [alert addButtonWithTitle:NSLocalizedString(@"OK", @"OK")];
 
     NSWindow *window = NSApp.keyWindow ?: self.windowControllers.lastObject.window;

@@ -60,7 +60,7 @@
 "Glyph canvas" = "Área de glifos";
 "Text and alternate glyph list" = "Lista de texto e glifos alternativos";
 "CONTROL CHARACTER" = "CARACTERE DE CONTROLE";
-"Help.01" = "Abra uma fonte ou arraste-a para a janela do app ou seu ícone no Dock. Fontes usadas recentemente também são compatíveis.";
+"Help.01" = "Abra uma fonte ou arraste-a para a janela do app ou seu ícone no Dock. Arquivos usados recentemente também são compatíveis.";
 "Help.02" = "Digite um ou mais caracteres na barra lateral para ver todos os glifos associados. Use ⌥⏎ para inserir uma quebra de linha.";
 "Help.03" = "Clique duas vezes em um glifo, ou selecione-o e pressione Return, para substituir o glifo padrão e mostrar suas alternativas. Mantenha Shift pressionado ao fazer isso para adicionar o glifo.";
 "Help.04" = "Use ↑/↓ para navegar entre glifos, ⌘↑/⌘↓ entre glifos de base e ⌥↑/⌥↓ para ir ao primeiro ou ao último glifo da lista.";

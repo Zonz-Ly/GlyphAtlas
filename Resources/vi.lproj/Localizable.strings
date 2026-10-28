@@ -35,7 +35,7 @@
 "Custom" = "Tùy chỉnh";
 "No Recent Fonts" = "Không có phông chữ gần đây";
 "Justified" = "Căn đều";
-"Help.01" = "Mở một phông chữ hoặc kéo phông chữ vào cửa sổ hay biểu tượng của ứng dụng trên Dock. Có hỗ trợ phông chữ được sử dụng gần đây.";
+"Help.01" = "Mở một phông chữ hoặc kéo phông chữ vào cửa sổ hay biểu tượng của ứng dụng trên Dock. Có hỗ trợ tệp được sử dụng gần đây.";
 "Default" = "Mặc định";
 "Help.02" = "Nhập một hoặc nhiều ký tự trong thanh bên để xem tất cả glyph liên quan. Dùng ⌥⏎ để chèn dấu ngắt dòng.";
 "Actual Size" = "Kích thước thực";

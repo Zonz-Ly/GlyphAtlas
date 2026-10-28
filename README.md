@@ -17,7 +17,7 @@ A native macOS font and alternate-glyph inspector. Type text to see every altern
 
 ## Usage
 
-- Open a font, or drag one onto the app's window or Dock icon. Recently used fonts are supported.
+- Open a font, or drag one onto the app's window or Dock icon. Recently used files are supported.
 - Type one or more characters in the sidebar to see all associated glyphs. Use `⌥⏎` to insert a line break.
 - Double-click a glyph, or select it and press `⏎`, to replace the default glyph and show that glyph's substitution. Press and hold `⇧` together to add that glyph.
 - Use `↑`/`↓` to move between glyphs, `⌘↑`/`⌘↓` to move between base glyphs, and `⌥↑`/`⌥↓` to jump to the first or last glyph in the list.
@@ -26,8 +26,8 @@ A native macOS font and alternate-glyph inspector. Type text to see every altern
 - All Glyphs is the default. Right-click to switch views, or press `⌘1` for Single Glyph, `⌘2` for Multi-Character, or `⌘3` for All Glyphs.
 - In Multi-Character, click a glyph to view its alternates. Contextual Alternates and Ligatures are on by default; toggle them with a right-click or `⌘5` and `⌘6`. Vertical writing is supported; right-click or press `⌘7` to switch.
 - In All Glyphs, double-click a glyph to add it to the existing text. Clicking a glyph in the sidebar also makes it blink there.
-- Use `⌘+`/`⌘-` to zoom the glyphs, and `⌥⌘+`/`⌥⌘-` to resize the margins in Multi-Character. Trackpad pinch also works.
-- The page shadow shows the glyph's width and height, as well as the layout's line height and leading; press `⌘4` to hide it.
+- Use `⌘+`/`⌘-` to zoom the glyphs, and `⌥⌘+`/`⌥⌘-` to resize the bounding box in Multi-Character. Trackpad pinch also works.
+- The bounding box and its shadow show the glyph's width and height, as well as the layout's line height and leading; press `⌘4` to hide them.
 - When you open a variable font, a variation panel appears beside the window controls. Drag it out to keep it open. Select a numeric value and use `↑`/`↓` or `⇧↑`/`⇧↓` to adjust it.
 - Dark mode is supported, but be careful: clicking a solid glyph can dazzle you.
 
@@ -70,7 +70,9 @@ ARCHS=x86_64 ./build.sh
 
 ## 使用
 
-- 打開字體，也可以把字體拖到 app 的窗口或圖標上，支持最近使用的文件。
+- 打開字體，也可以把字體拖到 app 的窗口或圖標上，支持最近開啟的項目。
+- 在菜單欄中可以把當前視窗的字體一鍵拷貝到用戶字體檔案夾。
+- 打開可變字體時，在紅綠燈旁邊會有一個可變參數設置面板，還可以拖出來固定。選中數字後還可以按 `↑`／`↓` 或 `⇧↑`／`⇧↓` 調整數值。
 - 在側邊欄中輸入單個或多個字符來查看所有關聯字形，可以用 `⌥⏎` 換行。
 - 按兩下字形或選中後按 `⏎`，可以取代默認字形，並顯示該字形的替換字；如果同時按住 `⇧` 就是添加這個字了。
 - 使用方向鍵 `↑`／`↓` 選擇上下字形，使用 `⌘↑`／`⌘↓` 選擇上下默認字形，使用 `⌥↑`／`⌥↓` 選擇字形列表中的第一個和最後一個字形。
@@ -81,7 +83,6 @@ ARCHS=x86_64 ./build.sh
 - 在全部字中點兩下字形可以添加到已有文字中，在側邊欄中點一下字形還會在全部字中閃一閃。
 - 用 `⌘+`／`⌘−` 來放大或縮小字形，用 `⌥⌘+`／`⌥⌘−` 來在多字符中放大或縮小邊距。也可以使用觸控板撐捏。
 - 用陰影表示字形寬度高度和排版行高行距，用可用 `⌘4` 隱藏。
-- 打開可變字體時，在紅綠燈旁邊會有一個可變參數設置面板，還可以拖出來固定。選中數字後還可以按 `↑`／`↓` 或 `⇧↑`／`⇧↓` 調整數值。
 - 有做暗黑模式，但要小心點到實心字形會眼瞎瞎喔。
 
 ## 限制
