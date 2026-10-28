@@ -33,6 +33,8 @@
     <string>Glyph Atlas</string>
     <key>CFBundleIconFile</key>
     <string>AppIcon.icns</string>
+    <key>CFBundleIconName</key>
+    <string>AppIcon</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>

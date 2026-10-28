@@ -82,3 +82,10 @@
 
 "Contextual Alternates" = "コンテキスト代替";
 "Ligatures" = "リガチャ";
+
+/* Font Book copy alerts. Conflict buttons follow Finder. */
+"An item named “%@” already exists in Font Book." = "Font Bookに“%@”という項目がすでにあります。";
+"“%@” is already in Font Book." = "“%@”はすでにFont Bookにあります。";
+"Keep Both" = "両方とも残す";
+"Stop" = "中止";
+"Replace" = "置き換える";

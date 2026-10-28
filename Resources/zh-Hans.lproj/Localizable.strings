@@ -83,3 +83,10 @@
 
 "Contextual Alternates" = "上下文替换";
 "Ligatures" = "连字";
+
+/* Font Book copy alerts. Conflict buttons follow Finder. */
+"An item named “%@” already exists in Font Book." = "字体册中已经存在名称为“%@”的项目。";
+"“%@” is already in Font Book." = "“%@”已位于字体册中。";
+"Keep Both" = "保留两者";
+"Stop" = "停止";
+"Replace" = "替换";

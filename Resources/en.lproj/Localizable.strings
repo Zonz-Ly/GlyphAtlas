@@ -82,3 +82,10 @@
 
 "Contextual Alternates" = "Contextual Alternates";
 "Ligatures" = "Ligatures";
+
+/* Font Book copy alerts. Conflict buttons follow Finder. */
+"An item named “%@” already exists in Font Book." = "An item named “%@” already exists in Font Book.";
+"“%@” is already in Font Book." = "“%@” is already in Font Book.";
+"Keep Both" = "Keep Both";
+"Stop" = "Stop";
+"Replace" = "Replace";

@@ -79,3 +79,10 @@
 "Untitled Font" = "Phông chữ chưa có tên";
 "Open Font…" = "Mở phông chữ…";
 "Font Name" = "Tên phông chữ";
+
+/* Font Book copy alerts. Conflict buttons follow Finder. */
+"An item named “%@” already exists in Font Book." = "Mục có tên “%@” đã tồn tại trong Sổ quản lý Phông chữ.";
+"“%@” is already in Font Book." = "“%@” đã có trong Sổ quản lý Phông chữ.";
+"Keep Both" = "Giữ cả hai";
+"Stop" = "Dừng";
+"Replace" = "Thay thế";

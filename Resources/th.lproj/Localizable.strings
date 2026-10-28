@@ -79,3 +79,10 @@
 "Untitled Font" = "แบบอักษรไม่มีชื่อ";
 "Open Font…" = "เปิดแบบอักษร…";
 "Font Name" = "ชื่อแบบอักษร";
+
+/* Font Book copy alerts. Conflict buttons follow Finder. */
+"An item named “%@” already exists in Font Book." = "รายการชื่อ “%@” มีอยู่แล้วในสมุดแบบอักษร";
+"“%@” is already in Font Book." = "“%@” อยู่ในสมุดแบบอักษรแล้ว";
+"Keep Both" = "เก็บไว้ทั้งคู่";
+"Stop" = "หยุด";
+"Replace" = "แทนที่";

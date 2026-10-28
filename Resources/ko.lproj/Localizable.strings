@@ -82,3 +82,10 @@
 
 "Contextual Alternates" = "상황별 대체";
 "Ligatures" = "합자";
+
+/* Font Book copy alerts. Conflict buttons follow Finder. */
+"An item named “%@” already exists in Font Book." = "서체 관리자에 이미 이름이 ‘%@’인 항목이 있습니다.";
+"“%@” is already in Font Book." = "‘%@’ 항목이 이미 서체 관리자에 있습니다.";
+"Keep Both" = "모두 유지";
+"Stop" = "중단";
+"Replace" = "대치";

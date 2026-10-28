@@ -648,37 +648,87 @@
 }
 
 - (void)copyToFontBook:(id)sender {
-    NSURL *fontURL = self.activeMainWindowController.fontURL;
+    GAMainWindowController *controller = self.activeMainWindowController;
+    NSURL *fontURL = controller.fontURL;
     if (fontURL == nil)
         return;
     NSURL *directory = [NSURL fileURLWithPath:
         [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Fonts"] isDirectory:YES];
-    NSURL *destination = [directory URLByAppendingPathComponent:fontURL.lastPathComponent];
-    if ([fontURL.URLByResolvingSymlinksInPath isEqual:destination.URLByResolvingSymlinksInPath])
-        return;
     NSFileManager *files = [NSFileManager defaultManager];
     NSError *error = nil;
+    NSURLRelationship relationship;
     if (![files createDirectoryAtURL:directory withIntermediateDirectories:YES
-                         attributes:nil error:&error]) {
+                         attributes:nil error:&error] ||
+        ![files getRelationship:&relationship ofDirectoryAtURL:directory.URLByResolvingSymlinksInPath
+                     toItemAtURL:fontURL.URLByResolvingSymlinksInPath error:&error]) {
         [NSApp presentError:error];
         return;
     }
-    // Keep same-named fonts side by side instead of failing the copy.
-    if ([files fileExistsAtPath:destination.path]) {
-        NSString *baseName = fontURL.lastPathComponent.stringByDeletingPathExtension;
-        NSString *extension = fontURL.pathExtension;
-        NSUInteger suffix = 2;
-        do {
-            NSString *name = extension.length > 0
-                ? [NSString stringWithFormat:@"%@ %lu.%@",
-                    baseName, (unsigned long)suffix, extension]
-                : [NSString stringWithFormat:@"%@ %lu",
-                    baseName, (unsigned long)suffix];
-            destination = [directory URLByAppendingPathComponent:name];
-            suffix++;
-        } while ([files fileExistsAtPath:destination.path]);
+    if (relationship == NSURLRelationshipContains) {
+        NSAlert *alert = [[NSAlert alloc] init];
+        alert.messageText = [NSString localizedStringWithFormat:
+            NSLocalizedString(@"“%@” is already in Font Book.", @"Font already in user Fonts folder"),
+            fontURL.lastPathComponent];
+        [alert addButtonWithTitle:NSLocalizedString(@"OK", @"OK")];
+        [alert beginSheetModalForWindow:controller.window completionHandler:nil];
+        return;
     }
-    if (![files copyItemAtURL:fontURL toURL:destination error:&error])
+    NSURL *destination = [directory URLByAppendingPathComponent:fontURL.lastPathComponent];
+    if (![files fileExistsAtPath:destination.path]) {
+        [self copyFontAtURL:fontURL toURL:destination replacing:NO];
+        return;
+    }
+
+    NSAlert *alert = [[NSAlert alloc] init];
+    alert.messageText = [NSString localizedStringWithFormat:
+        NSLocalizedString(@"An item named “%@” already exists in Font Book.", @"Font filename conflict"),
+        fontURL.lastPathComponent];
+    NSButton *replace = [alert addButtonWithTitle:NSLocalizedString(@"Replace", @"Finder file conflict button")];
+    replace.keyEquivalent = @"";
+    [alert addButtonWithTitle:NSLocalizedString(@"Keep Both", @"Finder file conflict button")];
+    NSButton *stop = [alert addButtonWithTitle:NSLocalizedString(@"Stop", @"Finder file conflict button")];
+    stop.keyEquivalent = @"\033";
+    [alert layout];
+    alert.window.defaultButtonCell = stop.cell;
+    [alert beginSheetModalForWindow:controller.window completionHandler:^(NSModalResponse response) {
+        if (response != NSAlertFirstButtonReturn && response != NSAlertSecondButtonReturn)
+            return;
+        NSURL *target = destination;
+        if (response == NSAlertSecondButtonReturn) {
+            NSString *baseName = fontURL.lastPathComponent.stringByDeletingPathExtension;
+            NSString *extension = fontURL.pathExtension;
+            NSUInteger suffix = 2;
+            do {
+                NSString *name = [NSString stringWithFormat:@"%@ %lu", baseName, (unsigned long)suffix++];
+                if (extension.length)
+                    name = [name stringByAppendingPathExtension:extension];
+                target = [directory URLByAppendingPathComponent:name];
+            } while ([files fileExistsAtPath:target.path]);
+        }
+        [self copyFontAtURL:fontURL toURL:target replacing:response == NSAlertFirstButtonReturn];
+    }];
+}
+
+- (void)copyFontAtURL:(NSURL *)source toURL:(NSURL *)destination replacing:(BOOL)replace {
+    NSFileManager *files = [NSFileManager defaultManager];
+    NSError *error = nil;
+    if (replace) {
+        // Replace a temporary copy so the opened source file stays in place.
+        NSURL *temporaryDirectory = [files URLForDirectory:NSItemReplacementDirectory
+                                                  inDomain:NSUserDomainMask
+                                         appropriateForURL:destination create:YES error:&error];
+        if (temporaryDirectory) {
+            NSURL *copy = [temporaryDirectory URLByAppendingPathComponent:source.lastPathComponent];
+            if ([files copyItemAtURL:source toURL:copy error:&error])
+                [files replaceItemAtURL:destination withItemAtURL:copy backupItemName:nil
+                                options:NSFileManagerItemReplacementUsingNewMetadataOnly
+                       resultingItemURL:NULL error:&error];
+            [files removeItemAtURL:temporaryDirectory error:NULL];
+        }
+    } else {
+        [files copyItemAtURL:source toURL:destination error:&error];
+    }
+    if (error)
         [NSApp presentError:error];
 }
 

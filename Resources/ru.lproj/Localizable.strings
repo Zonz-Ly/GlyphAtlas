@@ -82,3 +82,10 @@
 
 "Contextual Alternates" = "Контекстные варианты";
 "Ligatures" = "Лигатуры";
+
+/* Font Book copy alerts. Conflict buttons follow Finder. */
+"An item named “%@” already exists in Font Book." = "В приложении «Шрифты» уже есть объект «%@».";
+"“%@” is already in Font Book." = "«%@» уже находится в приложении «Шрифты».";
+"Keep Both" = "Оставить оба";
+"Stop" = "Остановить";
+"Replace" = "Заменить";
