@@ -1,5 +1,5 @@
 #import "GAAllGlyphsView.h"
-#import "GAGlyphCanvasView.h"
+#import "GABoundingBoxView.h"
 
 static const CGFloat GAAllGlyphsMargin = 14.0;
 static const CGFloat GAAllGlyphsGap = 8.0;
@@ -289,7 +289,7 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
 }
 
 - (void)drawRect:(NSRect)dirtyRect {
-    [GACanvasBackgroundColor() setFill];
+    [GABoundingBoxBackgroundColor() setFill];
     NSRectFill(self.bounds);
     if (self.entries.count == 0 || self.fontBox == nil) {
         return;
@@ -354,7 +354,7 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
         _scrollView = [[NSScrollView alloc] initWithFrame:NSZeroRect];
         _scrollView.hasVerticalScroller = YES;
         _scrollView.autohidesScrollers = YES;
-        _scrollView.backgroundColor = GACanvasBackgroundColor();
+        _scrollView.backgroundColor = GABoundingBoxBackgroundColor();
         _scrollView.automaticallyAdjustsContentInsets = NO;
         _scrollView.translatesAutoresizingMaskIntoConstraints = NO;
         [self addSubview:_scrollView];

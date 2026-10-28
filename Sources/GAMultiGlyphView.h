@@ -3,14 +3,15 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-/// Multi-character canvas. The text is laid out by an NSTextView (TextKit 2):
-/// horizontal and vertical writing, line breaking, vertical forms, per-character
-/// orientation and the page size all come from the text system. The view only
-/// draws the page behind the text and owns the scroll/zoom geometry.
+/// Multi-character view with a bounding box. The text is laid out by an
+/// NSTextView (TextKit 2): horizontal and vertical writing, line breaking,
+/// vertical forms, per-character orientation and the page size all come from
+/// the text system. The view only draws the page behind the text and owns the
+/// scroll/zoom geometry.
 @interface GAMultiGlyphView : NSView
 @property (nonatomic, strong, nullable) GAFontDocument *document;
 /// Fraction of the viewport used as the page margin. Shares the single-glyph
-/// canvas default: two zoom-outs from a full page.
+/// view default: two zoom-outs from a full page.
 @property (nonatomic) CGFloat sideInsetFraction;
 /// Whether the definition page and its shadow are drawn. Default YES.
 @property (nonatomic) BOOL showsMetrics;

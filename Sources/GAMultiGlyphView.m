@@ -1,5 +1,5 @@
 #import "GAMultiGlyphView.h"
-#import "GAGlyphCanvasView.h"
+#import "GABoundingBoxView.h"
 #import "GAUnicode.h"
 #import <CoreText/CoreText.h>
 #import <CoreText/SFNTLayoutTypes.h>
@@ -16,7 +16,7 @@ static CGFloat GAMultiClampTextScale(CGFloat scale) {
 #pragma mark - Display-only text view
 
 /// The text view exists to lay out and draw the text. Clicks and drags belong
-/// to the page view so the whole canvas stays draggable and click-to-select
+/// to the page view so the whole view stays draggable and click-to-select
 /// keeps working.
 @interface GAMultiTextView : NSTextView
 @end
@@ -329,7 +329,7 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
 - (instancetype)initWithFrame:(NSRect)frameRect {
     self = [super initWithFrame:frameRect];
     if (self) {
-        _sideInsetFraction = GACanvasDefaultSideInsetFraction;
+        _sideInsetFraction = GABoundingBoxDefaultSideInsetFraction;
         _showsMetrics = YES;
         _textScale = 1.0;
         _usesContextualAlternates = YES;
@@ -747,7 +747,7 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
 }
 
 - (void)drawRect:(NSRect)dirtyRect {
-    [GACanvasBackgroundColor() setFill];
+    [GABoundingBoxBackgroundColor() setFill];
     NSRectFill(self.bounds);
     if (self.pageContentSize.width <= 0 || self.pageContentSize.height <= 0) {
         return;

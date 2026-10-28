@@ -351,7 +351,7 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
     if (_viewMode == GAViewModeAllGlyphs) {
         [self.detailViewController zoomAllGlyphsIn];
     } else if (_viewMode == GAViewModeSingleGlyph) {
-        [self.detailViewController zoomCanvasIn];
+        [self.detailViewController zoomBoundingBoxIn];
     } else if (_viewMode == GAViewModeMultiCharacter) {
         [self.detailViewController zoomMultiTextIn];
     }
@@ -361,25 +361,25 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
     if (_viewMode == GAViewModeAllGlyphs) {
         [self.detailViewController zoomAllGlyphsOut];
     } else if (_viewMode == GAViewModeSingleGlyph) {
-        [self.detailViewController zoomCanvasOut];
+        [self.detailViewController zoomBoundingBoxOut];
     } else if (_viewMode == GAViewModeMultiCharacter) {
         [self.detailViewController zoomMultiTextOut];
     }
 }
 
 - (void)zoomMetricsIn {
-    [self.detailViewController zoomCanvasIn];
+    [self.detailViewController zoomBoundingBoxIn];
 }
 
 - (void)zoomMetricsOut {
-    [self.detailViewController zoomCanvasOut];
+    [self.detailViewController zoomBoundingBoxOut];
 }
 
 - (void)resetZoom {
     if (_viewMode == GAViewModeAllGlyphs) {
         [self.detailViewController resetAllGlyphsZoom];
     } else if (_viewMode == GAViewModeSingleGlyph) {
-        [self.detailViewController resetCanvasZoom];
+        [self.detailViewController resetBoundingBoxZoom];
     } else if (_viewMode == GAViewModeMultiCharacter) {
         [self.detailViewController resetMultiTextZoom];
     }
@@ -416,6 +416,15 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
         for (GAGlyphVariant *variant in groups.firstObject.variants) {
             if (variant.unicodeScalars.count > 0) {
                 scalar = variant.unicodeScalars.firstObject;
+                break;
+            }
+        }
+    } else if (scalar.unsignedIntValue <= 0x1F || scalar.unsignedIntValue == 0x7F) {
+        for (NSUInteger index = 1; index < entry.unicodeScalars.count; index++) {
+            NSNumber *candidate = entry.unicodeScalars[index];
+            uint32_t value = candidate.unsignedIntValue;
+            if (value > 0x1F && value != 0x7F) {
+                scalar = candidate;
                 break;
             }
         }

@@ -57,7 +57,7 @@
 "This file does not contain a font that CoreText can read." = "Diese Datei enthält keine Schrift, die CoreText lesen kann.";
 "Cannot Read Font" = "Schrift kann nicht gelesen werden";
 "CoreText could not create this font." = "CoreText konnte diese Schrift nicht erstellen.";
-"Glyph canvas" = "Glyphenfläche";
+"Bounding Box" = "Begrenzungsrahmen";
 "Text and alternate glyph list" = "Liste der Zeichen und alternativen Glyphen";
 "CONTROL CHARACTER" = "STEUERZEICHEN";
 "Help.01" = "Öffne eine Schrift oder ziehe sie auf das App-Fenster oder das Dock-Symbol. Zuletzt benutzte Dateien werden ebenfalls unterstützt.";

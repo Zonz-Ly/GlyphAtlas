@@ -13,9 +13,9 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)setVariant:(nullable GAGlyphVariant *)variant;
 - (void)setFontDocument:(nullable GAFontDocument *)document;
 - (void)setShowsMetrics:(BOOL)showsMetrics;
-- (void)zoomCanvasIn;
-- (void)zoomCanvasOut;
-- (void)resetCanvasZoom;
+- (void)zoomBoundingBoxIn;
+- (void)zoomBoundingBoxOut;
+- (void)resetBoundingBoxZoom;
 - (void)zoomAllGlyphsIn;
 - (void)zoomAllGlyphsOut;
 - (void)resetAllGlyphsZoom;

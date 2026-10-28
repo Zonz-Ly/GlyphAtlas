@@ -27,7 +27,7 @@
 "Clear Menu" = "ล้างเมนู";
 "Zoom Out" = "ซูมออก";
 "Close Window" = "ปิดหน้าต่าง";
-"Glyph canvas" = "พื้นที่แสดงรูปอักขระ";
+"Bounding Box" = "กรอบขอบเขต";
 "Minimize" = "ย่อ";
 "Edit" = "แก้ไข";
 "Hide Glyph Atlas" = "ซ่อน Glyph Atlas";

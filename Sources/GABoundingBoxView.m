@@ -1,6 +1,6 @@
-#import "GAGlyphCanvasView.h"
+#import "GABoundingBoxView.h"
 
-@interface GAGlyphCanvasView ()
+@interface GABoundingBoxView ()
 @property (nonatomic) CGFloat magnificationStartPage;
 @end
 
@@ -13,15 +13,15 @@ const CGFloat GAGlyphZoomStep10 =
     (GAGlyphZoomStep * GAGlyphZoomStep);
 /// The default page is two zoom-outs from a full page. The maximum inset is
 /// the page after twenty more zoom-outs: `0.5 * (1 - 1 / 1.12^22)`.
-const CGFloat GACanvasMaxInsetFraction =
+const CGFloat GABoundingBoxMaxInsetFraction =
     0.5 * (1.0 - 1.0 /
         (GAGlyphZoomStep10 * GAGlyphZoomStep10 *
          GAGlyphZoomStep * GAGlyphZoomStep));
-/// Two 1.12× zoom-outs from a full-page canvas.
-const CGFloat GACanvasDefaultSideInsetFraction =
+/// Two 1.12× zoom-outs from a bounding box that fills the viewport.
+const CGFloat GABoundingBoxDefaultSideInsetFraction =
     0.5 * (1.0 - 1.0 / (GAGlyphZoomStep * GAGlyphZoomStep));
-static const CGFloat GACanvasBoundaryMargin = 1.0;
-static const CGFloat GACanvasScaleEpsilon = 0.999999;
+static const CGFloat GABoundingBoxBoundaryMargin = 1.0;
+static const CGFloat GABoundingBoxScaleEpsilon = 0.999999;
 
 /// Largest scale at which a page and its ink can share one translation while
 /// the page stays in the content inset and the ink stays in the main view.
@@ -62,11 +62,11 @@ static CGFloat GAMaxScaleForAxis(CGFloat pageSize,
 }
 
 CGFloat GAClampSideInsetFraction(CGFloat fraction) {
-    return MIN(GACanvasMaxInsetFraction, MAX(0.0, fraction));
+    return MIN(GABoundingBoxMaxInsetFraction, MAX(0.0, fraction));
 }
 
-CGFloat GACanvasPageFractionForMagnification(CGFloat startPage, CGFloat magnification) {
-    CGFloat minimum = 1.0 - 2.0 * GACanvasMaxInsetFraction;
+CGFloat GABoundingBoxPageFractionForMagnification(CGFloat startPage, CGFloat magnification) {
+    CGFloat minimum = 1.0 - 2.0 * GABoundingBoxMaxInsetFraction;
     return MIN(1.0, MAX(minimum, startPage * (1.0 + magnification)));
 }
 
@@ -136,13 +136,13 @@ void GADrawPage(NSRect page, NSAppearance *appearance) {
     shadow.shadowBlurRadius = 22;
     shadow.shadowOffset = NSMakeSize(0, -8);
     [shadow set];
-    [GACanvasBackgroundColor() setFill];
+    [GABoundingBoxBackgroundColor() setFill];
     [[NSBezierPath bezierPathWithRoundedRect:page xRadius:2 yRadius:2] fill];
     [NSGraphicsContext restoreGraphicsState];
 }
 
-NSColor *GACanvasBackgroundColor(void) {
-    return [NSColor colorWithName:@"GACanvasBackground"
+NSColor *GABoundingBoxBackgroundColor(void) {
+    return [NSColor colorWithName:@"GABoundingBoxBackground"
                   dynamicProvider:^NSColor *(NSAppearance *appearance) {
         return GAAppearanceIsDark(appearance)
             ? [NSColor colorWithSRGBRed:(60.0 / 255.0)
@@ -165,7 +165,7 @@ NSColor *GAGlyphForegroundColor(void) {
     }];
 }
 
-@implementation GAGlyphCanvasView
+@implementation GABoundingBoxView
 
 - (instancetype)initWithFrame:(NSRect)frameRect {
     self = [super initWithFrame:frameRect];
@@ -173,9 +173,9 @@ NSColor *GAGlyphForegroundColor(void) {
         self.wantsLayer = YES;
         self.layer.masksToBounds = YES;
         self.layerContentsRedrawPolicy = NSViewLayerContentsRedrawOnSetNeedsDisplay;
-        self.accessibilityLabel = NSLocalizedString(@"Glyph canvas", @"Glyph canvas");
+        self.accessibilityLabel = NSLocalizedString(@"Bounding Box", @"Bounding Box");
 
-        _sideInsetFraction = GACanvasDefaultSideInsetFraction;
+        _sideInsetFraction = GABoundingBoxDefaultSideInsetFraction;
         _showsMetrics = YES;
         NSMagnificationGestureRecognizer *magnification =
             [[NSMagnificationGestureRecognizer alloc] initWithTarget:self
@@ -226,8 +226,8 @@ NSColor *GAGlyphForegroundColor(void) {
         self.magnificationStartPage = 1.0 - 2.0 * self.sideInsetFraction;
     } else if (recognizer.state == NSGestureRecognizerStateChanged) {
         // 1:1 with the gesture, like system zooming views.
-        CGFloat page = GACanvasPageFractionForMagnification(self.magnificationStartPage,
-                                                            recognizer.magnification);
+        CGFloat page = GABoundingBoxPageFractionForMagnification(
+            self.magnificationStartPage, recognizer.magnification);
         self.sideInsetFraction = (1.0 - page) * 0.5;
     }
 }
@@ -243,7 +243,7 @@ NSColor *GAGlyphForegroundColor(void) {
 }
 
 - (void)drawRect:(NSRect)dirtyRect {
-    [GACanvasBackgroundColor() setFill];
+    [GABoundingBoxBackgroundColor() setFill];
     NSRectFill(self.bounds);
 
     GAGlyphVariant *variant = self.variant;
@@ -285,8 +285,8 @@ NSColor *GAGlyphForegroundColor(void) {
             glyphLimit = intersection;
         }
     }
-    glyphLimit = NSInsetRect(glyphLimit, GACanvasBoundaryMargin,
-                             GACanvasBoundaryMargin);
+    glyphLimit = NSInsetRect(glyphLimit, GABoundingBoxBoundaryMargin,
+                             GABoundingBoxBoundaryMargin);
 
     BOOL (^translationForScale)(CGFloat, CGFloat *, CGFloat *) =
         ^BOOL(CGFloat candidateScale, CGFloat *outX, CGFloat *outY) {
@@ -352,7 +352,7 @@ NSColor *GAGlyphForegroundColor(void) {
             return;
         }
         // Numerical slack only; the visible 1pt margin is the glyph limit inset.
-        scale = constrainedScale * GACanvasScaleEpsilon;
+        scale = constrainedScale * GABoundingBoxScaleEpsilon;
     }
 
     CGFloat shiftX;

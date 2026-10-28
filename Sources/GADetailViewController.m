@@ -1,5 +1,5 @@
 #import "GADetailViewController.h"
-#import "GAGlyphCanvasView.h"
+#import "GABoundingBoxView.h"
 #import "GAAllGlyphsView.h"
 #import "GAMultiGlyphView.h"
 #import "GAAppDelegate.h"
@@ -25,12 +25,12 @@
 @end
 
 @interface GADetailViewController ()
-@property (nonatomic, strong) GAGlyphCanvasView *canvasView;
+@property (nonatomic, strong) GABoundingBoxView *boundingBoxView;
 @property (nonatomic, strong) GAAllGlyphsView *allGlyphsView;
 @property (nonatomic, strong) GAMultiGlyphView *multiView;
 @property (nonatomic, strong) NSScrollView *multiScrollView;
 @property (nonatomic) BOOL updatingMultiLayout;
-@property (nonatomic) CGFloat canvasInsetFraction;
+@property (nonatomic) CGFloat boundingBoxInsetFraction;
 @end
 
 @implementation GADetailViewController
@@ -46,9 +46,9 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
 
-    self.canvasView = [[GAGlyphCanvasView alloc] initWithFrame:NSZeroRect];
-    self.canvasView.translatesAutoresizingMaskIntoConstraints = NO;
-    [self.view addSubview:self.canvasView];
+    self.boundingBoxView = [[GABoundingBoxView alloc] initWithFrame:NSZeroRect];
+    self.boundingBoxView.translatesAutoresizingMaskIntoConstraints = NO;
+    [self.view addSubview:self.boundingBoxView];
 
     self.allGlyphsView = [[GAAllGlyphsView alloc] initWithFrame:NSZeroRect];
     self.allGlyphsView.translatesAutoresizingMaskIntoConstraints = NO;
@@ -59,14 +59,14 @@
     self.multiScrollView.hasVerticalScroller = YES;
     self.multiScrollView.hasHorizontalScroller = YES;
     self.multiScrollView.autohidesScrollers = YES;
-    self.multiScrollView.backgroundColor = GACanvasBackgroundColor();
+    self.multiScrollView.backgroundColor = GABoundingBoxBackgroundColor();
     self.multiScrollView.automaticallyAdjustsContentInsets = NO;
     [self.view addSubview:self.multiScrollView];
 
     self.multiView = [[GAMultiGlyphView alloc] initWithFrame:NSMakeRect(0, 0, 900, 760)];
     self.multiScrollView.documentView = self.multiView;
 
-    for (NSView *view in @[self.canvasView, self.allGlyphsView, self.multiScrollView]) {
+    for (NSView *view in @[self.boundingBoxView, self.allGlyphsView, self.multiScrollView]) {
         [NSLayoutConstraint activateConstraints:@[
             [view.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
             [view.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
@@ -98,18 +98,18 @@
     self.multiView.onContentSizeChanged = ^{
         [weakSelf updateMultiLayout];
     };
-    // One canvas, one zoom: whichever view is pinched, both keep the value.
-    self.canvasView.onSideInsetFractionChanged = ^(CGFloat fraction) {
+    // Single- and multi-character views share one bounding-box zoom.
+    self.boundingBoxView.onSideInsetFractionChanged = ^(CGFloat fraction) {
         weakSelf.multiView.sideInsetFraction = fraction;
     };
     self.multiView.onSideInsetFractionChanged = ^(CGFloat fraction) {
-        weakSelf.canvasView.sideInsetFraction = fraction;
+        weakSelf.boundingBoxView.sideInsetFraction = fraction;
     };
 
     NSMenu *contextMenu = [NSApp.delegate respondsToSelector:@selector(viewMenuForContext)]
         ? [(GAAppDelegate *)NSApp.delegate viewMenuForContext] : nil;
     self.view.menu = contextMenu;
-    self.canvasView.menu = contextMenu;
+    self.boundingBoxView.menu = contextMenu;
     self.multiView.menu = contextMenu;
     self.allGlyphsView.menu = contextMenu;
 
@@ -150,7 +150,7 @@
     if (!self.isViewLoaded) {
         return;
     }
-    self.canvasView.hidden = self.viewMode != GAViewModeSingleGlyph;
+    self.boundingBoxView.hidden = self.viewMode != GAViewModeSingleGlyph;
     self.allGlyphsView.hidden = self.viewMode != GAViewModeAllGlyphs;
     self.multiScrollView.hidden = self.viewMode != GAViewModeMultiCharacter;
     [self updateMultiLayout];
@@ -159,7 +159,7 @@
 #pragma mark - Shared display state
 
 - (void)setVariant:(GAGlyphVariant *)variant {
-    self.canvasView.variant = variant;
+    self.boundingBoxView.variant = variant;
 }
 
 - (void)setFontDocument:(GAFontDocument *)document {
@@ -168,16 +168,16 @@
 }
 
 - (void)setShowsMetrics:(BOOL)showsMetrics {
-    self.canvasView.showsMetrics = showsMetrics;
+    self.boundingBoxView.showsMetrics = showsMetrics;
     self.multiView.showsMetrics = showsMetrics;
 }
 
-- (CGFloat)canvasInsetFraction {
-    return self.canvasView.sideInsetFraction;
+- (CGFloat)boundingBoxInsetFraction {
+    return self.boundingBoxView.sideInsetFraction;
 }
 
-- (void)setCanvasInsetFraction:(CGFloat)fraction {
-    self.canvasView.sideInsetFraction = fraction;
+- (void)setBoundingBoxInsetFraction:(CGFloat)fraction {
+    self.boundingBoxView.sideInsetFraction = fraction;
     self.multiView.sideInsetFraction = fraction;
 }
 
@@ -185,23 +185,23 @@
 
 /// The page occupies (1 - 2 * inset) of the viewport. Keyboard zoom scales that
 /// fraction instead of the inset so the visual step stays constant.
-- (void)scaleCanvasPageBy:(CGFloat)factor {
-    CGFloat page = 1.0 - 2.0 * self.canvasInsetFraction;
-    CGFloat minimum = 1.0 - 2.0 * GACanvasMaxInsetFraction;
+- (void)scaleBoundingBoxBy:(CGFloat)factor {
+    CGFloat page = 1.0 - 2.0 * self.boundingBoxInsetFraction;
+    CGFloat minimum = 1.0 - 2.0 * GABoundingBoxMaxInsetFraction;
     page = MIN(1.0, MAX(minimum, page * factor));
-    self.canvasInsetFraction = (1.0 - page) * 0.5;
+    self.boundingBoxInsetFraction = (1.0 - page) * 0.5;
 }
 
-- (void)zoomCanvasIn {
-    [self scaleCanvasPageBy:GAGlyphZoomStep];
+- (void)zoomBoundingBoxIn {
+    [self scaleBoundingBoxBy:GAGlyphZoomStep];
 }
 
-- (void)zoomCanvasOut {
-    [self scaleCanvasPageBy:1.0 / GAGlyphZoomStep];
+- (void)zoomBoundingBoxOut {
+    [self scaleBoundingBoxBy:1.0 / GAGlyphZoomStep];
 }
 
-- (void)resetCanvasZoom {
-    self.canvasInsetFraction = GACanvasDefaultSideInsetFraction;
+- (void)resetBoundingBoxZoom {
+    self.boundingBoxInsetFraction = GABoundingBoxDefaultSideInsetFraction;
 }
 
 #pragma mark - All glyphs
@@ -270,7 +270,7 @@
     // made the command look dead after a page pinch.
     GAPreserveScrollPosition(self.multiScrollView, ^{
         [self.multiView resetTextZoom];
-        self.canvasInsetFraction = GACanvasDefaultSideInsetFraction;
+        self.boundingBoxInsetFraction = GABoundingBoxDefaultSideInsetFraction;
     });
 }
 

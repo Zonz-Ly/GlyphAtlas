@@ -6,7 +6,7 @@ typedef NS_ENUM(NSInteger, GAViewMode) {
     GAViewModeSingleGlyph = 2
 };
 
-/// TextKit-only controls are unavailable in the two glyph canvases.
+/// TextKit-only controls are unavailable in the two glyph views.
 NS_INLINE BOOL GAViewModeSupportsTextLayout(GAViewMode mode) {
     return mode == GAViewModeMultiCharacter;
 }

@@ -212,7 +212,7 @@
         return;
     }
     // Only context View menus use this delegate. Re-evaluate on every open;
-    // the same menu is shared by the three canvases.
+    // the same menu is shared by the three views.
     GAViewMode mode = self.activeMainWindowController.viewMode;
     for (NSMenuItem *item in menu.itemArray) {
         BOOL textOnly = item.action == @selector(toggleContextualAlternates:) ||

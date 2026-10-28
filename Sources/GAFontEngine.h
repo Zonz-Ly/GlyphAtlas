@@ -124,7 +124,7 @@ FOUNDATION_EXPORT NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text);
 
 /// Page, baseline and ink for a variant, in font units. With
 /// `usesVerticalMetrics` YES the height is the vmtx/vhea vertical advance and
-/// the baseline comes from the top side bearing (single-glyph canvas). With NO
+/// the baseline comes from the top side bearing (single-glyph view). With NO
 /// the height is ascent + descent and the baseline is descent (all-glyphs grid
 /// and sidebar thumbnails).
 + (GAGlyphPage)pageForVariant:(GAGlyphVariant *)variant
