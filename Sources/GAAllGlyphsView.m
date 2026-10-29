@@ -1,7 +1,8 @@
 #import "GAAllGlyphsView.h"
 #import "GABoundingBoxView.h"
 
-static const CGFloat GAAllGlyphsMargin = 14.0;
+static const CGFloat GAAllGlyphsSideMargin = 14.0;
+static const CGFloat GAAllGlyphsVerticalMargin = 18.0;
 static const CGFloat GAAllGlyphsGap = 8.0;
 static const CGFloat GAAllGlyphsBaseCell = 44.0;
 static const CGFloat GAAllGlyphsGlyphRatio = 0.85;
@@ -26,7 +27,7 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
 @property (nonatomic, strong) NSMutableData *pageMetricsValid;
 @property (nonatomic) CGFloat cellScale;
 @property (nonatomic) NSUInteger columns;
-/// Extra space above the first row so it clears the window titlebar.
+/// Top spacing before the first row; full screen uses titlebar clearance.
 @property (nonatomic) CGFloat topInset;
 @property (nonatomic) NSUInteger highlightIndex;
 @property (nonatomic) CGFloat highlightAlpha;
@@ -47,6 +48,7 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
     self = [super initWithFrame:frameRect];
     if (self) {
         _columns = 1;
+        _topInset = GAAllGlyphsVerticalMargin;
         _highlightIndex = NSNotFound;
     }
     return self;
@@ -89,13 +91,13 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
         return;
     }
     CGFloat cell = self.cellSide;
-    CGFloat usable = MAX(cell, width - 2 * GAAllGlyphsMargin);
+    CGFloat usable = MAX(cell, width - 2 * GAAllGlyphsSideMargin);
     self.columns = MAX(1, (NSUInteger)floor((usable + GAAllGlyphsGap) /
                                            (cell + GAAllGlyphsGap)));
     NSUInteger rows = self.entries.count == 0
         ? 0
         : (self.entries.count + self.columns - 1) / self.columns;
-    CGFloat height = self.topInset + 2 * GAAllGlyphsMargin + rows * cell +
+    CGFloat height = self.topInset + GAAllGlyphsVerticalMargin + rows * cell +
         MAX(0, (NSInteger)rows - 1) * GAAllGlyphsGap;
     NSScrollView *scrollView = self.enclosingScrollView;
     CGFloat minimum = scrollView != nil ? scrollView.contentSize.height : 0;
@@ -111,14 +113,14 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
     CGFloat cell = self.cellSide;
     CGFloat used = self.columns * cell +
         MAX(0, (NSInteger)self.columns - 1) * GAAllGlyphsGap;
-    return MAX(GAAllGlyphsMargin, (NSWidth(self.bounds) - used) * 0.5);
+    return MAX(GAAllGlyphsSideMargin, (NSWidth(self.bounds) - used) * 0.5);
 }
 
 - (NSRect)rectForIndex:(NSUInteger)index {
     CGFloat cell = self.cellSide;
     CGFloat stride = cell + GAAllGlyphsGap;
     return NSMakeRect([self contentLeft] + (index % self.columns) * stride,
-                      self.topInset + GAAllGlyphsMargin + (index / self.columns) * stride,
+                      self.topInset + (index / self.columns) * stride,
                       cell, cell);
 }
 
@@ -169,7 +171,7 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
     CGFloat cell = self.cellSide;
     CGFloat stride = cell + GAAllGlyphsGap;
     CGFloat x = point.x - [self contentLeft];
-    CGFloat y = point.y - self.topInset - GAAllGlyphsMargin;
+    CGFloat y = point.y - self.topInset;
     if (x < 0 || y < 0) {
         return -1;
     }
@@ -301,7 +303,7 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
     CGFloat glyphScale = cell * GAAllGlyphsGlyphRatio / GAFontShapingSize;
     NSRect visible = self.visibleRect;
     CGFloat stride = cell + GAAllGlyphsGap;
-    CGFloat contentTop = self.topInset + GAAllGlyphsMargin;
+    CGFloat contentTop = self.topInset;
     NSUInteger firstRow = NSMinY(visible) <= contentTop
         ? 0 : (NSUInteger)MAX(0.0, floor((NSMinY(visible) - contentTop) / stride));
     NSUInteger lastRow = (NSUInteger)MAX(0.0, floor((NSMaxY(visible) - contentTop) / stride));
@@ -413,14 +415,20 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
 
 - (void)layout {
     [super layout];
-    // Push the grid down by exactly the part of the title bar that would
-    // otherwise cover the first row: the top margin already covers the rest.
-    self.grid.topInset = MAX(0, self.safeAreaInsets.top - GAAllGlyphsMargin);
+    // Full screen uses the titlebar clearance directly instead of the margin.
+    self.grid.topInset = (self.window.styleMask & NSWindowStyleMaskFullScreen)
+        ? self.safeAreaInsets.top : GAAllGlyphsVerticalMargin;
     [self.grid updateLayoutForWidth:NSWidth(self.bounds)];
 }
 
 - (void)revealGlyphID:(NSNumber *)glyphID quick:(BOOL)quick {
     [self.grid revealGlyph:glyphID quick:quick];
+}
+
+- (BOOL)containsGlyphAtWindowPoint:(NSPoint)point {
+    point = [self.grid convertPoint:point fromView:nil];
+    return NSMouseInRect(point, self.grid.visibleRect, self.grid.isFlipped) &&
+           [self.grid indexAtPoint:point] >= 0;
 }
 
 - (void)handleMagnification:(NSMagnificationGestureRecognizer *)recognizer {

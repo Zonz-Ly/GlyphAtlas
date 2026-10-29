@@ -76,6 +76,15 @@ static const CGFloat GACodeLineHeight = 13.0;
         _glyphPage.baseline * unitScale;
 
     CGContextRef context = NSGraphicsContext.currentContext.CGContext;
+    // Work around right-edge clipping in PingFang UI SC variable-font previews.
+    // Fill before every glyph draw: a one-time fill did not prevent later clipping.
+    // Transparent Source Over preserves the native row background.
+    CGContextSaveGState(context);
+    CGContextSetBlendMode(context, kCGBlendModeNormal);
+    CGContextSetFillColorWithColor(context, NSColor.clearColor.CGColor);
+    CGContextFillRect(context, dirtyRect);
+    CGContextRestoreGState(context);
+
     CGContextSaveGState(context);
     CGContextTranslateCTM(context, originX, originY);
     CGContextScaleCTM(context, scale, scale);

@@ -20,6 +20,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)zoomAllGlyphsOut;
 - (void)resetAllGlyphsZoom;
 - (void)revealAllGlyphID:(NSNumber *)glyphID quick:(BOOL)quick;
+- (BOOL)containsAllGlyphAtWindowPoint:(NSPoint)point;
 - (void)setMultiText:(NSString *)text groups:(NSArray<GACharacterGroup *> *)groups;
 - (void)setTextAlignment:(NSTextAlignment)alignment;
 - (void)setWritingDirectionVertical:(BOOL)vertical;

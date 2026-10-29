@@ -5,12 +5,11 @@
 #import <CoreText/SFNTLayoutTypes.h>
 #import <math.h>
 
-static const CGFloat GAMultiBaseFontSize = 32.0;
-/// Ten zoom-outs and twenty zoom-ins: `1 / 1.12^10` to `1.12^20`.
+static const CGFloat GAMultiBaseFontSize = 51.0;
+/// Twenty zoom-outs and twenty zoom-ins: `1 / 1.12^20` to `1.12^20`.
 static CGFloat GAMultiClampTextScale(CGFloat scale) {
-    CGFloat minimum = 1.0 / GAGlyphZoomStep10;
     CGFloat maximum = GAGlyphZoomStep10 * GAGlyphZoomStep10;
-    return MIN(maximum, MAX(minimum, scale));
+    return MIN(maximum, MAX(1.0 / maximum, scale));
 }
 
 #pragma mark - Display-only text view

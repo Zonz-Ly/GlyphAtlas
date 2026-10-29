@@ -27,6 +27,20 @@ static BOOL GAGroupIsMissing(GACharacterGroup *group) {
            base.glyphIDs.firstObject.unsignedShortValue == 0;
 }
 
+#pragma mark - Font title
+
+@interface GAFontTitleView : NSStackView
+@end
+
+@implementation GAFontTitleView
+
+- (NSView *)hitTest:(NSPoint)point {
+    NSView *hit = [super hitTest:point];
+    return [hit isKindOfClass:NSButton.class] ? hit : nil;
+}
+
+@end
+
 #pragma mark - Drop window
 
 @interface GADropWindow : NSWindow
@@ -262,7 +276,7 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
     self.variationButton.hidden = YES;
     self.variationButton.toolTip = NSLocalizedString(@"Variable", @"Variable font controls");
     self.variationButton.accessibilityLabel = self.variationButton.toolTip;
-    self.fontTitleView = [NSStackView stackViewWithViews:@[self.variationButton, self.titleFontNameField]];
+    self.fontTitleView = [GAFontTitleView stackViewWithViews:@[self.variationButton, self.titleFontNameField]];
     self.fontTitleView.orientation = NSUserInterfaceLayoutOrientationHorizontal;
     self.fontTitleView.alignment = NSLayoutAttributeCenterY;
     self.fontTitleView.spacing = 5;
@@ -454,6 +468,14 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 }
 
 #pragma mark - Window and input focus
+
+- (BOOL)windowShouldZoom:(NSWindow *)window toFrame:(NSRect)newFrame {
+    NSEvent *event = NSApp.currentEvent;
+    BOOL doubleClick = (event.type == NSEventTypeLeftMouseDown ||
+                        event.type == NSEventTypeLeftMouseUp) && event.clickCount == 2;
+    return !(doubleClick && event.window == window &&
+             [self.detailViewController containsAllGlyphAtWindowPoint:event.locationInWindow]);
+}
 
 - (void)windowDidBecomeKey:(NSNotification *)notification {
     if (notification.object != self.window) return;

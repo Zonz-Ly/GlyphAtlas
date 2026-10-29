@@ -222,6 +222,11 @@
     [self.allGlyphsView revealGlyphID:glyphID quick:quick];
 }
 
+- (BOOL)containsAllGlyphAtWindowPoint:(NSPoint)point {
+    return self.viewMode == GAViewModeAllGlyphs &&
+           [self.allGlyphsView containsGlyphAtWindowPoint:point];
+}
+
 #pragma mark - Multi-character view
 
 - (void)scrollMultiToPoint:(NSPoint)point {

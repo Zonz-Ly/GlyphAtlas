@@ -1,5 +1,6 @@
 .build/
 dist/
 README/
+diagnostics/
 .DS_Store
 .gitignore
