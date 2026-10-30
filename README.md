@@ -37,8 +37,8 @@ A native macOS font and alternate-glyph inspector. Type text to see every altern
 - Some font feature parsers, such as GSUB, are developed in-house. Their actual results are not guaranteed to match what CoreText exposes exactly, but so far testing has not shown any issues.
 - Glyph names come from CoreText. When CoreText returns no usable name, the app shows `GID`.
 - Glyph width comes from CoreText's horizontal advance.
-- Glyph height comes from CoreText's vertical advance when `vmtx` is present. Otherwise it uses `sTypoAscender + sTypoDescender`; if those are unavailable, or in Multi-Character, it uses CoreText `ascent + descent`.
-- Multi-Character layout and its metrics are provided by the system TextView; some effects are out of our control, for example, some required features such as `ccmp` cannot be disabled.
+- Glyph height comes from CoreText's vertical advance when `vmtx` is present. Otherwise it uses `sTypoAscender + sTypoDescender`. If those are unavailable, or in Multi-Character, it uses CoreText `ascent + descent`.
+- Multi-Character layout and its metrics are provided by the system TextView, some effects are out of our control. For example, some required features such as `ccmp` cannot be disabled.
 
 ## Build
 
