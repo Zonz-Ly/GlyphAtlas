@@ -85,20 +85,52 @@ void GADrawGlyphVariant(GAGlyphVariant *variant, CGContextRef context) {
 
 #pragma mark - GAFontBox
 
+/// Page metrics used only by `pageForVariant:` in this file. Keeping the
+/// initializer and typo values private avoids exposing page internals through
+/// the public GAFontBox API.
+@interface GAFontBox ()
+/// OS/2 sTypo metrics in font units for this coordinate instance, adjusted by
+/// MVAR hasc/hdsc. The descender keeps the font's sign; page code uses its
+/// magnitude because some fonts store it as a positive depth.
+@property (nonatomic, readonly) BOOL hasTypoMetrics;
+@property (nonatomic, readonly) CGFloat typoAscender;
+@property (nonatomic, readonly) CGFloat typoDescender;
+- (instancetype)initWithFont:(CTFontRef)font
+                typoAscender:(CGFloat)typoAscender
+               typoDescender:(CGFloat)typoDescender
+              hasTypoMetrics:(BOOL)hasTypoMetrics
+                      engine:(GASubstitutionEngine *)engine;
+/// VVAR tsbMapping delta in font units for this coordinate instance.
+- (CGFloat)topSideBearingDeltaForGlyph:(CGGlyph)glyph;
+@end
+
 @implementation GAFontBox {
     CTFontRef _font;
+    GASubstitutionEngine *_engine;
 }
 
-- (instancetype)initWithFont:(CTFontRef)font {
+- (instancetype)initWithFont:(CTFontRef)font
+                typoAscender:(CGFloat)typoAscender
+               typoDescender:(CGFloat)typoDescender
+              hasTypoMetrics:(BOOL)hasTypoMetrics
+                      engine:(GASubstitutionEngine *)engine {
     self = [super init];
     if (self) {
         _font = (CTFontRef)CFRetain(font);
+        _typoAscender = typoAscender;
+        _typoDescender = typoDescender;
+        _hasTypoMetrics = hasTypoMetrics;
+        _engine = engine;
     }
     return self;
 }
 
 - (CTFontRef)font {
     return _font;
+}
+
+- (CGFloat)topSideBearingDeltaForGlyph:(CGGlyph)glyph {
+    return _engine != nil ? [_engine topSideBearingDeltaForGlyph:glyph] : 0;
 }
 
 - (void)dealloc {
@@ -197,7 +229,6 @@ NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text) {
         CFRelease(configured);
     if (_font == NULL)
         return nil;
-    _fontBox = [[GAFontBox alloc] initWithFont:_font];
     _fontURL = [url copy];
     _fullName = CFBridgingRelease(CTFontCopyDisplayName(_font));
     if (!_fullName.length)
@@ -210,6 +241,15 @@ NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text) {
         [[GASubstitutionEngine alloc] initWithFont:_font
                                        coordinates:coordinates
                                            sharing:source ? source->_substitutionEngine : nil];
+    CGFloat typoAscender = 0;
+    CGFloat typoDescender = 0;
+    BOOL hasTypoMetrics = [_substitutionEngine typoMetricsAscender:&typoAscender
+                                                         descender:&typoDescender];
+    _fontBox = [[GAFontBox alloc] initWithFont:_font
+                                  typoAscender:typoAscender
+                                 typoDescender:typoDescender
+                                hasTypoMetrics:hasTypoMetrics
+                                        engine:_substitutionEngine];
     if (source) {
         @synchronized(source) {
             _unicodeMap = source->_unicodeMap;
@@ -596,17 +636,30 @@ static CGFloat GAAdvanceWidthInFontUnits(CTFontRef font,
     CGFloat topSideBearing;
     BOOL hasVertical = usesVerticalMetrics &&
         [self verticalMetricsForVariant:variant topSideBearing:&topSideBearing];
+    if (hasVertical) {
+        // VVAR tsbMapping is not reflected by CoreText's vertical origin API.
+        topSideBearing += [variant.fontBox topSideBearingDeltaForGlyph:
+            (CGGlyph)variant.glyphIDs.firstObject.unsignedShortValue];
+    }
     CGFloat width;
     CGFloat height;
+    BOOL hasTypoMetrics = variant.fontBox.hasTypoMetrics;
+    CGFloat typoDescender = fabs(variant.fontBox.typoDescender);
     if (hasVertical) {
         CGSize advance = [self advanceInFontUnitsForVariant:variant];
         width = advance.width;
         height = advance.height;
     } else {
-        // The width-only page: advance width × ascent + descent. It must not
+        // The width-only page: advance width × typographic height. It must not
         // read vmtx, so the grid and sidebar do not pay for vertical metrics.
+        // OS/2 typo metrics win when present; the descender magnitude is used
+        // because some fonts store it as a positive depth.
         width = GAAdvanceWidthInFontUnits(font, variant.glyphIDs);
-        height = (CTFontGetAscent(font) + CTFontGetDescent(font)) * shapeToUnits;
+        if (hasTypoMetrics) {
+            height = variant.fontBox.typoAscender + typoDescender;
+        } else {
+            height = (CTFontGetAscent(font) + CTFontGetDescent(font)) * shapeToUnits;
+        }
     }
     if (width <= 0) {
         width = hasInk ? CGRectGetWidth(ink) : unitsPerEm * 0.01;
@@ -618,6 +671,8 @@ static CGFloat GAAdvanceWidthInFontUnits(CTFontRef font,
     CGFloat baseline;
     if (hasVertical) {
         baseline = height - topSideBearing - CGRectGetMaxY(ink);
+    } else if (hasTypoMetrics) {
+        baseline = typoDescender;
     } else {
         baseline = CTFontGetDescent(font) * shapeToUnits;
     }

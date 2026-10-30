@@ -36,7 +36,8 @@ A native macOS font and alternate-glyph inspector. Type text to see every altern
 
 - Some font feature parsers, such as GSUB, are developed in-house. Their actual results are not guaranteed to match what CoreText exposes exactly, but so far testing has not shown any issues.
 - Glyph names come from CoreText. When CoreText returns no usable name, the app shows `GID`.
-- Metrics come from CoreText: glyph width uses the horizontal advance. When `vmtx`/`vhea` is present, glyph height uses the vertical advance; otherwise it uses `ascent + descent`.
+- Glyph width comes from CoreText's horizontal advance.
+- Glyph height comes from CoreText's vertical advance when `vmtx` is present; otherwise it uses `sTypoAscender + sTypoDescender`; if those are unavailable, or in Multi-Character, it uses CoreText `ascent + descent`.
 - Multi-Character layout and its metrics are provided by the system TextView; some effects are out of our control, for example, some required features such as `ccmp` cannot be disabled.
 
 ## Build
@@ -89,5 +90,6 @@ ARCHS=x86_64 ./build.sh
 
 - GSUB 等部分特性解析器自主研發，雖然實際結果不能保證和 CoreText 暴露的完全一致，但是目前測下來沒問題。
 - 字形名稱來自 CoreText，當 CoreText 沒有可用名稱時顯示 GID。
-- 度量數據來自 CoreText：字寬來自水平 advance；字高有 `vmtx`/`vhea` 時來自垂直 advance；無則使用 `ascent + descent`。
+- 字寬數據來自 CoreText 水平 advance。
+- 字高數據有 `vmtx` 時來自 CoreText 垂直 advance，無則使用 `sTypoAscender + sTypoDescender`，再無及多字符使用 CoreText `ascent + descent`。
 - 多字符排版及其度量由系統 TextView 提供，部分效果不可控，比如 `ccmp` 等部分強制特性無法關閉。

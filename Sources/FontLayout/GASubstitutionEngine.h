@@ -24,5 +24,12 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSArray<NSValue *> *)positionsForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
                                      content:(NSString *)content;
 - (nullable NSNumber *)verticalGlyph:(uint16_t)glyph;
+/// OS/2 sTypo ascender/descender in font units for this coordinate instance,
+/// with MVAR hasc/hdsc deltas applied. Descender keeps the font's sign.
+/// Returns NO when the font has no usable OS/2 typographic metrics.
+- (BOOL)typoMetricsAscender:(CGFloat *)ascender descender:(CGFloat *)descender;
+/// VVAR tsbMapping delta in font units for this coordinate instance. Returns 0
+/// when the font has no vertical TSB variations.
+- (CGFloat)topSideBearingDeltaForGlyph:(CGGlyph)glyph;
 @end
 NS_ASSUME_NONNULL_END

@@ -12,7 +12,6 @@ FOUNDATION_EXPORT const CGFloat GAFontShapingSize;
 /// A small ARC-friendly owner for a CoreText font.
 @interface GAFontBox : NSObject
 @property (nonatomic, readonly) CTFontRef font;
-- (instancetype)initWithFont:(CTFontRef)font;
 @end
 
 /// Minimal glyph inventory used by the all-glyphs grid.
@@ -124,9 +123,11 @@ FOUNDATION_EXPORT NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text);
 
 /// Page, baseline and ink for a variant, in font units. With
 /// `usesVerticalMetrics` YES the height is the vmtx/vhea vertical advance and
-/// the baseline comes from the top side bearing (single-glyph view). With NO
-/// the height is ascent + descent and the baseline is descent (all-glyphs grid
-/// and sidebar thumbnails).
+/// the baseline comes from the top side bearing with the VVAR tsbMapping delta
+/// (single-glyph view). With NO the height is OS/2 sTypoAscender plus the
+/// magnitude of sTypoDescender and the baseline is that magnitude (all-glyphs
+/// grid and sidebar thumbnails). Fonts without usable OS/2 typographic metrics
+/// keep CoreText ascent + descent.
 + (GAGlyphPage)pageForVariant:(GAGlyphVariant *)variant
            usesVerticalMetrics:(BOOL)usesVerticalMetrics;
 

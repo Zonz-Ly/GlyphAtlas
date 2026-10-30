@@ -165,7 +165,12 @@ NSColor *GAGlyphForegroundColor(void) {
     }];
 }
 
-@implementation GABoundingBoxView
+@implementation GABoundingBoxView {
+    /// Page, baseline and ink in font units. They depend only on the variant's
+    /// font instance and glyphs, so they are computed when the variant changes,
+    /// not on every draw.
+    GAGlyphPage _glyphPage;
+}
 
 - (instancetype)initWithFrame:(NSRect)frameRect {
     self = [super initWithFrame:frameRect];
@@ -199,6 +204,11 @@ NSColor *GAGlyphForegroundColor(void) {
 
 - (void)setVariant:(GAGlyphVariant *)variant {
     _variant = variant;
+    // View size, zoom and metrics visibility do not affect the page, and an
+    // axis change supplies a rebound variant rather than mutating this one.
+    _glyphPage = variant != nil
+        ? [GAFontDocument pageForVariant:variant usesVerticalMetrics:YES]
+        : (GAGlyphPage){ CGSizeZero, 0, CGRectZero };
     [self setNeedsDisplay:YES];
 }
 
@@ -254,8 +264,7 @@ NSColor *GAGlyphForegroundColor(void) {
     CTFontRef font = variant.fontBox.font;
     CGFloat shapeToUnits = CTFontGetUnitsPerEm(font) / GAFontShapingSize;
 
-    GAGlyphPage glyphPage = [GAFontDocument pageForVariant:variant
-                                       usesVerticalMetrics:YES];
+    GAGlyphPage glyphPage = _glyphPage;
     CGRect ink = glyphPage.ink;
     BOOL hasInk = !CGRectIsEmpty(ink);
     CGFloat widthUnits = glyphPage.size.width;

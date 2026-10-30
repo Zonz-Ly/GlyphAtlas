@@ -5,6 +5,7 @@
 #import "GAOpenType.h"
 #import "GATextPreparation.h"
 #import "GAVariation.h"
+#include <cmath>
 #include <map>
 
 using namespace ga::layout;
@@ -31,6 +32,12 @@ struct Resource {
     AAT aat;
     Kerning kerning;
     View fvar, avar;
+    View os2, variationStore;
+    View verticalStore, verticalTSBMap;
+    struct VariationIndex {
+        bool present = false;
+        unsigned outer = 0, inner = 0;
+    } ascenderVariation, descenderVariation;
     bool verticalAAT;
     unsigned glyphCount;
     double unitsPerEm;
@@ -56,6 +63,9 @@ struct Resource {
                           tableBytes(font, tag('k', 'e', 'r', 'x')));
         fvar = tableBytes(font, tag('f', 'v', 'a', 'r'));
         avar = tableBytes(font, tag('a', 'v', 'a', 'r'));
+        read(tag('O', 'S', '/', '2'), [&](View data) { os2 = data; });
+        read(tag('M', 'V', 'A', 'R'), [&](View data) { readVariationMetrics(data); });
+        read(tag('V', 'V', 'A', 'R'), [&](View data) { readVerticalMetrics(data); });
         if (!aat.empty()) {
             domains.push_back({true, 0, {}});
             for (auto selector : aat.selectors())
@@ -66,6 +76,51 @@ struct Resource {
                 domains.push_back({false, i, {}});
         featureSpecs = collectFeatures();
         verticalAAT = aat.hasVerticalSubstitutions();
+    }
+    void readVariationMetrics(View mvar) {
+        if (!mvar)
+            return;
+        if (mvar.u16(0) != 1)
+            throw InvalidTable("unknown MVAR version");
+        unsigned size = mvar.u16(6), count = mvar.u16(8);
+        if (size < 8)
+            throw InvalidTable("short MVAR value record");
+        mvar.array(12, count, size);
+        VariationIndex ascender, descender;
+        for (unsigned i = 0; i < count; i++) {
+            size_t at = 12 + size_t(i) * size;
+            Tag name = mvar.u32(at);
+            if (name == tag('h', 'a', 's', 'c')) {
+                ascender.present = true;
+                ascender.outer = mvar.u16(at + 4);
+                ascender.inner = mvar.u16(at + 6);
+            } else if (name == tag('h', 'd', 's', 'c')) {
+                descender.present = true;
+                descender.outer = mvar.u16(at + 4);
+                descender.inner = mvar.u16(at + 6);
+            }
+        }
+        // The store is shared by both records; keep it only when one applies.
+        if (!ascender.present && !descender.present)
+            return;
+        View store = mvar.offset16(10);
+        if (!store)
+            return;
+        variationStore = store;
+        ascenderVariation = ascender;
+        descenderVariation = descender;
+    }
+    void readVerticalMetrics(View vvar) {
+        if (!vvar)
+            return;
+        if (vvar.size() < 24 || vvar.u16(0) != 1)
+            throw InvalidTable("unknown VVAR version");
+        View store = vvar.offset32(4);
+        View map = vvar.offset32(12);
+        if (!store || !map)
+            return;
+        verticalStore = store;
+        verticalTSBMap = map;
     }
     Tag verticalFeature(size_t branch) const {
         // Select by feature presence, never by whether this glyph is covered.
@@ -414,6 +469,52 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
     for (NSNumber *axis in self.coordinates)
         coordinates[axis.unsignedIntValue] = [self.coordinates[axis] doubleValue];
     return normalizeCoordinates(r.fvar, r.avar, coordinates);
+}
+- (BOOL)typoMetricsAscender:(CGFloat *)ascender descender:(CGFloat *)descender {
+    const auto &r = *self.program->resource;
+    if (r.os2.size() < 72)
+        return NO;
+    double top = r.os2.s16(68);
+    double bottom = r.os2.s16(70);
+    try {
+        if (r.variationStore) {
+            std::vector<double> normalized = [self normalizedCoordinates];
+            if (r.ascenderVariation.present)
+                top += variationDelta(r.variationStore, r.ascenderVariation.outer,
+                                      r.ascenderVariation.inner, normalized);
+            if (r.descenderVariation.present)
+                bottom += variationDelta(r.variationStore, r.descenderVariation.outer,
+                                         r.descenderVariation.inner, normalized);
+        }
+    } catch (const InvalidTable &) {
+        // Malformed variation data leaves the static OS/2 values in place.
+        top = r.os2.s16(68);
+        bottom = r.os2.s16(70);
+    }
+    if (!std::isfinite(top) || !std::isfinite(bottom))
+        return NO;
+    top = std::round(top);
+    bottom = std::round(bottom);
+    if (top + std::fabs(bottom) <= 0)
+        return NO;
+    *ascender = top;
+    *descender = bottom;
+    return YES;
+}
+- (CGFloat)topSideBearingDeltaForGlyph:(CGGlyph)glyph {
+    const auto &r = *self.program->resource;
+    if (!r.verticalStore || !r.verticalTSBMap)
+        return 0;
+    try {
+        DeltaSetIndex index = deltaSetIndex(r.verticalTSBMap, glyph);
+        if (!index.valid)
+            return 0;
+        std::vector<double> normalized = [self normalizedCoordinates];
+        return variationDelta(r.verticalStore, index.outer, index.inner, normalized);
+    } catch (const InvalidTable &) {
+        // A malformed VVAR leaves the static vmtx bearing in place.
+        return 0;
+    }
 }
 - (Metrics)metrics {
     const auto &r = *self.program->resource;
