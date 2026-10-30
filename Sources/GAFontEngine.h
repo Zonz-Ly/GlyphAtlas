@@ -122,12 +122,14 @@ FOUNDATION_EXPORT NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text);
 - (nullable NSNumber *)verticalSubstituteForGlyph:(CGGlyph)glyph;
 
 /// Page, baseline and ink for a variant, in font units. With
-/// `usesVerticalMetrics` YES the height is the vmtx/vhea vertical advance and
-/// the baseline comes from the top side bearing with the VVAR tsbMapping delta
-/// (single-glyph view). With NO the height is OS/2 sTypoAscender plus the
-/// magnitude of sTypoDescender and the baseline is that magnitude (all-glyphs
-/// grid and sidebar thumbnails). Fonts without usable OS/2 typographic metrics
-/// keep CoreText ascent + descent.
+/// `usesVerticalMetrics` YES and vmtx/vhea present, the height is the current
+/// vertical advance and the baseline is `height - vertical origin`, where the
+/// origin comes from CoreText's per-glyph vertical translation (VORG for CFF,
+/// a font-wide origin otherwise; single-glyph view). With NO, or without
+/// vmtx/vhea, the height is OS/2 sTypoAscender plus the magnitude of
+/// sTypoDescender and the baseline is that magnitude (all-glyphs grid and
+/// sidebar thumbnails). Fonts without usable OS/2 typographic metrics keep
+/// CoreText ascent + descent.
 + (GAGlyphPage)pageForVariant:(GAGlyphVariant *)variant
            usesVerticalMetrics:(BOOL)usesVerticalMetrics;
 

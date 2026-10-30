@@ -112,37 +112,6 @@ double variationDelta(View store, unsigned outer, unsigned inner,
     }
     return result;
 }
-DeltaSetIndex deltaSetIndex(View map, unsigned glyph) {
-    if (!map)
-        return {};
-    unsigned format = map.u8(0), formatBits = map.u8(1);
-    unsigned entrySize = ((formatBits >> 4) & 0x0f) + 1;
-    unsigned innerBits = (formatBits & 0x0f) + 1;
-    if (entrySize > 4)
-        throw InvalidTable("unsupported delta-set map entry size");
-    size_t count, at;
-    if (format == 0) {
-        count = map.u16(2);
-        at = 4;
-    } else if (format == 1) {
-        count = map.u32(2);
-        at = 6;
-    } else {
-        throw InvalidTable("unknown delta-set index map format");
-    }
-    if (!count)
-        return {};
-    map.array(at, count, entrySize);
-    size_t index = glyph < count ? glyph : count - 1;
-    uint32_t raw = 0;
-    for (unsigned i = 0; i < entrySize; i++)
-        raw = (raw << 8) | map.u8(at + index * entrySize + i);
-    DeltaSetIndex result;
-    result.valid = true;
-    result.inner = raw & ((1u << innerBits) - 1);
-    result.outer = raw >> innerBits;
-    return result;
-}
 double deviceDelta(View device, View store, const std::vector<double> &normalized) {
     if (!device)
         return 0;

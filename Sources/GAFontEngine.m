@@ -98,39 +98,29 @@ void GADrawGlyphVariant(GAGlyphVariant *variant, CGContextRef context) {
 - (instancetype)initWithFont:(CTFontRef)font
                 typoAscender:(CGFloat)typoAscender
                typoDescender:(CGFloat)typoDescender
-              hasTypoMetrics:(BOOL)hasTypoMetrics
-                      engine:(GASubstitutionEngine *)engine;
-/// VVAR tsbMapping delta in font units for this coordinate instance.
-- (CGFloat)topSideBearingDeltaForGlyph:(CGGlyph)glyph;
+              hasTypoMetrics:(BOOL)hasTypoMetrics;
 @end
 
 @implementation GAFontBox {
     CTFontRef _font;
-    GASubstitutionEngine *_engine;
 }
 
 - (instancetype)initWithFont:(CTFontRef)font
                 typoAscender:(CGFloat)typoAscender
                typoDescender:(CGFloat)typoDescender
-              hasTypoMetrics:(BOOL)hasTypoMetrics
-                      engine:(GASubstitutionEngine *)engine {
+              hasTypoMetrics:(BOOL)hasTypoMetrics {
     self = [super init];
     if (self) {
         _font = (CTFontRef)CFRetain(font);
         _typoAscender = typoAscender;
         _typoDescender = typoDescender;
         _hasTypoMetrics = hasTypoMetrics;
-        _engine = engine;
     }
     return self;
 }
 
 - (CTFontRef)font {
     return _font;
-}
-
-- (CGFloat)topSideBearingDeltaForGlyph:(CGGlyph)glyph {
-    return _engine != nil ? [_engine topSideBearingDeltaForGlyph:glyph] : 0;
 }
 
 - (void)dealloc {
@@ -198,10 +188,8 @@ NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text) {
 /// Requires vmtx/vhea; the caller checks their presence before using this method.
 + (CGSize)advanceInFontUnitsForVariant:(GAGlyphVariant *)variant;
 
-/// Requires a nonempty variant. Reports vmtx/vhea availability and the first
-/// glyph's top bearing; missing bearing records yield zero.
-+ (BOOL)verticalMetricsForVariant:(GAGlyphVariant *)variant
-                 topSideBearing:(CGFloat *)topSideBearing;
+/// Requires a nonempty variant. Reports vmtx/vhea availability.
++ (BOOL)hasVerticalMetricsForVariant:(GAGlyphVariant *)variant;
 @end
 
 @implementation GAFontDocument {
@@ -248,8 +236,7 @@ NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text) {
     _fontBox = [[GAFontBox alloc] initWithFont:_font
                                   typoAscender:typoAscender
                                  typoDescender:typoDescender
-                                hasTypoMetrics:hasTypoMetrics
-                                        engine:_substitutionEngine];
+                                hasTypoMetrics:hasTypoMetrics];
     if (source) {
         @synchronized(source) {
             _unicodeMap = source->_unicodeMap;
@@ -633,13 +620,16 @@ static CGFloat GAAdvanceWidthInFontUnits(CTFontRef font,
                      CGRectGetHeight(ink) * shapeToUnits);
     BOOL hasInk = !CGRectIsEmpty(ink);
 
-    CGFloat topSideBearing;
-    BOOL hasVertical = usesVerticalMetrics &&
-        [self verticalMetricsForVariant:variant topSideBearing:&topSideBearing];
+    BOOL hasVertical = usesVerticalMetrics && [self hasVerticalMetricsForVariant:variant];
+    CGFloat originUnits = 0;
     if (hasVertical) {
-        // VVAR tsbMapping is not reflected by CoreText's vertical origin API.
-        topSideBearing += [variant.fontBox topSideBearingDeltaForGlyph:
-            (CGGlyph)variant.glyphIDs.firstObject.unsignedShortValue];
+        // CoreText exposes the per-glyph vertical origin (VORG for CFF, a
+        // font-wide origin for TrueType). It is stable across variation axes
+        // when the font defines no origin variation.
+        CGGlyph glyph = (CGGlyph)variant.glyphIDs.firstObject.unsignedShortValue;
+        CGSize translation = CGSizeZero;
+        CTFontGetVerticalTranslationsForGlyphs(font, &glyph, &translation, 1);
+        originUnits = -translation.height * shapeToUnits;
     }
     CGFloat width;
     CGFloat height;
@@ -670,7 +660,7 @@ static CGFloat GAAdvanceWidthInFontUnits(CTFontRef font,
 
     CGFloat baseline;
     if (hasVertical) {
-        baseline = height - topSideBearing - CGRectGetMaxY(ink);
+        baseline = height - originUnits;
     } else if (hasTypoMetrics) {
         baseline = typoDescender;
     } else {
@@ -683,36 +673,12 @@ static CGFloat GAAdvanceWidthInFontUnits(CTFontRef font,
     return page;
 }
 
-+ (BOOL)verticalMetricsForVariant:(GAGlyphVariant *)variant
-                 topSideBearing:(CGFloat *)topSideBearing {
-    *topSideBearing = 0;
++ (BOOL)hasVerticalMetricsForVariant:(GAGlyphVariant *)variant {
     NSData *vmtx = CFBridgingRelease(CTFontCopyTable(variant.fontBox.font,
                                                      kCTFontTableVmtx, 0));
     NSData *vhea = CFBridgingRelease(CTFontCopyTable(variant.fontBox.font,
                                                      kCTFontTableVhea, 0));
-    if (vmtx.length < 4 || vhea.length < 36) {
-        return NO;
-    }
-    const uint8_t *vmtxBytes = vmtx.bytes;
-    const uint8_t *vheaBytes = vhea.bytes;
-    NSUInteger vmtxLength = vmtx.length;
-    uint16_t numberOfVMetrics = (uint16_t)((vheaBytes[34] << 8) | vheaBytes[35]);
-    if (numberOfVMetrics == 0) {
-        return YES;
-    }
-    NSUInteger glyphID = variant.glyphIDs.firstObject.unsignedIntegerValue;
-    NSUInteger offset;
-    if (glyphID < numberOfVMetrics) {
-        offset = glyphID * 4 + 2;
-    } else {
-        offset = (NSUInteger)numberOfVMetrics * 4 +
-                 (glyphID - numberOfVMetrics) * 2;
-    }
-    if (offset + 2 > vmtxLength) {
-        return YES;
-    }
-    *topSideBearing = (CGFloat)(int16_t)((vmtxBytes[offset] << 8) | vmtxBytes[offset + 1]);
-    return YES;
+    return vmtx.length >= 4 && vhea.length >= 36;
 }
 
 + (CGSize)advanceInFontUnitsForVariant:(GAGlyphVariant *)variant {

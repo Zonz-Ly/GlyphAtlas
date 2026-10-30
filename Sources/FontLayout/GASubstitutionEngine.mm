@@ -33,7 +33,6 @@ struct Resource {
     Kerning kerning;
     View fvar, avar;
     View os2, variationStore;
-    View verticalStore, verticalTSBMap;
     struct VariationIndex {
         bool present = false;
         unsigned outer = 0, inner = 0;
@@ -65,7 +64,6 @@ struct Resource {
         avar = tableBytes(font, tag('a', 'v', 'a', 'r'));
         read(tag('O', 'S', '/', '2'), [&](View data) { os2 = data; });
         read(tag('M', 'V', 'A', 'R'), [&](View data) { readVariationMetrics(data); });
-        read(tag('V', 'V', 'A', 'R'), [&](View data) { readVerticalMetrics(data); });
         if (!aat.empty()) {
             domains.push_back({true, 0, {}});
             for (auto selector : aat.selectors())
@@ -109,18 +107,6 @@ struct Resource {
         variationStore = store;
         ascenderVariation = ascender;
         descenderVariation = descender;
-    }
-    void readVerticalMetrics(View vvar) {
-        if (!vvar)
-            return;
-        if (vvar.size() < 24 || vvar.u16(0) != 1)
-            throw InvalidTable("unknown VVAR version");
-        View store = vvar.offset32(4);
-        View map = vvar.offset32(12);
-        if (!store || !map)
-            return;
-        verticalStore = store;
-        verticalTSBMap = map;
     }
     Tag verticalFeature(size_t branch) const {
         // Select by feature presence, never by whether this glyph is covered.
@@ -500,21 +486,6 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
     *ascender = top;
     *descender = bottom;
     return YES;
-}
-- (CGFloat)topSideBearingDeltaForGlyph:(CGGlyph)glyph {
-    const auto &r = *self.program->resource;
-    if (!r.verticalStore || !r.verticalTSBMap)
-        return 0;
-    try {
-        DeltaSetIndex index = deltaSetIndex(r.verticalTSBMap, glyph);
-        if (!index.valid)
-            return 0;
-        std::vector<double> normalized = [self normalizedCoordinates];
-        return variationDelta(r.verticalStore, index.outer, index.inner, normalized);
-    } catch (const InvalidTable &) {
-        // A malformed VVAR leaves the static vmtx bearing in place.
-        return 0;
-    }
 }
 - (Metrics)metrics {
     const auto &r = *self.program->resource;
