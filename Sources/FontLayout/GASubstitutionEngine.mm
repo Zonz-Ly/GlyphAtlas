@@ -32,7 +32,7 @@ struct Resource {
     AAT aat;
     Kerning kerning;
     View fvar, avar;
-    View os2, variationStore;
+    View os2, variationStore, head;
     struct VariationIndex {
         bool present = false;
         unsigned outer = 0, inner = 0;
@@ -63,6 +63,7 @@ struct Resource {
         fvar = tableBytes(font, tag('f', 'v', 'a', 'r'));
         avar = tableBytes(font, tag('a', 'v', 'a', 'r'));
         read(tag('O', 'S', '/', '2'), [&](View data) { os2 = data; });
+        read(tag('h', 'e', 'a', 'd'), [&](View data) { head = data; });
         read(tag('M', 'V', 'A', 'R'), [&](View data) { readVariationMetrics(data); });
         if (!aat.empty()) {
             domains.push_back({true, 0, {}});
@@ -458,7 +459,10 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
 }
 - (BOOL)typoMetricsAscender:(CGFloat *)ascender descender:(CGFloat *)descender {
     const auto &r = *self.program->resource;
-    if (r.os2.size() < 72)
+    // OS/2 typographic values are design units and need the head table's em
+    // scale. Bitmap-only fonts (no head) can store pixel metrics there; use
+    // CoreText's ascent/descent fallback instead.
+    if (r.head.size() < 54 || r.head.u16(18) == 0 || r.os2.size() < 72)
         return NO;
     double top = r.os2.s16(68);
     double bottom = r.os2.s16(70);
