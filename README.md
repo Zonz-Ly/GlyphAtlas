@@ -20,7 +20,7 @@ A native macOS font and alternate-glyph inspector. Type text to see every altern
 - Open a font, or drag one onto the app's window or Dock icon. Recently opened items are supported.
 - Use the menu bar to copy the font open in the current window to your user Fonts folder in one click.
 - When you open a variable font, a variation panel appears beside the window controls. Drag it out to keep it open. Select a numeric value and use `↑`/`↓` or `⇧↑`/`⇧↓` to adjust it.
-- Type one or more characters in the sidebar to see all associated glyphs. Use `⌥⏎` to insert a line break.
+- Type one or more characters in the sidebar to see all associated glyphs. Use `⌥⏎` to insert a line break. You can also right-click and choose “Saved Text” to save the current text or quickly enter text you’ve saved before.
 - Double-click a glyph, or select it and press `⏎`, to replace the default glyph and show its alternates. Hold `⇧` while doing this to add the glyph.
 - Use `↑`/`↓` to move between glyphs, `⌘↑`/`⌘↓` to move between base glyphs, and `⌥↑`/`⌥↓` to jump to the first or last glyph in the list.
 - Use `⌘C` to copy all encoded characters of the selected glyph.
@@ -74,7 +74,7 @@ ARCHS=x86_64 ./build.sh
 - 打開字體，也可以把字體拖到 app 的窗口或圖標上，支持最近開啟的項目。
 - 在菜單欄中可以把當前視窗的字體一鍵拷貝到用戶字體檔案夾。
 - 打開可變字體時，在紅綠燈旁邊會有一個可變參數設置面板，還可以拖出來固定。選中數字後還可以按 `↑`／`↓` 或 `⇧↑`／`⇧↓` 調整數值。
-- 在側邊欄中輸入單個或多個字符來查看所有關聯字形，可以用 `⌥⏎` 換行。
+- 在側邊欄中輸入單個或多個字符來查看所有關聯字形，可以用 `⌥⏎` 換行，還可以點右鍵找到「常用文字」，記住目前文字或快速輸入之前記住的文字。
 - 按兩下字形或選中後按 `⏎`，可以取代默認字形，並顯示該字形的替換字；如果同時按住 `⇧` 就是添加這個字了。
 - 使用方向鍵 `↑`／`↓` 選擇上下字形，使用 `⌘↑`／`⌘↓` 選擇上下默認字形，使用 `⌥↑`／`⌥↓` 選擇字形列表中的第一個和最後一個字形。
 - 使用 `⌘C` 複製選中字形的所有編碼字符。

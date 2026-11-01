@@ -368,6 +368,7 @@ static const CGFloat GABadgeHorizontalPadding = 4.0;
         name = gids.count > 0 ? [gids componentsJoinedByString:@" + "] : @"GID ?";
     }
     self.nameLabel.stringValue = name;
+    self.nameLabel.textColor = variant.isTemporary ? NSColor.secondaryLabelColor : NSColor.labelColor;
     self.nameLabel.font = [NSFont systemFontOfSize:12.5
                                            weight:variant.isBase
                                                ? NSFontWeightBold

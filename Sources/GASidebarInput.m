@@ -1,6 +1,8 @@
 #import "GASidebarInput.h"
 #import "GAInputFocus.h"
 #import "GAGlyphSelection.h"
+#import "GAInputMenus.h"
+#import "GAAppDelegate.h"
 
 /// YES when the shortcut modifiers in `modifiers` are exactly `expected`.
 /// Caps Lock, the function key, the numeric keypad, Help, and device-dependent
@@ -137,6 +139,13 @@ NSAttributedString *GAFieldTextFromModelText(NSAttributedString *modelText) {
 /// spaces. A newline is inserted as a marked U+23CE, so the field stays one
 /// line tall and the character can be told apart from a literal U+23CE.
 @implementation GASearchFieldEditor
+
+- (NSMenu *)menuForEvent:(NSEvent *)event {
+  NSMenu *menu = [super menuForEvent:event];
+  GAFilterInputMenu(menu, GAInputMenuFont);
+  GAInsertTextMenuItem(menu, [(GAAppDelegate *)NSApp.delegate savedTextMenuItemForWindow:self.window]);
+  return menu;
+}
 
 /// AppKit's single-line field editor does not map all four Command-arrow
 /// variants to the document start/end (Command-Down is a no-op). Handle them

@@ -501,12 +501,13 @@ bool AAT::hasVerticalSubstitutions() const {
     return false;
 }
 void AAT::substitute(Buffer &buffer, std::optional<AATSelector> selector, bool rtl, bool vertical,
-                     Trace *trace, bool verticalSubstitutionsOnly) const {
+                     Trace *trace, bool verticalSubstitutionsOnly,
+                     const std::vector<AATSelector> &overrides) const {
     std::string label = name();
     const Buffer original = trace && trace->inventory ? buffer : Buffer{};
     const auto originalClusters = clusters(original);
     Budget discoveryBudget(buffer.size());
-    std::set<std::tuple<Span, std::vector<Glyph>, std::string>> recorded;
+    std::set<std::tuple<Span, std::vector<Glyph>, std::string, std::vector<uint64_t>, bool>> recorded;
     if (selector)
         label += ":" + std::to_string(selector->type) + ":" + std::to_string(selector->setting);
     for (const auto &chain : chains_) {
@@ -514,6 +515,10 @@ void AAT::substitute(Buffer &buffer, std::optional<AATSelector> selector, bool r
         for (const auto &feature : chain.features)
             if (selector && feature.selector == *selector)
                 flags = (flags & feature.disable) | feature.enable;
+        for (auto override : overrides)
+            for (const auto &feature : chain.features)
+                if (feature.selector == override)
+                    flags = (flags & feature.disable) | feature.enable;
         for (const auto &sub : chain.subtables) {
             if (!(sub.flags & flags))
                 continue;
@@ -538,7 +543,11 @@ void AAT::substitute(Buffer &buffer, std::optional<AATSelector> selector, bool r
                     // the stylistic mappings of f, ff, or fi in later tables.
                     size_t prior = trace->changes.size();
                     auto append = [&](Change change) {
-                        if (recorded.emplace(change.source, change.glyphs, change.feature).second)
+                        change.vertical |= (!(sub.coverage & 0x20000000) &&
+                                            (sub.coverage & 0x80000000)) ||
+                                           (selector && selector->type == 4);
+                        if (recorded.emplace(change.source, change.glyphs, change.feature,
+                                             change.inputKey(), change.vertical).second)
                             trace->changes.push_back(std::move(change));
                     };
                     auto mapped = [&](Span source, const std::vector<Glyph> &glyphs) {
@@ -547,7 +556,7 @@ void AAT::substitute(Buffer &buffer, std::optional<AATSelector> selector, bool r
                             if (auto value = aatLookup(sub.data, glyph))
                                 glyph = Glyph(*value);
                         if (output != glyphs)
-                            append({source, std::move(output), label});
+                            append({source, std::move(output), label, {{source, glyphs}}});
                     };
                     auto explore = [&](Buffer candidate) {
                         Buffer input = candidate;
@@ -558,8 +567,11 @@ void AAT::substitute(Buffer &buffer, std::optional<AATSelector> selector, bool r
                             .run(sub.data, sub.type, extended_);
                         found.changed(input, candidate, label);
                         for (auto &change : found.changes) {
-                            if (reverse)
+                            if (reverse) {
                                 std::reverse(change.glyphs.begin(), change.glyphs.end());
+                                for (auto &input : change.inputs)
+                                    std::reverse(input.glyphs.begin(), input.glyphs.end());
+                            }
                             append(std::move(change));
                         }
                     };

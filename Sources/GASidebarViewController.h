@@ -26,13 +26,24 @@ typedef NS_ENUM(NSInteger, GAPendingSelectionScroll) {
 @property (nonatomic, readonly, getter=isInputFocused) BOOL inputFocused;
 
 - (void)setAttributedText:(NSAttributedString *)attributedText;
+/// Replaces the whole input through its native editor, retaining native undo
+/// and the existing plain-text/newline conversion.
+- (void)replaceInputText:(NSString *)text;
 - (void)setGroups:(NSArray<GACharacterGroup *> *)groups;
 /// Publishes a text/list snapshot, preserving visible rows across source edits.
-- (void)updateGroups:(NSArray<GACharacterGroup *> *)groups sourceText:(NSString *)text;
-/// Selects an exact layout glyph sequence and source span without reloading.
+/// A selected temporary row is rebound while its source and parent survive.
+- (void)updateGroups:(NSArray<GACharacterGroup *> *)groups
+           sourceText:(NSString *)text
+         fontDocument:(GAFontDocument *)document;
+/// Selects an exact layout glyph sequence and source span. A miss leaves the
+/// list, selection and scroll position untouched while lazy resolution runs.
 /// Does not scroll when the selected row is already fully visible. Otherwise
 /// centers its character group, then minimally reveals the selected row.
 - (BOOL)selectGlyphIDs:(NSArray<NSNumber *> *)glyphIDs textRange:(NSRange)range;
+/// Replaces the previous temporary row and selects the result in one update.
+/// The new row sits immediately below its existing parent.
+- (void)showGlyphResolution:(GAGlyphResolution *)resolution;
+- (void)selectBaseForTextRange:(NSRange)range;
 /// Explicit selection with a scroll policy. `Group` keeps the existing
 /// group-centering rules; `SelectedToTopIfNeeded` scrolls only when the
 /// selected row is completely outside the visible area, aligning it to the top.

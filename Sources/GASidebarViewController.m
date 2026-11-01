@@ -11,7 +11,8 @@
 @implementation GARowItem
 @end
 
-static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups) {
+static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups,
+                                            GAGlyphResolution *temporary) {
     NSMutableArray<GARowItem *> *rows = [NSMutableArray array];
     for (GACharacterGroup *group in groups) {
         for (GAGlyphVariant *variant in group.variants) {
@@ -19,6 +20,12 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
             variantRow.group = group;
             variantRow.variant = variant;
             [rows addObject:variantRow];
+            if (variant == temporary.parent) {
+                GARowItem *temporaryRow = [[GARowItem alloc] init];
+                temporaryRow.group = group;
+                temporaryRow.variant = temporary.variant;
+                [rows addObject:temporaryRow];
+            }
         }
     }
     return rows;
@@ -88,6 +95,7 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
 @property (nonatomic, strong) NSScrollView *scrollView;
 @property (nonatomic, strong) NSArray<GACharacterGroup *> *groups;
 @property (nonatomic, strong) NSArray<GARowItem *> *rows;
+@property (nonatomic, strong, nullable) GAGlyphResolution *temporaryResolution;
 @property (nonatomic, copy, nullable) NSString *displayedText;
 @property (nonatomic, strong, nullable) GAGlyphVariant *selectedVariant;
 @property (nonatomic) NSRange selectedVariantTextRange;
@@ -104,7 +112,11 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
 /// Rebinds the same visual row sequence, including shifted source ranges,
 /// without reloading the table, changing the selected row or scrolling.
 /// Returns NO if the inventory changed or a normal activation is pending.
-- (BOOL)updateGroupsWithSameRows:(NSArray<GACharacterGroup *> *)groups;
+- (BOOL)updateGroupsWithSameRows:(NSArray<GACharacterGroup *> *)groups
+                           rows:(NSArray<GARowItem *> *)rows;
+- (void)clearTemporaryGlyph;
+- (BOOL)selectVariant:(GAGlyphVariant *)variant inGroup:(GACharacterGroup *)group
+    temporaryResolution:(nullable GAGlyphResolution *)temporary;
 @end
 
 // Map unchanged source spans across the edit between two published texts.
@@ -267,6 +279,7 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
     BOOL wasSuppressed = self.suppressTextChangeCallback;
     self.suppressTextChangeCallback = YES;
     editor.richText = NO;
+    editor.usesFontPanel = NO;
     editor.typingAttributes = @{
         NSFontAttributeName: font,
         NSForegroundColorAttributeName: color,
@@ -363,6 +376,13 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
     if (editor != nil) {
         [self prepareFieldEditor];
     }
+}
+
+- (void)replaceInputText:(NSString *)text {
+    if (![self.searchField.window makeFirstResponder:self.searchField]) return;
+    [self prepareFieldEditor];
+    NSTextView *editor = (NSTextView *)self.searchField.currentEditor;
+    [editor insertText:text replacementRange:NSMakeRange(0, editor.string.length)];
 }
 
 - (void)selectGlyphKeyAfterNextReload:(NSString *)glyphKey
@@ -718,9 +738,9 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
         [self scrollTableToY:NSMaxY(selectedRect) - NSHeight(visibleRect)];
 }
 
-- (BOOL)updateGroupsWithSameRows:(NSArray<GACharacterGroup *> *)groups {
+- (BOOL)updateGroupsWithSameRows:(NSArray<GACharacterGroup *> *)groups
+                           rows:(NSArray<GARowItem *> *)rows {
     if (self.pendingSelectionGlyphKey != nil) return NO;
-    NSArray<GARowItem *> *rows = GARowsForGroups(groups);
     if (rows.count != self.rows.count) return NO;
     for (NSUInteger i = 0; i < rows.count; i++) {
         GARowItem *old = self.rows[i], *updated = rows[i];
@@ -735,6 +755,7 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
             old.group.insertedLigature != updated.group.insertedLigature ||
             old.variant.isBase != updated.variant.isBase ||
             old.variant.isLigature != updated.variant.isLigature ||
+            old.variant.isTemporary != updated.variant.isTemporary ||
             ![old.variant.glyphKey isEqualToString:updated.variant.glyphKey] ||
             ![old.variant.featureSources isEqualToArray:updated.variant.featureSources] ||
             ![old.variant.unicodeScalars isEqualToArray:updated.variant.unicodeScalars] ||
@@ -758,16 +779,37 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
 }
 
 - (BOOL)selectGlyphIDs:(NSArray<NSNumber *> *)glyphIDs textRange:(NSRange)range {
-    for (NSUInteger index = 0; index < self.rows.count; index++) {
-        GARowItem *row = self.rows[index];
+    for (GARowItem *row in self.rows) {
         if (!NSEqualRanges(row.group.textRange, range) || ![row.variant.glyphIDs isEqual:glyphIDs])
             continue;
+        return [self selectVariant:row.variant inGroup:row.group
+            temporaryResolution:row.variant.isTemporary ? self.temporaryResolution : nil];
+    }
+    return NO;
+}
+
+- (BOOL)selectVariant:(GAGlyphVariant *)variant inGroup:(GACharacterGroup *)group
+    temporaryResolution:(GAGlyphResolution *)temporary {
+    BOOL replacesRows = self.temporaryResolution != temporary;
+    NSArray<GARowItem *> *rows = replacesRows ? GARowsForGroups(self.groups, temporary) : self.rows;
+    for (NSUInteger index = 0; index < rows.count; index++) {
+        GARowItem *row = rows[index];
+        if (row.group != group || row.variant != variant) continue;
+        NSDictionary *anchor = replacesRows ? [self captureScrollAnchor] : nil;
         self.suppressSelectionCallback = YES;
         self.pendingSelectionGlyphKey = nil;
+        // Publish only the final row set. Removing an old temporary item must
+        // not select/notify its parent or navigate before the target is ready.
+        if (replacesRows) {
+            self.temporaryResolution = temporary;
+            self.rows = rows;
+            [self reloadTableGeometry];
+            [self restoreScrollAnchor:anchor];
+        }
         [self.tableView selectRowIndexes:[NSIndexSet indexSetWithIndex:index]
                     byExtendingSelection:NO];
         self.selectedVariant = row.variant;
-        self.selectedVariantTextRange = range;
+        self.selectedVariantTextRange = row.group.textRange;
         [self scrollGroupContainingRow:index];
         self.suppressSelectionCallback = NO;
         [self notifySelection];
@@ -776,19 +818,104 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
     return NO;
 }
 
-- (void)updateGroups:(NSArray<GACharacterGroup *> *)groups sourceText:(NSString *)text {
-    if ([self updateGroupsWithSameRows:groups]) {
+- (void)clearTemporaryGlyph {
+    if (!self.temporaryResolution) return;
+    NSDictionary *anchor = [self captureScrollAnchor];
+    GAGlyphVariant *selected = self.selectedVariant;
+    self.temporaryResolution = nil;
+    self.rows = GARowsForGroups(self.groups, nil);
+    self.suppressSelectionCallback = YES;
+    [self reloadTableGeometry];
+    [self.tableView deselectAll:nil];
+    for (NSUInteger i = 0; i < self.rows.count; i++)
+        if (self.rows[i].variant == selected) {
+            [self.tableView selectRowIndexes:[NSIndexSet indexSetWithIndex:i] byExtendingSelection:NO];
+            break;
+        }
+    [self restoreScrollAnchor:anchor];
+    self.suppressSelectionCallback = NO;
+}
+
+- (void)showGlyphResolution:(GAGlyphResolution *)resolution {
+    for (GARowItem *parent in self.rows) {
+        if (parent.variant != resolution.parent) continue;
+        [self selectVariant:resolution.variant inGroup:parent.group temporaryResolution:resolution];
+        return;
+    }
+}
+
+- (void)selectBaseForTextRange:(NSRange)range {
+    GACharacterGroup *group = [self groupForTextRange:range];
+    if (!group)
+        for (GACharacterGroup *candidate in self.groups)
+            if (NSIntersectionRange(candidate.textRange, range).length) {
+                group = candidate;
+                break;
+            }
+    for (GARowItem *row in self.rows)
+        if (row.variant.isBase && (!group || row.group == group)) {
+            [self selectGlyphIDs:row.variant.glyphIDs textRange:row.group.textRange];
+            return;
+        }
+}
+
+- (GAGlyphResolution *)rebindTemporaryForGroups:(NSArray<GACharacterGroup *> *)groups
+                                    sourceText:(NSString *)text
+                                      document:(GAFontDocument *)document {
+    GAGlyphResolution *temporary = self.temporaryResolution;
+    if (!temporary || self.selectedVariant != temporary.variant || self.pendingSelectionGlyphKey)
+        return nil;
+    GARowItem *oldParent = nil;
+    for (GARowItem *row in self.rows)
+        if (row.variant == temporary.parent) {
+            oldParent = row;
+            break;
+        }
+    if (!oldParent) return nil;
+    NSRange range = GARemapSourceRange(oldParent.group.textRange,
+        GASourceEditBetween(self.displayedText, text));
+    if (range.location == NSNotFound) return nil;
+    for (GACharacterGroup *group in groups) {
+        if (!NSEqualRanges(group.textRange, range) ||
+            ![group.text isEqualToString:oldParent.group.text] ||
+            group.seeded != oldParent.group.seeded ||
+            group.insertedLigature != oldParent.group.insertedLigature)
+            continue;
+        GAGlyphVariant *parent = nil;
+        for (GAGlyphVariant *variant in group.variants) {
+            // A newly persistent result takes over without a duplicate row.
+            if ([variant.glyphIDs isEqual:temporary.variant.glyphIDs]) return nil;
+            if ([variant.glyphIDs isEqual:temporary.parent.glyphIDs]) parent = variant;
+        }
+        if (!parent) return nil;
+        GAGlyphResolution *rebound = [[GAGlyphResolution alloc] init];
+        rebound.parent = parent;
+        rebound.variant = [document rebindVariant:temporary.variant content:group.text];
+        rebound.variant.sourceTextRange = range;
+        return rebound;
+    }
+    return nil;
+}
+
+- (void)updateGroups:(NSArray<GACharacterGroup *> *)groups
+           sourceText:(NSString *)text
+         fontDocument:(GAFontDocument *)document {
+    self.temporaryResolution = [self rebindTemporaryForGroups:groups sourceText:text document:document];
+    NSArray<GARowItem *> *rows = GARowsForGroups(groups, self.temporaryResolution);
+    if ([self updateGroupsWithSameRows:groups rows:rows]) {
         self.displayedText = text;
         return;
     }
-    [self setGroups:groups sourceText:text];
+    [self setGroups:groups sourceText:text rows:rows];
 }
 
 - (void)setGroups:(NSArray<GACharacterGroup *> *)groups {
-    [self setGroups:groups sourceText:nil];
+    self.temporaryResolution = nil;
+    [self setGroups:groups sourceText:nil rows:GARowsForGroups(groups, nil)];
 }
 
-- (void)setGroups:(NSArray<GACharacterGroup *> *)groups sourceText:(NSString *)text {
+- (void)setGroups:(NSArray<GACharacterGroup *> *)groups sourceText:(NSString *)text
+             rows:(NSArray<GARowItem *> *)rows {
     [NSAnimationContext beginGrouping];
     NSAnimationContext.currentContext.duration = 0;
     @try {
@@ -804,7 +931,7 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
 
         _groups = [groups copy];
         self.displayedText = text;
-        self.rows = GARowsForGroups(groups);
+        self.rows = rows;
 
         self.suppressSelectionCallback = YES;
         [self reloadTableGeometry];
@@ -1000,6 +1127,7 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
     if (row < 0 || row >= (NSInteger)self.rows.count) {
         self.selectedVariant = nil;
         self.selectedVariantTextRange = NSMakeRange(NSNotFound, 0);
+        [self clearTemporaryGlyph];
         [self notifySelection];
         return;
     }
@@ -1008,6 +1136,7 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
     self.pendingSelectionGlyphKey = nil;
     self.selectedVariant = self.rows[row].variant;
     self.selectedVariantTextRange = self.rows[row].group.textRange;
+    if (!self.selectedVariant.isTemporary) [self clearTemporaryGlyph];
     [self notifySelection];
 }
 

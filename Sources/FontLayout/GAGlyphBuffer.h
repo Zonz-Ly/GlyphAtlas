@@ -46,10 +46,20 @@ struct Change {
     Span source;
     std::vector<Glyph> glyphs;
     std::string feature;
+    std::vector<Cluster> inputs;
+    bool vertical = false;
+    bool inherited = false;
+    std::vector<uint64_t> inputKey() const;
+};
+struct TraceStep {
+    Buffer before, after;
+    std::string feature;
 };
 struct Trace {
     std::vector<Change> changes;
     bool inventory = false;
+    bool provenance = false;
+    std::vector<TraceStep> steps;
     void changed(const Buffer &before, const Buffer &after, const std::string &feature);
 };
 struct Budget {

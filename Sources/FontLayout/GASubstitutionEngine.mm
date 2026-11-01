@@ -7,9 +7,12 @@
 #import "GAVariation.h"
 #include <cmath>
 #include <map>
+#include <deque>
 
 using namespace ga::layout;
 @implementation GASubstitutionMatch
+@end
+@implementation GASubstitutionOrigin
 @end
 
 namespace {
@@ -194,6 +197,60 @@ std::vector<Glyph> identifiers(const Buffer &buffer) {
         result.push_back(item.glyph);
     return result;
 }
+std::optional<std::vector<Glyph>> sequenceAt(const Buffer &buffer, Span span, bool rtl) {
+    std::vector<Glyph> result;
+    Span covered{span.end, span.start};
+    for (const auto &item : buffer) {
+        if (item.source.start >= span.end || item.source.end <= span.start)
+            continue;
+        if (item.source.start < span.start || item.source.end > span.end)
+            return {};
+        covered = unite(covered, item.source);
+        if (item.glyph != 0xffff)
+            result.push_back(item.glyph);
+    }
+    if (!(covered == span))
+        return {};
+    if (rtl)
+        std::reverse(result.begin(), result.end());
+    return result;
+}
+bool verticalSource(const std::string &source) {
+    auto feature = source.substr(0, source.find(' '));
+    return feature == "vert" || feature == "vrt2" ||
+           source.rfind("morx:4:", 0) == 0 || source.rfind("mort:4:", 0) == 0;
+}
+struct OriginEdge {
+    std::vector<Glyph> glyphs;
+    std::string feature;
+    bool vertical;
+};
+GASubstitutionOrigin *origin(NSUInteger index, const std::vector<std::string> &features) {
+    GASubstitutionOrigin *result = [[GASubstitutionOrigin alloc] init];
+    result.sourceIndex = index;
+    NSMutableArray *labels = [NSMutableArray array];
+    for (const auto &feature : features) {
+        NSString *label = @(feature.c_str());
+        if (label.length && ![labels containsObject:label])
+            [labels addObject:label];
+    }
+    result.sources = labels;
+    return result;
+}
+bool primaryChange(const Change &change, const std::vector<Cluster> &roots) {
+    auto first = std::lower_bound(roots.begin(), roots.end(), change.source.start,
+        [](const Cluster &input, uint32_t start) { return input.source.end <= start; });
+    auto last = first;
+    while (last != roots.end() && last->source.start < change.source.end) ++last;
+    if (size_t(last - first) == change.inputs.size() &&
+        std::equal(first, last, change.inputs.begin(),
+                   [](const Cluster &a, const Cluster &b) {
+                       return a.source == b.source && a.glyphs == b.glyphs;
+                   }))
+        return true;
+    // A ligature can be formed from already localized/joined input glyphs.
+    return change.inputs.size() > 1;
+}
 std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Domain &domain) {
     std::vector<std::pair<Tag, unsigned>> result{{0, 0}};
     if (!domain.apple)
@@ -268,8 +325,7 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
                 label += " " + std::to_string(output.value);
             [outputs addObject:@{
                 @"glyphs" : glyphArray(output.glyphs),
-                @"source" : @(label.c_str()),
-                @"family" : @(output.directFamily)
+                @"source" : @(label.c_str())
             }];
         }
         if (r.verticalAAT)
@@ -281,7 +337,7 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
                 if (ids == std::vector<Glyph>{glyph}) continue;
                 std::string source = r.aat.name();
                 if (domain.selector) source += ":" + std::to_string(domain.selector->type) + ":" + std::to_string(domain.selector->setting);
-                [outputs addObject:@{@"glyphs":glyphArray(ids),@"source":@(source.c_str()),@"family":@YES}];
+                [outputs addObject:@{@"glyphs":glyphArray(ids),@"source":@(source.c_str()),@"vertical":@YES}];
             }
     } catch (const InvalidTable &) {
         // Keep any catalogue entries already collected.
@@ -299,41 +355,13 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
     auto runs = prepareText(text, r.cmap, selections);
     NSMutableArray *matches = [NSMutableArray array];
     NSMutableDictionary *seen = [NSMutableDictionary dictionary];
-    // Baselines are a glyph-level projection, not independent text queries.
-    // Cache repeated input sequences within this request, then attach each to
-    // its own UTF-16 span. Explicit seeds keep their exact original GIDs.
-    using BaseKey = std::tuple<Tag, bool, bool, std::vector<Glyph>>;
-    using BaseValue = std::pair<std::vector<Glyph>, std::vector<std::string>>;
-    std::map<BaseKey, BaseValue> baselines;
+    std::set<Span> inputSpans;
+    // The root is the prepared cmap/UVS input (or the user's literal seed).
+    // Shaping results are discoveries, never replacements for this row.
     for (const auto &run : runs)
         for (const auto &cluster : clusters(run.glyphs)) {
-            bool selected = false;
-            for (GAGlyphSelectionRun *selection in selections)
-                selected |= NSIntersectionRange(selection.range,
-                    NSMakeRange(cluster.source.start, cluster.source.end-cluster.source.start)).length > 0;
-            auto key = std::make_tuple(run.script, bool(run.level & 1), selected, cluster.glyphs);
-            auto found = baselines.find(key);
-            if (found == baselines.end()) {
-                Buffer basis;
-                for (const auto &item : run.glyphs)
-                    if (item.source.start < cluster.source.end && item.source.end > cluster.source.start) {
-                        basis.push_back(item);
-                        if (basis.back().form) basis.back().form = tag('i','s','o','l');
-                    }
-                Trace baselineTrace;
-                Settings settings; settings.script = run.script; settings.rtl = run.level & 1;
-                if (!selected && !r.domains.empty())
-                    r.substitute(basis, r.domains.front(), settings, &baselineTrace);
-                if (settings.rtl) std::reverse(basis.begin(), basis.end());
-                BaseValue value{identifiers(basis), {}};
-                for (const auto &change : baselineTrace.changes)
-                    if (std::find(value.second.begin(), value.second.end(), change.feature) == value.second.end())
-                        value.second.push_back(change.feature);
-                found = baselines.emplace(std::move(key), std::move(value)).first;
-            }
-            merge(seen, matches, cluster.source, found->second.first, nil, YES);
-            for (const auto &source : found->second.second)
-                merge(seen, matches, cluster.source, found->second.first, @(source.c_str()), YES);
+            merge(seen, matches, cluster.source, cluster.glyphs, nil, YES);
+            inputSpans.insert(cluster.source);
         }
     // Catalogue order comes first; text matches below merge into these rows.
     // Preserve other GIDs belonging to the same atomic input cluster.
@@ -346,6 +374,7 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
                 }
     for (const auto &domain : r.domains) {
         for (const auto &run : runs) {
+            const auto roots = clusters(run.glyphs);
             std::vector<Tag> scripts{run.script};
             if (!domain.apple)
                 for (GAGlyphSelectionRun *selection : selections)
@@ -378,49 +407,36 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
                             items = run.glyphs;
                             trace = {};
                         }
-                        for (auto &item : items)
-                            if (item.glyph >= r.glyphCount)
-                                item.glyph = 0;
                         for (auto change : trace.changes) {
+                            // Keep direct changes of the original input and
+                            // newly formed combinations. Later changes of a
+                            // variant are resolved lazily when clicked.
+                            if (!primaryChange(change, roots))
+                                continue;
                             if (settings.rtl)
                                 std::reverse(change.glyphs.begin(), change.glyphs.end());
                             merge(seen, matches, change.source, change.glyphs,
                                   @(change.feature.c_str()), NO);
                         }
-                        if (settings.rtl)
-                            std::reverse(items.begin(), items.end());
-                        for (const auto &cluster : clusters(items)) {
-                            merge(seen, matches, cluster.source, cluster.glyphs, nil, NO);
-                            for (const auto &change : trace.changes)
-                                if (change.source.start < cluster.source.end &&
-                                    change.source.end > cluster.source.start)
-                                    merge(seen, matches, cluster.source, cluster.glyphs,
-                                          @(change.feature.c_str()), NO);
-                        }
-                        if (items.empty() && !run.source.empty()) {
-                            merge(seen, matches, run.source, {}, nil, NO);
-                            for (const auto &change : trace.changes)
-                                merge(seen, matches, run.source, {}, @(change.feature.c_str()),
-                                      NO);
-                        }
                     }
             }
         }
     }
-    // Default shaping may itself change the input GID. Its direct families
-    // share the same cached catalogue; contextual candidates belong to the
-    // original queried GID above, not an unconstrained transitive closure.
-    NSArray *bases = [matches copy];
-    for (GASubstitutionMatch *base in bases)
-        if (base.base && base.glyphIDs.count == 1)
-            for (NSDictionary *output in
-                 [self relatedOutputs:base.glyphIDs.firstObject.unsignedShortValue]) {
-                if (![output[@"family"] boolValue])
-                    continue;
+    // A first-formed composition is a browsing root in its own right.
+    // List its direct catalogue outputs, without closing over their outputs.
+    NSArray *firstLevel = [matches copy];
+    std::set<Span> compositionRoots;
+    for (GASubstitutionMatch *match in firstLevel) {
+        Span span{uint32_t(match.sourceRange.location), uint32_t(NSMaxRange(match.sourceRange))};
+        if (inputSpans.count(span) || !compositionRoots.insert(span).second)
+            continue;
+        auto original = glyphVector(match.glyphIDs);
+        for (size_t i = 0; i < original.size(); i++)
+            for (NSDictionary *output in [self relatedOutputs:original[i]])
                 merge(seen, matches,
-                      {uint32_t(base.sourceRange.location), uint32_t(NSMaxRange(base.sourceRange))},
-                      glyphVector(output[@"glyphs"]), output[@"source"], NO);
-            }
+                      {uint32_t(match.sourceRange.location), uint32_t(NSMaxRange(match.sourceRange))},
+                      replacingGlyph(original, i, output), output[@"source"], NO);
+    }
     [self.program.cache setObject:matches
                            forKey:queryKey
                              cost:text.length * 2 + matches.count * 128];
@@ -449,6 +465,191 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
         // Failed discovery yields no candidates.
     }
     return @[];
+}
+- (GASubstitutionOrigin *)originForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
+                                sourceRange:(NSRange)sourceRange
+                                       text:(NSString *)text
+                                 selections:(NSArray<GAGlyphSelectionRun *> *)selections
+                                 candidates:(NSArray<NSArray<NSNumber *> *> *)candidates
+                                   vertical:(BOOL)vertical
+                       contextualAlternates:(BOOL)contextualAlternates
+                                  ligatures:(BOOL)ligatures
+                                  cancelled:(BOOL (^)(void))cancelled {
+    if (!sourceRange.length || NSMaxRange(sourceRange) > text.length || !candidates.count)
+        return nil;
+    const auto &r = *self.program->resource;
+    Span span{uint32_t(sourceRange.location), uint32_t(NSMaxRange(sourceRange))};
+    auto target = glyphVector(glyphIDs);
+    std::vector<std::vector<Glyph>> sources;
+    for (NSArray *candidate in candidates)
+        sources.push_back(glyphVector(candidate));
+    try {
+        size_t branch = r.gsub.variationBranch([self normalizedCoordinates]);
+        // This is our executor's replay, not a trace of TextKit internals.
+        // Accept it only when its final sequence and complete source agree.
+        for (const auto &run : prepareText(text, r.cmap, selections)) {
+            if (cancelled()) return nil;
+            if (run.source.start > span.start || run.source.end < span.end) continue;
+            Settings settings;
+            settings.script = run.script;
+            settings.rtl = run.level & 1;
+            settings.vertical = vertical;
+            if (vertical) settings.features[r.verticalFeature(branch)] = 1;
+            if (!contextualAlternates)
+                for (const char *name : {"calt", "cswh", "rclt"})
+                    settings.features[tag(name)] = 0;
+            if (!ligatures)
+                for (const char *name : {"liga", "clig", "dlig", "hlig", "rlig"})
+                    settings.features[tag(name)] = 0;
+            Buffer items = run.glyphs;
+            Trace trace;
+            trace.provenance = true;
+            if (!r.aat.empty()) {
+                std::vector<AATSelector> overrides;
+                if (!contextualAlternates)
+                    for (unsigned selector : {1u, 3u, 5u}) overrides.push_back({36, selector});
+                if (!ligatures)
+                    for (unsigned selector = 1; selector <= 21; selector += 2)
+                        overrides.push_back({1, selector});
+                r.aat.substitute(items, {}, settings.rtl, vertical, &trace, false, overrides);
+            } else
+                r.gsub.substitute(items, r.gdef, settings, branch, &trace);
+            auto final = sequenceAt(items, span, settings.rtl);
+            if (!final || *final != target) continue;
+            auto current = target;
+            std::vector<std::string> labels;
+            for (auto step = trace.steps.rbegin(); step != trace.steps.rend(); ++step) {
+                auto after = sequenceAt(step->after, span, settings.rtl);
+                auto before = sequenceAt(step->before, span, settings.rtl);
+                if (!after || *after != current || !before) break;
+                if (*before == current) continue;
+                labels.insert(labels.begin(), step->feature);
+                for (size_t i = 0; i < sources.size(); i++)
+                    if (*before == sources[i]) return origin(i, labels);
+                current = std::move(*before);
+            }
+        }
+    } catch (const InvalidTable &) {
+        // An unavailable replay proceeds to independent source discovery.
+    }
+
+    // Multi-source breadth-first traversal. Two visits per sequence retain
+    // paths with/without a vertical feature separately. Mode preference wins
+    // over distance; BFS then resolves shortest path and sidebar order.
+    struct State {
+        std::vector<Glyph> glyphs;
+        size_t source;
+        bool vertical;
+        std::vector<std::string> labels;
+    };
+    std::deque<State> pending;
+    std::set<std::pair<std::vector<Glyph>, bool>> visited;
+    std::map<std::vector<Glyph>, std::vector<OriginEdge>> edges;
+    GASubstitutionOrigin *otherMode = nil;
+    Budget budget(text.length);
+    size_t queuedGlyphs = 0;
+    try {
+        for (size_t i = 0; i < sources.size(); i++)
+            if (visited.emplace(sources[i], false).second) {
+                pending.push_back({sources[i], i, false, {}});
+                queuedGlyphs += sources[i].size();
+            }
+        while (!pending.empty()) {
+            if (cancelled()) return nil;
+            budget.step();
+            State state = std::move(pending.front());
+            pending.pop_front();
+            queuedGlyphs -= state.glyphs.size();
+            if (state.glyphs == target) {
+                if (state.vertical == bool(vertical)) return origin(state.source, state.labels);
+                if (!otherMode) otherMode = origin(state.source, state.labels);
+                continue;
+            }
+            if (otherMode && !vertical && state.vertical) continue;
+            auto [entry, inserted] = edges.emplace(state.glyphs, std::vector<OriginEdge>{});
+            auto &outputs = entry->second;
+            if (inserted) {
+                // Static single-GID catalogue plus actual full-context matches
+                // cover contextual and multi-GID/composition sources alike.
+                for (size_t i = 0; i < state.glyphs.size(); i++)
+                    for (NSDictionary *output in [self relatedOutputs:state.glyphs[i]]) {
+                        std::string label = [output[@"source"] UTF8String];
+                        outputs.push_back({replacingGlyph(state.glyphs, i, output), label,
+                                           verticalSource(label) || [output[@"vertical"] boolValue]});
+                    }
+                NSMutableArray *seedRuns = [NSMutableArray array];
+                for (GAGlyphSelectionRun *selection in selections)
+                    if (!NSIntersectionRange(selection.range, sourceRange).length)
+                        [seedRuns addObject:selection];
+                GAGlyphSelectionRun *seed = [[GAGlyphSelectionRun alloc] init];
+                seed.range = sourceRange;
+                seed.selection = [[GAGlyphSelection alloc]
+                    initWithSourceText:[text substringWithRange:sourceRange]
+                    glyphIDs:glyphArray(state.glyphs) featureSources:@[] ligature:NO];
+                [seedRuns addObject:seed];
+                [seedRuns sortUsingComparator:^NSComparisonResult(GAGlyphSelectionRun *a,
+                                                                   GAGlyphSelectionRun *b) {
+                    return a.range.location < b.range.location ? NSOrderedAscending
+                         : a.range.location > b.range.location ? NSOrderedDescending : NSOrderedSame;
+                }];
+                for (const auto &run : prepareText(text, r.cmap, seedRuns)) {
+                    if (run.source.start > span.start || run.source.end < span.end) continue;
+                    for (const auto &domain : r.domains)
+                        for (Tag language : domain.apple ? std::vector<Tag>{0}
+                                                       : r.gsub.languages(run.script))
+                            for (auto plan : plans(r, domain))
+                                for (bool orientation : domain.apple && r.verticalAAT
+                                                            ? std::vector<bool>{false, true}
+                                                            : std::vector<bool>{false}) {
+                                    if (cancelled()) return nil;
+                                    budget.step();
+                                    Settings settings;
+                                    settings.script = run.script;
+                                    settings.language = language;
+                                    settings.rtl = run.level & 1;
+                                    settings.vertical = orientation;
+                                    if (plan.first) settings.features[plan.first] = plan.second;
+                                    Buffer items = run.glyphs;
+                                    Trace found;
+                                    found.inventory = true;
+                                    try {
+                                        r.substitute(items, domain, settings, &found);
+                                    } catch (const InvalidTable &) {
+                                        continue;
+                                    }
+                                    for (const auto &change : found.changes) {
+                                        if (!(change.source == span) || change.inherited) continue;
+                                        std::vector<Glyph> input;
+                                        for (const auto &cluster : change.inputs)
+                                            input.insert(input.end(), cluster.glyphs.begin(), cluster.glyphs.end());
+                                        auto output = change.glyphs;
+                                        if (settings.rtl) {
+                                            std::reverse(input.begin(), input.end());
+                                            std::reverse(output.begin(), output.end());
+                                        }
+                                        if (input == state.glyphs)
+                                            outputs.push_back({std::move(output), change.feature,
+                                                verticalSource(change.feature) || change.vertical});
+                                    }
+                                }
+                }
+            }
+            for (const auto &output : outputs) {
+                budget.step();
+                bool containsVertical = state.vertical || output.vertical;
+                if (output.glyphs.empty() || output.glyphs == state.glyphs ||
+                    !visited.emplace(output.glyphs, containsVertical).second) continue;
+                budget.growth(queuedGlyphs + output.glyphs.size());
+                queuedGlyphs += output.glyphs.size();
+                State next{output.glyphs, state.source, containsVertical, state.labels};
+                next.labels.push_back(output.feature);
+                pending.push_back(std::move(next));
+            }
+        }
+    } catch (const InvalidTable &) {
+        // Cycles, malformed data and excessive discovery cannot stall a click.
+    }
+    return otherMode;
 }
 - (std::vector<double>)normalizedCoordinates {
     const auto &r = *self.program->resource;
@@ -585,6 +786,7 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
     try {
         const auto &r = *self.program->resource;
         auto original = glyphVector(glyphIDs);
+        const auto roots = clusters(literalBuffer(original));
         Span whole{0, uint32_t(original.size())};
         NSMutableArray *matches = [NSMutableArray array];
         NSMutableDictionary *seen = [NSMutableDictionary dictionary];
@@ -608,13 +810,9 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
                         Trace trace;
                         trace.inventory = true;
                         r.substitute(items, domain, settings, &trace);
-                        auto ids = identifiers(items);
-                        merge(seen, matches, whole, ids, nil, NO);
-                        for (const auto &change : trace.changes)
-                            merge(seen, matches, whole, ids,
-                                  @(change.feature.c_str()), NO);
                         for (const auto &change : trace.changes) {
-                            if (change.source.end > original.size())
+                            if (!primaryChange(change, roots) ||
+                                change.source.end > original.size())
                                 continue;
                             auto sequence = original;
                             sequence.erase(sequence.begin() + change.source.start,

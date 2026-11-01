@@ -105,8 +105,8 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
     NSSize current = self.frame.size;
     if (fabs(current.width - width) > 0.5 || fabs(current.height - target) > 0.5) {
         self.frame = NSMakeRect(0, 0, width, target);
-        [self setNeedsDisplay:YES];
     }
+    [self setNeedsDisplay:YES];
 }
 
 - (CGFloat)contentLeft {

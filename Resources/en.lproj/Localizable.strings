@@ -63,7 +63,7 @@
 "Help.01" = "Open a font, or drag one onto the app's window or Dock icon. Recently opened items are supported.";
 "Help.02" = "Use the menu bar to copy the font open in the current window to your user Fonts folder in one click.";
 "Help.03" = "When you open a variable font, a variation panel appears beside the window controls. Drag it out to keep it open. Select a numeric value and use ↑/↓ or ⇧↑/⇧↓ to adjust it.";
-"Help.04" = "Type one or more characters in the sidebar to see all associated glyphs. Use ⌥⏎ to insert a line break.";
+"Help.04" = "Type one or more characters in the sidebar to see all associated glyphs. Use ⌥⏎ to insert a line break. You can also right-click and choose “Saved Text” to save the current text or quickly enter text you’ve saved before.";
 "Help.05" = "Double-click a glyph, or select it and press ⏎, to replace the default glyph and show its alternates. Hold ⇧ while doing this to add the glyph.";
 "Help.06" = "Use ↑/↓ to move between glyphs, ⌘↑/⌘↓ to move between base glyphs, and ⌥↑/⌥↓ to jump to the first or last glyph in the list.";
 "Help.07" = "Use ⌘C to copy all encoded characters of the selected glyph.";
@@ -90,3 +90,9 @@
 "Keep Both" = "Keep Both";
 "Stop" = "Stop";
 "Replace" = "Replace";
+
+/* User-saved plain text. */
+"Saved Text" = "Saved Text";
+"Save Current Text" = "Save Current Text";
+"Remove from Saved Text" = "Remove from Saved Text";
+"No Saved Text" = "No Saved Text";

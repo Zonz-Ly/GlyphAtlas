@@ -217,6 +217,16 @@ class Substitution {
                     trace_->changed(before, buffer_, featureLabel(step));
                 }
             }
+        } else if (trace_ && trace_->provenance) {
+            auto choices = rules(step, at);
+            if (!choices.empty()) {
+                const auto &rule = choices.front();
+                bool nested = rule.subtable->type == 5 || rule.subtable->type == 6;
+                Buffer before = nested ? Buffer{} : buffer_;
+                result = subtable(*rule.subtable, lookup, at, step, rule.pattern);
+                // Nested actions record their own actual input/output.
+                if (!nested) trace_->changed(before, buffer_, featureLabel(step));
+            }
         } else {
             for (const auto &sub : lookup.subtables) {
                 result = subtable(sub, lookup, at, step);
@@ -277,7 +287,7 @@ class Substitution {
         for (const auto &step : plan) {
             activeFeature_ = step.feature;
             const auto &lookup = lookups_[step.lookup];
-            Buffer before = trace_ ? buffer_ : Buffer{};
+            Buffer before = trace_ && !trace_->provenance ? buffer_ : Buffer{};
             if (lookup.reverse) {
                 for (size_t i = buffer_.size(); i > 0; i--)
                     if (allowed(buffer_[i - 1], step))
@@ -292,7 +302,7 @@ class Substitution {
                     auto result = apply(step.lookup, i, step.value);
                     i = result.matched ? result.next : i + 1;
                 }
-            if (trace_) {
+            if (trace_ && !trace_->provenance) {
                 trace_->changed(before, buffer_, featureLabel(step));
             }
         }
@@ -354,18 +364,22 @@ void discover(const std::vector<Lookup> &lookups, const GDEF &gdef, Buffer &buff
               const std::vector<LookupStep> &steps, Trace &trace) {
     Budget budget(buffer.size());
     std::vector<CandidateState> states{{buffer, {}, {}}};
-    std::set<std::tuple<Span, std::vector<Glyph>, std::string>> recorded;
+    std::set<std::tuple<Span, std::vector<Glyph>, std::string, std::vector<uint64_t>>> recorded;
     auto record = [&](const Trace &found, const Origins &origins) {
         auto add = [&](Change change) {
-            if (recorded.emplace(change.source, change.glyphs, change.feature).second)
+            if (recorded.emplace(change.source, change.glyphs, change.feature, change.inputKey()).second)
                 trace.changes.push_back(std::move(change));
         };
         for (const auto &change : found.changes) {
             add(change);
             for (const auto &[source, features] : origins)
                 if (intersects(source, change.source))
-                    for (const auto &feature : features)
-                        add({change.source, change.glyphs, feature});
+                    for (const auto &feature : features) {
+                        Change inherited = change;
+                        inherited.feature = feature;
+                        inherited.inherited = true;
+                        add(std::move(inherited));
+                    }
         }
     };
     auto remember = [](CandidateState &state, const Trace &found) {

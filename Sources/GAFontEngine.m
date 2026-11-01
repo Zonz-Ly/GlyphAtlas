@@ -9,6 +9,9 @@ const CGFloat GAFontShapingSize = 200.0;
 @implementation GAAllGlyphEntry
 @end
 
+@implementation GAGlyphResolution
+@end
+
 #pragma mark - GAGlyphVariant
 
 @interface GAGlyphVariant ()
@@ -175,6 +178,18 @@ NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text) {
     return groups;
 }
 
+NSArray<GACharacterGroup *> *GAGroupsForScanResult(NSString *text, GARawScanResult *result) {
+    NSMutableArray *groups = [NSMutableArray arrayWithCapacity:result.sourceRanges.count];
+    for (NSValue *value in result.sourceRanges) {
+        GACharacterGroup *group = [[GACharacterGroup alloc] init];
+        group.textRange = value.rangeValue;
+        group.text = [text substringWithRange:group.textRange];
+        group.variants = @[];
+        [groups addObject:group];
+    }
+    return groups;
+}
+
 /// The shared immutable substitution program owns table bytes, not this document.
 @interface GAFontDocument ()
 - (instancetype)initWithDescriptor:(CTFontDescriptorRef)descriptor URL:(NSURL *)url
@@ -271,6 +286,7 @@ NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text) {
     }
     GARawScanResult *rebound = [[GARawScanResult alloc] init];
     rebound.candidates = candidates;
+    rebound.sourceRanges = result.sourceRanges;
     return rebound;
 }
 - (GAGlyphVariant *)rebindVariant:(GAGlyphVariant *)old content:(NSString *)content {
@@ -283,6 +299,7 @@ NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text) {
     v.unicodeScalars = old.unicodeScalars;
     v.glyphName = old.glyphName;
     v.ligature = old.ligature;
+    v.temporary = old.temporary;
     v.fromGlyphSeed = old.fromGlyphSeed;
     v.sourceTextRange = old.sourceTextRange;
     return v;
@@ -403,11 +420,71 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
 
 #pragma mark - Font substitution discovery
 
+- (GAGlyphResolution *)resolveGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
+                            textRange:(NSRange)range
+                                 text:(NSString *)text
+                           selections:(NSArray<GAGlyphSelectionRun *> *)selections
+                               groups:(NSArray<GACharacterGroup *> *)groups
+                             vertical:(BOOL)vertical
+                 contextualAlternates:(BOOL)contextualAlternates
+                            ligatures:(BOOL)ligatures
+                            cancelled:(BOOL (^)(void))cancelled {
+    NSMutableArray<GAGlyphVariant *> *parents = [NSMutableArray array];
+    NSMutableArray *sequences = [NSMutableArray array];
+    for (GACharacterGroup *group in groups) {
+        if (!NSEqualRanges(group.textRange, range)) continue;
+        for (GAGlyphVariant *variant in group.variants) {
+            [parents addObject:variant];
+            [sequences addObject:variant.glyphIDs];
+        }
+    }
+    GASubstitutionOrigin *source = [_substitutionEngine originForGlyphIDs:glyphIDs
+        sourceRange:range text:text selections:selections candidates:sequences
+        vertical:vertical contextualAlternates:contextualAlternates ligatures:ligatures
+        cancelled:cancelled];
+    if (!source || cancelled()) return nil;
+    GAGlyphVariant *parent = parents[source.sourceIndex];
+    GAGlyphVariant *variant = [[GAGlyphVariant alloc] init];
+    variant.fontBox = _fontBox;
+    variant.glyphIDs = glyphIDs;
+    variant.positions = [_substitutionEngine positionsForGlyphIDs:glyphIDs
+        content:[text substringWithRange:range]];
+    [variant addFeatureSources:source.sources];
+    variant.sourceTextRange = range;
+    variant.ligature = parent.isLigature;
+    variant.fromGlyphSeed = parent.fromGlyphSeed;
+    variant.temporary = YES;
+    [self decorateVariant:variant withUnicodeMap:self.unicodeMap];
+    GAGlyphResolution *result = [[GAGlyphResolution alloc] init];
+    result.parent = parent;
+    result.variant = variant;
+    return result;
+}
+
 - (GARawScanResult *)rawScanContent:(NSString *)content
                          selections:(NSArray<GAGlyphSelectionRun *> *)selections {
-    NSArray<GACharacterGroup *> *groups = GAGroupsForText(content);
     NSArray<GASubstitutionMatch *> *matches = [_substitutionEngine discoverText:content
                                                                      selections:selections];
+    NSMutableArray<NSValue *> *ranges = [NSMutableArray array];
+    for (GASubstitutionMatch *match in matches)
+        if (match.base) [ranges addObject:[NSValue valueWithRange:match.sourceRange]];
+    NSComparator order = ^NSComparisonResult(NSValue *a, NSValue *b) {
+        return a.rangeValue.location < b.rangeValue.location ? NSOrderedAscending
+             : a.rangeValue.location > b.rangeValue.location ? NSOrderedDescending : NSOrderedSame;
+    };
+    [ranges sortUsingComparator:order];
+    NSArray<NSValue *> *roots = [ranges copy];
+    NSUInteger root = 0;
+    for (GACharacterGroup *group in GAGroupsForText(content)) {
+        while (root < roots.count && NSMaxRange(roots[root].rangeValue) <= group.textRange.location)
+            root++;
+        if (root == roots.count || roots[root].rangeValue.location >= NSMaxRange(group.textRange))
+            [ranges addObject:[NSValue valueWithRange:group.textRange]];
+    }
+    [ranges sortUsingComparator:order];
+    GARawScanResult *result = [[GARawScanResult alloc] init];
+    result.sourceRanges = ranges;
+    NSArray<GACharacterGroup *> *groups = GAGroupsForScanResult(content, result);
     NSMutableArray *candidates = [NSMutableArray array];
     for (GASubstitutionMatch *match in matches) {
         if (!match.sourceRange.length || NSMaxRange(match.sourceRange) > content.length)
@@ -445,7 +522,6 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
         c.base = match.base && first == last;
         [candidates addObject:c];
     }
-    GARawScanResult *result = [[GARawScanResult alloc] init];
     result.candidates = candidates;
     return result;
 }
@@ -485,8 +561,7 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
         [variant addFeatureSources:candidate.sources];
         variant.base = candidate.isBase;
         variant.fromGlyphSeed = candidate.fromGlyphSeed;
-        if (candidate.fromGlyphSeed || candidate.ligature)
-            variant.sourceTextRange = candidate.sourceRange;
+        variant.sourceTextRange = candidate.sourceRange;
         if (candidate.ligature) {
             variant.ligature = YES;
         }

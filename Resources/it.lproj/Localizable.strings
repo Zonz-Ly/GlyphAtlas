@@ -63,7 +63,7 @@
 "Help.01" = "Apri un font oppure trascinalo sulla finestra dell’app o sulla sua icona nel Dock. Sono supportati anche i file usati di recente.";
 "Help.02" = "Dalla barra dei menu puoi copiare con un clic il font aperto nella finestra attuale nella tua cartella dei font.";
 "Help.03" = "Quando apri un font variabile, accanto ai controlli della finestra appare un pannello delle variazioni. Trascinalo all’esterno per tenerlo aperto. Seleziona un valore numerico e regolalo con ↑/↓ oppure ⇧↑/⇧↓.";
-"Help.04" = "Inserisci uno o più caratteri nella barra laterale per vedere tutti i glifi associati. Usa ⌥⏎ per inserire un’interruzione di riga.";
+"Help.04" = "Inserisci uno o più caratteri nella barra laterale per vedere tutti i glifi associati. Usa ⌥⏎ per inserire un’interruzione di riga. Puoi anche fare clic destro e scegliere «Testi salvati» per salvare il testo attuale o inserire rapidamente un testo già salvato.";
 "Help.05" = "Fai doppio clic su un glifo, oppure selezionalo e premi A capo, per sostituire il glifo predefinito e mostrarne le alternative. Tieni premuto Maiuscole durante questa operazione per aggiungere il glifo.";
 "Help.06" = "Usa ↑/↓ per spostarti tra i glifi, ⌘↑/⌘↓ tra i glifi di base e ⌥↑/⌥↓ per passare al primo o all’ultimo glifo dell’elenco.";
 "Help.07" = "Usa ⌘C per copiare tutti i caratteri codificati del glifo selezionato.";
@@ -90,3 +90,9 @@
 "Keep Both" = "Mantieni entrambi";
 "Stop" = "Interrompi";
 "Replace" = "Sostituisci";
+
+/* User-saved plain text. */
+"Saved Text" = "Testi salvati";
+"Save Current Text" = "Salva il testo attuale";
+"Remove from Saved Text" = "Rimuovi dai testi salvati";
+"No Saved Text" = "Nessun testo salvato";

@@ -63,7 +63,7 @@
 "Help.01" = "Abra uma fonte ou arraste-a para a janela do app ou seu ícone no Dock. Arquivos usados recentemente também são compatíveis.";
 "Help.02" = "Na barra de menus, copie com um clique a fonte aberta na janela atual para a pasta de fontes do seu usuário.";
 "Help.03" = "Ao abrir uma fonte variável, um painel de variações aparece ao lado dos controles da janela. Arraste-o para fora para mantê-lo aberto. Selecione um valor numérico e ajuste-o com ↑/↓ ou ⇧↑/⇧↓.";
-"Help.04" = "Digite um ou mais caracteres na barra lateral para ver todos os glifos associados. Use ⌥⏎ para inserir uma quebra de linha.";
+"Help.04" = "Digite um ou mais caracteres na barra lateral para ver todos os glifos associados. Use ⌥⏎ para inserir uma quebra de linha. Você também pode clicar com o botão direito e escolher “Textos salvos” para salvar o texto atual ou inserir rapidamente um texto salvo antes.";
 "Help.05" = "Clique duas vezes em um glifo, ou selecione-o e pressione Return, para substituir o glifo padrão e mostrar suas alternativas. Mantenha Shift pressionado ao fazer isso para adicionar o glifo.";
 "Help.06" = "Use ↑/↓ para navegar entre glifos, ⌘↑/⌘↓ entre glifos de base e ⌥↑/⌥↓ para ir ao primeiro ou ao último glifo da lista.";
 "Help.07" = "Use ⌘C para copiar todos os caracteres codificados do glifo selecionado.";
@@ -90,3 +90,9 @@
 "Keep Both" = "Manter Ambos";
 "Stop" = "Parar";
 "Replace" = "Substituir";
+
+/* User-saved plain text. */
+"Saved Text" = "Textos salvos";
+"Save Current Text" = "Salvar texto atual";
+"Remove from Saved Text" = "Remover dos textos salvos";
+"No Saved Text" = "Nenhum texto salvo";

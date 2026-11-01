@@ -1,4 +1,5 @@
 #import "GAInputFocus.h"
+#import "GAInputMenus.h"
 
 NSNotificationName const GAInputBlankClickNotification = @"GAInputBlankClickNotification";
 
@@ -91,10 +92,34 @@ static void GAInputEditingDidEnd(void) {
     });
 }
 
+@interface GANumericFieldEditor : NSTextView
+@end
+@implementation GANumericFieldEditor
+- (NSMenu *)menuForEvent:(NSEvent *)event {
+    NSMenu *menu = [super menuForEvent:event];
+    GAFilterInputMenu(menu, GAInputMenuSpelling | GAInputMenuSubstitutions);
+    return menu;
+}
+@end
+
 @interface GAInputTextFieldCell : NSTextFieldCell
+@property(nonatomic, strong) GANumericFieldEditor *numericEditor;
 @end
 
 @implementation GAInputTextFieldCell
+- (NSTextView *)fieldEditorForView:(NSView *)controlView {
+    (void)controlView;
+    if (!self.numericEditor) {
+        self.numericEditor = [[GANumericFieldEditor alloc] initWithFrame:NSZeroRect];
+        self.numericEditor.fieldEditor = YES;
+    }
+    return self.numericEditor;
+}
+- (NSText *)setUpFieldEditorAttributes:(NSText *)textObj {
+    NSTextView *editor = (NSTextView *)[super setUpFieldEditorAttributes:textObj];
+    editor.enabledTextCheckingTypes = 0;
+    return editor;
+}
 - (void)editWithFrame:(NSRect)rect inView:(NSView *)view editor:(NSText *)editor
              delegate:(id)delegate event:(NSEvent *)event {
     [super editWithFrame:rect inView:view editor:editor delegate:delegate event:event];

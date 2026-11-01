@@ -24,15 +24,32 @@ std::vector<Cluster> clusters(const Buffer &buffer) {
     }
     return result;
 }
+std::vector<uint64_t> Change::inputKey() const {
+    std::vector<uint64_t> key;
+    for (const auto &input : inputs) {
+        key.insert(key.end(), {input.source.start, input.source.end, input.glyphs.size()});
+        key.insert(key.end(), input.glyphs.begin(), input.glyphs.end());
+    }
+    return key;
+}
 void Trace::changed(const Buffer &before, const Buffer &after, const std::string &feature) {
     auto old = clusters(before), next = clusters(after);
+    size_t firstChange = changes.size();
+    auto append = [&](Span source, const std::vector<Glyph> &glyphs) {
+        Change change{source, glyphs, feature, {}};
+        auto first = std::lower_bound(old.begin(), old.end(), source.start,
+            [](const Cluster &input, uint32_t start) { return input.source.end <= start; });
+        for (auto input = first; input != old.end() && input->source.start < source.end; ++input)
+            change.inputs.push_back(*input);
+        changes.push_back(std::move(change));
+    };
     // clusters preserves Span ordering; lower_bound also keeps the first equal span.
     for (const auto &cluster : next) {
         auto found = std::lower_bound(
             old.begin(), old.end(), cluster.source,
             [](const Cluster &item, Span source) { return item.source < source; });
         if (found == old.end() || !(found->source == cluster.source) || found->glyphs != cluster.glyphs)
-            changes.push_back({cluster.source, cluster.glyphs, feature});
+            append(cluster.source, cluster.glyphs);
     }
     // Prefix maxima allow each old interval to be tested independently, even
     // when source scopes overlap or nest after a rearrangement or insertion.
@@ -48,8 +65,10 @@ void Trace::changed(const Buffer &before, const Buffer &after, const std::string
             [](const Cluster &item, uint32_t end) { return item.source.start < end; });
         size_t count = size_t(limit - next.begin());
         if (!count || ends[count - 1] <= cluster.source.start)
-            changes.push_back({cluster.source, {}, feature});
+            append(cluster.source, {});
     }
+    if (provenance && changes.size() != firstChange)
+        steps.push_back({before, after, feature});
 }
 GDEF::GDEF(View table) {
     if (!table)

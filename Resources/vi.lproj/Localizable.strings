@@ -46,7 +46,7 @@
 "Help.05" = "Bấm hai lần vào một glyph, hoặc chọn glyph đó rồi nhấn ⏎, để thay thế glyph mặc định và hiển thị các glyph thay thế của nó. Giữ thêm ⇧ để thêm glyph đó.";
 "Cut" = "Cắt";
 "Help.06" = "Dùng ↑/↓ để di chuyển giữa các glyph, ⌘↑/⌘↓ để di chuyển giữa các glyph cơ sở và ⌥↑/⌥↓ để chuyển đến glyph đầu tiên hoặc cuối cùng trong danh sách.";
-"Help.04" = "Nhập một hoặc nhiều ký tự trong thanh bên để xem tất cả glyph liên quan. Dùng ⌥⏎ để chèn dấu ngắt dòng.";
+"Help.04" = "Nhập một hoặc nhiều ký tự trong thanh bên để xem tất cả glyph liên quan. Dùng ⌥⏎ để chèn dấu ngắt dòng. Bạn cũng có thể nhấp chuột phải rồi chọn “Văn bản đã lưu” để lưu văn bản hiện tại hoặc nhập nhanh văn bản đã lưu trước đó.";
 "Help.07" = "Dùng ⌘C để sao chép tất cả ký tự được mã hóa của glyph đã chọn.";
 "Bounding Box Zoom Out" = "Thu nhỏ khung bao";
 "Help.03" = "Khi bạn mở phông chữ biến thiên, một bảng biến thiên xuất hiện cạnh các nút điều khiển cửa sổ. Kéo bảng ra để giữ bảng luôn mở. Chọn một giá trị số và dùng ↑/↓ hoặc ⇧↑/⇧↓ để điều chỉnh.";
@@ -87,3 +87,9 @@
 "Keep Both" = "Giữ cả hai";
 "Stop" = "Dừng";
 "Replace" = "Thay thế";
+
+/* User-saved plain text. */
+"Saved Text" = "Văn bản đã lưu";
+"Save Current Text" = "Lưu văn bản hiện tại";
+"Remove from Saved Text" = "Xóa khỏi văn bản đã lưu";
+"No Saved Text" = "Không có văn bản đã lưu";

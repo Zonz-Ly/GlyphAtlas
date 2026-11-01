@@ -7,7 +7,6 @@ namespace {
 struct Output {
     unsigned position, value;
     std::vector<Glyph> glyphs;
-    bool directFamily;
 };
 // A table catalogue, independent of the current text. Positions identify the
 // glyph affected by a nested action, so a rule for W+i contributes W's outputs
@@ -21,14 +20,12 @@ class Catalogue {
     std::set<unsigned> active_;
     const std::vector<Output> empty_;
     void append(std::vector<Output> &outputs, unsigned position, std::vector<Glyph> glyphs,
-                unsigned value = 1, bool directFamily = false) {
+                unsigned value = 1) {
         auto found = std::find_if(outputs.begin(), outputs.end(), [&](const Output &output) {
             return output.position == position && output.value == value && output.glyphs == glyphs;
         });
-        if (found != outputs.end())
-            found->directFamily |= directFamily;
-        else
-            outputs.push_back({position, value, std::move(glyphs), directFamily});
+        if (found == outputs.end())
+            outputs.push_back({position, value, std::move(glyphs)});
     }
     // SequenceIndex addresses the updated input, including earlier direct
     // multiple substitutions. Preserve each new slot's original owner.
@@ -87,9 +84,9 @@ class Catalogue {
                 auto glyphs = substitutionOutputs(sub, seed_);
                 if (sub.type == 3) {
                     for (unsigned i = 0; i < glyphs.size(); i++)
-                        append(outputs, 0, {glyphs[i]}, i + 1, true);
+                        append(outputs, 0, {glyphs[i]}, i + 1);
                 } else
-                    append(outputs, 0, std::move(glyphs), 1, sub.type == 1);
+                    append(outputs, 0, std::move(glyphs));
             } else if (sub.type == 4) {
                 // Ligatures require their complete input sequence. This also
                 // excludes type 4 called by a contextual lookup; the actual
@@ -150,23 +147,18 @@ std::vector<RelatedSubstitution> OpenType::relatedSubstitutions(Glyph seed,
         throw InvalidTable("positioning program used as substitution catalogue");
     Catalogue catalogue(lookups_, gdef, seed);
     std::vector<RelatedSubstitution> result;
-    std::map<std::tuple<Tag, unsigned, std::vector<Glyph>>, size_t> seen;
-    auto add = [&](const std::vector<Glyph> &glyphs, Tag feature, unsigned value,
-                   bool directFamily) {
+    std::set<std::tuple<Tag, unsigned, std::vector<Glyph>>> seen;
+    auto add = [&](const std::vector<Glyph> &glyphs, Tag feature, unsigned value) {
         if (glyphs == std::vector<Glyph>{seed})
             return;
-        auto [found, inserted] =
-            seen.emplace(std::make_tuple(feature, value, glyphs), result.size());
-        if (inserted)
-            result.push_back({glyphs, feature, value, directFamily});
-        else
-            result[found->second].directFamily |= directFamily;
+        if (seen.emplace(feature, value, glyphs).second)
+            result.push_back({glyphs, feature, value});
     };
     for (const auto &branch : branches_)
         for (const auto &feature : branch)
             for (unsigned index : feature.lookups) {
                 for (const auto &output : catalogue.lookup(index))
-                    add(output.glyphs, feature.name, output.value, output.directFamily);
+                    add(output.glyphs, feature.name, output.value);
                 if (index >= lookups_.size())
                     continue;
                 const auto &lookup = lookups_[index];
@@ -183,7 +175,7 @@ std::vector<RelatedSubstitution> OpenType::relatedSubstitutions(Glyph seed,
                             continue;
                         auto glyphs = substitutionOutputs(sub, input);
                         for (unsigned i = 0; i < glyphs.size(); i++)
-                            add({glyphs[i]}, feature.name, i + 1, true);
+                            add({glyphs[i]}, feature.name, i + 1);
                     }
                 }
             }

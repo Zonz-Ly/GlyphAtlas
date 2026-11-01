@@ -63,7 +63,7 @@
 "Help.01" = "Öffne eine Schrift oder ziehe sie auf das App-Fenster oder das Dock-Symbol. Zuletzt benutzte Dateien werden ebenfalls unterstützt.";
 "Help.02" = "Über die Menüleiste kannst du die im aktuellen Fenster geöffnete Schrift mit einem Klick in deinen Benutzerordner für Schriften kopieren.";
 "Help.03" = "Beim Öffnen einer variablen Schrift erscheint neben den Fenstersteuerungen ein Variationsfenster. Ziehe es heraus, damit es geöffnet bleibt. Wähle einen Zahlenwert aus und passe ihn mit ↑/↓ oder ⇧↑/⇧↓ an.";
-"Help.04" = "Gib ein oder mehrere Zeichen in der Seitenleiste ein, um alle zugehörigen Glyphen zu sehen. Mit ⌥⏎ fügst du einen Zeilenumbruch ein.";
+"Help.04" = "Gib ein oder mehrere Zeichen in der Seitenleiste ein, um alle zugehörigen Glyphen zu sehen. Mit ⌥⏎ fügst du einen Zeilenumbruch ein. Per Rechtsklick findest du auch „Gespeicherte Texte“, um den aktuellen Text zu speichern oder zuvor gespeicherte Texte schnell einzufügen.";
 "Help.05" = "Doppelklicke auf eine Glyphe oder wähle sie aus und drücke Return, um die Standardglyphe zu ersetzen und die Alternativen dieser Glyphe anzuzeigen. Halte dabei die Umschalttaste gedrückt, um die Glyphe hinzuzufügen.";
 "Help.06" = "Mit ↑/↓ wechselst du zwischen Glyphen, mit ⌘↑/⌘↓ zwischen Basisglyphen. Mit ⌥↑/⌥↓ springst du zur ersten oder letzten Glyphe der Liste.";
 "Help.07" = "Mit ⌘C kopierst du alle codierten Zeichen der ausgewählten Glyphe.";
@@ -90,3 +90,9 @@
 "Keep Both" = "Beide behalten";
 "Stop" = "Stoppen";
 "Replace" = "Ersetzen";
+
+/* User-saved plain text. */
+"Saved Text" = "Gespeicherte Texte";
+"Save Current Text" = "Aktuellen Text sichern";
+"Remove from Saved Text" = "Aus gespeicherten Texten entfernen";
+"No Saved Text" = "Keine gespeicherten Texte";

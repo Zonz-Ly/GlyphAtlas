@@ -2,11 +2,22 @@
 #import "GAMainWindowController.h"
 #import "GAFontResource.h"
 
+static NSString *const GARecentFontPathsKey = @"GAPersistentRecentFontPaths";
+static NSString *const GASavedTextsKey = @"GASavedTexts";
+
+@interface GASavedTextMenu : NSMenu
+@property(nonatomic, weak) GAMainWindowController *controller;
+@end
+@implementation GASavedTextMenu
+@end
+
 @interface GAAppDelegate () <NSMenuDelegate>
 @property (nonatomic, strong) NSMutableArray<GAMainWindowController *> *windowControllers;
 @property (nonatomic, strong) NSMutableArray<NSURL *> *pendingFontURLs;
 @property (nonatomic, strong, nullable) NSOpenPanel *openPanel;
 @property (nonatomic, strong, nullable) NSMenu *recentMenu;
+@property(nonatomic, strong) NSMenu *editMenu;
+@property(nonatomic, strong) NSUserDefaults *preferences;
 @property (nonatomic) BOOL launched;
 @property (nonatomic) BOOL handlingOpenFiles;
 @end
@@ -14,6 +25,14 @@
 @implementation GAAppDelegate
 
 - (void)applicationWillFinishLaunching:(NSNotification *)notification {
+    self.preferences = NSUserDefaults.standardUserDefaults;
+    if (![self.preferences objectForKey:GARecentFontPathsKey]) {
+        NSMutableArray *paths = [NSMutableArray array];
+        for (NSURL *url in NSDocumentController.sharedDocumentController.recentDocumentURLs)
+            if (url.isFileURL && GAFontURLIsFont(url) && ![paths containsObject:url.path])
+                [paths addObject:url.path];
+        [self.preferences setObject:paths forKey:GARecentFontPathsKey];
+    }
     self.windowControllers = [NSMutableArray array];
     self.pendingFontURLs = [NSMutableArray array];
     [self buildMainMenu];
@@ -147,6 +166,12 @@
 
 - (void)noteRecentFontURL:(NSURL *)url {
     if (url.path.length == 0) return;
+    NSMutableArray *paths = [[self.preferences arrayForKey:GARecentFontPathsKey] mutableCopy];
+    [paths removeObject:url.path];
+    [paths insertObject:url.path atIndex:0];
+    NSUInteger limit = NSDocumentController.sharedDocumentController.maximumRecentDocumentCount;
+    if (paths.count > limit) [paths removeObjectsInRange:NSMakeRange(limit, paths.count - limit)];
+    [self.preferences setObject:paths forKey:GARecentFontPathsKey];
     [[NSDocumentController sharedDocumentController] noteNewRecentDocumentURL:url];
     [self rebuildRecentMenu];
 }
@@ -157,9 +182,8 @@
     [menu removeAllItems];
 
     NSMutableArray<NSURL *> *urls = [NSMutableArray array];
-    NSArray<NSURL *> *recentURLs =
-        [[NSDocumentController sharedDocumentController] recentDocumentURLs];
-    for (NSURL *url in recentURLs) {
+    for (NSString *path in [self.preferences arrayForKey:GARecentFontPathsKey]) {
+        NSURL *url = [NSURL fileURLWithPath:path];
         if (url.isFileURL &&
             [[NSFileManager defaultManager] fileExistsAtPath:url.path] &&
             GAFontURLIsFont(url)) {
@@ -200,13 +224,94 @@
 }
 
 - (void)clearRecentFonts:(id)sender {
+    [self.preferences setObject:@[] forKey:GARecentFontPathsKey];
     [[NSDocumentController sharedDocumentController] clearRecentDocuments:nil];
     [self rebuildRecentMenu];
+}
+
+#pragma mark - Saved text
+
+- (NSMenuItem *)savedTextMenuItemForWindow:(NSWindow *)window {
+    NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:NSLocalizedString(@"Saved Text", @"Saved text submenu")
+                                               action:nil keyEquivalent:@""];
+    GASavedTextMenu *menu = [[GASavedTextMenu alloc] initWithTitle:item.title];
+    menu.delegate = self;
+    menu.controller = window ? (GAMainWindowController *)window.windowController : self.activeMainWindowController;
+    [self rebuildSavedTextMenu:menu];
+    item.submenu = menu;
+    return item;
+}
+
+- (NSString *)previewForSavedText:(NSString *)text {
+    NSString *preview = [text stringByReplacingOccurrencesOfString:@"\n" withString:@" ⏎ "];
+    preview = [preview stringByReplacingOccurrencesOfString:@"\r" withString:@" ⏎ "];
+    preview = [preview stringByReplacingOccurrencesOfString:@"\t" withString:@" ⇥ "];
+    if (![text stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet].length)
+        preview = [preview stringByReplacingOccurrencesOfString:@" " withString:@"␠"];
+    if (preview.length > 48) {
+        NSRange range = [preview rangeOfComposedCharacterSequencesForRange:NSMakeRange(0, 48)];
+        preview = [[preview substringWithRange:range] stringByAppendingString:@"…"];
+    }
+    return preview;
+}
+
+- (void)rebuildSavedTextMenu:(GASavedTextMenu *)menu {
+    [menu removeAllItems];
+    NSArray<NSString *> *texts = [self.preferences arrayForKey:GASavedTextsKey] ?: @[];
+    NSString *current = menu.controller.inputText;
+    NSString *title = [texts containsObject:current ?: @""]
+        ? NSLocalizedString(@"Remove from Saved Text", @"Remove current text from saved list")
+        : NSLocalizedString(@"Save Current Text", @"Save whole sidebar input as plain text");
+    NSMenuItem *save = [menu addItemWithTitle:title action:@selector(toggleSavedText:) keyEquivalent:@""];
+    save.target = self;
+    [menu addItem:NSMenuItem.separatorItem];
+    if (!texts.count) {
+        NSMenuItem *empty = [menu addItemWithTitle:NSLocalizedString(@"No Saved Text", @"Empty saved text list")
+                                          action:nil keyEquivalent:@""];
+        empty.enabled = NO;
+    }
+    for (NSString *text in texts) {
+        NSMenuItem *item = [menu addItemWithTitle:[self previewForSavedText:text]
+                                         action:@selector(useSavedText:) keyEquivalent:@""];
+        item.target = self;
+        item.representedObject = text;
+        item.toolTip = text;
+    }
+}
+
+- (void)toggleSavedText:(NSMenuItem *)sender {
+    NSString *text = ((GASavedTextMenu *)sender.menu).controller.inputText;
+    if (!text.length) return;
+    NSMutableArray *texts = [[self.preferences arrayForKey:GASavedTextsKey] mutableCopy]
+        ?: [NSMutableArray array];
+    if ([texts containsObject:text]) [texts removeObject:text];
+    else [texts insertObject:text atIndex:0];
+    [self.preferences setObject:texts forKey:GASavedTextsKey];
+}
+
+- (void)useSavedText:(NSMenuItem *)sender {
+    [((GASavedTextMenu *)sender.menu).controller replaceInputText:sender.representedObject];
 }
 
 #pragma mark - Menu delegate
 
 - (void)menuNeedsUpdate:(NSMenu *)menu {
+    if (menu == self.editMenu) {
+        // Keep the command attached to the window that opened the Edit menu;
+        // ending menu tracking or another field editor can change keyWindow.
+        for (NSMenuItem *item in menu.itemArray) {
+            if ([item.submenu isKindOfClass:GASavedTextMenu.class]) {
+                GASavedTextMenu *saved = (GASavedTextMenu *)item.submenu;
+                saved.controller = self.activeMainWindowController;
+                [self rebuildSavedTextMenu:saved];
+            }
+        }
+        return;
+    }
+    if ([menu isKindOfClass:GASavedTextMenu.class]) {
+        [self rebuildSavedTextMenu:(GASavedTextMenu *)menu];
+        return;
+    }
     if (menu == self.recentMenu) {
         [self rebuildRecentMenu];
         return;
@@ -335,6 +440,8 @@
                                         keyEquivalent:@""];
     NSMenu *editMenu = [[NSMenu alloc] initWithTitle:NSLocalizedString(@"Edit", @"Edit")];
     editItem.submenu = editMenu;
+    self.editMenu = editMenu;
+    editMenu.delegate = self;
 
     [editMenu addItemWithTitle:NSLocalizedString(@"Undo", @"Undo") action:@selector(undo:) keyEquivalent:@"z"];
     NSMenuItem *redo = [editMenu addItemWithTitle:NSLocalizedString(@"Redo", @"Redo") action:@selector(redo:) keyEquivalent:@"z"];
@@ -345,6 +452,8 @@
     [editMenu addItemWithTitle:NSLocalizedString(@"Paste", @"Paste") action:@selector(paste:) keyEquivalent:@"v"];
     [editMenu addItemWithTitle:NSLocalizedString(@"Delete", @"Delete") action:@selector(delete:) keyEquivalent:@""];
     [editMenu addItemWithTitle:NSLocalizedString(@"Select All", @"Select All") action:@selector(selectAll:) keyEquivalent:@"a"];
+
+    [editMenu addItem:[self savedTextMenuItemForWindow:nil]];
 
     // View
     NSMenuItem *viewItem = [mainMenu addItemWithTitle:NSLocalizedString(@"View", @"View")
@@ -492,6 +601,8 @@
     if ([controller isKindOfClass:GAMainWindowController.class]) {
         return (GAMainWindowController *)controller;
     }
+    controller = NSApp.mainWindow.windowController;
+    if ([controller isKindOfClass:GAMainWindowController.class]) return (GAMainWindowController *)controller;
     for (GAMainWindowController *candidate in self.windowControllers) {
         if (candidate.window.isVisible) {
             return candidate;
@@ -558,6 +669,10 @@
         action == @selector(openFont:) || action == @selector(openRecentFont:) ||
         action == @selector(clearRecentFonts:)) {
         return YES;
+    }
+    if (action == @selector(toggleSavedText:) || action == @selector(useSavedText:)) {
+        GAMainWindowController *owner = ((GASavedTextMenu *)item.menu).controller;
+        return owner.fontURL != nil && (action != @selector(toggleSavedText:) || owner.inputText.length > 0);
     }
     GAMainWindowController *controller = [self activeMainWindowController];
     if (controller == nil) {

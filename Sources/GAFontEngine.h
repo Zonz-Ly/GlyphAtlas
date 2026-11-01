@@ -32,10 +32,17 @@ FOUNDATION_EXPORT const CGFloat GAFontShapingSize;
 @property (nonatomic, copy) NSArray<NSNumber *> *unicodeScalars;
 @property (nonatomic, copy) NSString *glyphName;
 @property (nonatomic, getter=isLigature) BOOL ligature;
+/// A lazy sidebar-only row, never part of a group's persistent variants.
+@property (nonatomic, getter=isTemporary) BOOL temporary;
 /// Produced by a query containing explicit glyph selections.
 @property(nonatomic) BOOL fromGlyphSeed;
 @property (nonatomic) NSRange sourceTextRange;
 @property (nonatomic, readonly) NSString *glyphKey;
+@end
+
+@interface GAGlyphResolution : NSObject
+@property(nonatomic, strong) GAGlyphVariant *parent;
+@property(nonatomic, strong) GAGlyphVariant *variant;
 @end
 
 /// Draws a nonempty variant using the context's current drawing state.
@@ -79,13 +86,20 @@ FOUNDATION_EXPORT NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text);
 @property(nonatomic) BOOL fromGlyphSeed;
 /// UTF-16 range of the cluster relative to the scanned content.
 @property (nonatomic) NSRange sourceRange;
-/// Index of the target composed-character group in the full input.
+/// Index of the target nominal source group in the full input.
 @property (nonatomic) NSUInteger targetGroupIndex;
 @end
 
 @interface GARawScanResult : NSObject
 @property (nonatomic, copy) NSArray<GAScanCandidate *> *candidates;
+/// Disjoint nominal component ranges after cmap/Unicode preparation. A source
+/// that cannot be edited independently remains one atomic range.
+@property(nonatomic, copy) NSArray<NSValue *> *sourceRanges;
 @end
+
+/// Builds source groups matching the complete scan's nominal component ranges.
+FOUNDATION_EXPORT NSArray<GACharacterGroup *> *GAGroupsForScanResult(NSString *text,
+                                                                    GARawScanResult *result);
 
 @interface GAFontDocument : NSObject
 - (instancetype)initWithDescriptor:(CTFontDescriptorRef)descriptor
@@ -110,12 +124,24 @@ FOUNDATION_EXPORT NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text);
 - (GARawScanResult *)rawScanContent:(NSString *)content
                          selections:(NSArray<GAGlyphSelectionRun *> *)selections;
 
-/// Applies a full-text result to its composed-character groups in place.
+/// Applies a full-text result to groups made by GAGroupsForScanResult in place.
 /// Candidates use targetGroupIndex; source ranges already refer to the full text.
 - (void)applyRawResult:(GARawScanResult *)result
                 groups:(NSArray<GACharacterGroup *> *)groups;
 
 - (NSArray<GACharacterGroup *> *)analyzeGlyphIDs:(NSArray<NSNumber *> *)glyphIDs;
+
+/// Resolves a missing native glyph against existing rows at the same source
+/// range. Returns a decorated temporary row and its existing parent.
+- (nullable GAGlyphResolution *)resolveGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
+                                     textRange:(NSRange)range
+                                          text:(NSString *)text
+                                    selections:(NSArray<GAGlyphSelectionRun *> *)selections
+                                        groups:(NSArray<GACharacterGroup *> *)groups
+                                      vertical:(BOOL)vertical
+                          contextualAlternates:(BOOL)contextualAlternates
+                                     ligatures:(BOOL)ligatures
+                                     cancelled:(BOOL (^)(void))cancelled;
 
 /// Single-GID vertical-substitution output from GSUB `vert`/`vrt2` or AAT,
 /// if the font's programs produce one.

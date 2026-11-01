@@ -44,6 +44,7 @@ class AAT {
     }
     void substitute(Buffer &buffer, std::optional<AATSelector> selector = {}, bool rtl = false,
                     bool vertical = false, Trace *trace = nullptr,
-                    bool verticalSubstitutionsOnly = false) const;
+                    bool verticalSubstitutionsOnly = false,
+                    const std::vector<AATSelector> &overrides = {}) const;
 };
 } // namespace ga::layout

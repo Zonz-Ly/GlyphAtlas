@@ -12,6 +12,12 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic) BOOL base;
 @end
 
+/// One upstream row and the substitution labels from that row to the target.
+@interface GASubstitutionOrigin : NSObject
+@property(nonatomic) NSUInteger sourceIndex;
+@property(nonatomic, copy) NSArray<NSString *> *sources;
+@end
+
 /// GSUB and AAT morx/mort discovery using the application's own table programs.
 /// CoreText supplies selected-resource bytes and native glyph metrics; Unicode
 /// properties and bidi levels come from the system ICU. No shaping scans.
@@ -21,6 +27,17 @@ NS_ASSUME_NONNULL_BEGIN
                      sharing:(nullable GASubstitutionEngine *)source;
 - (NSArray<GASubstitutionMatch *> *)discoverText:(NSString *)text selections:(NSArray<GAGlyphSelectionRun *> *)selections;
 - (NSArray<GASubstitutionMatch *> *)discoverGlyphIDs:(NSArray<NSNumber *> *)glyphIDs;
+/// Lazy reverse lookup for a missing native layout GID/sequence. Candidate
+/// rows all belong to sourceRange, in their existing sidebar order.
+- (nullable GASubstitutionOrigin *)originForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
+                                         sourceRange:(NSRange)sourceRange
+                                                text:(NSString *)text
+                                          selections:(NSArray<GAGlyphSelectionRun *> *)selections
+                                          candidates:(NSArray<NSArray<NSNumber *> *> *)candidates
+                                            vertical:(BOOL)vertical
+                                contextualAlternates:(BOOL)contextualAlternates
+                                           ligatures:(BOOL)ligatures
+                                           cancelled:(BOOL (^)(void))cancelled;
 - (NSArray<NSValue *> *)positionsForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
                                      content:(NSString *)content;
 - (nullable NSNumber *)verticalGlyph:(uint16_t)glyph;

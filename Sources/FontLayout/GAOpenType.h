@@ -61,8 +61,6 @@ struct RelatedSubstitution {
     std::vector<Glyph> glyphs;
     Tag feature = 0;
     unsigned value = 1;
-    // Direct single/alternate outputs, including reverse alternate siblings.
-    bool directFamily = false;
 };
 struct LookupStep {
     unsigned lookup = 0, value = 1;

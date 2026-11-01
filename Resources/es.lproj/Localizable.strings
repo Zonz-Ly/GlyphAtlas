@@ -63,7 +63,7 @@
 "Help.01" = "Abre un tipo de letra o arrástralo a la ventana de la app o a su icono en el Dock. También se admiten los archivos usados recientemente.";
 "Help.02" = "Desde la barra de menús, copia con un clic el tipo de letra abierto en la ventana actual a tu carpeta de tipos de letra de usuario.";
 "Help.03" = "Al abrir un tipo de letra variable, aparece un panel de variación junto a los controles de la ventana. Arrástralo fuera para mantenerlo abierto. Selecciona un valor numérico y ajústalo con ↑/↓ o ⇧↑/⇧↓.";
-"Help.04" = "Introduce uno o varios caracteres en la barra lateral para ver todos los glifos asociados. Usa ⌥⏎ para insertar un salto de línea.";
+"Help.04" = "Introduce uno o varios caracteres en la barra lateral para ver todos los glifos asociados. Usa ⌥⏎ para insertar un salto de línea. También puedes hacer clic derecho y elegir «Textos guardados» para guardar el texto actual o insertar rápidamente uno que hayas guardado antes.";
 "Help.05" = "Haz doble clic en un glifo, o selecciónalo y pulsa Retorno, para sustituir el glifo predeterminado y mostrar sus alternativas. Mantén pulsada la tecla Mayúsculas al hacerlo para añadir el glifo.";
 "Help.06" = "Usa ↑/↓ para moverte entre glifos, ⌘↑/⌘↓ entre glifos base y ⌥↑/⌥↓ para ir al primer o al último glifo de la lista.";
 "Help.07" = "Usa ⌘C para copiar todos los caracteres codificados del glifo seleccionado.";
@@ -90,3 +90,9 @@
 "Keep Both" = "Guardar ambos";
 "Stop" = "Detener";
 "Replace" = "Reemplazar";
+
+/* User-saved plain text. */
+"Saved Text" = "Textos guardados";
+"Save Current Text" = "Guardar texto actual";
+"Remove from Saved Text" = "Eliminar de los textos guardados";
+"No Saved Text" = "No hay textos guardados";

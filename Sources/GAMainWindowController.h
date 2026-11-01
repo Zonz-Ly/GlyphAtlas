@@ -5,6 +5,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface GAMainWindowController : NSWindowController
 @property (nonatomic, readonly, nullable) NSURL *fontURL;
+@property(nonatomic, readonly) NSString *inputText;
+- (void)replaceInputText:(NSString *)text;
 @property (nonatomic, readonly) GAViewMode viewMode;
 @property (nonatomic, readonly) BOOL showsMetrics;
 @property (nonatomic, readonly) NSTextAlignment textAlignment;

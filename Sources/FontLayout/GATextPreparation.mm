@@ -2,6 +2,7 @@
 #import "GAGlyphSelection.h"
 #include "GACmap.h"
 #include <cctype>
+#include <deque>
 extern "C" {
 int32_t uscript_getScript(int32_t, int32_t *);
 const char *uscript_getShortName(int32_t);
@@ -41,6 +42,48 @@ static std::vector<uint32_t> scalars(NSString *text) {
     }
     return result;
 }
+// Canonical normalization may compose several original scalars into one
+// nominal glyph, or decompose one scalar into several. Match their canonical
+// decompositions to retain the actual UTF-16 source of each prepared scalar.
+// Overlapping sources remain atomic (for example, an unencoded precomposed
+// character decomposed for this font); they must never be split for activation.
+static std::vector<Span> scalarSources(NSString *source, NSRange range,
+                                       const std::vector<uint32_t> &values) {
+    if (values.size() == 1)
+        return {{uint32_t(range.location), uint32_t(NSMaxRange(range))}};
+    std::map<uint32_t, std::deque<Span>> origins;
+    for (NSUInteger i = 0; i < source.length;) {
+        NSUInteger length = CFStringIsSurrogateHighCharacter([source characterAtIndex:i]) &&
+                                    i + 1 < source.length &&
+                                    CFStringIsSurrogateLowCharacter([source characterAtIndex:i + 1])
+                                ? 2 : 1;
+        NSString *part = [source substringWithRange:NSMakeRange(i, length)];
+        Span span{uint32_t(range.location + i), uint32_t(range.location + i + length)};
+        for (uint32_t scalar : scalars(part.decomposedStringWithCanonicalMapping))
+            origins[scalar].push_back(span);
+        i += length;
+    }
+    std::vector<Span> result;
+    for (uint32_t value : values) {
+        unichar units[2] = {unichar(value), 0};
+        NSUInteger length = 1;
+        if (value > 0xffff) {
+            units[0] = unichar(0xd800 + ((value - 0x10000) >> 10));
+            units[1] = unichar(0xdc00 + ((value - 0x10000) & 0x3ff));
+            length = 2;
+        }
+        NSString *part = [NSString stringWithCharacters:units length:length];
+        Span span{uint32_t(NSMaxRange(range)), uint32_t(range.location)};
+        for (uint32_t scalar : scalars(part.decomposedStringWithCanonicalMapping)) {
+            auto &queue = origins[scalar];
+            if (queue.empty()) throw InvalidTable("canonical source mapping failed");
+            span = unite(span, queue.front());
+            queue.pop_front();
+        }
+        result.push_back(span);
+    }
+    return result;
+}
 static bool variationSelector(uint32_t scalar) {
     return (scalar >= 0xfe00 && scalar <= 0xfe0f) || (scalar >= 0xe0100 && scalar <= 0xe01ef);
 }
@@ -58,6 +101,22 @@ std::vector<TextRun> prepareText(NSString *text, const Cmap &cmap,
     int32_t status = 0;
     if (text.length > INT32_MAX)
         throw InvalidTable("text exceeds Unicode index range");
+    std::vector<NSUInteger> seedBoundaries;
+    NSUInteger previousEnd = 0;
+    for (GAGlyphSelectionRun *selection : selections) {
+        NSRange range = selection.range;
+        if (!range.length || range.location < previousEnd || range.location > text.length ||
+            range.length > text.length - range.location)
+            throw InvalidTable("invalid glyph selection range");
+        for (NSUInteger boundary : {range.location, NSMaxRange(range)}) {
+            if (boundary > 0 && boundary < text.length &&
+                CFStringIsSurrogateHighCharacter([text characterAtIndex:boundary - 1]) &&
+                CFStringIsSurrogateLowCharacter([text characterAtIndex:boundary]))
+                throw InvalidTable("glyph selection splits a surrogate pair");
+            seedBoundaries.push_back(boundary);
+        }
+        previousEnd = NSMaxRange(range);
+    }
     std::vector<uint16_t> units(text.length);
     [text getCharacters:units.data() range:NSMakeRange(0, text.length)];
     void *bidi = ubidi_openSized(int32_t(text.length), 0, &status);
@@ -72,58 +131,65 @@ std::vector<TextRun> prepareText(NSString *text, const Cmap &cmap,
     uint64_t identity = 1;
     for (NSUInteger start = 0; start < text.length;) {
         NSRange range = [text rangeOfComposedCharacterSequenceAtIndex:start];
-        NSString *source = [text substringWithRange:range];
         start = NSMaxRange(range);
-        NSString *composed = source.precomposedStringWithCanonicalMapping;
-        auto original = scalars(source);
-        // Preserve encoded compatibility characters and UVS bases. Canonical
-        // composition is useful for combining sequences, but must not erase an
-        // explicitly selected glyph that the font can represent.
-        if (!original.empty() && cmap.nominal(original.front()) &&
-            (original.size() == 1 || variationSelector(original[1])))
-            composed = source;
-        auto values = scalars(composed);
-        bool supported = true;
-        for (uint32_t scalar : values)
-            if (!variationSelector(scalar) && !u_getIntPropertyValue(scalar, ignorableProperty) &&
-                !cmap.nominal(scalar)) {
-                supported = false;
-                break;
-            }
-        if (!supported)
-            values = scalars(source.decomposedStringWithCanonicalMapping);
         TextRun group;
         group.source = {uint32_t(range.location), uint32_t(NSMaxRange(range))};
         group.level = ubidi_getLevelAt(bidi, int32_t(range.location));
-        for (size_t i = 0; i < values.size(); i++) {
-            uint32_t scalar = values[i];
-            if (variationSelector(scalar))
-                continue;
-            Item item;
-            item.scalar = scalar;
-            item.source = group.source;
-            item.glyph = cmap.nominal(scalar);
-            item.identity = identity++;
-            if (i + 1 < values.size() && variationSelector(values[i + 1])) {
-                if (auto variant = cmap.variation(scalar, values[i + 1]))
-                    item.glyph = *variant;
-                i++;
+        // Normalize on either side of a literal selection independently, so
+        // a newly typed accent cannot compose away its selected base glyph.
+        auto boundary = std::upper_bound(seedBoundaries.begin(), seedBoundaries.end(), range.location);
+        for (NSUInteger partStart = range.location; partStart < NSMaxRange(range);) {
+            NSUInteger partEnd = boundary != seedBoundaries.end() && *boundary < NSMaxRange(range)
+                                   ? *boundary : NSMaxRange(range);
+            NSRange partRange = NSMakeRange(partStart, partEnd - partStart);
+            NSString *source = [text substringWithRange:partRange];
+            NSString *composed = source.precomposedStringWithCanonicalMapping;
+            auto original = scalars(source);
+            // Preserve encoded compatibility characters and UVS bases. Canonical
+            // composition is useful for combining sequences, but must not erase an
+            // explicitly selected glyph that the font can represent.
+            if (!original.empty() && cmap.nominal(original.front()) &&
+                (original.size() == 1 || variationSelector(original[1])))
+                composed = source;
+            auto values = scalars(composed);
+            bool supported = true;
+            for (uint32_t scalar : values)
+                if (!variationSelector(scalar) && !u_getIntPropertyValue(scalar, ignorableProperty) &&
+                    !cmap.nominal(scalar)) {
+                    supported = false;
+                    break;
+                }
+            if (!supported)
+                values = scalars(source.decomposedStringWithCanonicalMapping);
+            auto sources = scalarSources(source, partRange, values);
+            for (size_t i = 0; i < values.size(); i++) {
+                uint32_t scalar = values[i];
+                if (variationSelector(scalar))
+                    continue;
+                Item item;
+                item.scalar = scalar;
+                item.source = sources[i];
+                item.glyph = cmap.nominal(scalar);
+                item.identity = identity++;
+                if (i + 1 < values.size() && variationSelector(values[i + 1])) {
+                    if (auto variant = cmap.variation(scalar, values[i + 1]))
+                        item.glyph = *variant;
+                    item.source = unite(item.source, sources[++i]);
+                }
+                item.ignorable = u_getIntPropertyValue(scalar, ignorableProperty) != 0;
+                Tag script = scalarScript(scalar);
+                if (group.script == 0 && script != tag('D', 'F', 'L', 'T'))
+                    group.script = script;
+                group.glyphs.push_back(item);
             }
-            item.ignorable = u_getIntPropertyValue(scalar, ignorableProperty) != 0;
-            Tag script = scalarScript(scalar);
-            if (group.script == 0 && script != tag('D', 'F', 'L', 'T'))
-                group.script = script;
-            group.glyphs.push_back(item);
+            partStart = partEnd;
+            while (boundary != seedBoundaries.end() && *boundary <= partStart) ++boundary;
         }
         groups.push_back(std::move(group));
     }
     ubidi_close(bidi);
-    uint32_t previousEnd = 0;
     for (GAGlyphSelectionRun *selection : selections) {
         NSRange range = selection.range;
-        if (!range.length || range.location < previousEnd || range.location > text.length ||
-            range.length > text.length - range.location)
-            throw InvalidTable("invalid glyph selection range");
         Span span{uint32_t(range.location), uint32_t(NSMaxRange(range))};
         auto first = std::find_if(groups.begin(), groups.end(), [&](const TextRun &group) {
             return group.source.end > span.start;
@@ -131,9 +197,25 @@ std::vector<TextRun> prepareText(NSString *text, const Cmap &cmap,
         auto last = std::find_if(first, groups.end(), [&](const TextRun &group) {
             return group.source.start >= span.end;
         });
-        if (first == last || first->source.start != span.start ||
-            (last - 1)->source.end != span.end)
-            throw InvalidTable("glyph selection splits a grapheme");
+        if (first == last)
+            throw InvalidTable("glyph selection has no source");
+        TextRun prefix{{}, {}, first->script, first->level};
+        TextRun suffix{{}, {}, (last - 1)->script, (last - 1)->level};
+        Span covered{span.end, span.start};
+        for (auto group = first; group != last; ++group)
+            for (const auto &item : group->glyphs) {
+                if (item.source.end <= span.start)
+                    prefix.glyphs.push_back(item);
+                else if (item.source.start >= span.end)
+                    suffix.glyphs.push_back(item);
+                else {
+                    if (item.source.start < span.start || item.source.end > span.end)
+                        throw InvalidTable("glyph selection splits a nominal component");
+                    covered = unite(covered, item.source);
+                }
+            }
+        if (!(covered == span))
+            throw InvalidTable("glyph selection does not cover nominal components");
         TextRun replacement;
         replacement.source = span;
         replacement.level = first->level;
@@ -145,9 +227,18 @@ std::vector<TextRun> prepareText(NSString *text, const Cmap &cmap,
             item.identity = identity++;
             replacement.glyphs.push_back(item);
         }
+        std::vector<TextRun> pieces;
+        if (!prefix.glyphs.empty()) {
+            prefix.source = {first->source.start, span.start};
+            pieces.push_back(std::move(prefix));
+        }
+        pieces.push_back(std::move(replacement));
+        if (!suffix.glyphs.empty()) {
+            suffix.source = {span.end, (last - 1)->source.end};
+            pieces.push_back(std::move(suffix));
+        }
         auto position = groups.erase(first, last);
-        groups.insert(position, std::move(replacement));
-        previousEnd = span.end;
+        groups.insert(position, pieces.begin(), pieces.end());
     }
     // Resolve common/inherited groups at grapheme boundaries, so splitting a run
     // can never leave a surrogate pair or combining sequence half processed.

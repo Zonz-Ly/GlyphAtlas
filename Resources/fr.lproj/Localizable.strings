@@ -63,7 +63,7 @@
 "Help.01" = "Ouvrez une police ou faites-la glisser sur la fenêtre de l’app ou son icône dans le Dock. Les fichiers récemment utilisés sont également pris en charge.";
 "Help.02" = "Depuis la barre des menus, copiez en un clic la police ouverte dans la fenêtre actuelle vers votre dossier de polices utilisateur.";
 "Help.03" = "À l’ouverture d’une police variable, un panneau de variation apparaît près des boutons de la fenêtre. Détachez-le en le faisant glisser pour le garder ouvert. Sélectionnez une valeur numérique et ajustez-la avec ↑/↓ ou ⇧↑/⇧↓.";
-"Help.04" = "Saisissez un ou plusieurs caractères dans la barre latérale pour voir tous les glyphes associés. Utilisez ⌥⏎ pour insérer un saut de ligne.";
+"Help.04" = "Saisissez un ou plusieurs caractères dans la barre latérale pour voir tous les glyphes associés. Utilisez ⌥⏎ pour insérer un saut de ligne. Vous pouvez aussi faire un clic droit et choisir « Textes enregistrés » pour enregistrer le texte actuel ou insérer rapidement un texte déjà enregistré.";
 "Help.05" = "Cliquez deux fois sur un glyphe, ou sélectionnez-le et appuyez sur Retour, pour remplacer le glyphe par défaut et afficher ses variantes. Maintenez la touche Maj pendant cette action pour ajouter le glyphe.";
 "Help.06" = "Utilisez ↑/↓ pour passer d’un glyphe à l’autre, ⌘↑/⌘↓ pour passer d’un glyphe de base à l’autre et ⌥↑/⌥↓ pour atteindre le premier ou le dernier glyphe de la liste.";
 "Help.07" = "Utilisez ⌘C pour copier tous les caractères encodés du glyphe sélectionné.";
@@ -90,3 +90,9 @@
 "Keep Both" = "Garder les deux";
 "Stop" = "Arrêter";
 "Replace" = "Remplacer";
+
+/* User-saved plain text. */
+"Saved Text" = "Textes enregistrés";
+"Save Current Text" = "Enregistrer le texte actuel";
+"Remove from Saved Text" = "Retirer des textes enregistrés";
+"No Saved Text" = "Aucun texte enregistré";

@@ -18,7 +18,7 @@
     return self;
 }
 - (void)projectResult {
-    NSArray *groups = GAGroupsForText(_text);
+    NSArray *groups = GAGroupsForScanResult(_text, _result);
     [_document applyRawResult:_result groups:groups];
     _groups = groups;
 }
