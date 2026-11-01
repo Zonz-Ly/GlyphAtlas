@@ -96,3 +96,21 @@
 "Save Current Text" = "現在のテキストを保存";
 "Remove from Saved Text" = "保存したテキストから削除";
 "No Saved Text" = "保存したテキストはありません";
+
+/* Preview colors and native line spacing. */
+"Colors" = "カラー";
+"Follow System" = "システムに合わせる";
+"Glyph Color…" = "グリフの色…";
+"Background Color…" = "背景色…";
+"Bounding Box Color…" = "バウンディングボックスの色…";
+"Increase Line Spacing" = "行間を広げる";
+"Decrease Line Spacing" = "行間を狭める";
+
+/* Explicit defaults for newly opened font windows. */
+"Default to Single Glyph" = "既定で単一グリフを開く";
+"Default to Multi-Character" = "既定で複数文字を開く";
+"Default to All Glyphs" = "既定ですべてのグリフを開く";
+"Show Bounding Box by Default" = "既定でバウンディングボックスを表示";
+"Enable Contextual Alternates by Default" = "既定でコンテキスト代替を有効にする";
+"Enable Ligatures by Default" = "既定でリガチャを有効にする";
+"Use Vertical Writing by Default" = "既定で縦書きを使用";

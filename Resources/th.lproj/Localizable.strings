@@ -93,3 +93,21 @@
 "Save Current Text" = "บันทึกข้อความปัจจุบัน";
 "Remove from Saved Text" = "เอาออกจากข้อความที่บันทึกไว้";
 "No Saved Text" = "ไม่มีข้อความที่บันทึกไว้";
+
+/* Preview colors and native line spacing. */
+"Colors" = "สี";
+"Follow System" = "ตามระบบ";
+"Glyph Color…" = "สีรูปอักขระ…";
+"Background Color…" = "สีพื้นหลัง…";
+"Bounding Box Color…" = "สีกรอบขอบเขต…";
+"Increase Line Spacing" = "เพิ่มระยะห่างระหว่างบรรทัด";
+"Decrease Line Spacing" = "ลดระยะห่างระหว่างบรรทัด";
+
+/* Explicit defaults for newly opened font windows. */
+"Default to Single Glyph" = "มุมมองเริ่มต้น: รูปอักขระเดี่ยว";
+"Default to Multi-Character" = "มุมมองเริ่มต้น: หลายอักขระ";
+"Default to All Glyphs" = "มุมมองเริ่มต้น: รูปอักขระทั้งหมด";
+"Show Bounding Box by Default" = "แสดงกรอบขอบเขตตามค่าเริ่มต้น";
+"Enable Contextual Alternates by Default" = "เปิดรูปแบบอื่นเชิงบริบทเป็นค่าเริ่มต้น";
+"Enable Ligatures by Default" = "เปิดลิเกเจอร์เป็นค่าเริ่มต้น";
+"Use Vertical Writing by Default" = "ใช้การเขียนแนวตั้งเป็นค่าเริ่มต้น";

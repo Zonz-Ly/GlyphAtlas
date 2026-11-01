@@ -1,5 +1,6 @@
 #import <AppKit/AppKit.h>
 #import "GAViewMode.h"
+#import "GAPreviewColors.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -21,6 +22,10 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)zoomOut;
 - (void)zoomMetricsIn;
 - (void)zoomMetricsOut;
+- (void)adjustLineSpacing:(NSInteger)steps;
+@property(nonatomic, readonly) GAPreviewColors *previewColors;
+- (void)setPreviewColor:(NSColor *)color forRole:(GAPreviewColorRole)role;
+- (void)followSystemColors;
 - (void)resetZoom;
 - (void)setTextAlignment:(NSTextAlignment)alignment;
 - (void)setVerticalWriting:(BOOL)vertical;

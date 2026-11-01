@@ -1,6 +1,7 @@
 #import "GAAppDelegate.h"
 #import "GAMainWindowController.h"
 #import "GAFontResource.h"
+#import "GAViewDefaults.h"
 
 static NSString *const GARecentFontPathsKey = @"GAPersistentRecentFontPaths";
 static NSString *const GASavedTextsKey = @"GASavedTexts";
@@ -18,6 +19,8 @@ static NSString *const GASavedTextsKey = @"GASavedTexts";
 @property (nonatomic, strong, nullable) NSMenu *recentMenu;
 @property(nonatomic, strong) NSMenu *editMenu;
 @property(nonatomic, strong) NSUserDefaults *preferences;
+@property(nonatomic, weak) GAMainWindowController *colorOwner;
+@property(nonatomic) GAPreviewColorRole editingColorRole;
 @property (nonatomic) BOOL launched;
 @property (nonatomic) BOOL handlingOpenFiles;
 @end
@@ -498,12 +501,18 @@ static NSString *const GASavedTextsKey = @"GASavedTexts";
                                       @(GAViewModeMultiCharacter),
                                       @(GAViewModeAllGlyphs)];
     NSArray<NSString *> *modeKeys = @[@"1", @"2", @"3"];
+    NSArray<NSString *> *defaultModeTitles = @[
+        NSLocalizedString(@"Default to Single Glyph", @"Default view mode"),
+        NSLocalizedString(@"Default to Multi-Character", @"Default view mode"),
+        NSLocalizedString(@"Default to All Glyphs", @"Default view mode")];
     for (NSInteger index = 0; index < 3; index++) {
         NSMenuItem *item = [menu addItemWithTitle:modeTitles[(NSUInteger)index]
                                            action:@selector(switchViewMode:)
                                     keyEquivalent:modeKeys[(NSUInteger)index]];
         item.target = self;
         item.tag = modeTags[(NSUInteger)index].integerValue;
+        if (includeZoom) [self addDefaultAlternativeForItem:item
+            title:defaultModeTitles[(NSUInteger)index] key:GAViewModeDefaultKey menu:menu];
     }
     [menu addItem:[NSMenuItem separatorItem]];
 
@@ -511,11 +520,36 @@ static NSString *const GASavedTextsKey = @"GASavedTexts";
                                           action:@selector(toggleShowMetrics:)
                                    keyEquivalent:@"4"];
     metrics.target = self;
+    if (includeZoom) [self addDefaultAlternativeForItem:metrics
+        title:NSLocalizedString(@"Show Bounding Box by Default", @"Default bounding box visibility")
+        key:GABoundingBoxDefaultKey menu:menu];
+
+    if (includeZoom) {
+        NSMenuItem *colorsItem = [menu addItemWithTitle:NSLocalizedString(@"Colors", @"Preview colors")
+                                               action:nil keyEquivalent:@""];
+        NSMenu *colorsMenu = [[NSMenu alloc] initWithTitle:colorsItem.title];
+        colorsItem.submenu = colorsMenu;
+        NSMenuItem *systemColors = [colorsMenu
+            addItemWithTitle:NSLocalizedString(@"Follow System", @"Restore all preview colors")
+                      action:@selector(followSystemColors:) keyEquivalent:@""];
+        systemColors.target = self;
+        NSArray<NSString *> *colorTitles = @[
+            NSLocalizedString(@"Glyph Color…", @"Choose preview glyph color"),
+            NSLocalizedString(@"Background Color…", @"Choose preview background color"),
+            NSLocalizedString(@"Bounding Box Color…", @"Choose bounding box fill color")];
+        for (NSInteger role = GAPreviewColorGlyph; role <= GAPreviewColorBoundingBox; role++) {
+            NSMenuItem *item = [colorsMenu addItemWithTitle:colorTitles[(NSUInteger)role]
+                                                    action:@selector(choosePreviewColor:)
+                                             keyEquivalent:@""];
+            item.target = self;
+            item.tag = role;
+        }
+    }
     [menu addItem:[NSMenuItem separatorItem]];
 
     if (!includeZoom) {
         menu.delegate = self;
-        [self addViewAlignmentItemsToMenu:menu];
+        [self addViewAlignmentItemsToMenu:menu includingDefaults:NO];
         return menu;
     }
 
@@ -530,6 +564,14 @@ static NSString *const GASavedTextsKey = @"GASavedTexts";
     metricsZoomIn.keyEquivalentModifierMask =
         NSEventModifierFlagCommand | NSEventModifierFlagOption;
     metricsZoomIn.alternate = YES;
+    NSMenuItem *spacingIn = [menu
+        addItemWithTitle:NSLocalizedString(@"Increase Line Spacing", @"Increase preview line spacing")
+                  action:@selector(adjustLineSpacing:) keyEquivalent:@"+"];
+    spacingIn.target = self;
+    spacingIn.tag = 1;
+    spacingIn.keyEquivalentModifierMask = NSEventModifierFlagCommand |
+        NSEventModifierFlagOption | NSEventModifierFlagControl;
+    spacingIn.alternate = YES;
 
     NSMenuItem *zoomOut = [menu addItemWithTitle:NSLocalizedString(@"Zoom Out", @"Zoom Out")
                                           action:@selector(zoomOut:)
@@ -542,32 +584,57 @@ static NSString *const GASavedTextsKey = @"GASavedTexts";
     metricsZoomOut.keyEquivalentModifierMask =
         NSEventModifierFlagCommand | NSEventModifierFlagOption;
     metricsZoomOut.alternate = YES;
+    NSMenuItem *spacingOut = [spacingIn copy];
+    spacingOut.title = NSLocalizedString(@"Decrease Line Spacing", @"Decrease preview line spacing");
+    spacingOut.keyEquivalent = @"-";
+    spacingOut.tag = -1;
+    [menu addItem:spacingOut];
     NSMenuItem *actualSize = [menu addItemWithTitle:NSLocalizedString(@"Actual Size", @"Actual Size")
                                              action:@selector(resetZoom:)
                                       keyEquivalent:@"0"];
     actualSize.target = self;
     [menu addItem:[NSMenuItem separatorItem]];
 
-    [self addViewAlignmentItemsToMenu:menu];
+    [self addViewAlignmentItemsToMenu:menu includingDefaults:YES];
     return menu;
 }
 
-- (void)addViewAlignmentItemsToMenu:(NSMenu *)menu {
+- (void)addDefaultAlternativeForItem:(NSMenuItem *)item title:(NSString *)title
+                                key:(NSString *)key menu:(NSMenu *)menu {
+    NSMenuItem *alternative = [item copy];
+    alternative.title = title;
+    alternative.action = @selector(setDefaultViewSetting:);
+    alternative.representedObject = key;
+    alternative.keyEquivalentModifierMask = NSEventModifierFlagCommand | NSEventModifierFlagOption;
+    alternative.alternate = YES;
+    [menu addItem:alternative];
+}
+
+- (void)addViewAlignmentItemsToMenu:(NSMenu *)menu includingDefaults:(BOOL)includeDefaults {
     NSMenuItem *contextual = [menu
         addItemWithTitle:NSLocalizedString(@"Contextual Alternates", @"Contextual Alternates")
                   action:@selector(toggleContextualAlternates:)
            keyEquivalent:@"5"];
     contextual.target = self;
+    if (includeDefaults) [self addDefaultAlternativeForItem:contextual
+        title:NSLocalizedString(@"Enable Contextual Alternates by Default", @"Default contextual alternates")
+        key:GAContextualAlternatesDefaultKey menu:menu];
     NSMenuItem *ligatures = [menu
         addItemWithTitle:NSLocalizedString(@"Ligatures", @"Ligatures")
                   action:@selector(toggleLigatures:)
            keyEquivalent:@"6"];
     ligatures.target = self;
+    if (includeDefaults) [self addDefaultAlternativeForItem:ligatures
+        title:NSLocalizedString(@"Enable Ligatures by Default", @"Default ligatures")
+        key:GALigaturesDefaultKey menu:menu];
     NSMenuItem *verticalItem = [menu
         addItemWithTitle:NSLocalizedString(@"Vertical", @"Vertical")
                   action:@selector(toggleWritingDirection:)
            keyEquivalent:@"7"];
     verticalItem.target = self;
+    if (includeDefaults) [self addDefaultAlternativeForItem:verticalItem
+        title:NSLocalizedString(@"Use Vertical Writing by Default", @"Default writing direction")
+        key:GAVerticalWritingDefaultKey menu:menu];
 
     NSMenuItem *alignmentItem = [menu addItemWithTitle:NSLocalizedString(@"Text Alignment", @"Text Alignment")
                                                 action:nil
@@ -637,6 +704,39 @@ static NSString *const GASavedTextsKey = @"GASavedTexts";
     [self.activeMainWindowController zoomMetricsOut];
 }
 
+- (void)adjustLineSpacing:(NSMenuItem *)sender {
+    [self.activeMainWindowController adjustLineSpacing:sender.tag];
+}
+
+- (void)setDefaultViewSetting:(NSMenuItem *)sender {
+    NSString *key = sender.representedObject;
+    NSInteger value = [key isEqualToString:GAViewModeDefaultKey]
+        ? sender.tag : !GAViewDefaultValue(self.preferences, key);
+    [self.preferences setObject:@(value) forKey:key];
+}
+
+- (void)followSystemColors:(id)sender {
+    [self.activeMainWindowController followSystemColors];
+}
+
+- (void)choosePreviewColor:(NSMenuItem *)sender {
+    self.colorOwner = self.activeMainWindowController;
+    self.editingColorRole = (GAPreviewColorRole)sender.tag;
+    NSColorPanel *panel = NSColorPanel.sharedColorPanel;
+    panel.target = nil;
+    panel.showsAlpha = NO;
+    panel.color = [self.colorOwner.previewColors colorForRole:self.editingColorRole];
+    panel.target = self;
+    panel.action = @selector(changePreviewColor:);
+    panel.continuous = YES;
+    [panel makeKeyAndOrderFront:nil];
+}
+
+- (void)changePreviewColor:(NSColorPanel *)sender {
+    if (self.colorOwner.window.isVisible)
+        [self.colorOwner setPreviewColor:sender.color forRole:self.editingColorRole];
+}
+
 - (void)resetZoom:(id)sender {
     [self.activeMainWindowController resetZoom];
 }
@@ -664,6 +764,13 @@ static NSString *const GASavedTextsKey = @"GASavedTexts";
 
 - (BOOL)validateMenuItem:(NSMenuItem *)item {
     SEL action = item.action;
+    if (action == @selector(setDefaultViewSetting:)) {
+        NSString *key = item.representedObject;
+        NSInteger value = GAViewDefaultValue(self.preferences, key);
+        BOOL selected = [key isEqualToString:GAViewModeDefaultKey] ? value == item.tag : value;
+        item.state = selected ? NSControlStateValueOn : NSControlStateValueOff;
+        return YES;
+    }
     // Application-level commands do not require an open font window.
     if (action == @selector(showHelp:) ||
         action == @selector(openFont:) || action == @selector(openRecentFont:) ||
@@ -681,6 +788,14 @@ static NSString *const GASavedTextsKey = @"GASavedTexts";
     if (action == @selector(copyToFontBook:)) {
         return controller.fontURL != nil;
     }
+    if (action == @selector(followSystemColors:)) {
+        item.state = controller.previewColors.followsSystem
+            ? NSControlStateValueOn : NSControlStateValueOff;
+        return YES;
+    }
+    if (action == @selector(choosePreviewColor:)) return YES;
+    if (action == @selector(adjustLineSpacing:))
+        return GAViewModeSupportsTextLayout(controller.viewMode);
     if (action == @selector(switchViewMode:)) {
         item.state = controller.viewMode == (GAViewMode)item.tag
             ? NSControlStateValueOn : NSControlStateValueOff;

@@ -20,6 +20,7 @@ static const NSTimeInterval GAHighlightAppendFade = 0.8;
 static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
 
 @interface GAAllGlyphsGrid : NSView
+@property(nonatomic, strong) GAPreviewColors *previewColors;
 @property (nonatomic, copy) NSArray<GAAllGlyphEntry *> *entries;
 @property (nonatomic, strong, nullable) GAFontBox *fontBox;
 /// Lazily computed GAGlyphPage per entry, and one validity byte per entry.
@@ -47,6 +48,7 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
 - (instancetype)initWithFrame:(NSRect)frameRect {
     self = [super initWithFrame:frameRect];
     if (self) {
+        _previewColors = [GAPreviewColors new];
         _columns = 1;
         _topInset = GAAllGlyphsVerticalMargin;
         _highlightIndex = NSNotFound;
@@ -291,7 +293,7 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
 }
 
 - (void)drawRect:(NSRect)dirtyRect {
-    [GABoundingBoxBackgroundColor() setFill];
+    [[self.previewColors colorForRole:GAPreviewColorBackground] setFill];
     NSRectFill(self.bounds);
     if (self.entries.count == 0 || self.fontBox == nil) {
         return;
@@ -309,7 +311,7 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
     NSUInteger lastRow = (NSUInteger)MAX(0.0, floor((NSMaxY(visible) - contentTop) / stride));
     NSUInteger firstIndex = MIN(self.entries.count, firstRow * self.columns);
     NSUInteger lastIndex = MIN(self.entries.count, (lastRow + 1) * self.columns);
-    NSColor *glyphColor = GAGlyphForegroundColor();
+    NSColor *glyphColor = [self.previewColors colorForRole:GAPreviewColorGlyph];
     CGContextRef context = NSGraphicsContext.currentContext.CGContext;
 
     for (NSUInteger index = firstIndex; index < lastIndex; index++) {
@@ -387,6 +389,12 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
 - (void)setMenu:(NSMenu *)menu {
     [super setMenu:menu];
     self.grid.menu = menu;
+}
+
+- (void)applyPreviewColors:(GAPreviewColors *)colors {
+    self.grid.previewColors = colors;
+    self.scrollView.backgroundColor = [colors colorForRole:GAPreviewColorBackground];
+    [self.grid setNeedsDisplay:YES];
 }
 
 - (void)setDocument:(GAFontDocument *)document {

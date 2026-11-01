@@ -96,3 +96,21 @@
 "Save Current Text" = "Aktuellen Text sichern";
 "Remove from Saved Text" = "Aus gespeicherten Texten entfernen";
 "No Saved Text" = "Keine gespeicherten Texte";
+
+/* Preview colors and native line spacing. */
+"Colors" = "Farben";
+"Follow System" = "Systemeinstellung verwenden";
+"Glyph Color…" = "Glyphenfarbe…";
+"Background Color…" = "Hintergrundfarbe…";
+"Bounding Box Color…" = "Farbe des Begrenzungsrahmens…";
+"Increase Line Spacing" = "Zeilenabstand vergrößern";
+"Decrease Line Spacing" = "Zeilenabstand verkleinern";
+
+/* Explicit defaults for newly opened font windows. */
+"Default to Single Glyph" = "Standardansicht: Einzelne Glyphe";
+"Default to Multi-Character" = "Standardansicht: Mehrere Zeichen";
+"Default to All Glyphs" = "Standardansicht: Alle Glyphen";
+"Show Bounding Box by Default" = "Begrenzungsrahmen standardmäßig einblenden";
+"Enable Contextual Alternates by Default" = "Kontextvarianten standardmäßig aktivieren";
+"Enable Ligatures by Default" = "Ligaturen standardmäßig aktivieren";
+"Use Vertical Writing by Default" = "Vertikalen Text standardmäßig verwenden";

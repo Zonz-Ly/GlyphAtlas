@@ -328,6 +328,7 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
 - (instancetype)initWithFrame:(NSRect)frameRect {
     self = [super initWithFrame:frameRect];
     if (self) {
+        _previewColors = [GAPreviewColors new];
         _sideInsetFraction = GABoundingBoxDefaultSideInsetFraction;
         _showsMetrics = YES;
         _textScale = 1.0;
@@ -410,6 +411,19 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
         return;
     }
     _textAlignment = textAlignment;
+    [self rebuildLayout];
+}
+
+- (void)setLineSpacingSteps:(NSInteger)steps {
+    steps = MAX(-9, MIN(20, steps));
+    if (_lineSpacingSteps == steps) return;
+    GAPreserveScrollPosition(self.enclosingScrollView, ^{
+        self->_lineSpacingSteps = steps;
+        [self rebuildLayout];
+    });
+}
+
+- (void)refreshPreviewColors {
     [self rebuildLayout];
 }
 
@@ -578,10 +592,18 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
 - (NSAttributedString *)displayAttributedStringForFont:(NSFont *)font {
     NSMutableParagraphStyle *paragraph = [[NSMutableParagraphStyle alloc] init];
     paragraph.alignment = self.textAlignment;
+    CTFontRef displayFont = (__bridge CTFontRef)font;
+    CGFloat naturalHeight = CTFontGetAscent(displayFont) + CTFontGetDescent(displayFont)
+        + CTFontGetLeading(displayFont);
+    // Native TextKit accepts negative spacing on the tested system, although
+    // Apple's documentation specifies nonnegative values. Limit removal to
+    // nine tenths of this reference height.
+    paragraph.lineSpacing = self.lineSpacingSteps * 0.1 * naturalHeight;
     NSDictionary<NSAttributedStringKey, id> *attributes = @{
         NSFontAttributeName : font,
         NSForegroundColorAttributeName :
-            GAResolvedColor(GAGlyphForegroundColor(), self.effectiveAppearance),
+            GAResolvedColor([self.previewColors colorForRole:GAPreviewColorGlyph],
+                            self.effectiveAppearance),
         NSParagraphStyleAttributeName : paragraph,
     };
 
@@ -746,13 +768,13 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
 }
 
 - (void)drawRect:(NSRect)dirtyRect {
-    [GABoundingBoxBackgroundColor() setFill];
+    [[self.previewColors colorForRole:GAPreviewColorBackground] setFill];
     NSRectFill(self.bounds);
     if (self.pageContentSize.width <= 0 || self.pageContentSize.height <= 0) {
         return;
     }
     if (self.showsMetrics) {
-        GADrawPage([self pageRect], self.effectiveAppearance);
+        GADrawPage([self pageRect], self.effectiveAppearance, self.previewColors);
     }
 }
 

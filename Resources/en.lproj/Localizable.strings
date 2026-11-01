@@ -96,3 +96,21 @@
 "Save Current Text" = "Save Current Text";
 "Remove from Saved Text" = "Remove from Saved Text";
 "No Saved Text" = "No Saved Text";
+
+/* Preview colors and native line spacing. */
+"Colors" = "Colors";
+"Follow System" = "Follow System";
+"Glyph Color…" = "Glyph Color…";
+"Background Color…" = "Background Color…";
+"Bounding Box Color…" = "Bounding Box Color…";
+"Increase Line Spacing" = "Increase Line Spacing";
+"Decrease Line Spacing" = "Decrease Line Spacing";
+
+/* Explicit defaults for newly opened font windows. */
+"Default to Single Glyph" = "Default to Single Glyph";
+"Default to Multi-Character" = "Default to Multi-Character";
+"Default to All Glyphs" = "Default to All Glyphs";
+"Show Bounding Box by Default" = "Show Bounding Box by Default";
+"Enable Contextual Alternates by Default" = "Enable Contextual Alternates by Default";
+"Enable Ligatures by Default" = "Enable Ligatures by Default";
+"Use Vertical Writing by Default" = "Use Vertical Writing by Default";

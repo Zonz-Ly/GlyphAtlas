@@ -1,5 +1,6 @@
 #import <AppKit/AppKit.h>
 #import "GAFontEngine.h"
+#import "GAPreviewColors.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -9,6 +10,10 @@ NS_ASSUME_NONNULL_BEGIN
 /// the text system. The view only draws the page behind the text and owns the
 /// scroll/zoom geometry.
 @interface GAMultiGlyphView : NSView
+@property(nonatomic, strong) GAPreviewColors *previewColors;
+/// Signed tenths of the displayed font's CoreText ascent + descent + leading.
+@property(nonatomic) NSInteger lineSpacingSteps;
+- (void)refreshPreviewColors;
 @property (nonatomic, strong, nullable) GAFontDocument *document;
 /// Fraction of the viewport used as the page margin. Shares the single-glyph
 /// view default: two zoom-outs from a full page.

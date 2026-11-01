@@ -1,5 +1,6 @@
 #import <AppKit/AppKit.h>
 #import "GAFontEngine.h"
+#import "GAPreviewColors.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -7,7 +8,8 @@ FOUNDATION_EXPORT NSColor *GABoundingBoxBackgroundColor(void);
 FOUNDATION_EXPORT NSColor *GAGlyphForegroundColor(void);
 
 /// Fills the definition page with its standard shadow.
-FOUNDATION_EXPORT void GADrawPage(NSRect page, NSAppearance *appearance);
+FOUNDATION_EXPORT void GADrawPage(NSRect page, NSAppearance *appearance,
+                                 GAPreviewColors *colors);
 
 /// Inset a rect by the same fraction of its width and height. Shared by the
 /// single-glyph view and the multi-character page.
@@ -34,6 +36,7 @@ FOUNDATION_EXPORT void GAPreserveScrollPosition(NSScrollView * _Nullable scrollV
                                                  void (^changes)(void));
 
 @interface GABoundingBoxView : NSView
+@property(nonatomic, strong) GAPreviewColors *previewColors;
 @property (nonatomic, strong, nullable) GAGlyphVariant *variant;
 /// Fraction of the view width/height used as page inset. Default: two
 /// zoom-outs from a full page.

@@ -97,3 +97,21 @@
 "Save Current Text" = "儲存目前文字";
 "Remove from Saved Text" = "從常用文字移除";
 "No Saved Text" = "沒有已儲存的文字";
+
+/* Preview colors and native line spacing. */
+"Colors" = "顏色";
+"Follow System" = "跟隨系統";
+"Glyph Color…" = "字形色…";
+"Background Color…" = "背景色…";
+"Bounding Box Color…" = "邊界框色…";
+"Increase Line Spacing" = "增加行距";
+"Decrease Line Spacing" = "減少行距";
+
+/* Explicit defaults for newly opened font windows. */
+"Default to Single Glyph" = "預設開啟單字形";
+"Default to Multi-Character" = "預設開啟多字元";
+"Default to All Glyphs" = "預設開啟全部字";
+"Show Bounding Box by Default" = "預設顯示邊界框";
+"Enable Contextual Alternates by Default" = "預設開啟上下文替代";
+"Enable Ligatures by Default" = "預設開啟連字";
+"Use Vertical Writing by Default" = "預設開啟直排";

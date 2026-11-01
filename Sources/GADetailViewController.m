@@ -25,6 +25,7 @@
 @end
 
 @interface GADetailViewController ()
+@property(nonatomic, strong) GAPreviewColors *previewColors;
 @property (nonatomic, strong) GABoundingBoxView *boundingBoxView;
 @property (nonatomic, strong) GAAllGlyphsView *allGlyphsView;
 @property (nonatomic, strong) GAMultiGlyphView *multiView;
@@ -45,6 +46,7 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    self.previewColors = [GAPreviewColors new];
 
     self.boundingBoxView = [[GABoundingBoxView alloc] initWithFrame:NSZeroRect];
     self.boundingBoxView.translatesAutoresizingMaskIntoConstraints = NO;
@@ -65,6 +67,9 @@
 
     self.multiView = [[GAMultiGlyphView alloc] initWithFrame:NSMakeRect(0, 0, 900, 760)];
     self.multiScrollView.documentView = self.multiView;
+    self.boundingBoxView.previewColors = self.previewColors;
+    self.multiView.previewColors = self.previewColors;
+    [self.allGlyphsView applyPreviewColors:self.previewColors];
 
     for (NSView *view in @[self.boundingBoxView, self.allGlyphsView, self.multiScrollView]) {
         [NSLayoutConstraint activateConstraints:@[
@@ -157,6 +162,22 @@
 }
 
 #pragma mark - Shared display state
+
+- (void)refreshPreviewColors {
+    self.multiScrollView.backgroundColor =
+        [self.previewColors colorForRole:GAPreviewColorBackground];
+    [self.boundingBoxView setNeedsDisplay:YES];
+    [self.allGlyphsView applyPreviewColors:self.previewColors];
+    [self.multiView refreshPreviewColors];
+}
+
+- (void)adjustLineSpacing:(NSInteger)steps {
+    self.multiView.lineSpacingSteps += steps;
+}
+
+- (void)resetLineSpacing {
+    self.multiView.lineSpacingSteps = 0;
+}
 
 - (void)setVariant:(GAGlyphVariant *)variant {
     self.boundingBoxView.variant = variant;

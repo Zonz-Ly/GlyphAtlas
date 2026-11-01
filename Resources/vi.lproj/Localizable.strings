@@ -93,3 +93,21 @@
 "Save Current Text" = "Lưu văn bản hiện tại";
 "Remove from Saved Text" = "Xóa khỏi văn bản đã lưu";
 "No Saved Text" = "Không có văn bản đã lưu";
+
+/* Preview colors and native line spacing. */
+"Colors" = "Màu sắc";
+"Follow System" = "Theo hệ thống";
+"Glyph Color…" = "Màu glyph…";
+"Background Color…" = "Màu nền…";
+"Bounding Box Color…" = "Màu khung bao…";
+"Increase Line Spacing" = "Tăng giãn dòng";
+"Decrease Line Spacing" = "Giảm giãn dòng";
+
+/* Explicit defaults for newly opened font windows. */
+"Default to Single Glyph" = "Mặc định mở Một glyph";
+"Default to Multi-Character" = "Mặc định mở Nhiều ký tự";
+"Default to All Glyphs" = "Mặc định mở Tất cả glyph";
+"Show Bounding Box by Default" = "Mặc định hiển thị khung bao";
+"Enable Contextual Alternates by Default" = "Mặc định bật Thay thế Theo ngữ cảnh";
+"Enable Ligatures by Default" = "Mặc định bật chữ ghép";
+"Use Vertical Writing by Default" = "Mặc định dùng chữ dọc";

@@ -1,10 +1,15 @@
 #import <AppKit/AppKit.h>
 #import "GAFontEngine.h"
 #import "GAViewMode.h"
+#import "GAPreviewColors.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
 @interface GADetailViewController : NSViewController
+@property(nonatomic, strong, readonly) GAPreviewColors *previewColors;
+- (void)refreshPreviewColors;
+- (void)adjustLineSpacing:(NSInteger)steps;
+- (void)resetLineSpacing;
 @property (nonatomic) GAViewMode viewMode;
 @property (nonatomic, copy, nullable) void (^onAllGlyphDoubleClick)(GAAllGlyphEntry *entry);
 @property(nonatomic, copy, nullable) void (^onGlyphSelected)

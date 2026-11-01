@@ -7,6 +7,7 @@
 #import "GAFontResource.h"
 #import "GAVariationViewController.h"
 #import "GAInputFocus.h"
+#import "GAViewDefaults.h"
 #import <CoreText/CoreText.h>
 
 /// A line break is layout, not a glyph: its character group is kept for text
@@ -203,10 +204,15 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 
     self = [super initWithWindow:window];
     if (self) {
-        _usesContextualAlternates = YES;
-        _usesLigatures = YES;
+        NSUserDefaults *defaults = NSUserDefaults.standardUserDefaults;
+        _viewMode = (GAViewMode)GAViewDefaultValue(defaults, GAViewModeDefaultKey);
+        _usesContextualAlternates = GAViewDefaultValue(defaults, GAContextualAlternatesDefaultKey);
+        _usesLigatures = GAViewDefaultValue(defaults, GALigaturesDefaultKey);
+        _verticalWriting = GAViewDefaultValue(defaults, GAVerticalWritingDefaultKey);
         window.delegate = self;
         [self configureInterfaceWithWindow:window];
+        [self.detailViewController setShowsMetrics:_showsMetrics];
+        [self setViewMode:_viewMode];
 
         __weak typeof(self) weakSelf = self;
         window.onFontDrop = ^(NSURL *url) {
@@ -229,7 +235,8 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 }
 
 - (void)configureInterfaceWithWindow:(NSWindow *)window {
-    _showsMetrics = YES;
+    _showsMetrics = GAViewDefaultValue(NSUserDefaults.standardUserDefaults,
+                                     GABoundingBoxDefaultKey);
     _multiText = @"";
     _multiGroups = @[];
     _multiGroupSources = [NSMapTable weakToStrongObjectsMapTable];
@@ -437,6 +444,7 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 }
 
 - (void)resetZoom {
+    [self.detailViewController resetLineSpacing];
     if (_viewMode == GAViewModeAllGlyphs) {
         [self.detailViewController resetAllGlyphsZoom];
     } else if (_viewMode == GAViewModeSingleGlyph) {
@@ -444,6 +452,25 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
     } else if (_viewMode == GAViewModeMultiCharacter) {
         [self.detailViewController resetMultiTextZoom];
     }
+}
+
+- (void)adjustLineSpacing:(NSInteger)steps {
+    if (GAViewModeSupportsTextLayout(self.viewMode))
+        [self.detailViewController adjustLineSpacing:steps];
+}
+
+- (GAPreviewColors *)previewColors {
+    return self.detailViewController.previewColors;
+}
+
+- (void)setPreviewColor:(NSColor *)color forRole:(GAPreviewColorRole)role {
+    [self.previewColors setColor:color forRole:role];
+    [self.detailViewController refreshPreviewColors];
+}
+
+- (void)followSystemColors {
+    [self.previewColors followSystem];
+    [self.detailViewController refreshPreviewColors];
 }
 
 - (void)setTextAlignment:(NSTextAlignment)alignment {

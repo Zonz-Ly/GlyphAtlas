@@ -1,9 +1,11 @@
 #import <AppKit/AppKit.h>
 #import "GAFontEngine.h"
+#import "GAPreviewColors.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
 @interface GAAllGlyphsView : NSView
+- (void)applyPreviewColors:(GAPreviewColors *)colors;
 @property (nonatomic, strong, nullable) GAFontDocument *document;
 @property (nonatomic, copy, nullable) void (^onGlyphDoubleClick)(GAAllGlyphEntry *entry);
 - (void)zoomIn;

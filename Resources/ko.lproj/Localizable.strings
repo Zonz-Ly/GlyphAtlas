@@ -96,3 +96,21 @@
 "Save Current Text" = "현재 텍스트 저장";
 "Remove from Saved Text" = "저장된 텍스트에서 제거";
 "No Saved Text" = "저장된 텍스트 없음";
+
+/* Preview colors and native line spacing. */
+"Colors" = "색상";
+"Follow System" = "시스템 설정 따르기";
+"Glyph Color…" = "글리프 색상…";
+"Background Color…" = "배경 색상…";
+"Bounding Box Color…" = "경계 상자 색상…";
+"Increase Line Spacing" = "줄 간격 늘리기";
+"Decrease Line Spacing" = "줄 간격 줄이기";
+
+/* Explicit defaults for newly opened font windows. */
+"Default to Single Glyph" = "기본 보기: 단일 글리프";
+"Default to Multi-Character" = "기본 보기: 여러 문자";
+"Default to All Glyphs" = "기본 보기: 모든 글리프";
+"Show Bounding Box by Default" = "기본으로 경계 상자 표시";
+"Enable Contextual Alternates by Default" = "기본으로 상황별 대체 활성화";
+"Enable Ligatures by Default" = "기본으로 합자 활성화";
+"Use Vertical Writing by Default" = "기본으로 세로쓰기 사용";

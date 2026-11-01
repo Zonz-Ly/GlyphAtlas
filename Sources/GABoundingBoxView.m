@@ -127,7 +127,7 @@ static BOOL GAAppearanceIsDark(NSAppearance *appearance) {
     return [match isEqualToString:NSAppearanceNameDarkAqua];
 }
 
-void GADrawPage(NSRect page, NSAppearance *appearance) {
+void GADrawPage(NSRect page, NSAppearance *appearance, GAPreviewColors *colors) {
     BOOL darkAppearance = GAAppearanceIsDark(appearance);
     [NSGraphicsContext saveGraphicsState];
     NSShadow *shadow = [[NSShadow alloc] init];
@@ -136,7 +136,7 @@ void GADrawPage(NSRect page, NSAppearance *appearance) {
     shadow.shadowBlurRadius = 22;
     shadow.shadowOffset = NSMakeSize(0, -8);
     [shadow set];
-    [GABoundingBoxBackgroundColor() setFill];
+    [[colors colorForRole:GAPreviewColorBoundingBox] setFill];
     [[NSBezierPath bezierPathWithRoundedRect:page xRadius:2 yRadius:2] fill];
     [NSGraphicsContext restoreGraphicsState];
 }
@@ -180,6 +180,7 @@ NSColor *GAGlyphForegroundColor(void) {
         self.layerContentsRedrawPolicy = NSViewLayerContentsRedrawOnSetNeedsDisplay;
         self.accessibilityLabel = NSLocalizedString(@"Bounding Box", @"Bounding Box");
 
+        _previewColors = [GAPreviewColors new];
         _sideInsetFraction = GABoundingBoxDefaultSideInsetFraction;
         _showsMetrics = YES;
         NSMagnificationGestureRecognizer *magnification =
@@ -253,7 +254,7 @@ NSColor *GAGlyphForegroundColor(void) {
 }
 
 - (void)drawRect:(NSRect)dirtyRect {
-    [GABoundingBoxBackgroundColor() setFill];
+    [[self.previewColors colorForRole:GAPreviewColorBackground] setFill];
     NSRectFill(self.bounds);
 
     GAGlyphVariant *variant = self.variant;
@@ -378,7 +379,7 @@ NSColor *GAGlyphForegroundColor(void) {
     CGFloat glyphScale = scale * shapeToUnits;
 
     if (self.showsMetrics) {
-        GADrawPage(page, self.effectiveAppearance);
+        GADrawPage(page, self.effectiveAppearance, self.previewColors);
     }
 
     NSUInteger count = variant.glyphIDs.count;
@@ -392,7 +393,8 @@ NSColor *GAGlyphForegroundColor(void) {
     CGContextTranslateCTM(context, pageX, pageY + baselineUnits * scale);
     CGContextScaleCTM(context, glyphScale, glyphScale);
     CGContextSetTextMatrix(context, CGAffineTransformIdentity);
-    CGContextSetFillColorWithColor(context, GAGlyphForegroundColor().CGColor);
+    CGContextSetFillColorWithColor(context,
+        [self.previewColors colorForRole:GAPreviewColorGlyph].CGColor);
     GADrawGlyphVariant(variant, context);
     CGContextRestoreGState(context);
 }

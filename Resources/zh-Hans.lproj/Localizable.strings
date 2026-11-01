@@ -97,3 +97,21 @@
 "Save Current Text" = "保存当前文本";
 "Remove from Saved Text" = "从常用文本中移除";
 "No Saved Text" = "没有已保存的文本";
+
+/* Preview colors and native line spacing. */
+"Colors" = "颜色";
+"Follow System" = "跟随系统";
+"Glyph Color…" = "字形颜色…";
+"Background Color…" = "背景颜色…";
+"Bounding Box Color…" = "边界框颜色…";
+"Increase Line Spacing" = "增大行距";
+"Decrease Line Spacing" = "减小行距";
+
+/* Explicit defaults for newly opened font windows. */
+"Default to Single Glyph" = "默认打开单字形";
+"Default to Multi-Character" = "默认打开多字符";
+"Default to All Glyphs" = "默认打开全部字";
+"Show Bounding Box by Default" = "默认显示边界框";
+"Enable Contextual Alternates by Default" = "默认开启上下文替换";
+"Enable Ligatures by Default" = "默认开启连字";
+"Use Vertical Writing by Default" = "默认开启竖排";

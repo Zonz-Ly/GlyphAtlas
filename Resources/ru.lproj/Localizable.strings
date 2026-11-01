@@ -96,3 +96,21 @@
 "Save Current Text" = "Сохранить текущий текст";
 "Remove from Saved Text" = "Удалить из сохранённых текстов";
 "No Saved Text" = "Нет сохранённых текстов";
+
+/* Preview colors and native line spacing. */
+"Colors" = "Цвета";
+"Follow System" = "Как в системе";
+"Glyph Color…" = "Цвет глифов…";
+"Background Color…" = "Цвет фона…";
+"Bounding Box Color…" = "Цвет ограничивающей рамки…";
+"Increase Line Spacing" = "Увеличить межстрочный интервал";
+"Decrease Line Spacing" = "Уменьшить межстрочный интервал";
+
+/* Explicit defaults for newly opened font windows. */
+"Default to Single Glyph" = "Вид по умолчанию: Один глиф";
+"Default to Multi-Character" = "Вид по умолчанию: Несколько символов";
+"Default to All Glyphs" = "Вид по умолчанию: Все глифы";
+"Show Bounding Box by Default" = "Показывать ограничивающую рамку по умолчанию";
+"Enable Contextual Alternates by Default" = "Включать контекстные варианты по умолчанию";
+"Enable Ligatures by Default" = "Включать лигатуры по умолчанию";
+"Use Vertical Writing by Default" = "Использовать вертикальное письмо по умолчанию";
