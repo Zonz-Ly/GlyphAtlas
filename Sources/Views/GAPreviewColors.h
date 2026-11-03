@@ -1,6 +1,10 @@
 #import <AppKit/AppKit.h>
 
 NS_ASSUME_NONNULL_BEGIN
+FOUNDATION_EXPORT NSColor *GABoundingBoxBackgroundColor(void);
+FOUNDATION_EXPORT NSColor *GABoundingBoxShadowColor(void);
+FOUNDATION_EXPORT NSColor *GAGlyphForegroundColor(void);
+
 typedef NS_ENUM(NSInteger, GAPreviewColorRole) {
     GAPreviewColorGlyph,
     GAPreviewColorBackground,

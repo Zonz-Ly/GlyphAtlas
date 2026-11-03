@@ -1,12 +1,8 @@
 #import <AppKit/AppKit.h>
-#import "GAFontEngine.h"
+#import "Font/GAFontEngine.h"
 #import "GAPreviewColors.h"
 
 NS_ASSUME_NONNULL_BEGIN
-
-FOUNDATION_EXPORT NSColor *GABoundingBoxBackgroundColor(void);
-FOUNDATION_EXPORT NSColor *GABoundingBoxShadowColor(void);
-FOUNDATION_EXPORT NSColor *GAGlyphForegroundColor(void);
 
 /// Fills the definition page and draws its preview shadow.
 FOUNDATION_EXPORT void GADrawPage(NSRect page, NSAppearance *appearance,

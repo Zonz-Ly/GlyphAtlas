@@ -1,5 +1,5 @@
 #import <AppKit/AppKit.h>
-#import "GAFontEngine.h"
+#import "Font/GAFontEngine.h"
 #import "GAViewMode.h"
 #import "GAPreviewColors.h"
 
@@ -19,10 +19,11 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)setVariant:(nullable GAGlyphVariant *)variant;
 - (void)setFontDocument:(nullable GAFontDocument *)document;
 - (void)setShowsMetrics:(BOOL)showsMetrics;
+- (void)zoomIn;
+- (void)zoomOut;
+- (void)resetZoom;
 - (void)zoomBoundingBoxIn;
 - (void)zoomBoundingBoxOut;
-- (void)zoomAllGlyphsIn;
-- (void)zoomAllGlyphsOut;
 - (void)revealAllGlyphID:(NSNumber *)glyphID quick:(BOOL)quick;
 - (BOOL)containsAllGlyphAtWindowPoint:(NSPoint)point;
 - (void)setMultiText:(NSString *)text groups:(NSArray<GACharacterGroup *> *)groups;
@@ -34,11 +35,6 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)setUnderlined:(BOOL)enabled;
 - (void)setStruckThrough:(BOOL)enabled;
 - (void)setOutlined:(BOOL)enabled;
-- (void)resetBoundingBoxZoom;
-- (void)resetAllGlyphsZoom;
-- (void)resetMultiTextZoom;
-- (void)zoomMultiTextIn;
-- (void)zoomMultiTextOut;
 @end
 
 NS_ASSUME_NONNULL_END

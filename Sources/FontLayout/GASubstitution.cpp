@@ -17,13 +17,6 @@ struct Rule {
     Span scope;
 };
 
-std::string featureLabel(const LookupStep &step) {
-    auto label = tagName(step.feature);
-    if (step.value > 1)
-        label += " " + std::to_string(step.value);
-    return label;
-}
-
 // Replaying a contextual rule with another nested choice preserves all later
 // actions and their updated SequenceIndex mappings, rather than saving a GID
 // snapshot halfway through that rule.
@@ -214,7 +207,7 @@ class Substitution {
                 Buffer before = trace_ ? buffer_ : Buffer{};
                 result = subtable(*rule.subtable, lookup, at, step, rule.pattern);
                 if (trace_) {
-                    trace_->changed(before, buffer_, featureLabel(step));
+                    trace_->changed(before, buffer_, featureLabel(step.feature, step.value));
                 }
             }
         } else if (trace_ && trace_->provenance) {
@@ -225,7 +218,7 @@ class Substitution {
                 Buffer before = nested ? Buffer{} : buffer_;
                 result = subtable(*rule.subtable, lookup, at, step, rule.pattern);
                 // Nested actions record their own actual input/output.
-                if (!nested) trace_->changed(before, buffer_, featureLabel(step));
+                if (!nested) trace_->changed(before, buffer_, featureLabel(step.feature, step.value));
             }
         } else {
             for (const auto &sub : lookup.subtables) {
@@ -279,7 +272,7 @@ class Substitution {
         Buffer before = buffer_;
         subtable(*rule.subtable, lookups_[step.lookup], at, step, rule.pattern);
         if (trace_) {
-            trace_->changed(before, buffer_, featureLabel(step));
+            trace_->changed(before, buffer_, featureLabel(step.feature, step.value));
         }
         active_.pop_back();
     }
@@ -303,7 +296,7 @@ class Substitution {
                     i = result.matched ? result.next : i + 1;
                 }
             if (trace_ && !trace_->provenance) {
-                trace_->changed(before, buffer_, featureLabel(step));
+                trace_->changed(before, buffer_, featureLabel(step.feature, step.value));
             }
         }
     }

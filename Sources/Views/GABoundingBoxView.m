@@ -121,12 +121,6 @@ void GAPreserveScrollPosition(NSScrollView *scrollView, void (^changes)(void)) {
     GARestoreScrollPosition(scrollView, position);
 }
 
-static BOOL GAAppearanceIsDark(NSAppearance *appearance) {
-    NSString *match = [appearance bestMatchFromAppearancesWithNames:
-        @[NSAppearanceNameAqua, NSAppearanceNameDarkAqua]];
-    return [match isEqualToString:NSAppearanceNameDarkAqua];
-}
-
 void GADrawPage(NSRect page, NSAppearance *appearance, GAPreviewColors *colors) {
     [NSGraphicsContext saveGraphicsState];
     NSShadow *shadow = [[NSShadow alloc] init];
@@ -140,37 +134,6 @@ void GADrawPage(NSRect page, NSAppearance *appearance, GAPreviewColors *colors) 
     [[colors colorForRole:GAPreviewColorBackground] setFill];
     [[NSBezierPath bezierPathWithRoundedRect:page xRadius:2 yRadius:2] fill];
     [NSGraphicsContext restoreGraphicsState];
-}
-
-NSColor *GABoundingBoxShadowColor(void) {
-    return [NSColor colorWithName:@"GABoundingBoxShadow"
-                  dynamicProvider:^NSColor *(NSAppearance *appearance) {
-        return [NSColor.blackColor colorWithAlphaComponent:GAAppearanceIsDark(appearance) ? 0.58 : 0.18];
-    }];
-}
-
-NSColor *GABoundingBoxBackgroundColor(void) {
-    return [NSColor colorWithName:@"GABoundingBoxBackground"
-                  dynamicProvider:^NSColor *(NSAppearance *appearance) {
-        return GAAppearanceIsDark(appearance)
-            ? [NSColor colorWithSRGBRed:(60.0 / 255.0)
-                                   green:(60.0 / 255.0)
-                                    blue:(60.0 / 255.0)
-                                   alpha:1.0]
-            : [NSColor whiteColor];
-    }];
-}
-
-NSColor *GAGlyphForegroundColor(void) {
-    return [NSColor colorWithName:@"GAGlyphForeground"
-                  dynamicProvider:^NSColor *(NSAppearance *appearance) {
-        CGFloat component = GAAppearanceIsDark(appearance)
-            ? (0xEE / 255.0) : (0x22 / 255.0);
-        return [NSColor colorWithSRGBRed:component
-                                   green:component
-                                    blue:component
-                                   alpha:1.0];
-    }];
 }
 
 @implementation GABoundingBoxView {

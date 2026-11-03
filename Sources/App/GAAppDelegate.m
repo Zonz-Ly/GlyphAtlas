@@ -1,7 +1,7 @@
 #import "GAAppDelegate.h"
 #import "GAMainWindowController.h"
-#import "GAFontResource.h"
-#import "GAOpenTypeLanguages.h"
+#import "Font/GAFontResource.h"
+#import "Font/GAFontFeatures.h"
 
 static NSString *const GARecentFontPathsKey = @"GAPersistentRecentFontPaths";
 static NSString *const GASavedTextsKey = @"GASavedTexts";

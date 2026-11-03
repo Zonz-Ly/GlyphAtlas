@@ -1,7 +1,7 @@
 #import <AppKit/AppKit.h>
-#import "GAViewMode.h"
-#import "GAPreviewColors.h"
-#import "GAFontFeatures.h"
+#import "Views/GAViewMode.h"
+#import "Views/GAPreviewColors.h"
+#import "Font/GAFontFeatures.h"
 
 NS_ASSUME_NONNULL_BEGIN
 

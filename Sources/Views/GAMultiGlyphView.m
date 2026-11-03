@@ -1,7 +1,7 @@
 #import "GAMultiGlyphView.h"
 #import "GABoundingBoxView.h"
-#import "GAUnicode.h"
-#import "GAFontFeatures.h"
+#import "Font/GAUnicode.h"
+#import "Font/GAFontFeatures.h"
 #import <CoreText/CoreText.h>
 #import <CoreText/SFNTLayoutTypes.h>
 #import <math.h>
@@ -60,18 +60,6 @@ static NSColor *GAResolvedColor(NSColor *color, NSAppearance *appearance) {
 
 NS_ASSUME_NONNULL_BEGIN
 
-/// Builds fixed-GID display text for explicit selections and vertical quotes.
-/// Each component keeps its override; the user's source text is untouched.
-static NSAttributedString *_Nullable GACreateGlyphDisplayString(
-    NSArray<NSNumber *> *glyphIDs, NSString *baseString, NSFont *font,
-    NSDictionary<NSAttributedStringKey, id> *attributes,
-    NSString *_Nullable (^baseForGlyph)(CGGlyph glyph));
-/// Replaces a source range in a display copy and updates its UTF-16 hit map.
-static void
-GAReplaceSeedDisplayRange(NSMutableAttributedString *display,
-                          NSMutableArray<NSNumber *> *sourceIndices,
-                          NSRange sourceRange, NSAttributedString *replacement);
-
 /// Native TextKit GIDs for one source span, distinct from sidebar candidates.
 @interface GAGlyphLayoutRun : NSObject
 @property(nonatomic) NSRange range;
@@ -82,11 +70,6 @@ GAReplaceSeedDisplayRange(NSMutableAttributedString *display,
 @property(nonatomic) BOOL requiresCTLineRef;
 @end
 
-/// Reads native GIDs and maps display clusters back to source UTF-16 ranges.
-/// Composed characters and explicit selection ranges remain atomic.
-static NSArray<GAGlyphLayoutRun *> *
-GAReadDisplayGlyphRuns(NSTextLayoutManager *layout, NSArray<NSNumber *> *sourceIndices,
-                       NSArray<NSValue *> *atomicRanges, NSString *sourceText);
 NS_ASSUME_NONNULL_END
 
 @implementation GAGlyphLayoutRun
@@ -98,6 +81,7 @@ NS_ASSUME_NONNULL_END
 
 #pragma mark - Display copy
 
+/// Builds fixed-GID display text without changing the user's source text.
 static NSAttributedString *GACreateGlyphDisplayString(
     NSArray<NSNumber *> *glyphIDs, NSString *baseString, NSFont *font,
     NSDictionary<NSAttributedStringKey, id> *attributes,
@@ -119,6 +103,7 @@ static NSAttributedString *GACreateGlyphDisplayString(
     return result;
 }
 
+/// Replaces a display range and updates its UTF-16 source map.
 static void GAReplaceSeedDisplayRange(NSMutableAttributedString *display,
                               NSMutableArray<NSNumber *> *sourceIndices,
                               NSRange sourceRange, NSAttributedString *replacement) {
@@ -200,6 +185,7 @@ static NSArray<GAGlyphLayoutRun *> *MapGlyphLayoutRuns(
     return MergeHits(atoms);
 }
 
+/// Reads native GIDs, preserving composed characters and explicit selections.
 static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
     NSTextLayoutManager *layout, NSArray<NSNumber *> *sourceIndices,
     NSArray<NSValue *> *atomicRanges, NSString *sourceText) {

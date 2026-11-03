@@ -26,4 +26,17 @@ NS_ASSUME_NONNULL_BEGIN
 FOUNDATION_EXPORT NSArray<GACharacterGroup *> *
 GABuildDisplayGroups(NSArray<GACharacterGroup *> *groups, NSString *text,
                      NSArray<GAGlyphSelectionRun *> *selections, GAFontDocument *document);
+/// A complete sidebar and native-preview projection of one query.
+@interface GAScanDisplaySnapshot : NSObject
+@property (nonatomic, strong) NSArray<GACharacterGroup *> *display;
+@property (nonatomic, copy) NSString *text;
+@property (nonatomic, copy) NSArray<GAGlyphSelectionRun *> *selections;
+@property (nonatomic, copy, nonnull) NSString *multiText;
+@property (nonatomic, strong, nonnull) NSArray<GACharacterGroup *> *multiGroups;
+@property (nonatomic, strong, nonnull) NSMapTable<GACharacterGroup *, GACharacterGroup *> *multiGroupSources;
+@end
+
+FOUNDATION_EXPORT GAScanDisplaySnapshot *GABuildScanDisplaySnapshot(NSString *text,
+    NSArray<GACharacterGroup *> *groups);
+
 NS_ASSUME_NONNULL_END

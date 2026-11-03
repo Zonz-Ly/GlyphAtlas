@@ -255,3 +255,96 @@ NSArray<GACharacterGroup *> *GABuildDisplayGroups(NSArray<GACharacterGroup *> *g
 
     return display;
 }
+
+#pragma mark - Preview projection
+
+@implementation GAScanDisplaySnapshot
+@end
+
+/// A line break is layout, not a glyph: its character group is kept for text
+/// ranges but hidden from the glyph list.
+static BOOL GAGroupIsLineBreak(GACharacterGroup *group) {
+    return group.text.length == 1 && [group.text characterAtIndex:0] == '\n';
+}
+
+/// A missing glyph is represented by GID 0. Seeds are explicit replacements
+/// and keep their source text; line breaks are layout, not glyphs.
+/// The caller excludes inserted ligatures and validates the source range.
+static BOOL GAGroupIsMissing(GACharacterGroup *group) {
+    if (group.seeded || GAGroupIsLineBreak(group)) {
+        return NO;
+    }
+    GAGlyphVariant *base = group.variants.firstObject;
+    return base.glyphIDs.count > 0 &&
+           base.glyphIDs.firstObject.unsignedShortValue == 0;
+}
+
+/// Builds the sidebar/multi-character snapshot. Missing glyph groups are
+/// omitted from the multi-character text; the sidebar keeps the original text
+/// and the full display list.
+GAScanDisplaySnapshot *GABuildScanDisplaySnapshot(NSString *text, NSArray<GACharacterGroup *> *groups) {
+    NSMutableString *multiText = [NSMutableString string];
+    NSMutableArray<GACharacterGroup *> *multiGroups = [NSMutableArray array];
+    NSMapTable<GACharacterGroup *, GACharacterGroup *> *sources =
+        [NSMapTable weakToStrongObjectsMapTable];
+    NSMutableArray<GACharacterGroup *> *layoutGroups = [NSMutableArray array];
+    for (GACharacterGroup *group in groups) {
+        if (group.insertedLigature) continue;
+        GACharacterGroup *previous = layoutGroups.lastObject;
+        NSRange cluster = [text rangeOfComposedCharacterSequenceAtIndex:group.textRange.location];
+        if (!group.seeded && previous && !previous.seeded &&
+            NSMaxRange(previous.textRange) == group.textRange.location &&
+            previous.textRange.location >= cluster.location) {
+            previous.textRange = NSUnionRange(previous.textRange, group.textRange);
+            previous.text = [text substringWithRange:previous.textRange];
+            GAGlyphVariant *base = previous.variants.firstObject;
+            base.glyphIDs = [base.glyphIDs arrayByAddingObjectsFromArray:group.variants.firstObject.glyphIDs];
+        } else {
+            GACharacterGroup *copy = [[GACharacterGroup alloc] init];
+            copy.text = group.text;
+            copy.textRange = group.textRange;
+            copy.seeded = group.seeded;
+            GAGlyphVariant *base = [[GAGlyphVariant alloc] init];
+            base.fontBox = group.variants.firstObject.fontBox;
+            base.glyphIDs = group.variants.firstObject.glyphIDs;
+            copy.variants = @[base];
+            [layoutGroups addObject:copy];
+        }
+    }
+    NSUInteger cursor = 0;
+    for (GACharacterGroup *group in layoutGroups) {
+        NSRange range = group.textRange;
+        if (range.location == NSNotFound || range.length == 0 ||
+            NSMaxRange(range) > text.length || range.location < cursor) {
+            continue;
+        }
+        if (range.location > cursor) {
+            [multiText appendString:
+                [text substringWithRange:NSMakeRange(cursor, range.location - cursor)]];
+        }
+        cursor = NSMaxRange(range);
+        if (GAGroupIsMissing(group)) {
+            continue;
+        }
+        NSString *groupText = [text substringWithRange:range];
+        GACharacterGroup *copy = [[GACharacterGroup alloc] init];
+        copy.text = groupText;
+        copy.textRange = NSMakeRange(multiText.length, groupText.length);
+        copy.variants = group.variants;
+        copy.seeded = group.seeded;
+        [sources setObject:group forKey:copy];
+        [multiGroups addObject:copy];
+        [multiText appendString:groupText];
+    }
+    if (cursor < text.length) {
+        [multiText appendString:
+            [text substringWithRange:NSMakeRange(cursor, text.length - cursor)]];
+    }
+    GAScanDisplaySnapshot *snapshot = [[GAScanDisplaySnapshot alloc] init];
+    snapshot.display = groups;
+    snapshot.text = text;
+    snapshot.multiText = [multiText copy];
+    snapshot.multiGroups = multiGroups;
+    snapshot.multiGroupSources = sources;
+    return snapshot;
+}

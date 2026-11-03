@@ -1,5 +1,5 @@
 #import "GASubstitutionEngine.h"
-#import "GAGlyphSelection.h"
+#import "Font/GAGlyphSelection.h"
 #import "GAAAT.h"
 #import "GACmap.h"
 #import "GAOpenType.h"
@@ -41,12 +41,11 @@ struct Resource {
         unsigned outer = 0, inner = 0;
     } ascenderVariation, descenderVariation;
     bool verticalAAT;
-    unsigned glyphCount;
     double unitsPerEm;
     std::vector<Domain> domains;
     std::vector<Feature> featureSpecs;
     Resource(CTFontRef font)
-        : glyphCount(unsigned(CTFontGetGlyphCount(font))), unitsPerEm(CTFontGetUnitsPerEm(font)) {
+        : unitsPerEm(CTFontGetUnitsPerEm(font)) {
         auto read = [&](Tag name, auto &&assign) {
             try {
                 assign(tableBytes(font, name));
@@ -320,9 +319,7 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
     try {
         const auto &r = *self.program->resource;
         for (const auto &output : r.gsub.relatedSubstitutions(glyph, r.gdef)) {
-            std::string label = tagName(output.feature);
-            if (output.value > 1)
-                label += " " + std::to_string(output.value);
+            std::string label = featureLabel(output.feature, output.value);
             [outputs addObject:@{
                 @"glyphs" : glyphArray(output.glyphs),
                 @"source" : @(label.c_str())
@@ -404,7 +401,6 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
                         try {
                             r.substitute(items, domain, settings, &trace);
                         } catch (const InvalidTable &) {
-                            items = run.glyphs;
                             trace = {};
                         }
                         for (auto change : trace.changes) {

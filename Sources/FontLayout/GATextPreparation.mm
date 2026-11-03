@@ -1,8 +1,9 @@
 #import "GATextPreparation.h"
-#import "GAGlyphSelection.h"
+#import "Font/GAGlyphSelection.h"
 #include "GACmap.h"
 #include <cctype>
 #include <deque>
+#include <memory>
 extern "C" {
 int32_t uscript_getScript(int32_t, int32_t *);
 const char *uscript_getShortName(int32_t);
@@ -119,13 +120,13 @@ std::vector<TextRun> prepareText(NSString *text, const Cmap &cmap,
     }
     std::vector<uint16_t> units(text.length);
     [text getCharacters:units.data() range:NSMakeRange(0, text.length)];
-    void *bidi = ubidi_openSized(int32_t(text.length), 0, &status);
+    std::unique_ptr<void, decltype(&ubidi_close)> bidi(
+        ubidi_openSized(int32_t(text.length), 0, &status), ubidi_close);
     if (!bidi)
         throw InvalidTable("Unicode bidi allocation failed");
-    ubidi_setPara(bidi, units.data(), int32_t(units.size()),
+    ubidi_setPara(bidi.get(), units.data(), int32_t(units.size()),
         baseDirection < 0 ? 0xfe : uint8_t(baseDirection), nullptr, &status);
     if (status > 0) {
-        ubidi_close(bidi);
         throw InvalidTable("Unicode bidi analysis failed");
     }
     const int32_t ignorableProperty = u_getPropertyEnum("Default_Ignorable_Code_Point");
@@ -135,7 +136,7 @@ std::vector<TextRun> prepareText(NSString *text, const Cmap &cmap,
         start = NSMaxRange(range);
         TextRun group;
         group.source = {uint32_t(range.location), uint32_t(NSMaxRange(range))};
-        group.level = ubidi_getLevelAt(bidi, int32_t(range.location));
+        group.level = ubidi_getLevelAt(bidi.get(), int32_t(range.location));
         // Normalize on either side of a literal selection independently, so
         // a newly typed accent cannot compose away its selected base glyph.
         auto boundary = std::upper_bound(seedBoundaries.begin(), seedBoundaries.end(), range.location);
@@ -188,7 +189,7 @@ std::vector<TextRun> prepareText(NSString *text, const Cmap &cmap,
         }
         groups.push_back(std::move(group));
     }
-    ubidi_close(bidi);
+    bidi.reset();
     for (GAGlyphSelectionRun *selection : selections) {
         NSRange range = selection.range;
         Span span{uint32_t(range.location), uint32_t(NSMaxRange(range))};

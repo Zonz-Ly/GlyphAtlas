@@ -1,8 +1,8 @@
 #import "GASidebarViewController.h"
-#import "GASidebarInput.h"
+#import "Input/GASidebarInput.h"
 #import "GAGlyphViews.h"
-#import "GAUnicode.h"
-#import "GAMacOS26.h"
+#import "Font/GAUnicode.h"
+#import "GAViewMode.h"
 
 @interface GARowItem : NSObject
 @property (nonatomic, strong, nonnull) GACharacterGroup *group;
@@ -420,8 +420,18 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
 - (GARowItem *)selectedVariantRow {
     NSInteger row = self.tableView.selectedRow;
     if (row < 0 || row >= (NSInteger)self.rows.count) return nil;
-    GARowItem *item = self.rows[(NSUInteger)row];
-    return item;
+    return self.rows[(NSUInteger)row];
+}
+
+/// Keep the selected variant and its source range as one state update.
+- (void)rememberSelectedRow:(NSInteger)row {
+    if (row >= 0 && row < (NSInteger)self.rows.count) {
+        self.selectedVariant = self.rows[(NSUInteger)row].variant;
+        self.selectedVariantTextRange = self.rows[(NSUInteger)row].group.textRange;
+    } else {
+        self.selectedVariant = nil;
+        self.selectedVariantTextRange = NSMakeRange(NSNotFound, 0);
+    }
 }
 
 - (void)activateRowAtIndex:(NSInteger)row
@@ -707,8 +717,7 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
     } else {
         [self scrollGroupContainingRow:row];
     }
-    self.selectedVariant = self.rows[(NSUInteger)row].variant;
-    self.selectedVariantTextRange = self.rows[(NSUInteger)row].group.textRange;
+    [self rememberSelectedRow:row];
     self.pendingSelectionGlyphKey = nil;
     self.suppressSelectionCallback = NO;
     [self notifySelection];
@@ -779,8 +788,7 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
     self.rows = rows;
     NSInteger selected = self.tableView.selectedRow;
     if (selected >= 0 && selected < (NSInteger)rows.count) {
-        self.selectedVariant = rows[(NSUInteger)selected].variant;
-        self.selectedVariantTextRange = rows[(NSUInteger)selected].group.textRange;
+        [self rememberSelectedRow:selected];
     }
     NSRange visible = [self.tableView rowsInRect:self.tableView.visibleRect];
     if (visible.location != NSNotFound) {
@@ -822,8 +830,7 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
         }
         [self.tableView selectRowIndexes:[NSIndexSet indexSetWithIndex:index]
                     byExtendingSelection:NO];
-        self.selectedVariant = row.variant;
-        self.selectedVariantTextRange = row.group.textRange;
+        [self rememberSelectedRow:(NSInteger)index];
         [self scrollGroupContainingRow:index];
         self.suppressSelectionCallback = NO;
         [self notifySelection];
@@ -957,8 +964,7 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
             }
             // The appended character group is not in this snapshot yet (or has no
             // rows). Wait; do not restore the old selection or jump to the first.
-            self.selectedVariant = nil;
-            self.selectedVariantTextRange = NSMakeRange(NSNotFound, 0);
+            [self rememberSelectedRow:NSNotFound];
             [self restoreScrollAnchor:scrollAnchor];
             self.suppressSelectionCallback = NO;
             [self notifySelection];
@@ -986,12 +992,8 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
                         selectRowIndexes:[NSIndexSet indexSetWithIndex:(NSUInteger)rowToSelect]
                     byExtendingSelection:NO];
             }
-            self.selectedVariant = [self.rows[rowToSelect] variant];
-            self.selectedVariantTextRange = self.rows[rowToSelect].group.textRange;
-        } else {
-            self.selectedVariant = nil;
-            self.selectedVariantTextRange = NSMakeRange(NSNotFound, 0);
         }
+        [self rememberSelectedRow:rowToSelect];
         self.suppressSelectionCallback = NO;
         [self notifySelection];
         [self restoreScrollAnchor:scrollAnchor];
@@ -1139,8 +1141,7 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
     }
     NSInteger row = self.tableView.selectedRow;
     if (row < 0 || row >= (NSInteger)self.rows.count) {
-        self.selectedVariant = nil;
-        self.selectedVariantTextRange = NSMakeRange(NSNotFound, 0);
+        [self rememberSelectedRow:NSNotFound];
         [self clearTemporaryGlyph];
         [self notifySelection];
         return;
@@ -1148,8 +1149,7 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
     // A manual click overrides any pending auto-selection from an append or
     // activation; later list snapshots must not snap the user back.
     self.pendingSelectionGlyphKey = nil;
-    self.selectedVariant = self.rows[row].variant;
-    self.selectedVariantTextRange = self.rows[row].group.textRange;
+    [self rememberSelectedRow:row];
     if (!self.selectedVariant.isTemporary) [self clearTemporaryGlyph];
     [self notifySelection];
 }

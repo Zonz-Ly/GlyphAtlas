@@ -26,4 +26,9 @@ NS_ASSUME_NONNULL_BEGIN
 FOUNDATION_EXPORT CTFontRef GACopyFontWithFeatureSettings(CTFontRef font, CGFloat size,
     NSArray<NSDictionary *> *settings) CF_RETURNS_RETAINED;
 
+/// Language labels for the typesetting menu.
+/// OpenType tags and BCP 47 language identifiers are different namespaces.
+FOUNDATION_EXPORT NSString * _Nullable GAIdentifierForOpenTypeLanguage(NSString *tag);
+FOUNDATION_EXPORT NSString *GATitleForOpenTypeLanguage(NSString *tag, NSLocale *locale);
+
 NS_ASSUME_NONNULL_END

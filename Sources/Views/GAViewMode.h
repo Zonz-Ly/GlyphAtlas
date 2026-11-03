@@ -1,5 +1,19 @@
 #import <AppKit/AppKit.h>
 
+typedef NS_ENUM(NSInteger, GAViewMode) {
+    GAViewModeAllGlyphs = 0,
+    GAViewModeMultiCharacter = 1,
+    GAViewModeSingleGlyph = 2
+};
+
+/// TextKit-only controls are unavailable in the two glyph views.
+NS_INLINE BOOL GAViewModeSupportsTextLayout(GAViewMode mode) {
+    return mode == GAViewModeMultiCharacter;
+}
+NS_INLINE BOOL GAViewModeSupportsMetrics(GAViewMode mode) {
+    return mode != GAViewModeAllGlyphs;
+}
+
 #if __MAC_OS_X_VERSION_MAX_ALLOWED < 260000
 /// Public Tahoe API, declared here for builds using an earlier SDK.
 @interface NSSplitViewItem (GAMacOS26SDKDeclarations)

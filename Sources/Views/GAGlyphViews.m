@@ -1,6 +1,6 @@
 #import "GAGlyphViews.h"
-#import "GAFontEngine.h"
-#import "GAUnicode.h"
+#import "Font/GAFontEngine.h"
+#import "Font/GAUnicode.h"
 
 static const CGFloat GAVariantNameHeight = 16.0;
 static const CGFloat GAVariantVerticalPadding = 5.0;

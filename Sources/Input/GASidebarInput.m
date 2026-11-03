@@ -1,9 +1,8 @@
 #import "GASidebarInput.h"
-#import "GAInputFocus.h"
-#import "GAGlyphSelection.h"
-#import "GAInputMenus.h"
-#import "GAAppDelegate.h"
-#import "GAMacOS26.h"
+#import "GAInputSupport.h"
+#import "Font/GAGlyphSelection.h"
+#import "App/GAAppDelegate.h"
+#import "Views/GAViewMode.h"
 
 /// YES when the shortcut modifiers in `modifiers` are exactly `expected`.
 /// Caps Lock, the function key, the numeric keypad, Help, and device-dependent

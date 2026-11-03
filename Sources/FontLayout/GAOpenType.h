@@ -67,6 +67,7 @@ struct LookupStep {
     Tag feature = 0;
     bool explicitValue = false;
 };
+std::string featureLabel(Tag feature, unsigned value);
 class OpenType {
     bool positioning_;
     View data_;

@@ -2,8 +2,7 @@
 #import "GABoundingBoxView.h"
 #import "GAAllGlyphsView.h"
 #import "GAMultiGlyphView.h"
-#import "GAAppDelegate.h"
-#import "GAMacOS26.h"
+#import "App/GAAppDelegate.h"
 
 @interface GADetailContainerView : NSView
 @property (nonatomic, copy, nullable) void (^resizeHandler)(void (^changes)(void));
@@ -242,15 +241,44 @@
     [self scaleBoundingBoxBy:1.0 / GAGlyphZoomStep];
 }
 
+#pragma mark - Active view zoom
+
+- (void)zoomIn {
+    switch (self.viewMode) {
+        case GAViewModeAllGlyphs: [self.allGlyphsView zoomIn]; break;
+        case GAViewModeSingleGlyph: [self zoomBoundingBoxIn]; break;
+        case GAViewModeMultiCharacter: [self.multiView zoomTextIn]; break;
+    }
+}
+
+- (void)zoomOut {
+    switch (self.viewMode) {
+        case GAViewModeAllGlyphs: [self.allGlyphsView zoomOut]; break;
+        case GAViewModeSingleGlyph: [self zoomBoundingBoxOut]; break;
+        case GAViewModeMultiCharacter: [self.multiView zoomTextOut]; break;
+    }
+}
+
+- (void)resetZoom {
+    switch (self.viewMode) {
+        case GAViewModeAllGlyphs:
+            [self.allGlyphsView resetZoom];
+            break;
+        case GAViewModeSingleGlyph:
+            self.boundingBoxInsetFraction = GABoundingBoxDefaultSideInsetFraction;
+            break;
+        case GAViewModeMultiCharacter:
+            // Actual Size resets text, spacing and the shared page inset together.
+            GAPreserveScrollPosition(self.multiScrollView, ^{
+                [self.multiView resetTextZoom];
+                self.multiView.lineSpacingAdjustment = 0;
+                self.boundingBoxInsetFraction = GABoundingBoxDefaultSideInsetFraction;
+            });
+            break;
+    }
+}
+
 #pragma mark - All glyphs
-
-- (void)zoomAllGlyphsIn {
-    [self.allGlyphsView zoomIn];
-}
-
-- (void)zoomAllGlyphsOut {
-    [self.allGlyphsView zoomOut];
-}
 
 - (void)revealAllGlyphID:(NSNumber *)glyphID quick:(BOOL)quick {
     [self.allGlyphsView revealGlyphID:glyphID quick:quick];
@@ -317,33 +345,6 @@
     if (settings[@"textScale"]) self.multiView.textScale = [settings[@"textScale"] doubleValue];
     if (settings[@"lineSpacing"]) self.multiView.lineSpacingAdjustment = [settings[@"lineSpacing"] doubleValue];
     if (settings[@"cellScale"]) self.allGlyphsView.cellScale = [settings[@"cellScale"] doubleValue];
-}
-
-- (void)zoomMultiTextIn {
-    [self.multiView zoomTextIn];
-}
-
-- (void)zoomMultiTextOut {
-    [self.multiView zoomTextOut];
-}
-
-- (void)resetBoundingBoxZoom {
-    self.boundingBoxInsetFraction = GABoundingBoxDefaultSideInsetFraction;
-}
-
-- (void)resetAllGlyphsZoom {
-    [self.allGlyphsView resetZoom];
-}
-
-- (void)resetMultiTextZoom {
-    // Actual Size resets both zooms in this mode: the text scale (pinch and
-    // keyboard) and the shared page inset (trackpad). Resetting only the text
-    // made the command look dead after a page pinch.
-    GAPreserveScrollPosition(self.multiScrollView, ^{
-        [self.multiView resetTextZoom];
-        self.multiView.lineSpacingAdjustment = 0;
-        self.boundingBoxInsetFraction = GABoundingBoxDefaultSideInsetFraction;
-    });
 }
 
 @end

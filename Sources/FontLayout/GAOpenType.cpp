@@ -1,6 +1,13 @@
 #include "GAOpenType.h"
 
 namespace ga::layout {
+std::string featureLabel(Tag feature, unsigned value) {
+    auto label = tagName(feature);
+    if (value > 1)
+        label += " " + std::to_string(value);
+    return label;
+}
+
 Predicate Predicate::exact(Glyph g) {
     Predicate p;
     p.value = g;

@@ -54,6 +54,7 @@ BUNDLE="$APP/Contents"
 mkdir -p "$BUILD/bin" "$DIST"
 
 ARCH_BINARIES=()
+APP_SOURCES=("$ROOT"/Sources/{App,Font,Input,Views}/*.m)
 for ARCH in $ARCHS; do
   ARCH_BIN="$BUILD/bin/GlyphAtlas-$ARCH"
   MODULE_CACHE="$BUILD/modulecache-clang-$ARCH"
@@ -74,7 +75,7 @@ for ARCH in $ARCHS; do
     -framework CoreText \
     -framework UniformTypeIdentifiers \
     -licucore \
-    "$ROOT/Sources"/*.m "$LAYOUT"/*.o -lc++ \
+    "${APP_SOURCES[@]}" "$LAYOUT"/*.o -lc++ \
     -o "$ARCH_BIN"
   ARCH_BINARIES+=("$ARCH_BIN")
 done

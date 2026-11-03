@@ -1,6 +1,6 @@
 #import "GAVariationViewController.h"
-#import "GAFontResource.h"
-#import "GAInputFocus.h"
+#import "Font/GAFontResource.h"
+#import "Input/GAInputSupport.h"
 #import <math.h>
 
 @interface GAVariationBackgroundView : NSView
@@ -91,7 +91,6 @@
         NSSlider *slider = [NSSlider sliderWithValue:minimum minValue:minimum maxValue:maximum target:self action:@selector(changeAxisValue:)];
         slider.translatesAutoresizingMaskIntoConstraints = NO;
         slider.tag = (NSInteger)i;
-        slider.continuous = YES;
         slider.enabled = maximum > minimum;
         slider.accessibilityLabel = name;
         [row addSubview:slider];
