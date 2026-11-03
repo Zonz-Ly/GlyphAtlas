@@ -233,6 +233,13 @@ NSArray<GACharacterGroup *> *GAGroupsForScanResult(NSString *text, GARawScanResu
     if (_font == NULL)
         return nil;
     _fontURL = [url copy];
+    NSArray<NSString *> *languages = CFBridgingRelease(CTFontCopySupportedLanguages(_font));
+    for (NSString *language in languages) {
+        if ([NSLocale characterDirectionForLanguage:language] == NSLocaleLanguageDirectionRightToLeft) {
+            _hasRightToLeftLanguages = YES;
+            break;
+        }
+    }
     _fullName = CFBridgingRelease(CTFontCopyDisplayName(_font));
     if (!_fullName.length)
         _fullName = CFBridgingRelease(CTFontCopyPostScriptName(_font));
@@ -244,6 +251,7 @@ NSArray<GACharacterGroup *> *GAGroupsForScanResult(NSString *text, GARawScanResu
         [[GASubstitutionEngine alloc] initWithFont:_font
                                        coordinates:coordinates
                                            sharing:source ? source->_substitutionEngine : nil];
+    _typesettingLanguageTags = [_substitutionEngine languageTags];
     CGFloat typoAscender = 0;
     CGFloat typoDescender = 0;
     BOOL hasTypoMetrics = [_substitutionEngine typoMetricsAscender:&typoAscender
@@ -426,8 +434,9 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
                            selections:(NSArray<GAGlyphSelectionRun *> *)selections
                                groups:(NSArray<GACharacterGroup *> *)groups
                              vertical:(BOOL)vertical
-                 contextualAlternates:(BOOL)contextualAlternates
-                            ligatures:(BOOL)ligatures
+                 featureSettings:(NSArray<NSDictionary *> *)featureSettings
+            baseWritingDirection:(NSInteger)direction
+                     languageTag:(NSString *)languageTag
                             cancelled:(BOOL (^)(void))cancelled {
     NSMutableArray<GAGlyphVariant *> *parents = [NSMutableArray array];
     NSMutableArray *sequences = [NSMutableArray array];
@@ -440,7 +449,9 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
     }
     GASubstitutionOrigin *source = [_substitutionEngine originForGlyphIDs:glyphIDs
         sourceRange:range text:text selections:selections candidates:sequences
-        vertical:vertical contextualAlternates:contextualAlternates ligatures:ligatures
+        vertical:vertical featureSettings:featureSettings
+        baseWritingDirection:direction
+        languageTag:languageTag
         cancelled:cancelled];
     if (!source || cancelled()) return nil;
     GAGlyphVariant *parent = parents[source.sourceIndex];

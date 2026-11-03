@@ -10,6 +10,8 @@
 "Paste" = "Incolla";
 "Delete" = "Elimina";
 "Select All" = "Seleziona tutto";
+"Underline" = "Sottolineato";
+"Strikethrough" = "Barrato";
 "View" = "Vista";
 "Window" = "Finestra";
 "Minimize" = "Contrai";
@@ -26,7 +28,6 @@
 "Open" = "Apri";
 "Zoom In" = "Ingrandisci";
 "Zoom Out" = "Riduci";
-"Actual Size" = "Dimensioni reali";
 "Text Alignment" = "Allineamento testo";
 "Left" = "Allinea a sinistra";
 "Center" = "Centra";
@@ -69,7 +70,7 @@
 "Help.07" = "Usa ⌘C per copiare tutti i caratteri codificati del glifo selezionato.";
 "Help.08" = "Posiziona il puntatore su un’etichetta Unicode per vedere il nome del carattere definito dallo standard Unicode.";
 "Help.09" = "La vista predefinita è “Tutti i glifi”. Cambia vista con un clic secondario, oppure premi ⌘1 per “Glifo singolo”, ⌘2 per “Più caratteri” o ⌘3 per “Tutti i glifi”.";
-"Help.10" = "In “Più caratteri”, fai clic su un glifo per visualizzarne le alternative. Le alternative contestuali e le legature sono attive di default; usa il clic destro oppure ⌘5 e ⌘6 per attivarle o disattivarle. Usa il clic destro oppure ⌘7 per cambiare la direzione di scrittura.";
+"Help.10" = "In Più caratteri, fai clic su un glifo per vedere le alternative. Tipografia nei menu Vista e contestuale elenca le funzioni native: i segni di spunta indicano le opzioni selezionate; i gruppi esclusivi consentono una sola scelta. ⌘5 attiva o disattiva la scrittura verticale. Sottolineato ⌘U e Barrato ⌘L si applicano all’intera anteprima di più caratteri. Direzione di scrittura appare nel menu Vista quando CoreText segnala il supporto di una lingua scritta da destra a sinistra. Decorazioni del testo > Contorno ⌘Y mostra i contorni conservati nel font, comprese le sovrapposizioni. Lingua di composizione elenca i tag di lingua GSUB del font, senza duplicati tra scritture. Il menu è nascosto se non sono dichiarati sistemi linguistici con nome.";
 "Help.11" = "In “Tutti i glifi”, fai doppio clic su un glifo per aggiungerlo al testo esistente. Facendo clic su un glifo nella barra laterale, il glifo lampeggia anche nella vista completa.";
 "Help.12" = "Usa ⌘+/⌘− per ingrandire o ridurre i glifi e ⌥⌘+/⌥⌘− per aumentare o ridurre i margini in “Più caratteri”. Puoi anche usare il gesto di apertura o chiusura delle dita sul trackpad.";
 "Help.13" = "L’ombra indica la larghezza e l’altezza del glifo, oltre all’altezza della riga e all’interlinea della composizione. Premi ⌘4 per nasconderla.";
@@ -81,8 +82,6 @@
 "Default" = "Predefinito";
 "Custom" = "Personalizzato";
 
-"Contextual Alternates" = "Alternative contestuali";
-"Ligatures" = "Legature";
 
 /* Font Book copy alerts. Conflict buttons follow Finder. */
 "An item named “%@” already exists in Font Book." = "In Libro Font esiste già un elemento chiamato “%@”.";
@@ -107,10 +106,25 @@
 "Decrease Line Spacing" = "Riduci interlinea";
 
 /* Explicit defaults for newly opened font windows. */
-"Default to Single Glyph" = "Vista predefinita: Glifo singolo";
-"Default to Multi-Character" = "Vista predefinita: Più caratteri";
-"Default to All Glyphs" = "Vista predefinita: Tutti i glifi";
-"Show Bounding Box by Default" = "Mostra riquadro di delimitazione di default";
-"Enable Contextual Alternates by Default" = "Attiva alternative contestuali di default";
-"Enable Ligatures by Default" = "Attiva legature di default";
-"Use Vertical Writing by Default" = "Usa scrittura verticale di default";
+
+/* Saved-text deletion and full screen. */
+"Delete Saved Text" = "Elimina testi salvati";
+"Clear All Saved Text" = "Cancella tutti i testi salvati";
+"Enter Full Screen" = "Attiva modalità a tutto schermo";
+
+/* Native typography and opening settings. */
+"Typography" = "Tipografia";
+"Other" = "Altre";
+"No Typography Features" = "Nessuna funzione tipografica";
+"Actual Size" = "Dimensioni reali";
+"Use as Defaults" = "Usa come default";
+"Restore to Defaults" = "Ripristina default";
+"Text Decorations" = "Decorazioni del testo";
+
+"Writing Direction" = "Direzione di scrittura";
+"Left to Right" = "Da sinistra a destra";
+"Right to Left" = "Da destra a sinistra";
+"Outline" = "Contorno";
+
+"Typesetting Language" = "Lingua di composizione";
+"No System Language Mapping" = "Non è disponibile una lingua di sistema corrispondente a questo tag OpenType.";

@@ -13,5 +13,6 @@ struct TextRun {
     uint8_t level = 0;
 };
 std::vector<TextRun> prepareText(NSString *text, const Cmap &cmap,
-                                 NSArray<GAGlyphSelectionRun *> *selections = nil);
+                                 NSArray<GAGlyphSelectionRun *> *selections = nil,
+                                 int baseDirection = -1);
 } // namespace ga::layout

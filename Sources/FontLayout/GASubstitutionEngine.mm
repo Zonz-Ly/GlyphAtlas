@@ -466,14 +466,23 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
     }
     return @[];
 }
+- (NSArray<NSString *> *)languageTags {
+    const auto &r = *self.program->resource;
+    NSMutableArray<NSString *> *result = [NSMutableArray array];
+    for (Tag language : r.gsub.languageTags())
+        [result addObject:@(tagName(language).c_str())];
+    return result;
+}
+
 - (GASubstitutionOrigin *)originForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
                                 sourceRange:(NSRange)sourceRange
                                        text:(NSString *)text
                                  selections:(NSArray<GAGlyphSelectionRun *> *)selections
                                  candidates:(NSArray<NSArray<NSNumber *> *> *)candidates
                                    vertical:(BOOL)vertical
-                       contextualAlternates:(BOOL)contextualAlternates
-                                  ligatures:(BOOL)ligatures
+                       featureSettings:(NSArray<NSDictionary *> *)featureSettings
+                   baseWritingDirection:(NSInteger)direction
+                            languageTag:(NSString *)languageTag
                                   cancelled:(BOOL (^)(void))cancelled {
     if (!sourceRange.length || NSMaxRange(sourceRange) > text.length || !candidates.count)
         return nil;
@@ -487,30 +496,31 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
         size_t branch = r.gsub.variationBranch([self normalizedCoordinates]);
         // This is our executor's replay, not a trace of TextKit internals.
         // Accept it only when its final sequence and complete source agree.
-        for (const auto &run : prepareText(text, r.cmap, selections)) {
+        for (const auto &run : prepareText(text, r.cmap, selections, int(direction))) {
             if (cancelled()) return nil;
             if (run.source.start > span.start || run.source.end < span.end) continue;
             Settings settings;
             settings.script = run.script;
+            settings.language = tag(languageTag.UTF8String ?: "");
             settings.rtl = run.level & 1;
             settings.vertical = vertical;
             if (vertical) settings.features[r.verticalFeature(branch)] = 1;
-            if (!contextualAlternates)
-                for (const char *name : {"calt", "cswh", "rclt"})
-                    settings.features[tag(name)] = 0;
-            if (!ligatures)
-                for (const char *name : {"liga", "clig", "dlig", "hlig", "rlig"})
-                    settings.features[tag(name)] = 0;
+            for (NSDictionary *feature in featureSettings) {
+                NSString *name = feature[(__bridge NSString *)kCTFontOpenTypeFeatureTag];
+                if (name.length == 4)
+                    settings.features[tag(name.UTF8String)] =
+                        [feature[(__bridge NSString *)kCTFontOpenTypeFeatureValue] unsignedIntValue];
+            }
             Buffer items = run.glyphs;
             Trace trace;
             trace.provenance = true;
             if (!r.aat.empty()) {
                 std::vector<AATSelector> overrides;
-                if (!contextualAlternates)
-                    for (unsigned selector : {1u, 3u, 5u}) overrides.push_back({36, selector});
-                if (!ligatures)
-                    for (unsigned selector = 1; selector <= 21; selector += 2)
-                        overrides.push_back({1, selector});
+                for (NSDictionary *feature in featureSettings) {
+                    NSNumber *type = feature[(__bridge NSString *)kCTFontFeatureTypeIdentifierKey];
+                    NSNumber *selector = feature[(__bridge NSString *)kCTFontFeatureSelectorIdentifierKey];
+                    if (type && selector) overrides.push_back({type.unsignedIntValue, selector.unsignedIntValue});
+                }
                 r.aat.substitute(items, {}, settings.rtl, vertical, &trace, false, overrides);
             } else
                 r.gsub.substitute(items, r.gdef, settings, branch, &trace);
@@ -592,7 +602,7 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
                     return a.range.location < b.range.location ? NSOrderedAscending
                          : a.range.location > b.range.location ? NSOrderedDescending : NSOrderedSame;
                 }];
-                for (const auto &run : prepareText(text, r.cmap, seedRuns)) {
+                for (const auto &run : prepareText(text, r.cmap, seedRuns, int(direction))) {
                     if (run.source.start > span.start || run.source.end < span.end) continue;
                     for (const auto &domain : r.domains)
                         for (Tag language : domain.apple ? std::vector<Tag>{0}

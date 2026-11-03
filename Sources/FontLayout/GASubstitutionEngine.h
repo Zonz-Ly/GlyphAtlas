@@ -27,6 +27,7 @@ NS_ASSUME_NONNULL_BEGIN
                      sharing:(nullable GASubstitutionEngine *)source;
 - (NSArray<GASubstitutionMatch *> *)discoverText:(NSString *)text selections:(NSArray<GAGlyphSelectionRun *> *)selections;
 - (NSArray<GASubstitutionMatch *> *)discoverGlyphIDs:(NSArray<NSNumber *> *)glyphIDs;
+- (NSArray<NSString *> *)languageTags;
 /// Lazy reverse lookup for a missing native layout GID/sequence. Candidate
 /// rows all belong to sourceRange, in their existing sidebar order.
 - (nullable GASubstitutionOrigin *)originForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
@@ -35,11 +36,13 @@ NS_ASSUME_NONNULL_BEGIN
                                           selections:(NSArray<GAGlyphSelectionRun *> *)selections
                                           candidates:(NSArray<NSArray<NSNumber *> *> *)candidates
                                             vertical:(BOOL)vertical
-                                contextualAlternates:(BOOL)contextualAlternates
-                                           ligatures:(BOOL)ligatures
+                                featureSettings:(NSArray<NSDictionary *> *)featureSettings
+                            baseWritingDirection:(NSInteger)direction
+                                     languageTag:(NSString *)languageTag
                                            cancelled:(BOOL (^)(void))cancelled;
 - (NSArray<NSValue *> *)positionsForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
                                      content:(NSString *)content;
+
 - (nullable NSNumber *)verticalGlyph:(uint16_t)glyph;
 /// OS/2 sTypo ascender/descender in font units for this coordinate instance,
 /// with MVAR hasc/hdsc deltas applied. Descender keeps the font's sign.

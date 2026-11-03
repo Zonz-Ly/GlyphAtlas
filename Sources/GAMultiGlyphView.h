@@ -11,8 +11,9 @@ NS_ASSUME_NONNULL_BEGIN
 /// scroll/zoom geometry.
 @interface GAMultiGlyphView : NSView
 @property(nonatomic, strong) GAPreviewColors *previewColors;
-/// Signed tenths of the displayed font's CoreText ascent + descent + leading.
-@property(nonatomic) NSInteger lineSpacingSteps;
+/// Additional spacing as a multiple of the displayed font's ascent + descent + leading.
+@property(nonatomic) CGFloat lineSpacingAdjustment;
+@property(nonatomic) CGFloat textScale;
 - (void)refreshPreviewColors;
 @property (nonatomic, strong, nullable) GAFontDocument *document;
 /// Fraction of the viewport used as the page margin. Shares the single-glyph
@@ -23,10 +24,14 @@ NS_ASSUME_NONNULL_BEGIN
 /// Called after the inset changes so sibling views can share one zoom state.
 @property (nonatomic, copy, nullable) void (^onSideInsetFractionChanged)(CGFloat fraction);
 @property (nonatomic) NSTextAlignment textAlignment;
+@property(nonatomic) NSWritingDirection baseWritingDirection;
+@property(nonatomic, copy) NSString *typesettingLanguage;
 @property (nonatomic) BOOL vertical;
-/// Both optional native shaping switches default to YES.
-@property(nonatomic) BOOL usesContextualAlternates;
-@property(nonatomic) BOOL usesLigatures;
+@property(nonatomic, copy) NSArray<NSDictionary *> *featureSettings;
+@property(nonatomic) BOOL underlined;
+@property(nonatomic) BOOL struckThrough;
+@property(nonatomic) BOOL outlined;
+- (void)resetTextZoom;
 /// Visible size of the enclosing scroll view; drives wrapping and margins.
 @property (nonatomic) NSSize viewportSize;
 /// Size needed to show the whole page plus its margins.
@@ -39,7 +44,6 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)setText:(NSString *)text groups:(NSArray<GACharacterGroup *> *)groups;
 - (void)zoomTextIn;
 - (void)zoomTextOut;
-- (void)resetTextZoom;
 
 @end
 

@@ -109,12 +109,15 @@ FOUNDATION_EXPORT NSArray<GACharacterGroup *> *GAGroupsForScanResult(NSString *t
 @property (nonatomic, readonly, nullable) NSURL *fontURL;
 @property (nonatomic, readonly) NSString *fullName;
 @property (nonatomic, readonly) GAFontBox *fontBox;
+/// At least one CoreText-supported language has right-to-left character order.
+@property(nonatomic, readonly) BOOL hasRightToLeftLanguages;
+/// Named GSUB language tags, deduplicated across scripts.
+@property(nonatomic, copy, readonly) NSArray<NSString *> *typesettingLanguageTags;
 /// Same resource, new coordinates; shares parsed tables and immutable inventory.
 - (GAFontDocument *)documentWithDescriptor:(CTFontDescriptorRef)descriptor;
 /// Rebind existing discoveries without enumerating substitutions again.
 - (GARawScanResult *)rebindResult:(GARawScanResult *)result content:(NSString *)content;
 - (GAGlyphVariant *)rebindVariant:(GAGlyphVariant *)variant content:(NSString *)content;
-
 
 /// All GIDs in the font, including glyphs without Unicode mappings.
 - (NSArray<GAAllGlyphEntry *> *)allGlyphEntries;
@@ -139,8 +142,9 @@ FOUNDATION_EXPORT NSArray<GACharacterGroup *> *GAGroupsForScanResult(NSString *t
                                     selections:(NSArray<GAGlyphSelectionRun *> *)selections
                                         groups:(NSArray<GACharacterGroup *> *)groups
                                       vertical:(BOOL)vertical
-                          contextualAlternates:(BOOL)contextualAlternates
-                                     ligatures:(BOOL)ligatures
+                          featureSettings:(NSArray<NSDictionary *> *)featureSettings
+                     baseWritingDirection:(NSInteger)direction
+                              languageTag:(NSString *)languageTag
                                      cancelled:(BOOL (^)(void))cancelled;
 
 /// Single-GID vertical-substitution output from GSUB `vert`/`vrt2` or AAT,

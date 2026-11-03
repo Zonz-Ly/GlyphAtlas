@@ -10,6 +10,8 @@
 "Paste" = "Paste";
 "Delete" = "Delete";
 "Select All" = "Select All";
+"Underline" = "Underline";
+"Strikethrough" = "Strikethrough";
 "View" = "View";
 "Window" = "Window";
 "Minimize" = "Minimize";
@@ -26,7 +28,6 @@
 "Open" = "Open";
 "Zoom In" = "Zoom In";
 "Zoom Out" = "Zoom Out";
-"Actual Size" = "Actual Size";
 "Text Alignment" = "Text Alignment";
 "Left" = "Left";
 "Center" = "Center";
@@ -69,7 +70,7 @@
 "Help.07" = "Use ⌘C to copy all encoded characters of the selected glyph.";
 "Help.08" = "Hover over a Unicode badge to see the character name defined by the Unicode standard.";
 "Help.09" = "All Glyphs is the default. Right-click to switch views, or press ⌘1 for Single Glyph, ⌘2 for Multi-Character, or ⌘3 for All Glyphs.";
-"Help.10" = "In Multi-Character, click a glyph to view its alternates. Contextual Alternates and Ligatures are on by default; toggle them with a right-click or ⌘5 and ⌘6. Vertical writing is supported; right-click or press ⌘7 to switch.";
+"Help.10" = "In Multi-Character, click a glyph to view its alternates. Typography in the View and context menus lists the font’s native features: checkmarks indicate selected options; exclusive groups allow only one choice. Use ⌘5 to switch vertical writing. Underline ⌘U and Strikethrough ⌘L apply to the entire multi-character preview. Writing Direction appears in View when CoreText reports support for a right-to-left language. Text Decorations > Outline ⌘Y reveals contours retained in the font, including overlaps. Typesetting Language lists the font’s GSUB language tags, deduplicated across scripts. It is hidden when no named language system is declared.";
 "Help.11" = "In All Glyphs, double-click a glyph to add it to the existing text. Clicking a glyph in the sidebar also makes it blink there.";
 "Help.12" = "Use ⌘+/⌘− to zoom the glyphs, and ⌥⌘+/⌥⌘− to increase or decrease the margins in Multi-Character. Trackpad pinch also works.";
 "Help.13" = "The shadow indicates the glyph's width and height, as well as the layout's line height and leading; press ⌘4 to hide it.";
@@ -81,8 +82,6 @@
 "Default" = "Default";
 "Custom" = "Custom";
 
-"Contextual Alternates" = "Contextual Alternates";
-"Ligatures" = "Ligatures";
 
 /* Font Book copy alerts. Conflict buttons follow Finder. */
 "An item named “%@” already exists in Font Book." = "An item named “%@” already exists in Font Book.";
@@ -107,10 +106,25 @@
 "Decrease Line Spacing" = "Decrease Line Spacing";
 
 /* Explicit defaults for newly opened font windows. */
-"Default to Single Glyph" = "Default to Single Glyph";
-"Default to Multi-Character" = "Default to Multi-Character";
-"Default to All Glyphs" = "Default to All Glyphs";
-"Show Bounding Box by Default" = "Show Bounding Box by Default";
-"Enable Contextual Alternates by Default" = "Enable Contextual Alternates by Default";
-"Enable Ligatures by Default" = "Enable Ligatures by Default";
-"Use Vertical Writing by Default" = "Use Vertical Writing by Default";
+
+/* Saved-text deletion and full screen. */
+"Delete Saved Text" = "Delete Saved Text";
+"Clear All Saved Text" = "Clear All Saved Text";
+"Enter Full Screen" = "Enter Full Screen";
+
+/* Native typography and opening settings. */
+"Typography" = "Typography";
+"Other" = "Other";
+"No Typography Features" = "No Typography Features";
+"Actual Size" = "Actual Size";
+"Use as Defaults" = "Use as Defaults";
+"Restore to Defaults" = "Restore to Defaults";
+"Text Decorations" = "Text Decorations";
+
+"Writing Direction" = "Writing Direction";
+"Left to Right" = "Left to Right";
+"Right to Left" = "Right to Left";
+"Outline" = "Outline";
+
+"Typesetting Language" = "Typesetting Language";
+"No System Language Mapping" = "No system language mapping is available for this OpenType tag.";

@@ -10,6 +10,8 @@
 "Paste" = "붙여넣기";
 "Delete" = "삭제";
 "Select All" = "전체 선택";
+"Underline" = "밑줄체";
+"Strikethrough" = "취소선";
 "View" = "보기";
 "Window" = "윈도우";
 "Minimize" = "최소화";
@@ -26,7 +28,6 @@
 "Open" = "열기";
 "Zoom In" = "확대";
 "Zoom Out" = "축소";
-"Actual Size" = "실제 크기";
 "Text Alignment" = "텍스트 정렬";
 "Left" = "왼쪽 정렬";
 "Center" = "중앙 정렬";
@@ -69,7 +70,7 @@
 "Help.07" = "⌘C 키로 선택한 글리프에 인코딩된 모든 문자를 복사합니다.";
 "Help.08" = "Unicode 배지 위에 포인터를 놓으면 Unicode 표준에 정의된 문자 이름이 표시됩니다.";
 "Help.09" = "기본 보기는 ‘모든 글리프’입니다. 오른쪽 클릭으로 보기를 전환하거나 ⌘1 키로 ‘단일 글리프’, ⌘2 키로 ‘여러 문자’, ⌘3 키로 ‘모든 글리프’를 선택하십시오.";
-"Help.10" = "‘여러 문자’에서 글리프를 클릭하면 대체 글리프를 볼 수 있습니다. ‘상황별 대체’와 ‘합자’는 기본적으로 켜져 있습니다. 오른쪽 클릭 또는 ⌘5, ⌘6으로 전환합니다. 세로쓰기는 오른쪽 클릭 또는 ⌘7로 전환합니다.";
+"Help.10" = "여러 문자 보기에서 글리프를 클릭하면 대체 글리프를 볼 수 있습니다. 보기 및 컨텍스트 메뉴의 타이포그래피에 서체의 네이티브 기능이 표시됩니다. 체크 표시는 선택된 항목을 나타내며, 상호 배타적인 그룹에서는 하나만 선택할 수 있습니다. ⌘5로 세로쓰기를 전환합니다. 밑줄체 ⌘U 및 취소선 ⌘L은 여러 문자 미리보기 전체에 적용됩니다. CoreText가 오른쪽에서 왼쪽으로 쓰는 언어 지원을 보고하면 보기 메뉴에 쓰기 방향이 표시됩니다. 텍스트 장식의 윤곽선 ⌘Y를 사용하면 겹치는 부분을 포함하여 글꼴에 남아 있는 윤곽선을 볼 수 있습니다. 조판 언어에는 글꼴의 GSUB 언어 태그가 표시됩니다. 여러 스크립트에서 중복되는 태그는 한 번만 표시하며 이름이 있는 언어 시스템이 없으면 메뉴가 숨겨집니다.";
 "Help.11" = "‘모든 글리프’에서 글리프를 이중 클릭하면 기존 텍스트에 추가됩니다. 사이드바에서 글리프를 클릭하면 전체 목록에서 해당 글리프가 깜박입니다.";
 "Help.12" = "⌘+/⌘− 키로 글리프를 확대하거나 축소하고, ⌥⌘+/⌥⌘− 키로 ‘여러 문자’의 여백을 늘리거나 줄일 수 있습니다. 트랙패드에서 손가락을 오므리거나 펼쳐도 됩니다.";
 "Help.13" = "그림자는 글리프의 너비와 높이, 조판의 행 높이와 행간을 나타냅니다. ⌘4 키로 가릴 수 있습니다.";
@@ -81,8 +82,6 @@
 "Default" = "기본값";
 "Custom" = "사용자화";
 
-"Contextual Alternates" = "상황별 대체";
-"Ligatures" = "합자";
 
 /* Font Book copy alerts. Conflict buttons follow Finder. */
 "An item named “%@” already exists in Font Book." = "서체 관리자에 이미 이름이 ‘%@’인 항목이 있습니다.";
@@ -107,10 +106,25 @@
 "Decrease Line Spacing" = "줄 간격 줄이기";
 
 /* Explicit defaults for newly opened font windows. */
-"Default to Single Glyph" = "기본 보기: 단일 글리프";
-"Default to Multi-Character" = "기본 보기: 여러 문자";
-"Default to All Glyphs" = "기본 보기: 모든 글리프";
-"Show Bounding Box by Default" = "기본으로 경계 상자 표시";
-"Enable Contextual Alternates by Default" = "기본으로 상황별 대체 활성화";
-"Enable Ligatures by Default" = "기본으로 합자 활성화";
-"Use Vertical Writing by Default" = "기본으로 세로쓰기 사용";
+
+/* Saved-text deletion and full screen. */
+"Delete Saved Text" = "저장된 텍스트 삭제";
+"Clear All Saved Text" = "저장된 모든 텍스트 지우기";
+"Enter Full Screen" = "전체 화면 시작";
+
+/* Native typography and opening settings. */
+"Typography" = "타이포그래피";
+"Other" = "기타";
+"No Typography Features" = "타이포그래피 기능 없음";
+"Actual Size" = "실제 크기";
+"Use as Defaults" = "기본값으로 사용";
+"Restore to Defaults" = "기본값으로 복원";
+"Text Decorations" = "텍스트 장식";
+
+"Writing Direction" = "쓰기 방향";
+"Left to Right" = "왼쪽에서 오른쪽";
+"Right to Left" = "오른쪽에서 왼쪽";
+"Outline" = "윤곽선";
+
+"Typesetting Language" = "조판 언어";
+"No System Language Mapping" = "이 OpenType 언어 태그에 해당하는 시스템 언어가 없습니다.";

@@ -10,13 +10,14 @@
 "Zoom In" = "Phóng to";
 "Bottom" = "Dưới";
 "Select All" = "Chọn Tất cả";
+"Underline" = "Gạch chân";
+"Strikethrough" = "Gạch xuyên";
 "File" = "Tệp";
 "Copy to Font Book" = "Sao chép vào Sổ quản lý Phông chữ";
 "Show Bounding Box" = "Hiển thị khung bao";
 "Font File" = "Tệp phông chữ";
 "Variable" = "Biến thiên";
 "Center" = "Căn giữa";
-"Ligatures" = "Chữ ghép";
 "This file does not contain a font that CoreText can read." = "Tệp này không chứa phông chữ mà CoreText có thể đọc.";
 "Delete" = "Xóa";
 "Services" = "Dịch vụ";
@@ -38,7 +39,6 @@
 "Help.01" = "Mở một phông chữ hoặc kéo phông chữ vào cửa sổ hay biểu tượng của ứng dụng trên Dock. Có hỗ trợ tệp được sử dụng gần đây.";
 "Default" = "Mặc định";
 "Help.02" = "Từ thanh menu, bạn có thể sao chép phông chữ đang mở trong cửa sổ hiện tại vào thư mục phông chữ của người dùng chỉ bằng một lần bấm.";
-"Actual Size" = "Kích thước thực";
 "CoreText could not create this font." = "CoreText không thể tạo phông chữ này.";
 "Open" = "Mở";
 "Undo" = "Hoàn tác";
@@ -60,7 +60,7 @@
 "Cannot Open Font" = "Không thể mở phông chữ";
 "Left" = "Căn trái";
 "Cannot Read Font" = "Không thể đọc phông chữ";
-"Help.10" = "Trong chế độ Nhiều ký tự, bấm vào một glyph để xem các glyph thay thế của nó. Thay thế Theo ngữ cảnh và Chữ ghép được bật theo mặc định; bấm chuột phải hoặc dùng ⌘5 và ⌘6 để bật/tắt. Có hỗ trợ viết theo chiều dọc; bấm chuột phải hoặc nhấn ⌘7 để chuyển đổi.";
+"Help.10" = "Ở chế độ nhiều ký tự, nhấp vào hình chữ để xem các biến thể. Kiểu chữ trong menu Xem và menu ngữ cảnh liệt kê các tính năng gốc: dấu kiểm biểu thị mục được chọn; mỗi nhóm loại trừ chỉ cho phép một lựa chọn. ⌘5 chuyển chế độ viết dọc. Gạch chân ⌘U và Gạch xuyên ⌘L áp dụng cho toàn bộ bản xem trước nhiều ký tự. Hướng viết xuất hiện trong menu Xem khi CoreText báo hỗ trợ ngôn ngữ viết từ phải sang trái. Trang trí văn bản > Đường viền ⌘Y hiển thị các đường nét còn được lưu trong phông chữ, kể cả phần chồng lấp. Ngôn ngữ dàn chữ liệt kê các thẻ ngôn ngữ GSUB của phông chữ, không lặp lại cùng một thẻ giữa các hệ chữ. Menu bị ẩn nếu không có hệ ngôn ngữ được đặt tên.";
 "Help.11" = "Trong chế độ Tất cả glyph, bấm hai lần vào một glyph để thêm vào văn bản hiện có. Bấm vào một glyph trong thanh bên cũng làm glyph đó nhấp nháy trong chế độ xem này.";
 "Help.12" = "Dùng ⌘+/⌘− để thu phóng glyph và ⌥⌘+/⌥⌘− để tăng hoặc giảm lề trong chế độ Nhiều ký tự. Bạn cũng có thể dùng cử chỉ chụm/mở trên bàn di chuột.";
 "Help.13" = "Bóng đổ thể hiện chiều rộng, chiều cao của glyph cũng như chiều cao dòng và khoảng cách dòng của bố cục; nhấn ⌘4 để ẩn bóng đổ.";
@@ -72,7 +72,6 @@
 "Top" = "Trên";
 "Redo" = "Làm lại";
 "Open Recent" = "Mở Mục gần đây";
-"Contextual Alternates" = "Thay thế Theo ngữ cảnh";
 "Show All" = "Hiển thị tất cả";
 "Named Instance" = "Phiên bản có tên";
 "Right" = "Căn phải";
@@ -104,10 +103,25 @@
 "Decrease Line Spacing" = "Giảm giãn dòng";
 
 /* Explicit defaults for newly opened font windows. */
-"Default to Single Glyph" = "Mặc định mở Một glyph";
-"Default to Multi-Character" = "Mặc định mở Nhiều ký tự";
-"Default to All Glyphs" = "Mặc định mở Tất cả glyph";
-"Show Bounding Box by Default" = "Mặc định hiển thị khung bao";
-"Enable Contextual Alternates by Default" = "Mặc định bật Thay thế Theo ngữ cảnh";
-"Enable Ligatures by Default" = "Mặc định bật chữ ghép";
-"Use Vertical Writing by Default" = "Mặc định dùng chữ dọc";
+
+/* Saved-text deletion and full screen. */
+"Delete Saved Text" = "Xóa văn bản đã lưu";
+"Clear All Saved Text" = "Xóa tất cả văn bản đã lưu";
+"Enter Full Screen" = "Vào toàn màn hình";
+
+/* Native typography and opening settings. */
+"Typography" = "Chữ viết";
+"Other" = "Khác";
+"No Typography Features" = "Không có tính năng kiểu chữ";
+"Actual Size" = "Kích thước thực";
+"Use as Defaults" = "Sử dụng làm mặc định";
+"Restore to Defaults" = "Khôi phục giá trị mặc định";
+"Text Decorations" = "Trang trí văn bản";
+
+"Writing Direction" = "Hướng viết";
+"Left to Right" = "Từ trái sang phải";
+"Right to Left" = "Từ phải sang trái";
+"Outline" = "Đường viền";
+
+"Typesetting Language" = "Ngôn ngữ dàn chữ";
+"No System Language Mapping" = "Không có ngôn ngữ hệ thống tương ứng với thẻ ngôn ngữ OpenType này.";

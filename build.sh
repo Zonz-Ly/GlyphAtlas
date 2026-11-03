@@ -2,21 +2,47 @@
 set -euo pipefail
 
 CREATE_ZIP=false
+ARCHS=""
+usage() {
+  echo "Usage: bash build.sh [-a | -x | -u] [-z]"
+  echo "  Default  Build the current machine's architecture"
+  echo "  -a       Build arm64"
+  echo "  -x       Build x86_64"
+  echo "  -u       Build universal (arm64 + x86_64)"
+  echo "  -z       Also create dist/Glyph Atlas.zip with a Clear Attributes.command script"
+}
+
 for ARG in "$@"; do
   case "$ARG" in
-    --zip) CREATE_ZIP=true ;;
+    -a|-x|-u)
+      if [[ -n "$ARCHS" ]]; then
+        echo "Choose only one of -a, -x, or -u." >&2
+        exit 1
+      fi
+      case "$ARG" in
+        -a) ARCHS="arm64" ;;
+        -x) ARCHS="x86_64" ;;
+        -u) ARCHS="arm64 x86_64" ;;
+      esac
+      ;;
+    -z|--zip) CREATE_ZIP=true ;;
     -h|--help)
-      echo "Usage: bash build.sh [--zip]"
-      echo "  --zip  Also package the app as dist/Glyph Atlas.zip"
+      usage
       exit 0
       ;;
     *)
       echo "Unknown argument: $ARG" >&2
-      echo "Usage: bash build.sh [--zip]" >&2
+      usage >&2
       exit 1
       ;;
   esac
 done
+
+if [[ -z "$ARCHS" ]]; then ARCHS="$(uname -m)"; fi
+case "$ARCHS" in
+  arm64|x86_64|"arm64 x86_64") ;;
+  *) echo "Unsupported architecture: $ARCHS" >&2; exit 1 ;;
+esac
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 BUILD="$ROOT/.build"
@@ -24,7 +50,6 @@ DIST="$ROOT/dist"
 APP="$DIST/Glyph Atlas.app"
 ZIP="$DIST/Glyph Atlas.zip"
 BUNDLE="$APP/Contents"
-ARCHS="${ARCHS:-arm64 x86_64}"
 
 mkdir -p "$BUILD/bin" "$DIST"
 
@@ -67,6 +92,7 @@ for LOCALIZATION in "$ROOT"/Resources/*.lproj; do
 done
 
 cp "$ROOT/Resources/AppIcon.icns" "$ROOT/Resources/Assets.car" "$BUNDLE/Resources/"
+cp "$ROOT/Resources/OpenTypeLanguages.plist" "$BUNDLE/Resources/"
 chmod +x "$BUNDLE/MacOS/GlyphAtlas"
 
 plutil -lint "$BUNDLE/Info.plist" \
@@ -83,7 +109,13 @@ xattr -cr "$APP" 2>/dev/null || true
 
 echo "Done: $APP"
 if "$CREATE_ZIP"; then
+  PACKAGE="$BUILD/package"
+  rm -rf "$PACKAGE"
+  mkdir -p "$PACKAGE"
+  ditto --norsrc --noextattr "$APP" "$PACKAGE/Glyph Atlas.app"
+  cp "$ROOT/Resources/Clear Attributes.command" "$PACKAGE/"
+  chmod +x "$PACKAGE/Clear Attributes.command"
   rm -f "$ZIP"
-  ditto -c -k --norsrc --noextattr --keepParent "$APP" "$ZIP"
+  ditto -c -k --norsrc --noextattr "$PACKAGE" "$ZIP"
   echo "Archive: $ZIP"
 fi

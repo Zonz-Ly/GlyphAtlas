@@ -1,0 +1,4814 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>languages</key>
+	<dict>
+		<key>AAQ </key>
+		<dict>
+			<key>identifier</key>
+			<string>aaq</string>
+			<key>name</key>
+			<string>Eastern Abenaki</string>
+		</dict>
+		<key>ABA </key>
+		<dict>
+			<key>identifier</key>
+			<string>abq</string>
+			<key>name</key>
+			<string>Abaza</string>
+		</dict>
+		<key>ABK </key>
+		<dict>
+			<key>identifier</key>
+			<string>abk</string>
+			<key>name</key>
+			<string>Abkhazian</string>
+		</dict>
+		<key>ACH </key>
+		<dict>
+			<key>identifier</key>
+			<string>ach</string>
+			<key>name</key>
+			<string>Acholi</string>
+		</dict>
+		<key>ACR </key>
+		<dict>
+			<key>identifier</key>
+			<string>acr</string>
+			<key>name</key>
+			<string>Achi</string>
+		</dict>
+		<key>ACY </key>
+		<dict>
+			<key>identifier</key>
+			<string>acy</string>
+			<key>name</key>
+			<string>Cypriot Arabic</string>
+		</dict>
+		<key>ADY </key>
+		<dict>
+			<key>identifier</key>
+			<string>ady</string>
+			<key>name</key>
+			<string>Adyghe</string>
+		</dict>
+		<key>AFK </key>
+		<dict>
+			<key>identifier</key>
+			<string>afr</string>
+			<key>name</key>
+			<string>Afrikaans</string>
+		</dict>
+		<key>AFR </key>
+		<dict>
+			<key>identifier</key>
+			<string>aar</string>
+			<key>name</key>
+			<string>Afar</string>
+		</dict>
+		<key>AGW </key>
+		<dict>
+			<key>identifier</key>
+			<string>ahg</string>
+			<key>name</key>
+			<string>Agaw</string>
+		</dict>
+		<key>AIO </key>
+		<dict>
+			<key>identifier</key>
+			<string>aio</string>
+			<key>name</key>
+			<string>Aiton</string>
+		</dict>
+		<key>AKA </key>
+		<dict>
+			<key>identifier</key>
+			<string>aka</string>
+			<key>name</key>
+			<string>Akan</string>
+		</dict>
+		<key>AKB </key>
+		<dict>
+			<key>identifier</key>
+			<string>akb</string>
+			<key>name</key>
+			<string>Batak Angkola</string>
+		</dict>
+		<key>ALS </key>
+		<dict>
+			<key>identifier</key>
+			<string>gsw</string>
+			<key>name</key>
+			<string>Alsatian</string>
+		</dict>
+		<key>ALT </key>
+		<dict>
+			<key>identifier</key>
+			<string>alt</string>
+			<key>name</key>
+			<string>Altai</string>
+		</dict>
+		<key>AMH </key>
+		<dict>
+			<key>identifier</key>
+			<string>amh</string>
+			<key>name</key>
+			<string>Amharic</string>
+		</dict>
+		<key>ANG </key>
+		<dict>
+			<key>identifier</key>
+			<string>ang</string>
+			<key>name</key>
+			<string>Anglo-Saxon</string>
+		</dict>
+		<key>APPH</key>
+		<dict>
+			<key>identifier</key>
+			<string>und-fonnapa</string>
+			<key>name</key>
+			<string>Phonetic transcription—Americanist conventions</string>
+		</dict>
+		<key>ARA </key>
+		<dict>
+			<key>identifier</key>
+			<string>ara</string>
+			<key>name</key>
+			<string>Arabic</string>
+		</dict>
+		<key>ARG </key>
+		<dict>
+			<key>identifier</key>
+			<string>arg</string>
+			<key>name</key>
+			<string>Aragonese</string>
+		</dict>
+		<key>ARI </key>
+		<dict>
+			<key>identifier</key>
+			<string>aiw</string>
+			<key>name</key>
+			<string>Aari</string>
+		</dict>
+		<key>ARK </key>
+		<dict>
+			<key>identifier</key>
+			<string>mhv</string>
+			<key>name</key>
+			<string>Rakhine</string>
+			<key>usesRegistryName</key>
+			<true/>
+		</dict>
+		<key>ASM </key>
+		<dict>
+			<key>identifier</key>
+			<string>asm</string>
+			<key>name</key>
+			<string>Assamese</string>
+		</dict>
+		<key>AST </key>
+		<dict>
+			<key>identifier</key>
+			<string>ast</string>
+			<key>name</key>
+			<string>Asturian</string>
+		</dict>
+		<key>ATH </key>
+		<dict>
+			<key>identifier</key>
+			<string>ath</string>
+			<key>name</key>
+			<string>Athapaskan languages</string>
+		</dict>
+		<key>ATS </key>
+		<dict>
+			<key>identifier</key>
+			<string>ats</string>
+			<key>name</key>
+			<string>Gros Ventre (Atsina)</string>
+		</dict>
+		<key>AVN </key>
+		<dict>
+			<key>identifier</key>
+			<string>avn</string>
+			<key>name</key>
+			<string>Avatime</string>
+		</dict>
+		<key>AVR </key>
+		<dict>
+			<key>identifier</key>
+			<string>ava</string>
+			<key>name</key>
+			<string>Avar</string>
+		</dict>
+		<key>AWA </key>
+		<dict>
+			<key>identifier</key>
+			<string>awa</string>
+			<key>name</key>
+			<string>Awadhi</string>
+		</dict>
+		<key>AYM </key>
+		<dict>
+			<key>identifier</key>
+			<string>aym</string>
+			<key>name</key>
+			<string>Aymara</string>
+		</dict>
+		<key>AZB </key>
+		<dict>
+			<key>identifier</key>
+			<string>azb</string>
+			<key>name</key>
+			<string>Torki</string>
+		</dict>
+		<key>AZE </key>
+		<dict>
+			<key>identifier</key>
+			<string>aze</string>
+			<key>name</key>
+			<string>Azerbaijani</string>
+		</dict>
+		<key>BAD </key>
+		<dict>
+			<key>identifier</key>
+			<string>bfq</string>
+			<key>name</key>
+			<string>Badaga</string>
+		</dict>
+		<key>BAD0</key>
+		<dict>
+			<key>identifier</key>
+			<string>bad</string>
+			<key>name</key>
+			<string>Banda</string>
+			<key>usesRegistryName</key>
+			<true/>
+		</dict>
+		<key>BAG </key>
+		<dict>
+			<key>identifier</key>
+			<string>bfy</string>
+			<key>name</key>
+			<string>Baghelkhandi</string>
+		</dict>
+		<key>BAL </key>
+		<dict>
+			<key>identifier</key>
+			<string>krc</string>
+			<key>name</key>
+			<string>Balkar</string>
+		</dict>
+		<key>BAN </key>
+		<dict>
+			<key>identifier</key>
+			<string>ban</string>
+			<key>name</key>
+			<string>Balinese</string>
+		</dict>
+		<key>BAR </key>
+		<dict>
+			<key>identifier</key>
+			<string>bar</string>
+			<key>name</key>
+			<string>Bavarian</string>
+		</dict>
+		<key>BAU </key>
+		<dict>
+			<key>identifier</key>
+			<string>bci</string>
+			<key>name</key>
+			<string>Baulé</string>
+		</dict>
+		<key>BBC </key>
+		<dict>
+			<key>identifier</key>
+			<string>bbc</string>
+			<key>name</key>
+			<string>Batak Toba</string>
+		</dict>
+		<key>BBR </key>
+		<dict>
+			<key>identifier</key>
+			<string>auj</string>
+			<key>name</key>
+			<string>Berber</string>
+			<key>usesRegistryName</key>
+			<true/>
+		</dict>
+		<key>BCH </key>
+		<dict>
+			<key>identifier</key>
+			<string>bcq</string>
+			<key>name</key>
+			<string>Bench</string>
+		</dict>
+		<key>BCR </key>
+		<dict>
+			<key>name</key>
+			<string>Bible Cree</string>
+		</dict>
+		<key>BDC </key>
+		<dict>
+			<key>identifier</key>
+			<string>bdc</string>
+			<key>name</key>
+			<string>Emberá-Baudó</string>
+		</dict>
+		<key>BDY </key>
+		<dict>
+			<key>identifier</key>
+			<string>bdy</string>
+			<key>name</key>
+			<string>Bandjalang</string>
+		</dict>
+		<key>BEL </key>
+		<dict>
+			<key>identifier</key>
+			<string>bel</string>
+			<key>name</key>
+			<string>Belarusian</string>
+		</dict>
+		<key>BEM </key>
+		<dict>
+			<key>identifier</key>
+			<string>bem</string>
+			<key>name</key>
+			<string>Bemba</string>
+		</dict>
+		<key>BEN </key>
+		<dict>
+			<key>identifier</key>
+			<string>ben</string>
+			<key>name</key>
+			<string>Bangla</string>
+		</dict>
+		<key>BGC </key>
+		<dict>
+			<key>identifier</key>
+			<string>bgc</string>
+			<key>name</key>
+			<string>Haryanvi</string>
+		</dict>
+		<key>BGQ </key>
+		<dict>
+			<key>identifier</key>
+			<string>bgq</string>
+			<key>name</key>
+			<string>Bagri</string>
+		</dict>
+		<key>BGR </key>
+		<dict>
+			<key>identifier</key>
+			<string>bul</string>
+			<key>name</key>
+			<string>Bulgarian</string>
+		</dict>
+		<key>BHI </key>
+		<dict>
+			<key>identifier</key>
+			<string>bhi</string>
+			<key>name</key>
+			<string>Bhili</string>
+		</dict>
+		<key>BHO </key>
+		<dict>
+			<key>identifier</key>
+			<string>bho</string>
+			<key>name</key>
+			<string>Bhojpuri</string>
+		</dict>
+		<key>BIK </key>
+		<dict>
+			<key>identifier</key>
+			<string>bik</string>
+			<key>name</key>
+			<string>Bikol</string>
+		</dict>
+		<key>BIL </key>
+		<dict>
+			<key>identifier</key>
+			<string>byn</string>
+			<key>name</key>
+			<string>Bilen</string>
+		</dict>
+		<key>BIS </key>
+		<dict>
+			<key>identifier</key>
+			<string>bis</string>
+			<key>name</key>
+			<string>Bislama</string>
+		</dict>
+		<key>BJJ </key>
+		<dict>
+			<key>identifier</key>
+			<string>bjj</string>
+			<key>name</key>
+			<string>Kanauji</string>
+		</dict>
+		<key>BKF </key>
+		<dict>
+			<key>identifier</key>
+			<string>bla</string>
+			<key>name</key>
+			<string>Blackfoot</string>
+		</dict>
+		<key>BLI </key>
+		<dict>
+			<key>identifier</key>
+			<string>bal</string>
+			<key>name</key>
+			<string>Baluchi</string>
+		</dict>
+		<key>BLK </key>
+		<dict>
+			<key>identifier</key>
+			<string>blk</string>
+			<key>name</key>
+			<string>Pa’o Karen</string>
+		</dict>
+		<key>BLN </key>
+		<dict>
+			<key>identifier</key>
+			<string>bjt</string>
+			<key>name</key>
+			<string>Balante</string>
+			<key>usesRegistryName</key>
+			<true/>
+		</dict>
+		<key>BLT </key>
+		<dict>
+			<key>identifier</key>
+			<string>bft</string>
+			<key>name</key>
+			<string>Balti</string>
+		</dict>
+		<key>BMB </key>
+		<dict>
+			<key>identifier</key>
+			<string>bam</string>
+			<key>name</key>
+			<string>Bambara (Bamanankan)</string>
+		</dict>
+		<key>BML </key>
+		<dict>
+			<key>identifier</key>
+			<string>bai</string>
+			<key>name</key>
+			<string>Bamileke</string>
+			<key>usesRegistryName</key>
+			<true/>
+		</dict>
+		<key>BOS </key>
+		<dict>
+			<key>identifier</key>
+			<string>bos</string>
+			<key>name</key>
+			<string>Bosnian</string>
+		</dict>
+		<key>BPY </key>
+		<dict>
+			<key>identifier</key>
+			<string>bpy</string>
+			<key>name</key>
+			<string>Bishnupriya Manipuri</string>
+		</dict>
+		<key>BRE </key>
+		<dict>
+			<key>identifier</key>
+			<string>bre</string>
+			<key>name</key>
+			<string>Breton</string>
+		</dict>
+		<key>BRH </key>
+		<dict>
+			<key>identifier</key>
+			<string>brh</string>
+			<key>name</key>
+			<string>Brahui</string>
+		</dict>
+		<key>BRI </key>
+		<dict>
+			<key>identifier</key>
+			<string>bra</string>
+			<key>name</key>
+			<string>Braj Bhasha</string>
+		</dict>
+		<key>BRM </key>
+		<dict>
+			<key>identifier</key>
+			<string>mya</string>
+			<key>name</key>
+			<string>Burmese</string>
+		</dict>
+		<key>BRX </key>
+		<dict>
+			<key>identifier</key>
+			<string>brx</string>
+			<key>name</key>
+			<string>Bodo</string>
+		</dict>
+		<key>BSH </key>
+		<dict>
+			<key>identifier</key>
+			<string>bak</string>
+			<key>name</key>
+			<string>Bashkir</string>
+		</dict>
+		<key>BSK </key>
+		<dict>
+			<key>identifier</key>
+			<string>bsk</string>
+			<key>name</key>
+			<string>Burushaski</string>
+		</dict>
+		<key>BTD </key>
+		<dict>
+			<key>identifier</key>
+			<string>btd</string>
+			<key>name</key>
+			<string>Batak Dairi (Pakpak)</string>
+		</dict>
+		<key>BTI </key>
+		<dict>
+			<key>identifier</key>
+			<string>btb</string>
+			<key>name</key>
+			<string>Beti</string>
+			<key>usesRegistryName</key>
+			<true/>
+		</dict>
+		<key>BTK </key>
+		<dict>
+			<key>identifier</key>
+			<string>btk</string>
+			<key>name</key>
+			<string>Batak languages</string>
+		</dict>
+		<key>BTM </key>
+		<dict>
+			<key>identifier</key>
+			<string>btm</string>
+			<key>name</key>
+			<string>Batak Mandailing</string>
+		</dict>
+		<key>BTS </key>
+		<dict>
+			<key>identifier</key>
+			<string>bts</string>
+			<key>name</key>
+			<string>Batak Simalungun</string>
+		</dict>
+		<key>BTX </key>
+		<dict>
+			<key>identifier</key>
+			<string>btx</string>
+			<key>name</key>
+			<string>Batak Karo</string>
+		</dict>
+		<key>BTZ </key>
+		<dict>
+			<key>identifier</key>
+			<string>btz</string>
+			<key>name</key>
+			<string>Batak Alas-Kluet</string>
+		</dict>
+		<key>BUG </key>
+		<dict>
+			<key>identifier</key>
+			<string>bug</string>
+			<key>name</key>
+			<string>Bugis</string>
+		</dict>
+		<key>BYV </key>
+		<dict>
+			<key>identifier</key>
+			<string>byv</string>
+			<key>name</key>
+			<string>Medumba</string>
+		</dict>
+		<key>CAK </key>
+		<dict>
+			<key>identifier</key>
+			<string>cak</string>
+			<key>name</key>
+			<string>Kaqchikel</string>
+		</dict>
+		<key>CAT </key>
+		<dict>
+			<key>identifier</key>
+			<string>cat</string>
+			<key>name</key>
+			<string>Catalan</string>
+		</dict>
+		<key>CAY </key>
+		<dict>
+			<key>identifier</key>
+			<string>cay</string>
+			<key>name</key>
+			<string>Cayuga</string>
+		</dict>
+		<key>CBG </key>
+		<dict>
+			<key>identifier</key>
+			<string>cbg</string>
+			<key>name</key>
+			<string>Chimila</string>
+		</dict>
+		<key>CBK </key>
+		<dict>
+			<key>identifier</key>
+			<string>cbk</string>
+			<key>name</key>
+			<string>Zamboanga Chavacano</string>
+		</dict>
+		<key>CCHN</key>
+		<dict>
+			<key>identifier</key>
+			<string>cco</string>
+			<key>name</key>
+			<string>Chinantec</string>
+			<key>usesRegistryName</key>
+			<true/>
+		</dict>
+		<key>CEB </key>
+		<dict>
+			<key>identifier</key>
+			<string>ceb</string>
+			<key>name</key>
+			<string>Cebuano</string>
+		</dict>
+		<key>CGG </key>
+		<dict>
+			<key>identifier</key>
+			<string>cgg</string>
+			<key>name</key>
+			<string>Chiga</string>
+		</dict>
+		<key>CHA </key>
+		<dict>
+			<key>identifier</key>
+			<string>cha</string>
+			<key>name</key>
+			<string>Chamorro</string>
+		</dict>
+		<key>CHE </key>
+		<dict>
+			<key>identifier</key>
+			<string>che</string>
+			<key>name</key>
+			<string>Chechen</string>
+		</dict>
+		<key>CHG </key>
+		<dict>
+			<key>identifier</key>
+			<string>sgw</string>
+			<key>name</key>
+			<string>Chaha Gurage</string>
+		</dict>
+		<key>CHH </key>
+		<dict>
+			<key>identifier</key>
+			<string>hne</string>
+			<key>name</key>
+			<string>Chattisgarhi</string>
+		</dict>
+		<key>CHI </key>
+		<dict>
+			<key>identifier</key>
+			<string>nya</string>
+			<key>name</key>
+			<string>Chichewa (Chewa, Nyanja)</string>
+		</dict>
+		<key>CHK </key>
+		<dict>
+			<key>identifier</key>
+			<string>ckt</string>
+			<key>name</key>
+			<string>Chukchi</string>
+		</dict>
+		<key>CHK0</key>
+		<dict>
+			<key>identifier</key>
+			<string>chk</string>
+			<key>name</key>
+			<string>Chuukese</string>
+		</dict>
+		<key>CHO </key>
+		<dict>
+			<key>identifier</key>
+			<string>cho</string>
+			<key>name</key>
+			<string>Choctaw</string>
+		</dict>
+		<key>CHP </key>
+		<dict>
+			<key>identifier</key>
+			<string>chp</string>
+			<key>name</key>
+			<string>Chipewyan</string>
+		</dict>
+		<key>CHR </key>
+		<dict>
+			<key>identifier</key>
+			<string>chr</string>
+			<key>name</key>
+			<string>Cherokee</string>
+		</dict>
+		<key>CHU </key>
+		<dict>
+			<key>identifier</key>
+			<string>chv</string>
+			<key>name</key>
+			<string>Chuvash</string>
+		</dict>
+		<key>CHY </key>
+		<dict>
+			<key>identifier</key>
+			<string>chy</string>
+			<key>name</key>
+			<string>Cheyenne</string>
+		</dict>
+		<key>CJA </key>
+		<dict>
+			<key>identifier</key>
+			<string>cja</string>
+			<key>name</key>
+			<string>Western Cham</string>
+		</dict>
+		<key>CJM </key>
+		<dict>
+			<key>identifier</key>
+			<string>cjm</string>
+			<key>name</key>
+			<string>Eastern Cham</string>
+		</dict>
+		<key>CMI </key>
+		<dict>
+			<key>identifier</key>
+			<string>cmi</string>
+			<key>name</key>
+			<string>Emberá-Chamí</string>
+		</dict>
+		<key>CMR </key>
+		<dict>
+			<key>identifier</key>
+			<string>swb</string>
+			<key>name</key>
+			<string>Comorian</string>
+			<key>usesRegistryName</key>
+			<true/>
+		</dict>
+		<key>COO </key>
+		<dict>
+			<key>identifier</key>
+			<string>coo</string>
+			<key>name</key>
+			<string>Comox</string>
+		</dict>
+		<key>COP </key>
+		<dict>
+			<key>identifier</key>
+			<string>cop</string>
+			<key>name</key>
+			<string>Coptic</string>
+		</dict>
+		<key>COR </key>
+		<dict>
+			<key>identifier</key>
+			<string>cor</string>
+			<key>name</key>
+			<string>Cornish</string>
+		</dict>
+		<key>COS </key>
+		<dict>
+			<key>identifier</key>
+			<string>cos</string>
+			<key>name</key>
+			<string>Corsican</string>
+		</dict>
+		<key>CPP </key>
+		<dict>
+			<key>identifier</key>
+			<string>cpp</string>
+			<key>name</key>
+			<string>Creoles</string>
+		</dict>
+		<key>CRE </key>
+		<dict>
+			<key>identifier</key>
+			<string>cre</string>
+			<key>name</key>
+			<string>Cree</string>
+		</dict>
+		<key>CRR </key>
+		<dict>
+			<key>identifier</key>
+			<string>crx</string>
+			<key>name</key>
+			<string>Carrier</string>
+			<key>usesRegistryName</key>
+			<true/>
+		</dict>
+		<key>CRT </key>
+		<dict>
+			<key>identifier</key>
+			<string>crh</string>
+			<key>name</key>
+			<string>Crimean Tatar</string>
+		</dict>
+		<key>CSB </key>
+		<dict>
+			<key>identifier</key>
+			<string>csb</string>
+			<key>name</key>
+			<string>Kashubian</string>
+		</dict>
+		<key>CSL </key>
+		<dict>
+			<key>identifier</key>
+			<string>chu</string>
+			<key>name</key>
+			<string>Church Slavonic</string>
+		</dict>
+		<key>CSY </key>
+		<dict>
+			<key>identifier</key>
+			<string>ces</string>
+			<key>name</key>
+			<string>Czech</string>
+		</dict>
+		<key>CTG </key>
+		<dict>
+			<key>identifier</key>
+			<string>ctg</string>
+			<key>name</key>
+			<string>Chittagonian</string>
+		</dict>
+		<key>CTO </key>
+		<dict>
+			<key>identifier</key>
+			<string>cto</string>
+			<key>name</key>
+			<string>Emberá-Catío</string>
+		</dict>
+		<key>CTT </key>
+		<dict>
+			<key>identifier</key>
+			<string>ctt</string>
+			<key>name</key>
+			<string>Wayanad Chetti</string>
+		</dict>
+		<key>CUK </key>
+		<dict>
+			<key>identifier</key>
+			<string>cuk</string>
+			<key>name</key>
+			<string>San Blas Kuna</string>
+		</dict>
+		<key>DAG </key>
+		<dict>
+			<key>identifier</key>
+			<string>dag</string>
+			<key>name</key>
+			<string>Dagbani</string>
+		</dict>
+		<key>DAN </key>
+		<dict>
+			<key>identifier</key>
+			<string>dan</string>
+			<key>name</key>
+			<string>Danish</string>
+		</dict>
+		<key>DAR </key>
+		<dict>
+			<key>identifier</key>
+			<string>dar</string>
+			<key>name</key>
+			<string>Dargwa</string>
+		</dict>
+		<key>DAX </key>
+		<dict>
+			<key>identifier</key>
+			<string>dax</string>
+			<key>name</key>
+			<string>Dayi</string>
+		</dict>
+		<key>DCR </key>
+		<dict>
+			<key>identifier</key>
+			<string>cwd</string>
+			<key>name</key>
+			<string>Woods Cree</string>
+		</dict>
+		<key>DEU </key>
+		<dict>
+			<key>identifier</key>
+			<string>deu</string>
+			<key>name</key>
+			<string>German</string>
+		</dict>
+		<key>DGO </key>
+		<dict>
+			<key>identifier</key>
+			<string>dgo</string>
+			<key>name</key>
+			<string>Dogri (individual language)</string>
+		</dict>
+		<key>DGR </key>
+		<dict>
+			<key>identifier</key>
+			<string>doi</string>
+			<key>name</key>
+			<string>Dogri (macrolanguage)</string>
+		</dict>
+		<key>DHG </key>
+		<dict>
+			<key>identifier</key>
+			<string>dhg</string>
+			<key>name</key>
+			<string>Dhangu</string>
+		</dict>
+		<key>DIQ </key>
+		<dict>
+			<key>identifier</key>
+			<string>diq</string>
+			<key>name</key>
+			<string>Dimli</string>
+		</dict>
+		<key>DIV </key>
+		<dict>
+			<key>identifier</key>
+			<string>div</string>
+			<key>name</key>
+			<string>Divehi (Dhivehi, Maldivian)</string>
+		</dict>
+		<key>DJR </key>
+		<dict>
+			<key>identifier</key>
+			<string>dje</string>
+			<key>name</key>
+			<string>Zarma</string>
+		</dict>
+		<key>DJR0</key>
+		<dict>
+			<key>identifier</key>
+			<string>djr</string>
+			<key>name</key>
+			<string>Djambarrpuyngu</string>
+		</dict>
+		<key>DNG </key>
+		<dict>
+			<key>identifier</key>
+			<string>ada</string>
+			<key>name</key>
+			<string>Dangme</string>
+		</dict>
+		<key>DNJ </key>
+		<dict>
+			<key>identifier</key>
+			<string>dnj</string>
+			<key>name</key>
+			<string>Dan</string>
+		</dict>
+		<key>DNK </key>
+		<dict>
+			<key>identifier</key>
+			<string>din</string>
+			<key>name</key>
+			<string>Dinka</string>
+		</dict>
+		<key>DRI </key>
+		<dict>
+			<key>identifier</key>
+			<string>prs</string>
+			<key>name</key>
+			<string>Dari</string>
+		</dict>
+		<key>DUJ </key>
+		<dict>
+			<key>identifier</key>
+			<string>duj</string>
+			<key>name</key>
+			<string>Dhuwal</string>
+		</dict>
+		<key>DUN </key>
+		<dict>
+			<key>identifier</key>
+			<string>dng</string>
+			<key>name</key>
+			<string>Dungan</string>
+		</dict>
+		<key>DZN </key>
+		<dict>
+			<key>identifier</key>
+			<string>dzo</string>
+			<key>name</key>
+			<string>Dzongkha</string>
+		</dict>
+		<key>EBI </key>
+		<dict>
+			<key>identifier</key>
+			<string>igb</string>
+			<key>name</key>
+			<string>Ebira</string>
+		</dict>
+		<key>ECR </key>
+		<dict>
+			<key>identifier</key>
+			<string>crj</string>
+			<key>name</key>
+			<string>Eastern Cree</string>
+			<key>usesRegistryName</key>
+			<true/>
+		</dict>
+		<key>EDO </key>
+		<dict>
+			<key>identifier</key>
+			<string>bin</string>
+			<key>name</key>
+			<string>Edo</string>
+		</dict>
+		<key>EFI </key>
+		<dict>
+			<key>identifier</key>
+			<string>efi</string>
+			<key>name</key>
+			<string>Efik</string>
+		</dict>
+		<key>ELL </key>
+		<dict>
+			<key>identifier</key>
+			<string>ell</string>
+			<key>name</key>
+			<string>Greek</string>
+		</dict>
+		<key>EMK </key>
+		<dict>
+			<key>identifier</key>
+			<string>emk</string>
+			<key>name</key>
+			<string>Eastern Maninkakan</string>
+		</dict>
+		<key>EMP </key>
+		<dict>
+			<key>identifier</key>
+			<string>emp</string>
+			<key>name</key>
+			<string>Northern Emberá</string>
+		</dict>
+		<key>ENG </key>
+		<dict>
+			<key>identifier</key>
+			<string>eng</string>
+			<key>name</key>
+			<string>English</string>
+		</dict>
+		<key>ERZ </key>
+		<dict>
+			<key>identifier</key>
+			<string>myv</string>
+			<key>name</key>
+			<string>Erzya</string>
+		</dict>
+		<key>ESP </key>
+		<dict>
+			<key>identifier</key>
+			<string>spa</string>
+			<key>name</key>
+			<string>Spanish</string>
+		</dict>
+		<key>ESU </key>
+		<dict>
+			<key>identifier</key>
+			<string>esu</string>
+			<key>name</key>
+			<string>Central Yupik</string>
+		</dict>
+		<key>ETI </key>
+		<dict>
+			<key>identifier</key>
+			<string>est</string>
+			<key>name</key>
+			<string>Estonian</string>
+		</dict>
+		<key>EUQ </key>
+		<dict>
+			<key>identifier</key>
+			<string>eus</string>
+			<key>name</key>
+			<string>Basque</string>
+		</dict>
+		<key>EVK </key>
+		<dict>
+			<key>identifier</key>
+			<string>evn</string>
+			<key>name</key>
+			<string>Evenki</string>
+		</dict>
+		<key>EVN </key>
+		<dict>
+			<key>identifier</key>
+			<string>eve</string>
+			<key>name</key>
+			<string>Even</string>
+		</dict>
+		<key>EWE </key>
+		<dict>
+			<key>identifier</key>
+			<string>ewe</string>
+			<key>name</key>
+			<string>Ewe</string>
+		</dict>
+		<key>FAN </key>
+		<dict>
+			<key>identifier</key>
+			<string>acf</string>
+			<key>name</key>
+			<string>French Antillean</string>
+		</dict>
+		<key>FAN0</key>
+		<dict>
+			<key>identifier</key>
+			<string>fan</string>
+			<key>name</key>
+			<string>Fang</string>
+		</dict>
+		<key>FAR </key>
+		<dict>
+			<key>identifier</key>
+			<string>fas</string>
+			<key>name</key>
+			<string>Persian</string>
+		</dict>
+		<key>FAT </key>
+		<dict>
+			<key>identifier</key>
+			<string>fat</string>
+			<key>name</key>
+			<string>Fanti</string>
+		</dict>
+		<key>FIN </key>
+		<dict>
+			<key>identifier</key>
+			<string>fin</string>
+			<key>name</key>
+			<string>Finnish</string>
+		</dict>
+		<key>FJI </key>
+		<dict>
+			<key>identifier</key>
+			<string>fij</string>
+			<key>name</key>
+			<string>Fijian</string>
+		</dict>
+		<key>FLE </key>
+		<dict>
+			<key>identifier</key>
+			<string>vls</string>
+			<key>name</key>
+			<string>Dutch (Flemish)</string>
+		</dict>
+		<key>FMP </key>
+		<dict>
+			<key>identifier</key>
+			<string>fmp</string>
+			<key>name</key>
+			<string>Fe’fe’</string>
+		</dict>
+		<key>FNE </key>
+		<dict>
+			<key>identifier</key>
+			<string>enf</string>
+			<key>name</key>
+			<string>Forest Enets</string>
+		</dict>
+		<key>FON </key>
+		<dict>
+			<key>identifier</key>
+			<string>fon</string>
+			<key>name</key>
+			<string>Fon</string>
+		</dict>
+		<key>FOS </key>
+		<dict>
+			<key>identifier</key>
+			<string>fao</string>
+			<key>name</key>
+			<string>Faroese</string>
+		</dict>
+		<key>FRA </key>
+		<dict>
+			<key>identifier</key>
+			<string>fra</string>
+			<key>name</key>
+			<string>French</string>
+		</dict>
+		<key>FRC </key>
+		<dict>
+			<key>identifier</key>
+			<string>frc</string>
+			<key>name</key>
+			<string>Cajun French</string>
+		</dict>
+		<key>FRI </key>
+		<dict>
+			<key>identifier</key>
+			<string>fry</string>
+			<key>name</key>
+			<string>Frisian</string>
+		</dict>
+		<key>FRL </key>
+		<dict>
+			<key>identifier</key>
+			<string>fur</string>
+			<key>name</key>
+			<string>Friulian</string>
+		</dict>
+		<key>FRP </key>
+		<dict>
+			<key>identifier</key>
+			<string>frp</string>
+			<key>name</key>
+			<string>Arpitan</string>
+		</dict>
+		<key>FTA </key>
+		<dict>
+			<key>identifier</key>
+			<string>fuf</string>
+			<key>name</key>
+			<string>Futa</string>
+		</dict>
+		<key>FUL </key>
+		<dict>
+			<key>identifier</key>
+			<string>ful</string>
+			<key>name</key>
+			<string>Fulah</string>
+		</dict>
+		<key>FUV </key>
+		<dict>
+			<key>identifier</key>
+			<string>fuv</string>
+			<key>name</key>
+			<string>Nigerian Fulfulde</string>
+		</dict>
+		<key>GAD </key>
+		<dict>
+			<key>identifier</key>
+			<string>gaa</string>
+			<key>name</key>
+			<string>Ga</string>
+		</dict>
+		<key>GAE </key>
+		<dict>
+			<key>identifier</key>
+			<string>gla</string>
+			<key>name</key>
+			<string>Scottish Gaelic</string>
+		</dict>
+		<key>GAG </key>
+		<dict>
+			<key>identifier</key>
+			<string>gag</string>
+			<key>name</key>
+			<string>Gagauz</string>
+		</dict>
+		<key>GAL </key>
+		<dict>
+			<key>identifier</key>
+			<string>glg</string>
+			<key>name</key>
+			<string>Galician</string>
+		</dict>
+		<key>GAR </key>
+		<dict>
+			<key>name</key>
+			<string>Garshuni</string>
+		</dict>
+		<key>GAW </key>
+		<dict>
+			<key>identifier</key>
+			<string>gbm</string>
+			<key>name</key>
+			<string>Garhwali</string>
+		</dict>
+		<key>GEZ </key>
+		<dict>
+			<key>identifier</key>
+			<string>gez</string>
+			<key>name</key>
+			<string>Geez</string>
+		</dict>
+		<key>GIH </key>
+		<dict>
+			<key>identifier</key>
+			<string>gih</string>
+			<key>name</key>
+			<string>Githabul</string>
+		</dict>
+		<key>GIL </key>
+		<dict>
+			<key>identifier</key>
+			<string>niv</string>
+			<key>name</key>
+			<string>Gilyak</string>
+		</dict>
+		<key>GIL0</key>
+		<dict>
+			<key>identifier</key>
+			<string>gil</string>
+			<key>name</key>
+			<string>Kiribati (Gilbertese)</string>
+		</dict>
+		<key>GKP </key>
+		<dict>
+			<key>identifier</key>
+			<string>gkp</string>
+			<key>name</key>
+			<string>Kpelle (Guinea)</string>
+		</dict>
+		<key>GLK </key>
+		<dict>
+			<key>identifier</key>
+			<string>glk</string>
+			<key>name</key>
+			<string>Gilaki</string>
+		</dict>
+		<key>GMZ </key>
+		<dict>
+			<key>identifier</key>
+			<string>guk</string>
+			<key>name</key>
+			<string>Gumuz</string>
+		</dict>
+		<key>GNN </key>
+		<dict>
+			<key>identifier</key>
+			<string>gnn</string>
+			<key>name</key>
+			<string>Gumatj</string>
+		</dict>
+		<key>GOG </key>
+		<dict>
+			<key>identifier</key>
+			<string>gog</string>
+			<key>name</key>
+			<string>Gogo</string>
+		</dict>
+		<key>GON </key>
+		<dict>
+			<key>identifier</key>
+			<string>gon</string>
+			<key>name</key>
+			<string>Gondi</string>
+		</dict>
+		<key>GRN </key>
+		<dict>
+			<key>identifier</key>
+			<string>kal</string>
+			<key>name</key>
+			<string>Greenlandic</string>
+		</dict>
+		<key>GRO </key>
+		<dict>
+			<key>identifier</key>
+			<string>grt</string>
+			<key>name</key>
+			<string>Garo</string>
+		</dict>
+		<key>GUA </key>
+		<dict>
+			<key>identifier</key>
+			<string>grn</string>
+			<key>name</key>
+			<string>Guarani</string>
+		</dict>
+		<key>GUC </key>
+		<dict>
+			<key>identifier</key>
+			<string>guc</string>
+			<key>name</key>
+			<string>Wayuu</string>
+		</dict>
+		<key>GUF </key>
+		<dict>
+			<key>identifier</key>
+			<string>guf</string>
+			<key>name</key>
+			<string>Gupapuyngu</string>
+		</dict>
+		<key>GUJ </key>
+		<dict>
+			<key>identifier</key>
+			<string>guj</string>
+			<key>name</key>
+			<string>Gujarati</string>
+		</dict>
+		<key>GUZ </key>
+		<dict>
+			<key>identifier</key>
+			<string>guz</string>
+			<key>name</key>
+			<string>Gusii</string>
+		</dict>
+		<key>HAI </key>
+		<dict>
+			<key>identifier</key>
+			<string>hat</string>
+			<key>name</key>
+			<string>Haitian (Haitian Creole)</string>
+		</dict>
+		<key>HAI0</key>
+		<dict>
+			<key>identifier</key>
+			<string>hai</string>
+			<key>name</key>
+			<string>Haida</string>
+			<key>usesRegistryName</key>
+			<true/>
+		</dict>
+		<key>HAL </key>
+		<dict>
+			<key>identifier</key>
+			<string>cfm</string>
+			<key>name</key>
+			<string>Halam (Falam Chin)</string>
+		</dict>
+		<key>HAR </key>
+		<dict>
+			<key>identifier</key>
+			<string>hoj</string>
+			<key>name</key>
+			<string>Harauti</string>
+		</dict>
+		<key>HAU </key>
+		<dict>
+			<key>identifier</key>
+			<string>hau</string>
+			<key>name</key>
+			<string>Hausa</string>
+		</dict>
+		<key>HAW </key>
+		<dict>
+			<key>identifier</key>
+			<string>haw</string>
+			<key>name</key>
+			<string>Hawaiian</string>
+		</dict>
+		<key>HAY </key>
+		<dict>
+			<key>identifier</key>
+			<string>hay</string>
+			<key>name</key>
+			<string>Haya</string>
+		</dict>
+		<key>HAZ </key>
+		<dict>
+			<key>identifier</key>
+			<string>haz</string>
+			<key>name</key>
+			<string>Hazaragi</string>
+		</dict>
+		<key>HBN </key>
+		<dict>
+			<key>identifier</key>
+			<string>amf</string>
+			<key>name</key>
+			<string>Hammer-Banna</string>
+		</dict>
+		<key>HEI </key>
+		<dict>
+			<key>identifier</key>
+			<string>hei</string>
+			<key>name</key>
+			<string>Heiltsuk</string>
+		</dict>
+		<key>HER </key>
+		<dict>
+			<key>identifier</key>
+			<string>her</string>
+			<key>name</key>
+			<string>Herero</string>
+		</dict>
+		<key>HIL </key>
+		<dict>
+			<key>identifier</key>
+			<string>hil</string>
+			<key>name</key>
+			<string>Hiligaynon</string>
+		</dict>
+		<key>HIN </key>
+		<dict>
+			<key>identifier</key>
+			<string>hin</string>
+			<key>name</key>
+			<string>Hindi</string>
+		</dict>
+		<key>HMA </key>
+		<dict>
+			<key>identifier</key>
+			<string>mrj</string>
+			<key>name</key>
+			<string>High Mari</string>
+		</dict>
+		<key>HMD </key>
+		<dict>
+			<key>identifier</key>
+			<string>hmd</string>
+			<key>name</key>
+			<string>A-Hmao</string>
+		</dict>
+		<key>HMN </key>
+		<dict>
+			<key>identifier</key>
+			<string>hmn</string>
+			<key>name</key>
+			<string>Hmong</string>
+		</dict>
+		<key>HMO </key>
+		<dict>
+			<key>identifier</key>
+			<string>hmo</string>
+			<key>name</key>
+			<string>Hiri Motu</string>
+		</dict>
+		<key>HMZ </key>
+		<dict>
+			<key>identifier</key>
+			<string>hmz</string>
+			<key>name</key>
+			<string>Hmong Shuat</string>
+		</dict>
+		<key>HND </key>
+		<dict>
+			<key>identifier</key>
+			<string>hnd</string>
+			<key>name</key>
+			<string>Hindko</string>
+		</dict>
+		<key>HO  </key>
+		<dict>
+			<key>identifier</key>
+			<string>hoc</string>
+			<key>name</key>
+			<string>Ho</string>
+		</dict>
+		<key>HRI </key>
+		<dict>
+			<key>identifier</key>
+			<string>har</string>
+			<key>name</key>
+			<string>Harari</string>
+		</dict>
+		<key>HRV </key>
+		<dict>
+			<key>identifier</key>
+			<string>hrv</string>
+			<key>name</key>
+			<string>Croatian</string>
+		</dict>
+		<key>HUN </key>
+		<dict>
+			<key>identifier</key>
+			<string>hun</string>
+			<key>name</key>
+			<string>Hungarian</string>
+		</dict>
+		<key>HUR </key>
+		<dict>
+			<key>identifier</key>
+			<string>hur</string>
+			<key>name</key>
+			<string>Halkomelem</string>
+		</dict>
+		<key>HYE </key>
+		<dict>
+			<key>identifier</key>
+			<string>hye</string>
+			<key>name</key>
+			<string>Armenian</string>
+		</dict>
+		<key>HYE0</key>
+		<dict>
+			<key>identifier</key>
+			<string>hye</string>
+			<key>name</key>
+			<string>Armenian East</string>
+		</dict>
+		<key>IBA </key>
+		<dict>
+			<key>identifier</key>
+			<string>iba</string>
+			<key>name</key>
+			<string>Iban</string>
+		</dict>
+		<key>IBB </key>
+		<dict>
+			<key>identifier</key>
+			<string>ibb</string>
+			<key>name</key>
+			<string>Ibibio</string>
+		</dict>
+		<key>IBO </key>
+		<dict>
+			<key>identifier</key>
+			<string>ibo</string>
+			<key>name</key>
+			<string>Igbo</string>
+		</dict>
+		<key>IDO </key>
+		<dict>
+			<key>identifier</key>
+			<string>ido</string>
+			<key>name</key>
+			<string>Ido</string>
+		</dict>
+		<key>IJO </key>
+		<dict>
+			<key>identifier</key>
+			<string>ijo</string>
+			<key>name</key>
+			<string>Ijo languages</string>
+		</dict>
+		<key>ILE </key>
+		<dict>
+			<key>identifier</key>
+			<string>ile</string>
+			<key>name</key>
+			<string>Interlingue</string>
+		</dict>
+		<key>ILO </key>
+		<dict>
+			<key>identifier</key>
+			<string>ilo</string>
+			<key>name</key>
+			<string>Ilokano</string>
+		</dict>
+		<key>INA </key>
+		<dict>
+			<key>identifier</key>
+			<string>ina</string>
+			<key>name</key>
+			<string>Interlingua</string>
+		</dict>
+		<key>IND </key>
+		<dict>
+			<key>identifier</key>
+			<string>ind</string>
+			<key>name</key>
+			<string>Indonesian</string>
+		</dict>
+		<key>ING </key>
+		<dict>
+			<key>identifier</key>
+			<string>inh</string>
+			<key>name</key>
+			<string>Ingush</string>
+		</dict>
+		<key>INU </key>
+		<dict>
+			<key>identifier</key>
+			<string>iku</string>
+			<key>name</key>
+			<string>Inuktitut</string>
+		</dict>
+		<key>INUK</key>
+		<dict>
+			<key>identifier</key>
+			<string>ike</string>
+			<key>name</key>
+			<string>Nunavik Inuktitut</string>
+			<key>usesRegistryName</key>
+			<true/>
+		</dict>
+		<key>IPK </key>
+		<dict>
+			<key>identifier</key>
+			<string>ipk</string>
+			<key>name</key>
+			<string>Inupiat</string>
+		</dict>
+		<key>IPPH</key>
+		<dict>
+			<key>identifier</key>
+			<string>und-fonipa</string>
+			<key>name</key>
+			<string>Phonetic transcription—IPA conventions</string>
+		</dict>
+		<key>IRI </key>
+		<dict>
+			<key>identifier</key>
+			<string>gle</string>
+			<key>name</key>
+			<string>Irish</string>
+		</dict>
+		<key>IRT </key>
+		<dict>
+			<key>identifier</key>
+			<string>ghc</string>
+			<key>name</key>
+			<string>Irish Traditional</string>
+			<key>usesRegistryName</key>
+			<true/>
+		</dict>
+		<key>IRU </key>
+		<dict>
+			<key>identifier</key>
+			<string>iru</string>
+			<key>name</key>
+			<string>Irula</string>
+		</dict>
+		<key>ISL </key>
+		<dict>
+			<key>identifier</key>
+			<string>isl</string>
+			<key>name</key>
+			<string>Icelandic</string>
+		</dict>
+		<key>ISM </key>
+		<dict>
+			<key>identifier</key>
+			<string>smn</string>
+			<key>name</key>
+			<string>Inari Sami</string>
+		</dict>
+		<key>ITA </key>
+		<dict>
+			<key>identifier</key>
+			<string>ita</string>
+			<key>name</key>
+			<string>Italian</string>
+		</dict>
+		<key>IWR </key>
+		<dict>
+			<key>identifier</key>
+			<string>heb</string>
+			<key>name</key>
+			<string>Hebrew</string>
+		</dict>
+		<key>JAM </key>
+		<dict>
+			<key>identifier</key>
+			<string>jam</string>
+			<key>name</key>
+			<string>Jamaican Creole</string>
+		</dict>
+		<key>JAN </key>
+		<dict>
+			<key>identifier</key>
+			<string>jpn</string>
+			<key>name</key>
+			<string>Japanese</string>
+		</dict>
+		<key>JAV </key>
+		<dict>
+			<key>identifier</key>
+			<string>jav</string>
+			<key>name</key>
+			<string>Javanese</string>
+		</dict>
+		<key>JBO </key>
+		<dict>
+			<key>identifier</key>
+			<string>jbo</string>
+			<key>name</key>
+			<string>Lojban</string>
+		</dict>
+		<key>JCT </key>
+		<dict>
+			<key>identifier</key>
+			<string>jct</string>
+			<key>name</key>
+			<string>Krymchak</string>
+		</dict>
+		<key>JDT </key>
+		<dict>
+			<key>identifier</key>
+			<string>jdt</string>
+			<key>name</key>
+			<string>Judeo-Tat</string>
+		</dict>
+		<key>JII </key>
+		<dict>
+			<key>identifier</key>
+			<string>yid</string>
+			<key>name</key>
+			<string>Yiddish</string>
+		</dict>
+		<key>JUD </key>
+		<dict>
+			<key>identifier</key>
+			<string>lad</string>
+			<key>name</key>
+			<string>Ladino</string>
+		</dict>
+		<key>JUL </key>
+		<dict>
+			<key>identifier</key>
+			<string>dyu</string>
+			<key>name</key>
+			<string>Jula</string>
+		</dict>
+		<key>KAB </key>
+		<dict>
+			<key>identifier</key>
+			<string>kbd</string>
+			<key>name</key>
+			<string>Kabardian</string>
+		</dict>
+		<key>KAB0</key>
+		<dict>
+			<key>identifier</key>
+			<string>kab</string>
+			<key>name</key>
+			<string>Kabyle</string>
+		</dict>
+		<key>KAC </key>
+		<dict>
+			<key>identifier</key>
+			<string>kfr</string>
+			<key>name</key>
+			<string>Kachchi</string>
+		</dict>
+		<key>KAL </key>
+		<dict>
+			<key>identifier</key>
+			<string>kln</string>
+			<key>name</key>
+			<string>Kalenjin</string>
+		</dict>
+		<key>KAN </key>
+		<dict>
+			<key>identifier</key>
+			<string>kan</string>
+			<key>name</key>
+			<string>Kannada</string>
+		</dict>
+		<key>KAR </key>
+		<dict>
+			<key>identifier</key>
+			<string>krc</string>
+			<key>name</key>
+			<string>Karachay</string>
+		</dict>
+		<key>KAT </key>
+		<dict>
+			<key>identifier</key>
+			<string>kat</string>
+			<key>name</key>
+			<string>Georgian</string>
+		</dict>
+		<key>KAW </key>
+		<dict>
+			<key>identifier</key>
+			<string>kaw</string>
+			<key>name</key>
+			<string>Kawi (Old Javanese)</string>
+		</dict>
+		<key>KAZ </key>
+		<dict>
+			<key>identifier</key>
+			<string>kaz</string>
+			<key>name</key>
+			<string>Kazakh</string>
+		</dict>
+		<key>KBC </key>
+		<dict>
+			<key>identifier</key>
+			<string>kbc</string>
+			<key>name</key>
+			<string>Kadiwéu</string>
+		</dict>
+		<key>KDE </key>
+		<dict>
+			<key>identifier</key>
+			<string>kde</string>
+			<key>name</key>
+			<string>Makonde</string>
+		</dict>
+		<key>KEA </key>
+		<dict>
+			<key>identifier</key>
+			<string>kea</string>
+			<key>name</key>
+			<string>Kabuverdianu (Crioulo)</string>
+		</dict>
+		<key>KEB </key>
+		<dict>
+			<key>identifier</key>
+			<string>ktb</string>
+			<key>name</key>
+			<string>Kebena</string>
+		</dict>
+		<key>KEK </key>
+		<dict>
+			<key>identifier</key>
+			<string>kek</string>
+			<key>name</key>
+			<string>Kekchi</string>
+		</dict>
+		<key>KGE </key>
+		<dict>
+			<key>identifier</key>
+			<string>kat</string>
+			<key>name</key>
+			<string>Khutsuri Georgian</string>
+		</dict>
+		<key>KGF </key>
+		<dict>
+			<key>identifier</key>
+			<string>kgf</string>
+			<key>name</key>
+			<string>Kube</string>
+		</dict>
+		<key>KHA </key>
+		<dict>
+			<key>identifier</key>
+			<string>kjh</string>
+			<key>name</key>
+			<string>Khakass</string>
+		</dict>
+		<key>KHK </key>
+		<dict>
+			<key>identifier</key>
+			<string>kca</string>
+			<key>name</key>
+			<string>Khanty-Kazim</string>
+		</dict>
+		<key>KHM </key>
+		<dict>
+			<key>identifier</key>
+			<string>khm</string>
+			<key>name</key>
+			<string>Khmer</string>
+		</dict>
+		<key>KHS </key>
+		<dict>
+			<key>identifier</key>
+			<string>kca</string>
+			<key>name</key>
+			<string>Khanty-Shurishkar</string>
+		</dict>
+		<key>KHT </key>
+		<dict>
+			<key>identifier</key>
+			<string>kht</string>
+			<key>name</key>
+			<string>Khamti Shan</string>
+		</dict>
+		<key>KHV </key>
+		<dict>
+			<key>identifier</key>
+			<string>kca</string>
+			<key>name</key>
+			<string>Khanty-Vakhi</string>
+		</dict>
+		<key>KHW </key>
+		<dict>
+			<key>identifier</key>
+			<string>khw</string>
+			<key>name</key>
+			<string>Khowar</string>
+		</dict>
+		<key>KIK </key>
+		<dict>
+			<key>identifier</key>
+			<string>kik</string>
+			<key>name</key>
+			<string>Kikuyu (Gikuyu)</string>
+		</dict>
+		<key>KIR </key>
+		<dict>
+			<key>identifier</key>
+			<string>kir</string>
+			<key>name</key>
+			<string>Kirghiz (Kyrgyz)</string>
+		</dict>
+		<key>KIS </key>
+		<dict>
+			<key>identifier</key>
+			<string>kqs</string>
+			<key>name</key>
+			<string>Kisii</string>
+			<key>usesRegistryName</key>
+			<true/>
+		</dict>
+		<key>KIU </key>
+		<dict>
+			<key>identifier</key>
+			<string>kiu</string>
+			<key>name</key>
+			<string>Kirmanjki</string>
+		</dict>
+		<key>KJD </key>
+		<dict>
+			<key>identifier</key>
+			<string>kjd</string>
+			<key>name</key>
+			<string>Southern Kiwai</string>
+		</dict>
+		<key>KJJ </key>
+		<dict>
+			<key>identifier</key>
+			<string>kjj</string>
+			<key>name</key>
+			<string>Khinalug</string>
+		</dict>
+		<key>KJP </key>
+		<dict>
+			<key>identifier</key>
+			<string>kjp</string>
+			<key>name</key>
+			<string>Eastern Pwo Karen</string>
+		</dict>
+		<key>KJZ </key>
+		<dict>
+			<key>identifier</key>
+			<string>kjz</string>
+			<key>name</key>
+			<string>Bumthangkha</string>
+		</dict>
+		<key>KKN </key>
+		<dict>
+			<key>identifier</key>
+			<string>kex</string>
+			<key>name</key>
+			<string>Kokni</string>
+		</dict>
+		<key>KLM </key>
+		<dict>
+			<key>identifier</key>
+			<string>xal</string>
+			<key>name</key>
+			<string>Kalmyk</string>
+		</dict>
+		<key>KMB </key>
+		<dict>
+			<key>identifier</key>
+			<string>kam</string>
+			<key>name</key>
+			<string>Kamba</string>
+		</dict>
+		<key>KMG </key>
+		<dict>
+			<key>identifier</key>
+			<string>kmg</string>
+			<key>name</key>
+			<string>Kâte</string>
+		</dict>
+		<key>KMN </key>
+		<dict>
+			<key>identifier</key>
+			<string>kfy</string>
+			<key>name</key>
+			<string>Kumaoni</string>
+		</dict>
+		<key>KMO </key>
+		<dict>
+			<key>identifier</key>
+			<string>kmw</string>
+			<key>name</key>
+			<string>Komo</string>
+		</dict>
+		<key>KMS </key>
+		<dict>
+			<key>identifier</key>
+			<string>kxc</string>
+			<key>name</key>
+			<string>Komso</string>
+		</dict>
+		<key>KMZ </key>
+		<dict>
+			<key>identifier</key>
+			<string>kmz</string>
+			<key>name</key>
+			<string>Khorasani Turkic</string>
+		</dict>
+		<key>KNR </key>
+		<dict>
+			<key>identifier</key>
+			<string>kau</string>
+			<key>name</key>
+			<string>Kanuri</string>
+		</dict>
+		<key>KOD </key>
+		<dict>
+			<key>identifier</key>
+			<string>kfa</string>
+			<key>name</key>
+			<string>Kodagu</string>
+		</dict>
+		<key>KOH </key>
+		<dict>
+			<key>identifier</key>
+			<string>kor</string>
+			<key>name</key>
+			<string>Korean Old Hangul</string>
+			<key>usesRegistryName</key>
+			<true/>
+		</dict>
+		<key>KOK </key>
+		<dict>
+			<key>identifier</key>
+			<string>kok</string>
+			<key>name</key>
+			<string>Konkani</string>
+		</dict>
+		<key>KOM </key>
+		<dict>
+			<key>identifier</key>
+			<string>kom</string>
+			<key>name</key>
+			<string>Komi</string>
+		</dict>
+		<key>KON </key>
+		<dict>
+			<key>identifier</key>
+			<string>ktu</string>
+			<key>name</key>
+			<string>Kikongo</string>
+		</dict>
+		<key>KON0</key>
+		<dict>
+			<key>identifier</key>
+			<string>kon</string>
+			<key>name</key>
+			<string>Kongo</string>
+		</dict>
+		<key>KOP </key>
+		<dict>
+			<key>identifier</key>
+			<string>koi</string>
+			<key>name</key>
+			<string>Komi-Permyak</string>
+		</dict>
+		<key>KOR </key>
+		<dict>
+			<key>identifier</key>
+			<string>kor</string>
+			<key>name</key>
+			<string>Korean</string>
+		</dict>
+		<key>KOS </key>
+		<dict>
+			<key>identifier</key>
+			<string>kos</string>
+			<key>name</key>
+			<string>Kosraean</string>
+		</dict>
+		<key>KOZ </key>
+		<dict>
+			<key>identifier</key>
+			<string>kpv</string>
+			<key>name</key>
+			<string>Komi-Zyrian</string>
+		</dict>
+		<key>KPL </key>
+		<dict>
+			<key>identifier</key>
+			<string>kpe</string>
+			<key>name</key>
+			<string>Kpelle</string>
+		</dict>
+		<key>KRI </key>
+		<dict>
+			<key>identifier</key>
+			<string>kri</string>
+			<key>name</key>
+			<string>Krio</string>
+		</dict>
+		<key>KRK </key>
+		<dict>
+			<key>identifier</key>
+			<string>kaa</string>
+			<key>name</key>
+			<string>Karakalpak</string>
+		</dict>
+		<key>KRL </key>
+		<dict>
+			<key>identifier</key>
+			<string>krl</string>
+			<key>name</key>
+			<string>Karelian</string>
+		</dict>
+		<key>KRM </key>
+		<dict>
+			<key>identifier</key>
+			<string>kdr</string>
+			<key>name</key>
+			<string>Karaim</string>
+		</dict>
+		<key>KRN </key>
+		<dict>
+			<key>identifier</key>
+			<string>blk</string>
+			<key>name</key>
+			<string>Karen</string>
+			<key>usesRegistryName</key>
+			<true/>
+		</dict>
+		<key>KRT </key>
+		<dict>
+			<key>identifier</key>
+			<string>kqy</string>
+			<key>name</key>
+			<string>Koorete</string>
+		</dict>
+		<key>KSH </key>
+		<dict>
+			<key>identifier</key>
+			<string>kas</string>
+			<key>name</key>
+			<string>Kashmiri</string>
+		</dict>
+		<key>KSH0</key>
+		<dict>
+			<key>identifier</key>
+			<string>ksh</string>
+			<key>name</key>
+			<string>Ripuarian</string>
+		</dict>
+		<key>KSI </key>
+		<dict>
+			<key>identifier</key>
+			<string>kha</string>
+			<key>name</key>
+			<string>Khasi</string>
+		</dict>
+		<key>KSM </key>
+		<dict>
+			<key>identifier</key>
+			<string>sjd</string>
+			<key>name</key>
+			<string>Kildin Sami</string>
+		</dict>
+		<key>KSU </key>
+		<dict>
+			<key>identifier</key>
+			<string>ksu</string>
+			<key>name</key>
+			<string>Khamyang</string>
+		</dict>
+		<key>KSW </key>
+		<dict>
+			<key>identifier</key>
+			<string>ksw</string>
+			<key>name</key>
+			<string>S’gaw Karen</string>
+		</dict>
+		<key>KUA </key>
+		<dict>
+			<key>identifier</key>
+			<string>kua</string>
+			<key>name</key>
+			<string>Kuanyama</string>
+		</dict>
+		<key>KUI </key>
+		<dict>
+			<key>identifier</key>
+			<string>kxu</string>
+			<key>name</key>
+			<string>Kui</string>
+		</dict>
+		<key>KUL </key>
+		<dict>
+			<key>identifier</key>
+			<string>kfx</string>
+			<key>name</key>
+			<string>Kulvi</string>
+		</dict>
+		<key>KUM </key>
+		<dict>
+			<key>identifier</key>
+			<string>kum</string>
+			<key>name</key>
+			<string>Kumyk</string>
+		</dict>
+		<key>KUR </key>
+		<dict>
+			<key>identifier</key>
+			<string>kur</string>
+			<key>name</key>
+			<string>Kurdish</string>
+		</dict>
+		<key>KUU </key>
+		<dict>
+			<key>identifier</key>
+			<string>kru</string>
+			<key>name</key>
+			<string>Kurukh</string>
+		</dict>
+		<key>KUY </key>
+		<dict>
+			<key>identifier</key>
+			<string>kdt</string>
+			<key>name</key>
+			<string>Kuy</string>
+		</dict>
+		<key>KVQ </key>
+		<dict>
+			<key>identifier</key>
+			<string>kvq</string>
+			<key>name</key>
+			<string>Geba Karen</string>
+		</dict>
+		<key>KWK </key>
+		<dict>
+			<key>identifier</key>
+			<string>kwk</string>
+			<key>name</key>
+			<string>Kwakʼwala</string>
+		</dict>
+		<key>KYK </key>
+		<dict>
+			<key>identifier</key>
+			<string>kpy</string>
+			<key>name</key>
+			<string>Koryak</string>
+		</dict>
+		<key>KYU </key>
+		<dict>
+			<key>identifier</key>
+			<string>kyu</string>
+			<key>name</key>
+			<string>Western Kayah</string>
+		</dict>
+		<key>LAD </key>
+		<dict>
+			<key>identifier</key>
+			<string>lld</string>
+			<key>name</key>
+			<string>Ladin</string>
+		</dict>
+		<key>LAH </key>
+		<dict>
+			<key>identifier</key>
+			<string>bfu</string>
+			<key>name</key>
+			<string>Lahuli</string>
+		</dict>
+		<key>LAK </key>
+		<dict>
+			<key>identifier</key>
+			<string>lbe</string>
+			<key>name</key>
+			<string>Lak</string>
+		</dict>
+		<key>LAM </key>
+		<dict>
+			<key>identifier</key>
+			<string>lmn</string>
+			<key>name</key>
+			<string>Lambani</string>
+		</dict>
+		<key>LAO </key>
+		<dict>
+			<key>identifier</key>
+			<string>lao</string>
+			<key>name</key>
+			<string>Lao</string>
+		</dict>
+		<key>LAT </key>
+		<dict>
+			<key>identifier</key>
+			<string>lat</string>
+			<key>name</key>
+			<string>Latin</string>
+		</dict>
+		<key>LAZ </key>
+		<dict>
+			<key>identifier</key>
+			<string>lzz</string>
+			<key>name</key>
+			<string>Laz</string>
+		</dict>
+		<key>LCR </key>
+		<dict>
+			<key>identifier</key>
+			<string>crm</string>
+			<key>name</key>
+			<string>L-Cree</string>
+		</dict>
+		<key>LDK </key>
+		<dict>
+			<key>identifier</key>
+			<string>lbj</string>
+			<key>name</key>
+			<string>Ladakhi</string>
+		</dict>
+		<key>LEF </key>
+		<dict>
+			<key>identifier</key>
+			<string>lef</string>
+			<key>name</key>
+			<string>Lelemi</string>
+		</dict>
+		<key>LEZ </key>
+		<dict>
+			<key>identifier</key>
+			<string>lez</string>
+			<key>name</key>
+			<string>Lezgi</string>
+		</dict>
+		<key>LIJ </key>
+		<dict>
+			<key>identifier</key>
+			<string>lij</string>
+			<key>name</key>
+			<string>Ligurian</string>
+		</dict>
+		<key>LIM </key>
+		<dict>
+			<key>identifier</key>
+			<string>lim</string>
+			<key>name</key>
+			<string>Limburgish</string>
+		</dict>
+		<key>LIN </key>
+		<dict>
+			<key>identifier</key>
+			<string>lin</string>
+			<key>name</key>
+			<string>Lingala</string>
+		</dict>
+		<key>LIS </key>
+		<dict>
+			<key>identifier</key>
+			<string>lis</string>
+			<key>name</key>
+			<string>Lisu</string>
+		</dict>
+		<key>LIV </key>
+		<dict>
+			<key>identifier</key>
+			<string>liv</string>
+			<key>name</key>
+			<string>Liv</string>
+		</dict>
+		<key>LJP </key>
+		<dict>
+			<key>identifier</key>
+			<string>ljp</string>
+			<key>name</key>
+			<string>Lampung</string>
+		</dict>
+		<key>LKI </key>
+		<dict>
+			<key>identifier</key>
+			<string>lki</string>
+			<key>name</key>
+			<string>Laki</string>
+		</dict>
+		<key>LMA </key>
+		<dict>
+			<key>identifier</key>
+			<string>mhr</string>
+			<key>name</key>
+			<string>Low Mari</string>
+		</dict>
+		<key>LMB </key>
+		<dict>
+			<key>identifier</key>
+			<string>lif</string>
+			<key>name</key>
+			<string>Limbu</string>
+		</dict>
+		<key>LMO </key>
+		<dict>
+			<key>identifier</key>
+			<string>lmo</string>
+			<key>name</key>
+			<string>Lombard</string>
+		</dict>
+		<key>LMW </key>
+		<dict>
+			<key>identifier</key>
+			<string>ngl</string>
+			<key>name</key>
+			<string>Lomwe</string>
+		</dict>
+		<key>LOM </key>
+		<dict>
+			<key>identifier</key>
+			<string>lom</string>
+			<key>name</key>
+			<string>Loma</string>
+		</dict>
+		<key>LPO </key>
+		<dict>
+			<key>identifier</key>
+			<string>lpo</string>
+			<key>name</key>
+			<string>Lipo</string>
+		</dict>
+		<key>LRC </key>
+		<dict>
+			<key>identifier</key>
+			<string>lrc</string>
+			<key>name</key>
+			<string>Luri</string>
+		</dict>
+		<key>LSB </key>
+		<dict>
+			<key>identifier</key>
+			<string>dsb</string>
+			<key>name</key>
+			<string>Lower Sorbian</string>
+		</dict>
+		<key>LSM </key>
+		<dict>
+			<key>identifier</key>
+			<string>smj</string>
+			<key>name</key>
+			<string>Lule Sami</string>
+		</dict>
+		<key>LTH </key>
+		<dict>
+			<key>identifier</key>
+			<string>lit</string>
+			<key>name</key>
+			<string>Lithuanian</string>
+		</dict>
+		<key>LTZ </key>
+		<dict>
+			<key>identifier</key>
+			<string>ltz</string>
+			<key>name</key>
+			<string>Luxembourgish</string>
+		</dict>
+		<key>LUA </key>
+		<dict>
+			<key>identifier</key>
+			<string>lua</string>
+			<key>name</key>
+			<string>Luba-Lulua</string>
+		</dict>
+		<key>LUB </key>
+		<dict>
+			<key>identifier</key>
+			<string>lub</string>
+			<key>name</key>
+			<string>Luba-Katanga</string>
+		</dict>
+		<key>LUG </key>
+		<dict>
+			<key>identifier</key>
+			<string>lug</string>
+			<key>name</key>
+			<string>Ganda</string>
+		</dict>
+		<key>LUH </key>
+		<dict>
+			<key>identifier</key>
+			<string>luy</string>
+			<key>name</key>
+			<string>Luyia</string>
+		</dict>
+		<key>LUO </key>
+		<dict>
+			<key>identifier</key>
+			<string>luo</string>
+			<key>name</key>
+			<string>Luo</string>
+		</dict>
+		<key>LUT </key>
+		<dict>
+			<key>identifier</key>
+			<string>lut</string>
+			<key>name</key>
+			<string>Lushootseed</string>
+		</dict>
+		<key>LVI </key>
+		<dict>
+			<key>identifier</key>
+			<string>lav</string>
+			<key>name</key>
+			<string>Latvian</string>
+		</dict>
+		<key>MAD </key>
+		<dict>
+			<key>identifier</key>
+			<string>mad</string>
+			<key>name</key>
+			<string>Madura</string>
+		</dict>
+		<key>MAG </key>
+		<dict>
+			<key>identifier</key>
+			<string>mag</string>
+			<key>name</key>
+			<string>Magahi</string>
+		</dict>
+		<key>MAH </key>
+		<dict>
+			<key>identifier</key>
+			<string>mah</string>
+			<key>name</key>
+			<string>Marshallese</string>
+		</dict>
+		<key>MAJ </key>
+		<dict>
+			<key>identifier</key>
+			<string>mpe</string>
+			<key>name</key>
+			<string>Majang</string>
+		</dict>
+		<key>MAK </key>
+		<dict>
+			<key>identifier</key>
+			<string>vmw</string>
+			<key>name</key>
+			<string>Makhuwa</string>
+		</dict>
+		<key>MAL </key>
+		<dict>
+			<key>identifier</key>
+			<string>mal</string>
+			<key>name</key>
+			<string>Malayalam</string>
+		</dict>
+		<key>MAM </key>
+		<dict>
+			<key>identifier</key>
+			<string>mam</string>
+			<key>name</key>
+			<string>Mam</string>
+		</dict>
+		<key>MAN </key>
+		<dict>
+			<key>identifier</key>
+			<string>mns</string>
+			<key>name</key>
+			<string>Mansi</string>
+		</dict>
+		<key>MAP </key>
+		<dict>
+			<key>identifier</key>
+			<string>arn</string>
+			<key>name</key>
+			<string>Mapudungun</string>
+		</dict>
+		<key>MAR </key>
+		<dict>
+			<key>identifier</key>
+			<string>mar</string>
+			<key>name</key>
+			<string>Marathi</string>
+		</dict>
+		<key>MAW </key>
+		<dict>
+			<key>identifier</key>
+			<string>mwr</string>
+			<key>name</key>
+			<string>Marwari</string>
+			<key>usesRegistryName</key>
+			<true/>
+		</dict>
+		<key>MBN </key>
+		<dict>
+			<key>identifier</key>
+			<string>kmb</string>
+			<key>name</key>
+			<string>Mbundu</string>
+		</dict>
+		<key>MBO </key>
+		<dict>
+			<key>identifier</key>
+			<string>mbo</string>
+			<key>name</key>
+			<string>Mbo</string>
+		</dict>
+		<key>MCH </key>
+		<dict>
+			<key>identifier</key>
+			<string>mnc</string>
+			<key>name</key>
+			<string>Manchu</string>
+		</dict>
+		<key>MCR </key>
+		<dict>
+			<key>identifier</key>
+			<string>crm</string>
+			<key>name</key>
+			<string>Moose Cree</string>
+		</dict>
+		<key>MDE </key>
+		<dict>
+			<key>identifier</key>
+			<string>men</string>
+			<key>name</key>
+			<string>Mende</string>
+		</dict>
+		<key>MDR </key>
+		<dict>
+			<key>identifier</key>
+			<string>mdr</string>
+			<key>name</key>
+			<string>Mandar</string>
+		</dict>
+		<key>MEN </key>
+		<dict>
+			<key>identifier</key>
+			<string>mym</string>
+			<key>name</key>
+			<string>Me’en</string>
+		</dict>
+		<key>MER </key>
+		<dict>
+			<key>identifier</key>
+			<string>mer</string>
+			<key>name</key>
+			<string>Meru</string>
+		</dict>
+		<key>MEV </key>
+		<dict>
+			<key>identifier</key>
+			<string>mev</string>
+			<key>name</key>
+			<string>Mano</string>
+		</dict>
+		<key>MFA </key>
+		<dict>
+			<key>identifier</key>
+			<string>mfa</string>
+			<key>name</key>
+			<string>Pattani Malay</string>
+		</dict>
+		<key>MFE </key>
+		<dict>
+			<key>identifier</key>
+			<string>mfe</string>
+			<key>name</key>
+			<string>Morisyen</string>
+		</dict>
+		<key>MIN </key>
+		<dict>
+			<key>identifier</key>
+			<string>min</string>
+			<key>name</key>
+			<string>Minangkabau</string>
+		</dict>
+		<key>MIZ </key>
+		<dict>
+			<key>identifier</key>
+			<string>lus</string>
+			<key>name</key>
+			<string>Mizo</string>
+		</dict>
+		<key>MKD </key>
+		<dict>
+			<key>identifier</key>
+			<string>mkd</string>
+			<key>name</key>
+			<string>Macedonian</string>
+		</dict>
+		<key>MKR </key>
+		<dict>
+			<key>identifier</key>
+			<string>mak</string>
+			<key>name</key>
+			<string>Makasar</string>
+		</dict>
+		<key>MKW </key>
+		<dict>
+			<key>identifier</key>
+			<string>mkw</string>
+			<key>name</key>
+			<string>Kituba</string>
+		</dict>
+		<key>MLE </key>
+		<dict>
+			<key>identifier</key>
+			<string>mdy</string>
+			<key>name</key>
+			<string>Male</string>
+		</dict>
+		<key>MLG </key>
+		<dict>
+			<key>identifier</key>
+			<string>mlg</string>
+			<key>name</key>
+			<string>Malagasy</string>
+		</dict>
+		<key>MLN </key>
+		<dict>
+			<key>identifier</key>
+			<string>mlq</string>
+			<key>name</key>
+			<string>Malinke</string>
+		</dict>
+		<key>MLR </key>
+		<dict>
+			<key>identifier</key>
+			<string>mal</string>
+			<key>name</key>
+			<string>Malayalam Reformed</string>
+		</dict>
+		<key>MLY </key>
+		<dict>
+			<key>identifier</key>
+			<string>msa</string>
+			<key>name</key>
+			<string>Malay</string>
+		</dict>
+		<key>MND </key>
+		<dict>
+			<key>identifier</key>
+			<string>mnk</string>
+			<key>name</key>
+			<string>Mandinka</string>
+		</dict>
+		<key>MNG </key>
+		<dict>
+			<key>identifier</key>
+			<string>mon</string>
+			<key>name</key>
+			<string>Mongolian</string>
+		</dict>
+		<key>MNI </key>
+		<dict>
+			<key>identifier</key>
+			<string>mni</string>
+			<key>name</key>
+			<string>Manipuri</string>
+		</dict>
+		<key>MNK </key>
+		<dict>
+			<key>identifier</key>
+			<string>mnk</string>
+			<key>name</key>
+			<string>Maninka</string>
+		</dict>
+		<key>MNX </key>
+		<dict>
+			<key>identifier</key>
+			<string>glv</string>
+			<key>name</key>
+			<string>Manx</string>
+		</dict>
+		<key>MOH </key>
+		<dict>
+			<key>identifier</key>
+			<string>moh</string>
+			<key>name</key>
+			<string>Mohawk</string>
+		</dict>
+		<key>MOK </key>
+		<dict>
+			<key>identifier</key>
+			<string>mdf</string>
+			<key>name</key>
+			<string>Moksha</string>
+		</dict>
+		<key>MOL </key>
+		<dict>
+			<key>identifier</key>
+			<string>ro-MD</string>
+			<key>name</key>
+			<string>Moldavian</string>
+		</dict>
+		<key>MON </key>
+		<dict>
+			<key>identifier</key>
+			<string>mnw</string>
+			<key>name</key>
+			<string>Mon</string>
+		</dict>
+		<key>MONT</key>
+		<dict>
+			<key>identifier</key>
+			<string>mnw</string>
+			<key>name</key>
+			<string>Thailand Mon</string>
+		</dict>
+		<key>MOR </key>
+		<dict>
+			<key>name</key>
+			<string>Moroccan</string>
+		</dict>
+		<key>MOS </key>
+		<dict>
+			<key>identifier</key>
+			<string>mos</string>
+			<key>name</key>
+			<string>Mossi</string>
+		</dict>
+		<key>MRI </key>
+		<dict>
+			<key>identifier</key>
+			<string>mri</string>
+			<key>name</key>
+			<string>Maori</string>
+		</dict>
+		<key>MTH </key>
+		<dict>
+			<key>identifier</key>
+			<string>mai</string>
+			<key>name</key>
+			<string>Maithili</string>
+		</dict>
+		<key>MTS </key>
+		<dict>
+			<key>identifier</key>
+			<string>mlt</string>
+			<key>name</key>
+			<string>Maltese</string>
+		</dict>
+		<key>MUN </key>
+		<dict>
+			<key>identifier</key>
+			<string>unr</string>
+			<key>name</key>
+			<string>Mundari</string>
+		</dict>
+		<key>MUS </key>
+		<dict>
+			<key>identifier</key>
+			<string>mus</string>
+			<key>name</key>
+			<string>Muscogee</string>
+		</dict>
+		<key>MWL </key>
+		<dict>
+			<key>identifier</key>
+			<string>mwl</string>
+			<key>name</key>
+			<string>Mirandese</string>
+		</dict>
+		<key>MWW </key>
+		<dict>
+			<key>identifier</key>
+			<string>mww</string>
+			<key>name</key>
+			<string>Hmong Daw</string>
+		</dict>
+		<key>MYN </key>
+		<dict>
+			<key>identifier</key>
+			<string>myn</string>
+			<key>name</key>
+			<string>Mayan</string>
+		</dict>
+		<key>MZN </key>
+		<dict>
+			<key>identifier</key>
+			<string>mzn</string>
+			<key>name</key>
+			<string>Mazanderani</string>
+		</dict>
+		<key>NAG </key>
+		<dict>
+			<key>identifier</key>
+			<string>nag</string>
+			<key>name</key>
+			<string>Naga-Assamese</string>
+		</dict>
+		<key>NAH </key>
+		<dict>
+			<key>identifier</key>
+			<string>nah</string>
+			<key>name</key>
+			<string>Nahuatl</string>
+		</dict>
+		<key>NAN </key>
+		<dict>
+			<key>identifier</key>
+			<string>gld</string>
+			<key>name</key>
+			<string>Nanai</string>
+		</dict>
+		<key>NAP </key>
+		<dict>
+			<key>identifier</key>
+			<string>nap</string>
+			<key>name</key>
+			<string>Neapolitan</string>
+		</dict>
+		<key>NAS </key>
+		<dict>
+			<key>identifier</key>
+			<string>nsk</string>
+			<key>name</key>
+			<string>Naskapi</string>
+		</dict>
+		<key>NAU </key>
+		<dict>
+			<key>identifier</key>
+			<string>nau</string>
+			<key>name</key>
+			<string>Nauruan</string>
+		</dict>
+		<key>NAV </key>
+		<dict>
+			<key>identifier</key>
+			<string>nav</string>
+			<key>name</key>
+			<string>Navajo</string>
+		</dict>
+		<key>NCR </key>
+		<dict>
+			<key>identifier</key>
+			<string>csw</string>
+			<key>name</key>
+			<string>N-Cree</string>
+		</dict>
+		<key>NDB </key>
+		<dict>
+			<key>identifier</key>
+			<string>nbl</string>
+			<key>name</key>
+			<string>Ndebele</string>
+			<key>usesRegistryName</key>
+			<true/>
+		</dict>
+		<key>NDC </key>
+		<dict>
+			<key>identifier</key>
+			<string>ndc</string>
+			<key>name</key>
+			<string>Ndau</string>
+		</dict>
+		<key>NDG </key>
+		<dict>
+			<key>identifier</key>
+			<string>ndo</string>
+			<key>name</key>
+			<string>Ndonga</string>
+		</dict>
+		<key>NDS </key>
+		<dict>
+			<key>identifier</key>
+			<string>nds</string>
+			<key>name</key>
+			<string>Low Saxon</string>
+		</dict>
+		<key>NEP </key>
+		<dict>
+			<key>identifier</key>
+			<string>nep</string>
+			<key>name</key>
+			<string>Nepali</string>
+		</dict>
+		<key>NEW </key>
+		<dict>
+			<key>identifier</key>
+			<string>new</string>
+			<key>name</key>
+			<string>Newari</string>
+		</dict>
+		<key>NGA </key>
+		<dict>
+			<key>identifier</key>
+			<string>nga</string>
+			<key>name</key>
+			<string>Ngbaka</string>
+		</dict>
+		<key>NGR </key>
+		<dict>
+			<key>name</key>
+			<string>Nagari</string>
+		</dict>
+		<key>NHC </key>
+		<dict>
+			<key>identifier</key>
+			<string>csw</string>
+			<key>name</key>
+			<string>Norway House Cree</string>
+		</dict>
+		<key>NIS </key>
+		<dict>
+			<key>identifier</key>
+			<string>dap</string>
+			<key>name</key>
+			<string>Nisi</string>
+			<key>usesRegistryName</key>
+			<true/>
+		</dict>
+		<key>NIU </key>
+		<dict>
+			<key>identifier</key>
+			<string>niu</string>
+			<key>name</key>
+			<string>Niuean</string>
+		</dict>
+		<key>NKL </key>
+		<dict>
+			<key>identifier</key>
+			<string>nyn</string>
+			<key>name</key>
+			<string>Nyankole</string>
+		</dict>
+		<key>NKO </key>
+		<dict>
+			<key>identifier</key>
+			<string>nqo</string>
+			<key>name</key>
+			<string>N’Ko</string>
+		</dict>
+		<key>NLD </key>
+		<dict>
+			<key>identifier</key>
+			<string>nld</string>
+			<key>name</key>
+			<string>Dutch</string>
+		</dict>
+		<key>NOE </key>
+		<dict>
+			<key>identifier</key>
+			<string>noe</string>
+			<key>name</key>
+			<string>Nimadi</string>
+		</dict>
+		<key>NOG </key>
+		<dict>
+			<key>identifier</key>
+			<string>nog</string>
+			<key>name</key>
+			<string>Nogai</string>
+		</dict>
+		<key>NOP </key>
+		<dict>
+			<key>identifier</key>
+			<string>nop</string>
+			<key>name</key>
+			<string>Numanggang</string>
+		</dict>
+		<key>NOR </key>
+		<dict>
+			<key>identifier</key>
+			<string>nob</string>
+			<key>name</key>
+			<string>Norwegian</string>
+		</dict>
+		<key>NOV </key>
+		<dict>
+			<key>identifier</key>
+			<string>nov</string>
+			<key>name</key>
+			<string>Novial</string>
+		</dict>
+		<key>NSM </key>
+		<dict>
+			<key>identifier</key>
+			<string>sme</string>
+			<key>name</key>
+			<string>Northern Sami</string>
+		</dict>
+		<key>NSO </key>
+		<dict>
+			<key>identifier</key>
+			<string>nso</string>
+			<key>name</key>
+			<string>Northern Sotho</string>
+		</dict>
+		<key>NTA </key>
+		<dict>
+			<key>identifier</key>
+			<string>nod</string>
+			<key>name</key>
+			<string>Northern Tai</string>
+		</dict>
+		<key>NTO </key>
+		<dict>
+			<key>identifier</key>
+			<string>epo</string>
+			<key>name</key>
+			<string>Esperanto</string>
+		</dict>
+		<key>NUK </key>
+		<dict>
+			<key>identifier</key>
+			<string>nuk</string>
+			<key>name</key>
+			<string>Nuu-chah-nulth</string>
+		</dict>
+		<key>NYM </key>
+		<dict>
+			<key>identifier</key>
+			<string>nym</string>
+			<key>name</key>
+			<string>Nyamwezi</string>
+		</dict>
+		<key>NYN </key>
+		<dict>
+			<key>identifier</key>
+			<string>nno</string>
+			<key>name</key>
+			<string>Norwegian Nynorsk (Nynorsk, Norwegian)</string>
+		</dict>
+		<key>NZA </key>
+		<dict>
+			<key>identifier</key>
+			<string>nza</string>
+			<key>name</key>
+			<string>Mbembe Tigon</string>
+		</dict>
+		<key>OCI </key>
+		<dict>
+			<key>identifier</key>
+			<string>oci</string>
+			<key>name</key>
+			<string>Occitan</string>
+		</dict>
+		<key>OCR </key>
+		<dict>
+			<key>identifier</key>
+			<string>ojs</string>
+			<key>name</key>
+			<string>Oji-Cree</string>
+		</dict>
+		<key>OJB </key>
+		<dict>
+			<key>identifier</key>
+			<string>oji</string>
+			<key>name</key>
+			<string>Ojibway</string>
+		</dict>
+		<key>ONE </key>
+		<dict>
+			<key>identifier</key>
+			<string>one</string>
+			<key>name</key>
+			<string>Oneida</string>
+		</dict>
+		<key>ONO </key>
+		<dict>
+			<key>identifier</key>
+			<string>ono</string>
+			<key>name</key>
+			<string>Onondaga</string>
+		</dict>
+		<key>ORI </key>
+		<dict>
+			<key>identifier</key>
+			<string>ori</string>
+			<key>name</key>
+			<string>Odia</string>
+		</dict>
+		<key>ORO </key>
+		<dict>
+			<key>identifier</key>
+			<string>orm</string>
+			<key>name</key>
+			<string>Oromo</string>
+		</dict>
+		<key>OSS </key>
+		<dict>
+			<key>identifier</key>
+			<string>oss</string>
+			<key>name</key>
+			<string>Ossetian</string>
+		</dict>
+		<key>PAA </key>
+		<dict>
+			<key>identifier</key>
+			<string>sam</string>
+			<key>name</key>
+			<string>Palestinian Aramaic</string>
+		</dict>
+		<key>PAG </key>
+		<dict>
+			<key>identifier</key>
+			<string>pag</string>
+			<key>name</key>
+			<string>Pangasinan</string>
+		</dict>
+		<key>PAL </key>
+		<dict>
+			<key>identifier</key>
+			<string>pli</string>
+			<key>name</key>
+			<string>Pali</string>
+		</dict>
+		<key>PAM </key>
+		<dict>
+			<key>identifier</key>
+			<string>pam</string>
+			<key>name</key>
+			<string>Pampangan</string>
+		</dict>
+		<key>PAN </key>
+		<dict>
+			<key>identifier</key>
+			<string>pan</string>
+			<key>name</key>
+			<string>Punjabi</string>
+		</dict>
+		<key>PAP </key>
+		<dict>
+			<key>identifier</key>
+			<string>plp</string>
+			<key>name</key>
+			<string>Palpa</string>
+		</dict>
+		<key>PAP0</key>
+		<dict>
+			<key>identifier</key>
+			<string>pap</string>
+			<key>name</key>
+			<string>Papiamentu</string>
+		</dict>
+		<key>PAS </key>
+		<dict>
+			<key>identifier</key>
+			<string>pus</string>
+			<key>name</key>
+			<string>Pashto</string>
+		</dict>
+		<key>PAU </key>
+		<dict>
+			<key>identifier</key>
+			<string>pau</string>
+			<key>name</key>
+			<string>Palauan</string>
+		</dict>
+		<key>PCC </key>
+		<dict>
+			<key>identifier</key>
+			<string>pcc</string>
+			<key>name</key>
+			<string>Bouyei</string>
+		</dict>
+		<key>PCD </key>
+		<dict>
+			<key>identifier</key>
+			<string>pcd</string>
+			<key>name</key>
+			<string>Picard</string>
+		</dict>
+		<key>PDC </key>
+		<dict>
+			<key>identifier</key>
+			<string>pdc</string>
+			<key>name</key>
+			<string>Pennsylvania German</string>
+		</dict>
+		<key>PGR </key>
+		<dict>
+			<key>identifier</key>
+			<string>ell</string>
+			<key>name</key>
+			<string>Polytonic Greek</string>
+		</dict>
+		<key>PHK </key>
+		<dict>
+			<key>identifier</key>
+			<string>phk</string>
+			<key>name</key>
+			<string>Phake</string>
+		</dict>
+		<key>PIH </key>
+		<dict>
+			<key>identifier</key>
+			<string>pih</string>
+			<key>name</key>
+			<string>Norfolk</string>
+		</dict>
+		<key>PIL </key>
+		<dict>
+			<key>identifier</key>
+			<string>fil</string>
+			<key>name</key>
+			<string>Filipino</string>
+		</dict>
+		<key>PLG </key>
+		<dict>
+			<key>identifier</key>
+			<string>pce</string>
+			<key>name</key>
+			<string>Palaung</string>
+			<key>usesRegistryName</key>
+			<true/>
+		</dict>
+		<key>PLG0</key>
+		<dict>
+			<key>identifier</key>
+			<string>plg</string>
+			<key>name</key>
+			<string>Pilagá</string>
+		</dict>
+		<key>PLK </key>
+		<dict>
+			<key>identifier</key>
+			<string>pol</string>
+			<key>name</key>
+			<string>Polish</string>
+		</dict>
+		<key>PMS </key>
+		<dict>
+			<key>identifier</key>
+			<string>pms</string>
+			<key>name</key>
+			<string>Piemontese</string>
+		</dict>
+		<key>PNB </key>
+		<dict>
+			<key>identifier</key>
+			<string>pnb</string>
+			<key>name</key>
+			<string>Western Panjabi</string>
+		</dict>
+		<key>POH </key>
+		<dict>
+			<key>identifier</key>
+			<string>poh</string>
+			<key>name</key>
+			<string>Pocomchi</string>
+		</dict>
+		<key>PON </key>
+		<dict>
+			<key>identifier</key>
+			<string>pon</string>
+			<key>name</key>
+			<string>Pohnpeian</string>
+		</dict>
+		<key>PRO </key>
+		<dict>
+			<key>identifier</key>
+			<string>pro</string>
+			<key>name</key>
+			<string>Provençal / Old Provençal</string>
+		</dict>
+		<key>PTG </key>
+		<dict>
+			<key>identifier</key>
+			<string>por</string>
+			<key>name</key>
+			<string>Portuguese</string>
+		</dict>
+		<key>PWO </key>
+		<dict>
+			<key>identifier</key>
+			<string>pwo</string>
+			<key>name</key>
+			<string>Western Pwo Karen</string>
+		</dict>
+		<key>QIN </key>
+		<dict>
+			<key>identifier</key>
+			<string>bgr</string>
+			<key>name</key>
+			<string>Chin</string>
+			<key>usesRegistryName</key>
+			<true/>
+		</dict>
+		<key>QUC </key>
+		<dict>
+			<key>identifier</key>
+			<string>quc</string>
+			<key>name</key>
+			<string>K’iche’</string>
+		</dict>
+		<key>QUH </key>
+		<dict>
+			<key>identifier</key>
+			<string>quh</string>
+			<key>name</key>
+			<string>Quechua (Bolivia)</string>
+		</dict>
+		<key>QUZ </key>
+		<dict>
+			<key>identifier</key>
+			<string>quz</string>
+			<key>name</key>
+			<string>Quechua</string>
+		</dict>
+		<key>QVI </key>
+		<dict>
+			<key>identifier</key>
+			<string>qvi</string>
+			<key>name</key>
+			<string>Quechua (Ecuador)</string>
+		</dict>
+		<key>QWH </key>
+		<dict>
+			<key>identifier</key>
+			<string>qwh</string>
+			<key>name</key>
+			<string>Quechua (Peru)</string>
+		</dict>
+		<key>RAJ </key>
+		<dict>
+			<key>identifier</key>
+			<string>raj</string>
+			<key>name</key>
+			<string>Rajasthani</string>
+		</dict>
+		<key>RAR </key>
+		<dict>
+			<key>identifier</key>
+			<string>rar</string>
+			<key>name</key>
+			<string>Rarotongan</string>
+		</dict>
+		<key>RBU </key>
+		<dict>
+			<key>identifier</key>
+			<string>bxr</string>
+			<key>name</key>
+			<string>Russian Buriat</string>
+		</dict>
+		<key>RCR </key>
+		<dict>
+			<key>identifier</key>
+			<string>atj</string>
+			<key>name</key>
+			<string>R-Cree</string>
+		</dict>
+		<key>REJ </key>
+		<dict>
+			<key>identifier</key>
+			<string>rej</string>
+			<key>name</key>
+			<string>Rejang</string>
+		</dict>
+		<key>RHG </key>
+		<dict>
+			<key>identifier</key>
+			<string>rhg</string>
+			<key>name</key>
+			<string>Rohingya</string>
+		</dict>
+		<key>RIA </key>
+		<dict>
+			<key>identifier</key>
+			<string>ria</string>
+			<key>name</key>
+			<string>Riang</string>
+		</dict>
+		<key>RIF </key>
+		<dict>
+			<key>identifier</key>
+			<string>rif</string>
+			<key>name</key>
+			<string>Tarifit</string>
+		</dict>
+		<key>RIT </key>
+		<dict>
+			<key>identifier</key>
+			<string>rit</string>
+			<key>name</key>
+			<string>Ritarungo</string>
+		</dict>
+		<key>RKW </key>
+		<dict>
+			<key>identifier</key>
+			<string>rkw</string>
+			<key>name</key>
+			<string>Arakwal</string>
+		</dict>
+		<key>RMS </key>
+		<dict>
+			<key>identifier</key>
+			<string>roh</string>
+			<key>name</key>
+			<string>Romansh</string>
+		</dict>
+		<key>RMY </key>
+		<dict>
+			<key>identifier</key>
+			<string>rmy</string>
+			<key>name</key>
+			<string>Vlax Romani</string>
+		</dict>
+		<key>ROM </key>
+		<dict>
+			<key>identifier</key>
+			<string>ron</string>
+			<key>name</key>
+			<string>Romanian</string>
+		</dict>
+		<key>ROY </key>
+		<dict>
+			<key>identifier</key>
+			<string>rom</string>
+			<key>name</key>
+			<string>Romany</string>
+		</dict>
+		<key>RSY </key>
+		<dict>
+			<key>identifier</key>
+			<string>rue</string>
+			<key>name</key>
+			<string>Rusyn</string>
+		</dict>
+		<key>RTM </key>
+		<dict>
+			<key>identifier</key>
+			<string>rtm</string>
+			<key>name</key>
+			<string>Rotuman</string>
+		</dict>
+		<key>RUA </key>
+		<dict>
+			<key>identifier</key>
+			<string>kin</string>
+			<key>name</key>
+			<string>Kinyarwanda</string>
+		</dict>
+		<key>RUN </key>
+		<dict>
+			<key>identifier</key>
+			<string>run</string>
+			<key>name</key>
+			<string>Rundi</string>
+		</dict>
+		<key>RUP </key>
+		<dict>
+			<key>identifier</key>
+			<string>rup</string>
+			<key>name</key>
+			<string>Aromanian</string>
+		</dict>
+		<key>RUS </key>
+		<dict>
+			<key>identifier</key>
+			<string>rus</string>
+			<key>name</key>
+			<string>Russian</string>
+		</dict>
+		<key>SAD </key>
+		<dict>
+			<key>identifier</key>
+			<string>sck</string>
+			<key>name</key>
+			<string>Sadri</string>
+		</dict>
+		<key>SAN </key>
+		<dict>
+			<key>identifier</key>
+			<string>san</string>
+			<key>name</key>
+			<string>Sanskrit</string>
+		</dict>
+		<key>SAS </key>
+		<dict>
+			<key>identifier</key>
+			<string>sas</string>
+			<key>name</key>
+			<string>Sasak</string>
+		</dict>
+		<key>SAT </key>
+		<dict>
+			<key>identifier</key>
+			<string>sat</string>
+			<key>name</key>
+			<string>Santali</string>
+		</dict>
+		<key>SAY </key>
+		<dict>
+			<key>identifier</key>
+			<string>chp</string>
+			<key>name</key>
+			<string>Sayisi</string>
+		</dict>
+		<key>SCN </key>
+		<dict>
+			<key>identifier</key>
+			<string>scn</string>
+			<key>name</key>
+			<string>Sicilian</string>
+		</dict>
+		<key>SCO </key>
+		<dict>
+			<key>identifier</key>
+			<string>sco</string>
+			<key>name</key>
+			<string>Scots</string>
+		</dict>
+		<key>SCS </key>
+		<dict>
+			<key>identifier</key>
+			<string>scs</string>
+			<key>name</key>
+			<string>North Slavey</string>
+		</dict>
+		<key>SEE </key>
+		<dict>
+			<key>identifier</key>
+			<string>see</string>
+			<key>name</key>
+			<string>Seneca</string>
+		</dict>
+		<key>SEK </key>
+		<dict>
+			<key>identifier</key>
+			<string>xan</string>
+			<key>name</key>
+			<string>Sekota</string>
+		</dict>
+		<key>SEL </key>
+		<dict>
+			<key>identifier</key>
+			<string>sel</string>
+			<key>name</key>
+			<string>Selkup</string>
+		</dict>
+		<key>SFM </key>
+		<dict>
+			<key>identifier</key>
+			<string>sfm</string>
+			<key>name</key>
+			<string>Small Flowery Miao</string>
+		</dict>
+		<key>SGA </key>
+		<dict>
+			<key>identifier</key>
+			<string>sga</string>
+			<key>name</key>
+			<string>Old Irish</string>
+		</dict>
+		<key>SGO </key>
+		<dict>
+			<key>identifier</key>
+			<string>sag</string>
+			<key>name</key>
+			<string>Sango</string>
+		</dict>
+		<key>SGS </key>
+		<dict>
+			<key>identifier</key>
+			<string>sgs</string>
+			<key>name</key>
+			<string>Samogitian</string>
+		</dict>
+		<key>SHI </key>
+		<dict>
+			<key>identifier</key>
+			<string>shi</string>
+			<key>name</key>
+			<string>Tachelhit</string>
+		</dict>
+		<key>SHN </key>
+		<dict>
+			<key>identifier</key>
+			<string>shn</string>
+			<key>name</key>
+			<string>Shan</string>
+		</dict>
+		<key>SIB </key>
+		<dict>
+			<key>identifier</key>
+			<string>sjo</string>
+			<key>name</key>
+			<string>Sibe</string>
+		</dict>
+		<key>SID </key>
+		<dict>
+			<key>identifier</key>
+			<string>sid</string>
+			<key>name</key>
+			<string>Sidamo</string>
+		</dict>
+		<key>SIG </key>
+		<dict>
+			<key>identifier</key>
+			<string>xst</string>
+			<key>name</key>
+			<string>Silte Gurage</string>
+			<key>usesRegistryName</key>
+			<true/>
+		</dict>
+		<key>SJA </key>
+		<dict>
+			<key>identifier</key>
+			<string>sja</string>
+			<key>name</key>
+			<string>Epena</string>
+		</dict>
+		<key>SJE </key>
+		<dict>
+			<key>identifier</key>
+			<string>sje</string>
+			<key>name</key>
+			<string>Pite Sami</string>
+		</dict>
+		<key>SJU </key>
+		<dict>
+			<key>identifier</key>
+			<string>sju</string>
+			<key>name</key>
+			<string>Ume Sami</string>
+		</dict>
+		<key>SKS </key>
+		<dict>
+			<key>identifier</key>
+			<string>sms</string>
+			<key>name</key>
+			<string>Skolt Sami</string>
+		</dict>
+		<key>SKY </key>
+		<dict>
+			<key>identifier</key>
+			<string>slk</string>
+			<key>name</key>
+			<string>Slovak</string>
+		</dict>
+		<key>SLA </key>
+		<dict>
+			<key>identifier</key>
+			<string>den</string>
+			<key>name</key>
+			<string>Slavey</string>
+			<key>usesRegistryName</key>
+			<true/>
+		</dict>
+		<key>SLV </key>
+		<dict>
+			<key>identifier</key>
+			<string>slv</string>
+			<key>name</key>
+			<string>Slovenian</string>
+		</dict>
+		<key>SML </key>
+		<dict>
+			<key>identifier</key>
+			<string>som</string>
+			<key>name</key>
+			<string>Somali</string>
+		</dict>
+		<key>SMO </key>
+		<dict>
+			<key>identifier</key>
+			<string>smo</string>
+			<key>name</key>
+			<string>Samoan</string>
+		</dict>
+		<key>SNA </key>
+		<dict>
+			<key>identifier</key>
+			<string>seh</string>
+			<key>name</key>
+			<string>Sena</string>
+		</dict>
+		<key>SNA0</key>
+		<dict>
+			<key>identifier</key>
+			<string>sna</string>
+			<key>name</key>
+			<string>Shona</string>
+		</dict>
+		<key>SND </key>
+		<dict>
+			<key>identifier</key>
+			<string>snd</string>
+			<key>name</key>
+			<string>Sindhi</string>
+		</dict>
+		<key>SNH </key>
+		<dict>
+			<key>identifier</key>
+			<string>sin</string>
+			<key>name</key>
+			<string>Sinhala (Sinhalese)</string>
+		</dict>
+		<key>SNK </key>
+		<dict>
+			<key>identifier</key>
+			<string>snk</string>
+			<key>name</key>
+			<string>Soninke</string>
+		</dict>
+		<key>SOG </key>
+		<dict>
+			<key>identifier</key>
+			<string>gru</string>
+			<key>name</key>
+			<string>Sodo Gurage</string>
+		</dict>
+		<key>SOP </key>
+		<dict>
+			<key>identifier</key>
+			<string>sop</string>
+			<key>name</key>
+			<string>Songe</string>
+		</dict>
+		<key>SOT </key>
+		<dict>
+			<key>identifier</key>
+			<string>sot</string>
+			<key>name</key>
+			<string>Southern Sotho</string>
+		</dict>
+		<key>SQI </key>
+		<dict>
+			<key>identifier</key>
+			<string>sqi</string>
+			<key>name</key>
+			<string>Albanian</string>
+		</dict>
+		<key>SRB </key>
+		<dict>
+			<key>identifier</key>
+			<string>cnr</string>
+			<key>name</key>
+			<string>Serbian</string>
+			<key>usesRegistryName</key>
+			<true/>
+		</dict>
+		<key>SRD </key>
+		<dict>
+			<key>identifier</key>
+			<string>srd</string>
+			<key>name</key>
+			<string>Sardinian</string>
+		</dict>
+		<key>SRK </key>
+		<dict>
+			<key>identifier</key>
+			<string>skr</string>
+			<key>name</key>
+			<string>Saraiki</string>
+		</dict>
+		<key>SRR </key>
+		<dict>
+			<key>identifier</key>
+			<string>srr</string>
+			<key>name</key>
+			<string>Serer</string>
+		</dict>
+		<key>SSL </key>
+		<dict>
+			<key>identifier</key>
+			<string>xsl</string>
+			<key>name</key>
+			<string>South Slavey</string>
+		</dict>
+		<key>SSM </key>
+		<dict>
+			<key>identifier</key>
+			<string>sma</string>
+			<key>name</key>
+			<string>Southern Sami</string>
+		</dict>
+		<key>STQ </key>
+		<dict>
+			<key>identifier</key>
+			<string>stq</string>
+			<key>name</key>
+			<string>Saterland Frisian</string>
+		</dict>
+		<key>STR </key>
+		<dict>
+			<key>identifier</key>
+			<string>str</string>
+			<key>name</key>
+			<string>Straits Salish</string>
+		</dict>
+		<key>SUK </key>
+		<dict>
+			<key>identifier</key>
+			<string>suk</string>
+			<key>name</key>
+			<string>Sukuma</string>
+		</dict>
+		<key>SUN </key>
+		<dict>
+			<key>identifier</key>
+			<string>sun</string>
+			<key>name</key>
+			<string>Sundanese</string>
+		</dict>
+		<key>SUR </key>
+		<dict>
+			<key>identifier</key>
+			<string>suq</string>
+			<key>name</key>
+			<string>Suri</string>
+		</dict>
+		<key>SVA </key>
+		<dict>
+			<key>identifier</key>
+			<string>sva</string>
+			<key>name</key>
+			<string>Svan</string>
+		</dict>
+		<key>SVE </key>
+		<dict>
+			<key>identifier</key>
+			<string>swe</string>
+			<key>name</key>
+			<string>Swedish</string>
+		</dict>
+		<key>SWA </key>
+		<dict>
+			<key>identifier</key>
+			<string>aii</string>
+			<key>name</key>
+			<string>Swadaya Aramaic</string>
+		</dict>
+		<key>SWK </key>
+		<dict>
+			<key>identifier</key>
+			<string>swa</string>
+			<key>name</key>
+			<string>Swahili</string>
+		</dict>
+		<key>SWZ </key>
+		<dict>
+			<key>identifier</key>
+			<string>ssw</string>
+			<key>name</key>
+			<string>Swati</string>
+		</dict>
+		<key>SXT </key>
+		<dict>
+			<key>identifier</key>
+			<string>ngo</string>
+			<key>name</key>
+			<string>Sutu</string>
+			<key>usesRegistryName</key>
+			<true/>
+		</dict>
+		<key>SXU </key>
+		<dict>
+			<key>identifier</key>
+			<string>sxu</string>
+			<key>name</key>
+			<string>Upper Saxon</string>
+		</dict>
+		<key>SYL </key>
+		<dict>
+			<key>identifier</key>
+			<string>syl</string>
+			<key>name</key>
+			<string>Sylheti</string>
+		</dict>
+		<key>SYR </key>
+		<dict>
+			<key>identifier</key>
+			<string>syr</string>
+			<key>name</key>
+			<string>Syriac</string>
+		</dict>
+		<key>SYRE</key>
+		<dict>
+			<key>identifier</key>
+			<string>syc</string>
+			<key>name</key>
+			<string>Syriac, Estrangela script-variant (equivalent to ISO 15924 'Syre')</string>
+			<key>usesRegistryName</key>
+			<true/>
+		</dict>
+		<key>SYRJ</key>
+		<dict>
+			<key>identifier</key>
+			<string>syc</string>
+			<key>name</key>
+			<string>Syriac, Western script-variant (equivalent to ISO 15924 'Syrj')</string>
+			<key>usesRegistryName</key>
+			<true/>
+		</dict>
+		<key>SYRN</key>
+		<dict>
+			<key>identifier</key>
+			<string>syc</string>
+			<key>name</key>
+			<string>Syriac, Eastern script-variant (equivalent to ISO 15924 'Syrn')</string>
+			<key>usesRegistryName</key>
+			<true/>
+		</dict>
+		<key>SZL </key>
+		<dict>
+			<key>identifier</key>
+			<string>szl</string>
+			<key>name</key>
+			<string>Silesian</string>
+		</dict>
+		<key>TAB </key>
+		<dict>
+			<key>identifier</key>
+			<string>tab</string>
+			<key>name</key>
+			<string>Tabasaran</string>
+		</dict>
+		<key>TAJ </key>
+		<dict>
+			<key>identifier</key>
+			<string>tgk</string>
+			<key>name</key>
+			<string>Tajiki</string>
+		</dict>
+		<key>TAM </key>
+		<dict>
+			<key>identifier</key>
+			<string>tam</string>
+			<key>name</key>
+			<string>Tamil</string>
+		</dict>
+		<key>TAQ </key>
+		<dict>
+			<key>identifier</key>
+			<string>taq</string>
+			<key>name</key>
+			<string>Tamasheq</string>
+		</dict>
+		<key>TAT </key>
+		<dict>
+			<key>identifier</key>
+			<string>tat</string>
+			<key>name</key>
+			<string>Tatar</string>
+		</dict>
+		<key>TBV </key>
+		<dict>
+			<key>identifier</key>
+			<string>tbv</string>
+			<key>name</key>
+			<string>Tobo</string>
+		</dict>
+		<key>TCR </key>
+		<dict>
+			<key>identifier</key>
+			<string>cwd</string>
+			<key>name</key>
+			<string>TH-Cree</string>
+		</dict>
+		<key>TDC </key>
+		<dict>
+			<key>identifier</key>
+			<string>tdc</string>
+			<key>name</key>
+			<string>Emberá-Tadó</string>
+		</dict>
+		<key>TDD </key>
+		<dict>
+			<key>identifier</key>
+			<string>tdd</string>
+			<key>name</key>
+			<string>Dehong Dai</string>
+		</dict>
+		<key>TEL </key>
+		<dict>
+			<key>identifier</key>
+			<string>tel</string>
+			<key>name</key>
+			<string>Telugu</string>
+		</dict>
+		<key>TET </key>
+		<dict>
+			<key>identifier</key>
+			<string>tet</string>
+			<key>name</key>
+			<string>Tetum</string>
+		</dict>
+		<key>TGL </key>
+		<dict>
+			<key>identifier</key>
+			<string>tgl</string>
+			<key>name</key>
+			<string>Tagalog</string>
+		</dict>
+		<key>TGN </key>
+		<dict>
+			<key>identifier</key>
+			<string>ton</string>
+			<key>name</key>
+			<string>Tongan</string>
+		</dict>
+		<key>TGR </key>
+		<dict>
+			<key>identifier</key>
+			<string>tig</string>
+			<key>name</key>
+			<string>Tigre</string>
+		</dict>
+		<key>TGY </key>
+		<dict>
+			<key>identifier</key>
+			<string>tir</string>
+			<key>name</key>
+			<string>Tigrinya</string>
+		</dict>
+		<key>THA </key>
+		<dict>
+			<key>identifier</key>
+			<string>tha</string>
+			<key>name</key>
+			<string>Thai</string>
+		</dict>
+		<key>THP </key>
+		<dict>
+			<key>identifier</key>
+			<string>thp</string>
+			<key>name</key>
+			<string>Thompson</string>
+		</dict>
+		<key>THT </key>
+		<dict>
+			<key>identifier</key>
+			<string>tah</string>
+			<key>name</key>
+			<string>Tahitian</string>
+		</dict>
+		<key>THV </key>
+		<dict>
+			<key>identifier</key>
+			<string>thv</string>
+			<key>name</key>
+			<string>Tahaggart Tamahaq</string>
+		</dict>
+		<key>THZ </key>
+		<dict>
+			<key>identifier</key>
+			<string>thz</string>
+			<key>name</key>
+			<string>Tayart Tamajeq</string>
+		</dict>
+		<key>TIB </key>
+		<dict>
+			<key>identifier</key>
+			<string>bod</string>
+			<key>name</key>
+			<string>Tibetan</string>
+		</dict>
+		<key>TIV </key>
+		<dict>
+			<key>identifier</key>
+			<string>tiv</string>
+			<key>name</key>
+			<string>Tiv</string>
+		</dict>
+		<key>TJL </key>
+		<dict>
+			<key>identifier</key>
+			<string>tjl</string>
+			<key>name</key>
+			<string>Tai Laing</string>
+		</dict>
+		<key>TKM </key>
+		<dict>
+			<key>identifier</key>
+			<string>tuk</string>
+			<key>name</key>
+			<string>Turkmen</string>
+		</dict>
+		<key>TLI </key>
+		<dict>
+			<key>identifier</key>
+			<string>tli</string>
+			<key>name</key>
+			<string>Tlingit</string>
+		</dict>
+		<key>TLY </key>
+		<dict>
+			<key>identifier</key>
+			<string>tly</string>
+			<key>name</key>
+			<string>Talysh</string>
+		</dict>
+		<key>TMH </key>
+		<dict>
+			<key>identifier</key>
+			<string>tmh</string>
+			<key>name</key>
+			<string>Tamashek</string>
+		</dict>
+		<key>TMN </key>
+		<dict>
+			<key>identifier</key>
+			<string>tem</string>
+			<key>name</key>
+			<string>Temne</string>
+		</dict>
+		<key>TNA </key>
+		<dict>
+			<key>identifier</key>
+			<string>tsn</string>
+			<key>name</key>
+			<string>Tswana</string>
+		</dict>
+		<key>TNE </key>
+		<dict>
+			<key>identifier</key>
+			<string>enh</string>
+			<key>name</key>
+			<string>Tundra Enets</string>
+		</dict>
+		<key>TNG </key>
+		<dict>
+			<key>identifier</key>
+			<string>toi</string>
+			<key>name</key>
+			<string>Tonga</string>
+		</dict>
+		<key>TOD </key>
+		<dict>
+			<key>identifier</key>
+			<string>xal</string>
+			<key>name</key>
+			<string>Todo</string>
+		</dict>
+		<key>TOD0</key>
+		<dict>
+			<key>identifier</key>
+			<string>tod</string>
+			<key>name</key>
+			<string>Toma</string>
+		</dict>
+		<key>TPI </key>
+		<dict>
+			<key>identifier</key>
+			<string>tpi</string>
+			<key>name</key>
+			<string>Tok Pisin</string>
+		</dict>
+		<key>TRK </key>
+		<dict>
+			<key>identifier</key>
+			<string>tur</string>
+			<key>name</key>
+			<string>Turkish</string>
+		</dict>
+		<key>TSG </key>
+		<dict>
+			<key>identifier</key>
+			<string>tso</string>
+			<key>name</key>
+			<string>Tsonga</string>
+		</dict>
+		<key>TSJ </key>
+		<dict>
+			<key>identifier</key>
+			<string>tsj</string>
+			<key>name</key>
+			<string>Tshangla</string>
+		</dict>
+		<key>TTQ </key>
+		<dict>
+			<key>identifier</key>
+			<string>ttq</string>
+			<key>name</key>
+			<string>Tawallammat Tamajaq</string>
+		</dict>
+		<key>TUA </key>
+		<dict>
+			<key>identifier</key>
+			<string>tru</string>
+			<key>name</key>
+			<string>Turoyo Aramaic</string>
+		</dict>
+		<key>TUL </key>
+		<dict>
+			<key>identifier</key>
+			<string>tcy</string>
+			<key>name</key>
+			<string>Tulu</string>
+		</dict>
+		<key>TUM </key>
+		<dict>
+			<key>identifier</key>
+			<string>tum</string>
+			<key>name</key>
+			<string>Tumbuka</string>
+		</dict>
+		<key>TUS </key>
+		<dict>
+			<key>identifier</key>
+			<string>tus</string>
+			<key>name</key>
+			<string>Tuscarora</string>
+		</dict>
+		<key>TUV </key>
+		<dict>
+			<key>identifier</key>
+			<string>tyv</string>
+			<key>name</key>
+			<string>Tuvin</string>
+		</dict>
+		<key>TVL </key>
+		<dict>
+			<key>identifier</key>
+			<string>tvl</string>
+			<key>name</key>
+			<string>Tuvalu</string>
+		</dict>
+		<key>TWI </key>
+		<dict>
+			<key>identifier</key>
+			<string>twi</string>
+			<key>name</key>
+			<string>Twi</string>
+		</dict>
+		<key>TYZ </key>
+		<dict>
+			<key>identifier</key>
+			<string>tyz</string>
+			<key>name</key>
+			<string>Tày</string>
+		</dict>
+		<key>TZM </key>
+		<dict>
+			<key>identifier</key>
+			<string>tzm</string>
+			<key>name</key>
+			<string>Tamazight</string>
+		</dict>
+		<key>TZO </key>
+		<dict>
+			<key>identifier</key>
+			<string>tzo</string>
+			<key>name</key>
+			<string>Tzotzil</string>
+		</dict>
+		<key>UDI </key>
+		<dict>
+			<key>identifier</key>
+			<string>udi</string>
+			<key>name</key>
+			<string>Udi</string>
+		</dict>
+		<key>UDM </key>
+		<dict>
+			<key>identifier</key>
+			<string>udm</string>
+			<key>name</key>
+			<string>Udmurt</string>
+		</dict>
+		<key>UKR </key>
+		<dict>
+			<key>identifier</key>
+			<string>ukr</string>
+			<key>name</key>
+			<string>Ukrainian</string>
+		</dict>
+		<key>UMB </key>
+		<dict>
+			<key>identifier</key>
+			<string>umb</string>
+			<key>name</key>
+			<string>Umbundu</string>
+		</dict>
+		<key>UPPH</key>
+		<dict>
+			<key>identifier</key>
+			<string>und-fonupa</string>
+			<key>name</key>
+			<string>Uralic Phonetic Alphabet</string>
+		</dict>
+		<key>URD </key>
+		<dict>
+			<key>identifier</key>
+			<string>urd</string>
+			<key>name</key>
+			<string>Urdu</string>
+		</dict>
+		<key>USB </key>
+		<dict>
+			<key>identifier</key>
+			<string>hsb</string>
+			<key>name</key>
+			<string>Upper Sorbian</string>
+		</dict>
+		<key>UYG </key>
+		<dict>
+			<key>identifier</key>
+			<string>uig</string>
+			<key>name</key>
+			<string>Uyghur</string>
+		</dict>
+		<key>UZB </key>
+		<dict>
+			<key>identifier</key>
+			<string>uzb</string>
+			<key>name</key>
+			<string>Uzbek</string>
+		</dict>
+		<key>VEC </key>
+		<dict>
+			<key>identifier</key>
+			<string>vec</string>
+			<key>name</key>
+			<string>Venetian</string>
+		</dict>
+		<key>VEN </key>
+		<dict>
+			<key>identifier</key>
+			<string>ven</string>
+			<key>name</key>
+			<string>Venda</string>
+		</dict>
+		<key>VIT </key>
+		<dict>
+			<key>identifier</key>
+			<string>vie</string>
+			<key>name</key>
+			<string>Vietnamese</string>
+		</dict>
+		<key>VOL </key>
+		<dict>
+			<key>identifier</key>
+			<string>vol</string>
+			<key>name</key>
+			<string>Volapük</string>
+		</dict>
+		<key>VRO </key>
+		<dict>
+			<key>identifier</key>
+			<string>vro</string>
+			<key>name</key>
+			<string>Võro</string>
+		</dict>
+		<key>WA  </key>
+		<dict>
+			<key>identifier</key>
+			<string>wbm</string>
+			<key>name</key>
+			<string>Wa</string>
+		</dict>
+		<key>WAG </key>
+		<dict>
+			<key>identifier</key>
+			<string>wbr</string>
+			<key>name</key>
+			<string>Wagdi</string>
+		</dict>
+		<key>WAR </key>
+		<dict>
+			<key>identifier</key>
+			<string>war</string>
+			<key>name</key>
+			<string>Waray-Waray</string>
+		</dict>
+		<key>WBL </key>
+		<dict>
+			<key>identifier</key>
+			<string>wbl</string>
+			<key>name</key>
+			<string>Wakhi</string>
+		</dict>
+		<key>WCI </key>
+		<dict>
+			<key>identifier</key>
+			<string>wci</string>
+			<key>name</key>
+			<string>Waci Gbe</string>
+		</dict>
+		<key>WCR </key>
+		<dict>
+			<key>identifier</key>
+			<string>crk</string>
+			<key>name</key>
+			<string>West-Cree</string>
+		</dict>
+		<key>WDT </key>
+		<dict>
+			<key>identifier</key>
+			<string>wdt</string>
+			<key>name</key>
+			<string>Wendat</string>
+		</dict>
+		<key>WEL </key>
+		<dict>
+			<key>identifier</key>
+			<string>cym</string>
+			<key>name</key>
+			<string>Welsh</string>
+		</dict>
+		<key>WLF </key>
+		<dict>
+			<key>identifier</key>
+			<string>wol</string>
+			<key>name</key>
+			<string>Wolof</string>
+		</dict>
+		<key>WLN </key>
+		<dict>
+			<key>identifier</key>
+			<string>wln</string>
+			<key>name</key>
+			<string>Walloon</string>
+		</dict>
+		<key>WTM </key>
+		<dict>
+			<key>identifier</key>
+			<string>wtm</string>
+			<key>name</key>
+			<string>Mewati</string>
+		</dict>
+		<key>WYN </key>
+		<dict>
+			<key>identifier</key>
+			<string>wyn</string>
+			<key>name</key>
+			<string>Wyandot</string>
+		</dict>
+		<key>XBD </key>
+		<dict>
+			<key>identifier</key>
+			<string>khb</string>
+			<key>name</key>
+			<string>Lü</string>
+		</dict>
+		<key>XHS </key>
+		<dict>
+			<key>identifier</key>
+			<string>xho</string>
+			<key>name</key>
+			<string>Xhosa</string>
+		</dict>
+		<key>XJB </key>
+		<dict>
+			<key>identifier</key>
+			<string>xjb</string>
+			<key>name</key>
+			<string>Minjangbal</string>
+		</dict>
+		<key>XKF </key>
+		<dict>
+			<key>identifier</key>
+			<string>xkf</string>
+			<key>name</key>
+			<string>Khengkha</string>
+		</dict>
+		<key>XOG </key>
+		<dict>
+			<key>identifier</key>
+			<string>xog</string>
+			<key>name</key>
+			<string>Soga</string>
+		</dict>
+		<key>XPE </key>
+		<dict>
+			<key>identifier</key>
+			<string>xpe</string>
+			<key>name</key>
+			<string>Kpelle (Liberia)</string>
+		</dict>
+		<key>XUB </key>
+		<dict>
+			<key>identifier</key>
+			<string>xub</string>
+			<key>name</key>
+			<string>Bette Kuruma</string>
+		</dict>
+		<key>XUJ </key>
+		<dict>
+			<key>identifier</key>
+			<string>xuj</string>
+			<key>name</key>
+			<string>Jennu Kuruma</string>
+		</dict>
+		<key>YAK </key>
+		<dict>
+			<key>identifier</key>
+			<string>sah</string>
+			<key>name</key>
+			<string>Sakha</string>
+		</dict>
+		<key>YAO </key>
+		<dict>
+			<key>identifier</key>
+			<string>yao</string>
+			<key>name</key>
+			<string>Yao</string>
+		</dict>
+		<key>YAP </key>
+		<dict>
+			<key>identifier</key>
+			<string>yap</string>
+			<key>name</key>
+			<string>Yapese</string>
+		</dict>
+		<key>YBA </key>
+		<dict>
+			<key>identifier</key>
+			<string>yor</string>
+			<key>name</key>
+			<string>Yoruba</string>
+		</dict>
+		<key>YCR </key>
+		<dict>
+			<key>identifier</key>
+			<string>crj</string>
+			<key>name</key>
+			<string>Y-Cree</string>
+			<key>usesRegistryName</key>
+			<true/>
+		</dict>
+		<key>YGP </key>
+		<dict>
+			<key>identifier</key>
+			<string>ygp</string>
+			<key>name</key>
+			<string>Gepo</string>
+		</dict>
+		<key>YIC </key>
+		<dict>
+			<key>name</key>
+			<string>Yi Classic</string>
+		</dict>
+		<key>YIM </key>
+		<dict>
+			<key>identifier</key>
+			<string>iii</string>
+			<key>name</key>
+			<string>Yi Modern</string>
+		</dict>
+		<key>YNA </key>
+		<dict>
+			<key>identifier</key>
+			<string>yna</string>
+			<key>name</key>
+			<string>Aluo</string>
+		</dict>
+		<key>YUF </key>
+		<dict>
+			<key>identifier</key>
+			<string>yuf</string>
+			<key>name</key>
+			<string>Havasupai-Walapai-Yavapai</string>
+		</dict>
+		<key>YWQ </key>
+		<dict>
+			<key>identifier</key>
+			<string>ywq</string>
+			<key>name</key>
+			<string>Wuding-Luquan Yi</string>
+		</dict>
+		<key>ZEA </key>
+		<dict>
+			<key>identifier</key>
+			<string>zea</string>
+			<key>name</key>
+			<string>Zealandic</string>
+		</dict>
+		<key>ZGH </key>
+		<dict>
+			<key>identifier</key>
+			<string>zgh</string>
+			<key>name</key>
+			<string>Standard Moroccan Tamazight</string>
+		</dict>
+		<key>ZHA </key>
+		<dict>
+			<key>identifier</key>
+			<string>zha</string>
+			<key>name</key>
+			<string>Zhuang</string>
+		</dict>
+		<key>ZHH </key>
+		<dict>
+			<key>identifier</key>
+			<string>zh-Hant-HK</string>
+			<key>name</key>
+			<string>Chinese, Traditional, Hong Kong SAR</string>
+		</dict>
+		<key>ZHP </key>
+		<dict>
+			<key>identifier</key>
+			<string>zho</string>
+			<key>name</key>
+			<string>Chinese, Phonetic</string>
+		</dict>
+		<key>ZHS </key>
+		<dict>
+			<key>identifier</key>
+			<string>zh-Hans</string>
+			<key>name</key>
+			<string>Chinese, Simplified</string>
+		</dict>
+		<key>ZHT </key>
+		<dict>
+			<key>identifier</key>
+			<string>zh-Hant</string>
+			<key>name</key>
+			<string>Chinese, Traditional</string>
+		</dict>
+		<key>ZHTM</key>
+		<dict>
+			<key>identifier</key>
+			<string>zh-Hant-MO</string>
+			<key>name</key>
+			<string>Chinese, Traditional, Macao SAR</string>
+		</dict>
+		<key>ZND </key>
+		<dict>
+			<key>identifier</key>
+			<string>zne</string>
+			<key>name</key>
+			<string>Zande</string>
+		</dict>
+		<key>ZUL </key>
+		<dict>
+			<key>identifier</key>
+			<string>zul</string>
+			<key>name</key>
+			<string>Zulu</string>
+		</dict>
+		<key>ZZA </key>
+		<dict>
+			<key>identifier</key>
+			<string>zza</string>
+			<key>name</key>
+			<string>Zazaki</string>
+		</dict>
+	</dict>
+	<key>retrieved</key>
+	<string>2026-11-03</string>
+	<key>source</key>
+	<string>https://learn.microsoft.com/en-us/typography/opentype/spec/languagetags</string>
+</dict>
+</plist>

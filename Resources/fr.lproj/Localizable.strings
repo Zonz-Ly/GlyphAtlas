@@ -10,6 +10,8 @@
 "Paste" = "Coller";
 "Delete" = "Supprimer";
 "Select All" = "Tout sélectionner";
+"Underline" = "Souligné";
+"Strikethrough" = "Barré";
 "View" = "Présentation";
 "Window" = "Fenêtre";
 "Minimize" = "Minimiser";
@@ -26,7 +28,6 @@
 "Open" = "Ouvrir";
 "Zoom In" = "Agrandir";
 "Zoom Out" = "Réduire";
-"Actual Size" = "Taille réelle";
 "Text Alignment" = "Alignement du texte";
 "Left" = "Aligner à gauche";
 "Center" = "Centrer";
@@ -69,7 +70,7 @@
 "Help.07" = "Utilisez ⌘C pour copier tous les caractères encodés du glyphe sélectionné.";
 "Help.08" = "Survolez une étiquette Unicode pour voir le nom du caractère défini par la norme Unicode.";
 "Help.09" = "« Tous les glyphes » est la vue par défaut. Changez de vue par un clic droit, ou utilisez ⌘1 pour « Glyphe unique », ⌘2 pour « Plusieurs caractères » et ⌘3 pour « Tous les glyphes ».";
-"Help.10" = "Dans « Plusieurs caractères », cliquez sur un glyphe pour voir ses variantes. Les alternatives contextuelles et les ligatures sont activées par défaut ; basculez-les par un clic droit ou avec ⌘5 et ⌘6. Changez le sens d’écriture par un clic droit ou avec ⌘7.";
+"Help.10" = "Dans Plusieurs caractères, cliquez sur un glyphe pour voir ses variantes. Typographie, dans les menus Présentation et contextuel, affiche les fonctions natives : les coches indiquent les options sélectionnées ; les groupes exclusifs ne permettent qu’un seul choix. ⌘5 active ou désactive l’écriture verticale. Souligné ⌘U et Barré ⌘L s’appliquent à tout l’aperçu de plusieurs caractères. Sens d’écriture apparaît dans Présentation si CoreText indique la prise en charge d’une langue écrite de droite à gauche. Décoration du texte > Contour ⌘Y révèle les contours conservés dans la police, y compris leurs chevauchements. Langue de composition affiche les balises de langue GSUB de la police, sans doublons entre les écritures. Le menu est masqué si aucun système de langue nommé n’est déclaré.";
 "Help.11" = "Dans « Tous les glyphes », cliquez deux fois sur un glyphe pour l’ajouter au texte existant. Cliquer sur un glyphe dans la barre latérale le fait également clignoter dans la vue d’ensemble.";
 "Help.12" = "Utilisez ⌘+/⌘− pour agrandir ou réduire les glyphes, et ⌥⌘+/⌥⌘− pour augmenter ou réduire les marges dans « Plusieurs caractères ». Le pincement sur le trackpad fonctionne également.";
 "Help.13" = "L’ombre indique la largeur et la hauteur du glyphe, ainsi que la hauteur de ligne et l’interligne de la composition. Appuyez sur ⌘4 pour la masquer.";
@@ -81,8 +82,6 @@
 "Default" = "Par défaut";
 "Custom" = "Personnalisé";
 
-"Contextual Alternates" = "Alternatives contextuelles";
-"Ligatures" = "Ligatures";
 
 /* Font Book copy alerts. Conflict buttons follow Finder. */
 "An item named “%@” already exists in Font Book." = "Un élément nommé « %@ » existe déjà dans le Livre des polices.";
@@ -107,10 +106,25 @@
 "Decrease Line Spacing" = "Réduire l’interligne";
 
 /* Explicit defaults for newly opened font windows. */
-"Default to Single Glyph" = "Vue par défaut : Glyphe unique";
-"Default to Multi-Character" = "Vue par défaut : Plusieurs caractères";
-"Default to All Glyphs" = "Vue par défaut : Tous les glyphes";
-"Show Bounding Box by Default" = "Afficher le cadre englobant par défaut";
-"Enable Contextual Alternates by Default" = "Activer les alternatives contextuelles par défaut";
-"Enable Ligatures by Default" = "Activer les ligatures par défaut";
-"Use Vertical Writing by Default" = "Utiliser l’écriture verticale par défaut";
+
+/* Saved-text deletion and full screen. */
+"Delete Saved Text" = "Supprimer des textes enregistrés";
+"Clear All Saved Text" = "Effacer tous les textes enregistrés";
+"Enter Full Screen" = "Activer le mode plein écran";
+
+/* Native typography and opening settings. */
+"Typography" = "Typographie";
+"Other" = "Autres";
+"No Typography Features" = "Aucune fonction typographique";
+"Actual Size" = "Taille réelle";
+"Use as Defaults" = "Utiliser comme valeurs par défaut";
+"Restore to Defaults" = "Restaurer les valeurs par défaut";
+"Text Decorations" = "Décoration du texte";
+
+"Writing Direction" = "Sens d’écriture";
+"Left to Right" = "De gauche à droite";
+"Right to Left" = "De droite à gauche";
+"Outline" = "Contour";
+
+"Typesetting Language" = "Langue de composition";
+"No System Language Mapping" = "Aucune langue système ne correspond à cette balise de langue OpenType.";

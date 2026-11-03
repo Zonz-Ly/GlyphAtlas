@@ -3,6 +3,7 @@
 #import "GAGlyphSelection.h"
 #import "GAInputMenus.h"
 #import "GAAppDelegate.h"
+#import "GAMacOS26.h"
 
 /// YES when the shortcut modifiers in `modifiers` are exactly `expected`.
 /// Caps Lock, the function key, the numeric keypad, Help, and device-dependent
@@ -140,6 +141,10 @@ NSAttributedString *GAFieldTextFromModelText(NSAttributedString *modelText) {
 /// line tall and the character can be told apart from a literal U+23CE.
 @implementation GASearchFieldEditor
 
+- (void)updateFontPanel {
+  // This plain-text input does not synchronize the shared font and color panels.
+}
+
 - (NSMenu *)menuForEvent:(NSEvent *)event {
   NSMenu *menu = [super menuForEvent:event];
   GAFilterInputMenu(menu, GAInputMenuFont);
@@ -257,9 +262,8 @@ NSAttributedString *GAFieldTextFromModelText(NSAttributedString *modelText) {
 
 @end
 
-/// macOS 26+ search fields drop the leading text inset when the search button
-/// cell is removed; the text then starts at the bezel edge. Use a fixed 9 pt
-/// text inset on both edges without changing the field's frame, font or text.
+/// Keep text clear of the native bezel after removing the search button cell:
+/// 9 pt on the existing layout, 12 pt inside Tahoe's capsule.
 static const CGFloat GASearchFieldTextInset = 9.0;
 
 @interface GASearchFieldCell : GAInputSearchFieldCell
@@ -268,9 +272,10 @@ static const CGFloat GASearchFieldTextInset = 9.0;
 @implementation GASearchFieldCell
 
 - (NSRect)rectByInsettingTextEdges:(NSRect)rect bounds:(NSRect)bounds {
-  rect.origin.x = NSMinX(bounds) + GASearchFieldTextInset;
+  CGFloat inset = GAUsesMacOS26Layout() ? 12.0 : GASearchFieldTextInset;
+  rect.origin.x = NSMinX(bounds) + inset;
   rect.size.width =
-      MAX(0, NSMaxX(bounds) - GASearchFieldTextInset - NSMinX(rect));
+      MAX(0, NSMaxX(bounds) - inset - NSMinX(rect));
   return rect;
 }
 

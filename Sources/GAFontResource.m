@@ -72,11 +72,20 @@ static CTFontRef GANormalizedFont(CTFontDescriptorRef descriptor,
         id first = remaining.firstObject;
         CTFontRef original = CTFontCreateWithFontDescriptor(
             (__bridge CTFontDescriptorRef)first, 16, NULL);
-        NSArray<NSDictionary *> *axes = CFBridgingRelease(CTFontCopyVariationAxes(original)) ?: @[];
+        NSMutableArray<NSDictionary *> *axes = [CFBridgingRelease(CTFontCopyVariationAxes(original)) mutableCopy]
+            ?: [NSMutableArray array];
         NSMutableDictionary *defaults = [NSMutableDictionary dictionary];
         NSMutableDictionary *probe = [NSMutableDictionary dictionary];
-        for (NSDictionary *axis in axes) {
+        for (NSUInteger i = 0; i < axes.count; i++) {
+            NSDictionary *axis = axes[i];
             NSNumber *identifier = axis[(__bridge NSString *)kCTFontVariationAxisIdentifierKey];
+            if (![axis[(__bridge NSString *)kCTFontVariationAxisNameKey] length]) {
+                NSMutableDictionary *named = [axis mutableCopy];
+                uint32_t tag = CFSwapInt32HostToBig(identifier.unsignedIntValue);
+                named[(__bridge NSString *)kCTFontVariationAxisNameKey] =
+                    [[NSString alloc] initWithBytes:&tag length:sizeof(tag) encoding:NSASCIIStringEncoding];
+                axes[i] = named;
+            }
             NSNumber *value = axis[(__bridge NSString *)kCTFontVariationAxisDefaultValueKey];
             NSNumber *minimum = axis[(__bridge NSString *)kCTFontVariationAxisMinimumValueKey];
             NSNumber *maximum = axis[(__bridge NSString *)kCTFontVariationAxisMaximumValueKey];
@@ -90,7 +99,9 @@ static CTFontRef GANormalizedFont(CTFontDescriptorRef descriptor,
         resource->_axes = [axes copy];
         resource->_defaultCoordinates = [defaults copy];
         resource->_defaultDescriptor = CTFontCopyFontDescriptor(base);
-        resource->_name = CFBridgingRelease(CTFontCopyDisplayName(base)) ?: NSLocalizedString(@"Untitled Font", @"Font name fallback");
+        resource->_name = CFBridgingRelease(CTFontCopyDisplayName(base));
+        if (!resource->_name.length)
+            resource->_name = NSLocalizedString(@"Untitled Font", @"Font name fallback");
         NSString *familyName = CFBridgingRelease(CTFontCopyLocalizedName(base, kCTFontFamilyNameKey, NULL));
         if (familyName.length > 0) {
             if (families[familyName] == nil) families[familyName] = [NSMutableArray array];
@@ -122,8 +133,9 @@ static CTFontRef GANormalizedFont(CTFontDescriptorRef descriptor,
                 NSDictionary *variation = CFBridgingRelease(CTFontCopyVariation(font));
                 if (variation != nil) [coordinates addEntriesFromDictionary:variation];
                 GAFontInstance *instance = [[GAFontInstance alloc] init];
-                instance.name = CFBridgingRelease(CTFontCopyName(font, kCTFontStyleNameKey))
-                    ?: NSLocalizedString(@"Default", @"Default variable font instance");
+                instance.name = CFBridgingRelease(CTFontCopyName(font, kCTFontStyleNameKey));
+                if (!instance.name.length)
+                    instance.name = NSLocalizedString(@"Default", @"Default variable font instance");
                 instance.coordinates = coordinates;
                 containsDefault |= [coordinates isEqualToDictionary:defaults];
                 [instances addObject:instance];

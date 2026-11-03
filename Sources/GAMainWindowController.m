@@ -7,8 +7,11 @@
 #import "GAFontResource.h"
 #import "GAVariationViewController.h"
 #import "GAInputFocus.h"
-#import "GAViewDefaults.h"
+#import "GAOpenTypeLanguages.h"
+#import "GAMacOS26.h"
 #import <CoreText/CoreText.h>
+
+static NSString *const GAOpeningSettingsKey = @"GAOpeningSettings";
 
 /// A line break is layout, not a glyph: its character group is kept for text
 /// ranges but hidden from the glyph list.
@@ -49,6 +52,28 @@ static BOOL GAGroupIsMissing(GACharacterGroup *group) {
 @end
 
 @implementation GADropWindow
+
+- (BOOL)performKeyEquivalent:(NSEvent *)event {
+    NSEventModifierFlags flags = event.modifierFlags &
+        (NSEventModifierFlagCommand | NSEventModifierFlagControl |
+         NSEventModifierFlagOption | NSEventModifierFlagShift);
+    GAMainWindowController *controller = (id)self.windowController;
+    if ([controller isKindOfClass:GAMainWindowController.class] &&
+        controller.viewMode == GAViewModeMultiCharacter &&
+        (flags & ~NSEventModifierFlagShift) ==
+            (NSEventModifierFlagCommand | NSEventModifierFlagControl)) {
+        NSString *key = event.charactersIgnoringModifiers;
+        if ([key isEqualToString:@"+"] || [key isEqualToString:@"="]) {
+            [controller adjustLineSpacing:1];
+            return YES;
+        }
+        if ([key isEqualToString:@"-"] || [key isEqualToString:@"_"]) {
+            [controller adjustLineSpacing:-1];
+            return YES;
+        }
+    }
+    return [super performKeyEquivalent:event];
+}
 
 - (instancetype)initWithContentRect:(NSRect)contentRect
                            styleMask:(NSWindowStyleMask)style
@@ -176,8 +201,12 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 @property (nonatomic, strong, nullable) NSProgress *layoutLookup;
 @property (nonatomic) NSTextAlignment textAlignment;
 @property (nonatomic) BOOL verticalWriting;
-@property(nonatomic) BOOL usesContextualAlternates;
-@property(nonatomic) BOOL usesLigatures;
+@property(nonatomic, strong) GAFontFeatures *fontFeatures;
+@property(nonatomic) BOOL underlined;
+@property(nonatomic) BOOL struckThrough;
+@property(nonatomic) BOOL outlined;
+@property(nonatomic) NSWritingDirection baseWritingDirection;
+@property(nonatomic, copy) NSString *typesettingLanguageTag;
 @property (nonatomic, strong, nullable) GAGlyphVariant *lastSelectedVariant;
 /// Set by an all-glyph double-click append; consumed by the next reveal.
 @property (nonatomic) BOOL appendRevealPending;
@@ -196,7 +225,7 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
                                                             backing:NSBackingStoreBuffered
                                                               defer:NO];
     window.restorable = NO;
-    window.minSize = NSMakeSize(600, 390);
+    window.minSize = NSMakeSize(600, GAUsesMacOS26Layout() ? 380 : 390);
     window.tabbingMode = NSWindowTabbingModeDisallowed;
     window.titleVisibility = NSWindowTitleHidden;
     window.titlebarAppearsTransparent = YES;
@@ -204,14 +233,27 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 
     self = [super initWithWindow:window];
     if (self) {
-        NSUserDefaults *defaults = NSUserDefaults.standardUserDefaults;
-        _viewMode = (GAViewMode)GAViewDefaultValue(defaults, GAViewModeDefaultKey);
-        _usesContextualAlternates = GAViewDefaultValue(defaults, GAContextualAlternatesDefaultKey);
-        _usesLigatures = GAViewDefaultValue(defaults, GALigaturesDefaultKey);
-        _verticalWriting = GAViewDefaultValue(defaults, GAVerticalWritingDefaultKey);
+        NSDictionary *settings = [NSUserDefaults.standardUserDefaults dictionaryForKey:GAOpeningSettingsKey];
+        _viewMode = (GAViewMode)[settings[@"viewMode"] integerValue];
+        _showsMetrics = settings[@"showsMetrics"] ? [settings[@"showsMetrics"] boolValue] : YES;
+        _verticalWriting = [settings[@"vertical"] boolValue];
+        _textAlignment = (NSTextAlignment)[settings[@"alignment"] integerValue];
+        _underlined = [settings[@"underlined"] boolValue];
+        _struckThrough = [settings[@"struckThrough"] boolValue];
+        _outlined = [settings[@"outlined"] boolValue];
+        _baseWritingDirection = settings[@"baseWritingDirection"]
+            ? [settings[@"baseWritingDirection"] integerValue] : NSWritingDirectionNatural;
+        _typesettingLanguageTag = settings[@"typesettingLanguageTag"] ?: @"";
         window.delegate = self;
         [self configureInterfaceWithWindow:window];
+        [self.detailViewController applyOpeningSettings:settings];
         [self.detailViewController setShowsMetrics:_showsMetrics];
+        [self.detailViewController setUnderlined:_underlined];
+        [self.detailViewController setStruckThrough:_struckThrough];
+        [self.detailViewController setOutlined:_outlined];
+        [self.detailViewController setBaseWritingDirection:_baseWritingDirection];
+        [self.detailViewController setTypesettingLanguage:
+            GAIdentifierForOpenTypeLanguage(_typesettingLanguageTag) ?: @""];
         [self setViewMode:_viewMode];
 
         __weak typeof(self) weakSelf = self;
@@ -222,7 +264,8 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
         };
 
         NSRect windowFrame = window.frame;
-        windowFrame.size = NSMakeSize(600, 400);
+        windowFrame.size = settings[@"windowSize"]
+            ? NSSizeFromString(settings[@"windowSize"]) : NSMakeSize(600, 400);
         [window setFrame:windowFrame display:NO];
         [window center];
     }
@@ -235,8 +278,6 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 }
 
 - (void)configureInterfaceWithWindow:(NSWindow *)window {
-    _showsMetrics = GAViewDefaultValue(NSUserDefaults.standardUserDefaults,
-                                     GABoundingBoxDefaultKey);
     _multiText = @"";
     _multiGroups = @[];
     _multiGroupSources = [NSMapTable weakToStrongObjectsMapTable];
@@ -263,6 +304,9 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
     NSSplitViewItem *detailItem =
         [NSSplitViewItem splitViewItemWithViewController:self.detailViewController];
     detailItem.minimumThickness = 300;
+    if (GAUsesMacOS26Layout()) {
+        if (@available(macOS 26.0, *)) detailItem.automaticallyAdjustsSafeAreaInsets = YES;
+    }
     [split addSplitViewItem:detailItem];
 
     window.contentViewController = split;
@@ -297,7 +341,8 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
     toolbar.delegate = self;
     toolbar.displayMode = NSToolbarDisplayModeIconOnly;
     window.toolbar = toolbar;
-    window.toolbarStyle = NSWindowToolbarStyleUnifiedCompact;
+    window.toolbarStyle = GAUsesMacOS26Layout()
+        ? NSWindowToolbarStyleUnified : NSWindowToolbarStyleUnifiedCompact;
 
     __weak typeof(self) weakSelf = self;
     [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(handleInputBlankClick:)
@@ -358,8 +403,7 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
                                          groups:self.multiGroups ?: @[]];
         [self.detailViewController setTextAlignment:self.textAlignment];
         [self.detailViewController setWritingDirectionVertical:self.verticalWriting];
-        [self.detailViewController setUsesContextualAlternates:self.usesContextualAlternates];
-        [self.detailViewController setUsesLigatures:self.usesLigatures];
+        [self.detailViewController setFeatureSettings:self.fontFeatures.settings ?: @[]];
     }
 }
 
@@ -378,21 +422,26 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
     GAFontDocument *document = self.fontDocument;
     if (!snapshot || !document) return;
     BOOL vertical = self.verticalWriting;
-    BOOL contextual = self.usesContextualAlternates;
-    BOOL ligatures = self.usesLigatures;
+    NSWritingDirection direction = self.baseWritingDirection;
+    NSString *languageTag = self.typesettingLanguageTag;
+    NSArray *features = self.fontFeatures.replaySettings ?: @[];
     NSProgress *progress = [NSProgress discreteProgressWithTotalUnitCount:1];
     self.layoutLookup = progress;
     dispatch_async(self.analysisQueue, ^{
         if (progress.cancelled) return;
         GAGlyphResolution *resolution = [document resolveGlyphIDs:glyphIDs textRange:source
             text:snapshot.text selections:snapshot.selections groups:snapshot.display
-            vertical:vertical contextualAlternates:contextual ligatures:ligatures
+            vertical:vertical featureSettings:features
+            baseWritingDirection:direction
+            languageTag:languageTag
             cancelled:^BOOL { return progress.cancelled; }];
         dispatch_async(dispatch_get_main_queue(), ^{
             if (progress.cancelled || self.scanSnapshot != snapshot ||
                 self.fontDocument != document || self.viewMode != GAViewModeMultiCharacter ||
-                self.verticalWriting != vertical || self.usesContextualAlternates != contextual ||
-                self.usesLigatures != ligatures) return;
+                self.verticalWriting != vertical ||
+                self.baseWritingDirection != direction ||
+                ![self.typesettingLanguageTag isEqualToString:languageTag] ||
+                ![(self.fontFeatures.replaySettings ?: @[]) isEqualToArray:features]) return;
             if (resolution)
                 [self.sidebarViewController showGlyphResolution:resolution];
             else
@@ -408,9 +457,7 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 }
 
 - (void)toggleShowsMetrics {
-    if (_viewMode == GAViewModeAllGlyphs) {
-        return;
-    }
+    if (!GAViewModeSupportsMetrics(_viewMode)) return;
     _showsMetrics = !_showsMetrics;
     [self.detailViewController setShowsMetrics:_showsMetrics];
 }
@@ -444,7 +491,6 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 }
 
 - (void)resetZoom {
-    [self.detailViewController resetLineSpacing];
     if (_viewMode == GAViewModeAllGlyphs) {
         [self.detailViewController resetAllGlyphsZoom];
     } else if (_viewMode == GAViewModeSingleGlyph) {
@@ -452,6 +498,60 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
     } else if (_viewMode == GAViewModeMultiCharacter) {
         [self.detailViewController resetMultiTextZoom];
     }
+}
+
+- (void)saveOpeningSettings {
+    NSMutableDictionary *settings = [self.detailViewController.currentPreviewSettings mutableCopy];
+    [settings addEntriesFromDictionary:@{
+        @"viewMode":@(self.viewMode), @"showsMetrics":@(self.showsMetrics),
+        @"vertical":@(self.verticalWriting), @"alignment":@(self.textAlignment),
+        @"underlined":@(self.underlined), @"struckThrough":@(self.struckThrough),
+        @"outlined":@(self.outlined), @"baseWritingDirection":@(self.baseWritingDirection),
+        @"typesettingLanguageTag":self.typesettingLanguageTag,
+        @"windowSize":NSStringFromSize(self.window.frame.size),
+    }];
+    [NSUserDefaults.standardUserDefaults setObject:settings forKey:GAOpeningSettingsKey];
+}
+
++ (void)restoreOpeningSettings {
+    [NSUserDefaults.standardUserDefaults removeObjectForKey:GAOpeningSettingsKey];
+}
+
+- (void)setUnderlined:(BOOL)enabled {
+    _underlined = enabled;
+    [self.detailViewController setUnderlined:enabled];
+}
+
+- (void)setStruckThrough:(BOOL)enabled {
+    _struckThrough = enabled;
+    [self.detailViewController setStruckThrough:enabled];
+}
+
+- (void)setOutlined:(BOOL)enabled {
+    _outlined = enabled;
+    [self.detailViewController setOutlined:enabled];
+}
+
+- (void)setBaseWritingDirection:(NSWritingDirection)direction {
+    [self cancelLayoutLookup];
+    _baseWritingDirection = direction;
+    [self.detailViewController setBaseWritingDirection:direction];
+}
+
+- (BOOL)hasRightToLeftLanguages {
+    return self.fontDocument.hasRightToLeftLanguages;
+}
+
+- (NSArray<NSString *> *)typesettingLanguageTags {
+    return self.fontDocument.typesettingLanguageTags ?: @[];
+}
+
+- (void)setTypesettingLanguageTag:(NSString *)tag {
+    NSString *identifier = GAIdentifierForOpenTypeLanguage(tag);
+    if (tag.length && (!identifier || ![self.typesettingLanguageTags containsObject:tag])) return;
+    [self cancelLayoutLookup];
+    _typesettingLanguageTag = tag.copy;
+    [self.detailViewController setTypesettingLanguage:identifier ?: @""];
 }
 
 - (void)adjustLineSpacing:(NSInteger)steps {
@@ -484,16 +584,9 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
     [self.detailViewController setWritingDirectionVertical:vertical];
 }
 
-- (void)setUsesContextualAlternates:(BOOL)enabled {
+- (void)applyFontFeatureChoices {
     [self cancelLayoutLookup];
-    _usesContextualAlternates = enabled;
-    [self.detailViewController setUsesContextualAlternates:enabled];
-}
-
-- (void)setUsesLigatures:(BOOL)enabled {
-    [self cancelLayoutLookup];
-    _usesLigatures = enabled;
-    [self.detailViewController setUsesLigatures:enabled];
+    [self.detailViewController setFeatureSettings:self.fontFeatures.settings ?: @[]];
 }
 
 - (void)appendAllGlyphEntry:(GAAllGlyphEntry *)entry {
@@ -614,7 +707,7 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
     item.label = NSLocalizedString(@"Font Name", @"Font Name");
     item.paletteLabel = NSLocalizedString(@"Font Name", @"Font Name");
     item.view = self.fontTitleView;
-    // Keep the custom title and Variable button free of toolbar glass.
+    // Keep the compact title and Variable button free of toolbar glass.
     item.bordered = NO;
     CGFloat titleHeight = MAX(22, self.titleFontNameField.fittingSize.height);
 #pragma clang diagnostic push
@@ -776,6 +869,14 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
             GAGlyphVariant *selected = preserve ? self.lastSelectedVariant : nil;
             [self cancelLayoutLookup];
             self.fontDocument = document;
+            if (!document.hasRightToLeftLanguages)
+                [self setBaseWritingDirection:NSWritingDirectionNatural];
+            NSString *languageTag = self.typesettingLanguageTag;
+            if (![document.typesettingLanguageTags containsObject:languageTag] ||
+                !GAIdentifierForOpenTypeLanguage(languageTag)) languageTag = @"";
+            [self setTypesettingLanguageTag:languageTag];
+            if (!preserve) self.fontFeatures = [[GAFontFeatures alloc] initWithFont:document.fontBox.font];
+            [self applyFontFeatureChoices];
             @synchronized (self) {
                 self.pendingWorkerText = nil;
                 self.pendingWorkerSelections = nil;

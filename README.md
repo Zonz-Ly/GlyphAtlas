@@ -29,6 +29,7 @@ A native macOS font and alternate-glyph inspector. Type text to see every altern
 - In Multi-Character, click a glyph to view its alternates. Contextual Alternates and Ligatures are on by default; toggle them with a right-click or `⌘5` and `⌘6`. Vertical writing is supported; right-click or press `⌘7` to switch.
 - In All Glyphs, double-click a glyph to add it to the existing text. Clicking a glyph in the sidebar also makes it blink there.
 - Use `⌘+`/`⌘−` to zoom the glyphs, and `⌥⌘+`/`⌥⌘−` to increase or decrease the margins in Multi-Character. Trackpad pinch also works.
+- Choose View → Use as Defaults to save the current preview settings and window size for future font windows. Hold `⌥` to choose Restore to Defaults.
 - The shadow indicates the glyph's width and height, as well as the layout's line height and leading; press `⌘4` to hide it.
 - Dark mode is supported, but be careful: clicking a solid glyph can dazzle you.
 
@@ -47,12 +48,17 @@ A native macOS font and alternate-glyph inspector. Type text to see every altern
 open "dist/Glyph Atlas.app"
 ```
 
-The default build is universal (`arm64` + `x86_64`). To build only one architecture:
+The default build uses the current machine's architecture. Use a flag to select an architecture or create a ZIP:
 
 ```
-ARCHS=arm64 ./build.sh
-ARCHS=x86_64 ./build.sh
+./build.sh -a       # arm64
+./build.sh -x       # x86_64
+./build.sh -u       # Universal (arm64 + x86_64)
+./build.sh -z       # Current architecture + ZIP
+./build.sh -u -z    # Universal + ZIP
 ```
+
+`dist/Glyph Atlas.zip` includes the app and `Clear Attributes.command`. If macOS prevents the app from opening, extract both into the same folder and double-click the script to run `xattr -rc` on the adjacent app.
 
 ---
 
@@ -83,6 +89,7 @@ ARCHS=x86_64 ./build.sh
 - 在多字符中點一下字形就能查看替換字。默認開啟上下文替代和連字，點右鍵或使用 `⌘5`、`⌘6` 開關。支持豎排，點右鍵或使用 `⌘7` 切換。
 - 在全部字中點兩下字形可以添加到已有文字中，在側邊欄中點一下字形還會在全部字中閃一閃。
 - 用 `⌘+`／`⌘−` 來放大或縮小字形，用 `⌥⌘+`／`⌥⌘−` 來在多字符中放大或縮小邊距。也可以使用觸控板撐捏。
+- 在「顯示」菜單選擇「作為預設值」，可儲存目前的預覽設定與窗口大小，供之後打開的字體窗口使用。按住 `⌥` 可選擇「還原預設值」。
 - 用陰影表示字形寬度高度和排版行高行距，用可用 `⌘4` 隱藏。
 - 有做暗黑模式，但要小心點到實心字形會眼瞎瞎喔。
 
@@ -93,3 +100,22 @@ ARCHS=x86_64 ./build.sh
 - 字寬數據來自 CoreText 水平 advance。
 - 字高數據有 `vmtx` 時來自 CoreText 垂直 advance，無則使用 `sTypoAscender + sTypoDescender`，再無及多字符使用 CoreText `ascent + descent`。
 - 多字符排版及其度量由系統 TextView 提供，部分效果不可控，比如 `ccmp` 等部分強制特性無法關閉。
+
+## 構建
+
+```
+./build.sh
+open "dist/Glyph Atlas.app"
+```
+
+默認只生成本機架構，可用參數指定架構或生成 ZIP：
+
+```
+./build.sh -a       # arm64
+./build.sh -x       # x86_64
+./build.sh -u       # 通用版（arm64 + x86_64）
+./build.sh -z       # 本機架構 + ZIP
+./build.sh -u -z    # 通用版 + ZIP
+```
+
+`dist/Glyph Atlas.zip` 包含 app 與 `Clear Attributes.command`。若 macOS 阻止開啟 app，將兩者解壓至同一檔案夾，按兩下腳本即可對旁邊的 app 執行 `xattr -rc`。

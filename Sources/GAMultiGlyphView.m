@@ -1,11 +1,17 @@
 #import "GAMultiGlyphView.h"
 #import "GABoundingBoxView.h"
 #import "GAUnicode.h"
+#import "GAFontFeatures.h"
 #import <CoreText/CoreText.h>
 #import <CoreText/SFNTLayoutTypes.h>
 #import <math.h>
 
 static const CGFloat GAMultiBaseFontSize = 51.0;
+typedef NS_ENUM(NSUInteger, GAMagnificationControl) {
+    GAMagnificationText,
+    GAMagnificationBoundingBox,
+    GAMagnificationLineSpacing,
+};
 /// Twenty zoom-outs and twenty zoom-ins: `1 / 1.12^20` to `1.12^20`.
 static CGFloat GAMultiClampTextScale(CGFloat scale) {
     CGFloat maximum = GAGlyphZoomStep10 * GAGlyphZoomStep10;
@@ -54,14 +60,6 @@ static NSColor *GAResolvedColor(NSColor *color, NSAppearance *appearance) {
 
 NS_ASSUME_NONNULL_BEGIN
 
-/// Native AAT display settings only; candidate discovery is independent.
-/// Contextual Alternates controls the three contextual/swash alternate selectors;
-/// Ligatures controls the eleven ligature selectors. Disabled groups send
-/// Off selectors; enabled groups omit settings and preserve the font defaults.
-static
-CTFontRef GACopyTextDisplayFont(CTFontRef font, CGFloat size, BOOL contextualAlternates,
-                                BOOL ligatures) CF_RETURNS_RETAINED;
-
 /// Builds fixed-GID display text for explicit selections and vertical quotes.
 /// Each component keeps its override; the user's source text is untouched.
 static NSAttributedString *_Nullable GACreateGlyphDisplayString(
@@ -99,53 +97,6 @@ NS_ASSUME_NONNULL_END
 @end
 
 #pragma mark - Display copy
-
-static NSDictionary *GAAATDisplaySetting(NSInteger type, NSInteger selector) {
-    return @{
-        (__bridge NSString *)kCTFontFeatureTypeIdentifierKey : @(type),
-        (__bridge NSString *)kCTFontFeatureSelectorIdentifierKey : @(selector)
-    };
-}
-
-static CTFontRef GACopyTextDisplayFont(CTFontRef font, CGFloat size, BOOL contextualAlternates,
-                                BOOL ligatures) {
-    NSMutableArray *settings = [NSMutableArray array];
-    // Enabled menu groups leave the document font's defaults unspecified.
-    if (!ligatures) {
-        const NSInteger selectors[] = {
-            kRequiredLigaturesOffSelector,
-            kCommonLigaturesOffSelector,
-            kRareLigaturesOffSelector,
-            kLogosOffSelector,
-            kRebusPicturesOffSelector,
-            kDiphthongLigaturesOffSelector,
-            kSquaredLigaturesOffSelector,
-            kAbbrevSquaredLigaturesOffSelector,
-            kSymbolLigaturesOffSelector,
-            kContextualLigaturesOffSelector,
-            kHistoricalLigaturesOffSelector
-        };
-        for (NSUInteger i = 0; i < sizeof(selectors) / sizeof(selectors[0]); i++)
-            [settings addObject:GAAATDisplaySetting(kLigaturesType, selectors[i])];
-    }
-    if (!contextualAlternates) {
-        const NSInteger selectors[] = {
-            kContextualAlternatesOffSelector,
-            kSwashAlternatesOffSelector,
-            kContextualSwashAlternatesOffSelector
-        };
-        for (NSUInteger i = 0; i < sizeof(selectors) / sizeof(selectors[0]); i++)
-            [settings addObject:GAAATDisplaySetting(kContextualAlternatesType, selectors[i])];
-    }
-    if (!settings.count)
-        return CTFontCreateCopyWithAttributes(font, size, NULL, NULL);
-    NSDictionary *attributes = @{(__bridge NSString *)kCTFontFeatureSettingsAttribute : settings};
-    CTFontDescriptorRef descriptor =
-        CTFontDescriptorCreateWithAttributes((__bridge CFDictionaryRef)attributes);
-    CTFontRef result = CTFontCreateCopyWithAttributes(font, size, NULL, descriptor);
-    CFRelease(descriptor);
-    return result;
-}
 
 static NSAttributedString *GACreateGlyphDisplayString(
     NSArray<NSNumber *> *glyphIDs, NSString *baseString, NSFont *font,
@@ -312,13 +263,17 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
 
 @interface GAMultiGlyphView ()
 @property (nonatomic, strong) GAMultiTextView *textView;
-@property (nonatomic, copy, readonly) NSString *text;
+@property (nonatomic, copy) NSString *text;
 @property (nonatomic, copy) NSArray<NSNumber *> *displaySourceIndices;
 @property (nonatomic, copy, readonly) NSArray<GACharacterGroup *> *groups;
 @property(nonatomic, copy) NSArray<GAGlyphLayoutRun *> *glyphHits;
 @property (nonatomic) NSSize pageContentSize;
-@property (nonatomic) CGFloat textScale;
 @property (nonatomic) CGFloat magnificationStartTextScale;
+@property(nonatomic) CGFloat magnificationStartPage;
+@property(nonatomic) CGFloat magnificationStartLineSpacing;
+@property(nonatomic) BOOL pinchHasPair;
+@property(nonatomic) GAMagnificationControl pinchCandidate;
+@property(nonatomic) GAMagnificationControl magnificationControl;
 /// The page in the view's own coordinates, including the current page inset.
 - (NSRect)pageRect;
 @end
@@ -332,8 +287,11 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
         _sideInsetFraction = GABoundingBoxDefaultSideInsetFraction;
         _showsMetrics = YES;
         _textScale = 1.0;
-        _usesContextualAlternates = YES;
-        _usesLigatures = YES;
+        _baseWritingDirection = NSWritingDirectionNatural;
+        _typesettingLanguage = @"";
+        self.allowedTouchTypes = NSTouchTypeMaskIndirect;
+        self.wantsRestingTouches = YES;
+        _featureSettings = @[];
 
         GAMultiTextView *textView =
             [[GAMultiTextView alloc] initUsingTextLayoutManager:YES];
@@ -373,7 +331,7 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
 }
 
 - (void)setText:(NSString *)text groups:(NSArray<GACharacterGroup *> *)groups {
-    _text = [text copy] ?: @"";
+    _text = [text copy];
     _groups = [groups copy] ?: @[];
     [self rebuildLayout];
 }
@@ -397,6 +355,40 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
     [self setNeedsDisplay:YES];
 }
 
+- (void)setUnderlined:(BOOL)enabled {
+    if (_underlined == enabled) return;
+    _underlined = enabled;
+    [self rebuildLayout];
+}
+
+- (void)setStruckThrough:(BOOL)enabled {
+    if (_struckThrough == enabled) return;
+    _struckThrough = enabled;
+    [self rebuildLayout];
+}
+
+- (void)setOutlined:(BOOL)enabled {
+    if (_outlined == enabled) return;
+    _outlined = enabled;
+    [self rebuildLayout];
+}
+
+- (void)setBaseWritingDirection:(NSWritingDirection)direction {
+    if (_baseWritingDirection == direction) return;
+    _baseWritingDirection = direction;
+    [self rebuildLayout];
+}
+
+- (void)setTypesettingLanguage:(NSString *)language {
+    if ([_typesettingLanguage isEqualToString:language]) return;
+    _typesettingLanguage = language.copy;
+    [self rebuildLayout];
+}
+
+- (void)resetTextZoom {
+    self.textScale = 1.0;
+}
+
 - (void)setTextScale:(CGFloat)textScale {
     CGFloat clamped = GAMultiClampTextScale(textScale);
     if (fabs(clamped - _textScale) < 1e-9) return;
@@ -414,11 +406,12 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
     [self rebuildLayout];
 }
 
-- (void)setLineSpacingSteps:(NSInteger)steps {
-    steps = MAX(-9, MIN(20, steps));
-    if (_lineSpacingSteps == steps) return;
+- (void)setLineSpacingAdjustment:(CGFloat)adjustment {
+    adjustment = MAX(0.0, MIN(2.0, adjustment));
+    if (fabs(adjustment) < 1e-9) adjustment = 0;
+    if (fabs(_lineSpacingAdjustment - adjustment) < 1e-9) return;
     GAPreserveScrollPosition(self.enclosingScrollView, ^{
-        self->_lineSpacingSteps = steps;
+        self->_lineSpacingAdjustment = adjustment;
         [self rebuildLayout];
     });
 }
@@ -427,17 +420,9 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
     [self rebuildLayout];
 }
 
-- (void)setUsesContextualAlternates:(BOOL)enabled {
-    if (_usesContextualAlternates == enabled)
-        return;
-    _usesContextualAlternates = enabled;
-    [self rebuildLayout];
-}
-
-- (void)setUsesLigatures:(BOOL)enabled {
-    if (_usesLigatures == enabled)
-        return;
-    _usesLigatures = enabled;
+- (void)setFeatureSettings:(NSArray<NSDictionary *> *)settings {
+    if ([_featureSettings isEqualToArray:settings]) return;
+    _featureSettings = settings.copy;
     [self rebuildLayout];
 }
 
@@ -465,16 +450,49 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
     self.textScale /= GAGlyphZoomStep;
 }
 
-- (void)resetTextZoom {
-    self.textScale = 1.0;
+- (void)readPinchTouches:(NSEvent *)event {
+    NSArray<NSTouch *> *touches = [[event touchesMatchingPhase:NSTouchPhaseTouching inView:self] allObjects];
+    self.pinchHasPair = touches.count == 2;
+    if (!self.pinchHasPair) return;
+    NSTouch *a = touches[0], *b = touches[1];
+    self.pinchHasPair = [a.device isEqual:b.device];
+    if (!self.pinchHasPair) return;
+    CGFloat dx = fabs(a.normalizedPosition.x - b.normalizedPosition.x) * a.deviceSize.width;
+    CGFloat dy = fabs(a.normalizedPosition.y - b.normalizedPosition.y) * a.deviceSize.height;
+    self.pinchHasPair = dx > 0 || dy > 0;
+    if (!self.pinchHasPair) return;
+    CGFloat angle = atan2(dy, dx) * 180.0 / M_PI;
+    self.pinchCandidate = angle <= 30 ? GAMagnificationBoundingBox
+        : angle >= 75 ? GAMagnificationLineSpacing : GAMagnificationText;
+}
+
+- (void)touchesBeganWithEvent:(NSEvent *)event { [self readPinchTouches:event]; }
+- (void)touchesMovedWithEvent:(NSEvent *)event { [self readPinchTouches:event]; }
+- (void)touchesEndedWithEvent:(NSEvent *)event { [self readPinchTouches:event]; }
+- (void)touchesCancelledWithEvent:(NSEvent *)event {
+    (void)event;
+    self.pinchHasPair = NO;
 }
 
 - (void)handleMagnification:(NSMagnificationGestureRecognizer *)recognizer {
     if (recognizer.state == NSGestureRecognizerStateBegan) {
+        self.magnificationControl = self.pinchHasPair ? self.pinchCandidate : GAMagnificationText;
         self.magnificationStartTextScale = self.textScale;
+        self.magnificationStartPage = 1.0 - 2.0 * self.sideInsetFraction;
+        self.magnificationStartLineSpacing = self.lineSpacingAdjustment;
     } else if (recognizer.state == NSGestureRecognizerStateChanged) {
-        self.textScale = self.magnificationStartTextScale *
-                         (1.0 + recognizer.magnification);
+        switch (self.magnificationControl) {
+            case GAMagnificationBoundingBox:
+                self.sideInsetFraction = 0.5 * (1.0 - GABoundingBoxPageFractionForMagnification(
+                    self.magnificationStartPage, recognizer.magnification));
+                break;
+            case GAMagnificationLineSpacing:
+                self.lineSpacingAdjustment = self.magnificationStartLineSpacing + recognizer.magnification;
+                break;
+            case GAMagnificationText:
+                self.textScale = self.magnificationStartTextScale * (1.0 + recognizer.magnification);
+                break;
+        }
     }
 }
 
@@ -548,6 +566,15 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
 // The caller excludes explicit seeds and inserted ligature groups.
 - (nullable NSNumber *)verticalQuoteGlyphForGroup:(GACharacterGroup *)group
                                              font:(NSFont *)font {
+    // A manually seeded quote must not override a native vertical-forms Off.
+    for (NSDictionary *setting in self.featureSettings) {
+        NSNumber *type = setting[(__bridge NSString *)kCTFontFeatureTypeIdentifierKey];
+        NSNumber *selector = setting[(__bridge NSString *)kCTFontFeatureSelectorIdentifierKey];
+        NSString *tag = setting[(__bridge NSString *)kCTFontOpenTypeFeatureTag];
+        NSNumber *value = setting[(__bridge NSString *)kCTFontOpenTypeFeatureValue];
+        if ((type && type.integerValue == kVerticalSubstitutionType && selector.integerValue == kSubstituteVerticalFormsOffSelector) ||
+            (([tag isEqualToString:@"vert"] || [tag isEqualToString:@"vrt2"]) && value && !value.boolValue)) return nil;
+    }
     if (!self.vertical || group.text.length != 1) {
         return nil;
     }
@@ -592,20 +619,23 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
 - (NSAttributedString *)displayAttributedStringForFont:(NSFont *)font {
     NSMutableParagraphStyle *paragraph = [[NSMutableParagraphStyle alloc] init];
     paragraph.alignment = self.textAlignment;
+    paragraph.baseWritingDirection = self.baseWritingDirection;
     CTFontRef displayFont = (__bridge CTFontRef)font;
     CGFloat naturalHeight = CTFontGetAscent(displayFont) + CTFontGetDescent(displayFont)
         + CTFontGetLeading(displayFont);
-    // Native TextKit accepts negative spacing on the tested system, although
-    // Apple's documentation specifies nonnegative values. Limit removal to
-    // nine tenths of this reference height.
-    paragraph.lineSpacing = self.lineSpacingSteps * 0.1 * naturalHeight;
-    NSDictionary<NSAttributedStringKey, id> *attributes = @{
+    paragraph.lineSpacing = self.lineSpacingAdjustment * naturalHeight;
+    NSMutableDictionary<NSAttributedStringKey, id> *attributes = [@{
         NSFontAttributeName : font,
         NSForegroundColorAttributeName :
             GAResolvedColor([self.previewColors colorForRole:GAPreviewColorGlyph],
                             self.effectiveAppearance),
         NSParagraphStyleAttributeName : paragraph,
-    };
+    } mutableCopy];
+    if (self.underlined) attributes[NSUnderlineStyleAttributeName] = @(NSUnderlineStyleSingle);
+    if (self.struckThrough) attributes[NSStrikethroughStyleAttributeName] = @(NSUnderlineStyleSingle);
+    if (self.outlined) attributes[NSStrokeWidthAttributeName] = @3;
+    if (self.typesettingLanguage.length)
+        attributes[(__bridge NSString *)kCTLanguageAttributeName] = self.typesettingLanguage;
 
     NSMutableAttributedString *display =
         [[NSMutableAttributedString alloc] initWithString:self.text attributes:attributes];
@@ -640,7 +670,8 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
             glyphIDs = @[vertical];
         }
         NSAttributedString *replacement = GACreateGlyphDisplayString(
-            glyphIDs, base, font, attributes, ^NSString *(CGGlyph glyph) {
+            glyphIDs, base, font, attributes,
+            ^NSString *(CGGlyph glyph) {
                 return [self replacementBaseForOriginal:base glyph:glyph font:font];
             });
         if (replacement)
@@ -659,9 +690,9 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
     if (self.document != nil && self.text.length > 0 &&
         self.viewportSize.width >= 1 && self.viewportSize.height >= 1) {
         page = area.size;
-        font = (__bridge_transfer NSFont *)GACopyTextDisplayFont(
+        font = (__bridge_transfer NSFont *)GACopyFontWithFeatureSettings(
             self.document.fontBox.font, GAMultiBaseFontSize * self.textScale,
-            self.usesContextualAlternates, self.usesLigatures);
+            self.featureSettings);
     }
     if (font == nil || page.width < 1 || page.height < 1) {
         self.textView.hidden = YES;

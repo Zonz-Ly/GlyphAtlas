@@ -3,12 +3,27 @@
 #import "GAAllGlyphsView.h"
 #import "GAMultiGlyphView.h"
 #import "GAAppDelegate.h"
+#import "GAMacOS26.h"
 
 @interface GADetailContainerView : NSView
 @property (nonatomic, copy, nullable) void (^resizeHandler)(void (^changes)(void));
+@property (nonatomic, strong) GAPreviewColors *previewColors;
 @end
 
 @implementation GADetailContainerView
+
+- (void)drawRect:(NSRect)dirtyRect {
+    [super drawRect:dirtyRect];
+    if (self.previewColors) {
+        [[self.previewColors colorForRole:GAPreviewColorBackground] setFill];
+        NSRectFill(dirtyRect);
+    }
+}
+
+- (void)viewDidChangeEffectiveAppearance {
+    [super viewDidChangeEffectiveAppearance];
+    if (self.previewColors) self.needsDisplay = YES;
+}
 
 - (void)setFrameSize:(NSSize)newSize {
     if (self.resizeHandler == nil || NSEqualSizes(self.frame.size, newSize)) {
@@ -46,7 +61,9 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.previewColors = [GAPreviewColors new];
+    self.previewColors = [[GAPreviewColors alloc] initWithRepresentation:nil];
+    if (GAUsesMacOS26Layout())
+        ((GADetailContainerView *)self.view).previewColors = self.previewColors;
 
     self.boundingBoxView = [[GABoundingBoxView alloc] initWithFrame:NSZeroRect];
     self.boundingBoxView.translatesAutoresizingMaskIntoConstraints = NO;
@@ -71,9 +88,13 @@
     self.multiView.previewColors = self.previewColors;
     [self.allGlyphsView applyPreviewColors:self.previewColors];
 
+    // Tahoe extends this container beneath the sidebar. Only its background
+    // fills that region; glyph geometry stays in the unobscured right pane.
+    NSLayoutXAxisAnchor *contentLeading = GAUsesMacOS26Layout()
+        ? self.view.safeAreaLayoutGuide.leadingAnchor : self.view.leadingAnchor;
     for (NSView *view in @[self.boundingBoxView, self.allGlyphsView, self.multiScrollView]) {
         [NSLayoutConstraint activateConstraints:@[
-            [view.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
+            [view.leadingAnchor constraintEqualToAnchor:contentLeading],
             [view.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
             [view.topAnchor constraintEqualToAnchor:self.view.topAnchor],
             [view.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor],
@@ -111,8 +132,8 @@
         weakSelf.boundingBoxView.sideInsetFraction = fraction;
     };
 
-    NSMenu *contextMenu = [NSApp.delegate respondsToSelector:@selector(viewMenuForContext)]
-        ? [(GAAppDelegate *)NSApp.delegate viewMenuForContext] : nil;
+    NSMenu *contextMenu = [NSApp.delegate respondsToSelector:@selector(viewMenuForContextInView:)]
+        ? [(GAAppDelegate *)NSApp.delegate viewMenuForContextInView:self.view] : nil;
     self.view.menu = contextMenu;
     self.boundingBoxView.menu = contextMenu;
     self.multiView.menu = contextMenu;
@@ -164,6 +185,10 @@
 #pragma mark - Shared display state
 
 - (void)refreshPreviewColors {
+    if (GAUsesMacOS26Layout()) {
+        ((GADetailContainerView *)self.view).previewColors = self.previewColors;
+        self.view.needsDisplay = YES;
+    }
     self.multiScrollView.backgroundColor =
         [self.previewColors colorForRole:GAPreviewColorBackground];
     [self.boundingBoxView setNeedsDisplay:YES];
@@ -172,11 +197,7 @@
 }
 
 - (void)adjustLineSpacing:(NSInteger)steps {
-    self.multiView.lineSpacingSteps += steps;
-}
-
-- (void)resetLineSpacing {
-    self.multiView.lineSpacingSteps = 0;
+    self.multiView.lineSpacingAdjustment += steps * 0.1;
 }
 
 - (void)setVariant:(GAGlyphVariant *)variant {
@@ -221,10 +242,6 @@
     [self scaleBoundingBoxBy:1.0 / GAGlyphZoomStep];
 }
 
-- (void)resetBoundingBoxZoom {
-    self.boundingBoxInsetFraction = GABoundingBoxDefaultSideInsetFraction;
-}
-
 #pragma mark - All glyphs
 
 - (void)zoomAllGlyphsIn {
@@ -233,10 +250,6 @@
 
 - (void)zoomAllGlyphsOut {
     [self.allGlyphsView zoomOut];
-}
-
-- (void)resetAllGlyphsZoom {
-    [self.allGlyphsView resetZoom];
 }
 
 - (void)revealAllGlyphID:(NSNumber *)glyphID quick:(BOOL)quick {
@@ -274,12 +287,36 @@
     [self updateMultiLayout];
 }
 
-- (void)setUsesContextualAlternates:(BOOL)enabled {
-    self.multiView.usesContextualAlternates = enabled;
+- (void)setFeatureSettings:(NSArray<NSDictionary *> *)settings {
+    self.multiView.featureSettings = settings;
 }
 
-- (void)setUsesLigatures:(BOOL)enabled {
-    self.multiView.usesLigatures = enabled;
+- (void)setUnderlined:(BOOL)enabled { self.multiView.underlined = enabled; }
+- (void)setStruckThrough:(BOOL)enabled { self.multiView.struckThrough = enabled; }
+- (void)setOutlined:(BOOL)enabled { self.multiView.outlined = enabled; }
+- (void)setBaseWritingDirection:(NSWritingDirection)direction { self.multiView.baseWritingDirection = direction; }
+- (void)setTypesettingLanguage:(NSString *)language { self.multiView.typesettingLanguage = language; }
+
+- (NSDictionary *)currentPreviewSettings {
+    return @{@"colors":self.previewColors.representation,
+        @"boxInset":@(self.boundingBoxInsetFraction),
+        @"textScale":@(self.multiView.textScale),
+        @"lineSpacing":@(self.multiView.lineSpacingAdjustment),
+        @"cellScale":@(self.allGlyphsView.cellScale)};
+}
+
+- (void)applyOpeningSettings:(NSDictionary *)settings {
+    [self view];
+    if ([settings[@"colors"] count]) {
+        self.previewColors = [[GAPreviewColors alloc] initWithRepresentation:settings[@"colors"]];
+        self.boundingBoxView.previewColors = self.previewColors;
+        self.multiView.previewColors = self.previewColors;
+        [self refreshPreviewColors];
+    }
+    if (settings[@"boxInset"]) self.boundingBoxInsetFraction = [settings[@"boxInset"] doubleValue];
+    if (settings[@"textScale"]) self.multiView.textScale = [settings[@"textScale"] doubleValue];
+    if (settings[@"lineSpacing"]) self.multiView.lineSpacingAdjustment = [settings[@"lineSpacing"] doubleValue];
+    if (settings[@"cellScale"]) self.allGlyphsView.cellScale = [settings[@"cellScale"] doubleValue];
 }
 
 - (void)zoomMultiTextIn {
@@ -290,12 +327,21 @@
     [self.multiView zoomTextOut];
 }
 
+- (void)resetBoundingBoxZoom {
+    self.boundingBoxInsetFraction = GABoundingBoxDefaultSideInsetFraction;
+}
+
+- (void)resetAllGlyphsZoom {
+    [self.allGlyphsView resetZoom];
+}
+
 - (void)resetMultiTextZoom {
     // Actual Size resets both zooms in this mode: the text scale (pinch and
     // keyboard) and the shared page inset (trackpad). Resetting only the text
     // made the command look dead after a page pinch.
     GAPreserveScrollPosition(self.multiScrollView, ^{
         [self.multiView resetTextZoom];
+        self.multiView.lineSpacingAdjustment = 0;
         self.boundingBoxInsetFraction = GABoundingBoxDefaultSideInsetFraction;
     });
 }

@@ -10,6 +10,8 @@
 "Paste" = "Einsetzen";
 "Delete" = "Löschen";
 "Select All" = "Alles auswählen";
+"Underline" = "Unterstrichen";
+"Strikethrough" = "Durchstreichen";
 "View" = "Darstellung";
 "Window" = "Fenster";
 "Minimize" = "Minimieren";
@@ -26,7 +28,6 @@
 "Open" = "Öffnen";
 "Zoom In" = "Vergrößern";
 "Zoom Out" = "Verkleinern";
-"Actual Size" = "Originalgröße";
 "Text Alignment" = "Textausrichtung";
 "Left" = "Linksbündig";
 "Center" = "Zentriert";
@@ -69,7 +70,7 @@
 "Help.07" = "Mit ⌘C kopierst du alle codierten Zeichen der ausgewählten Glyphe.";
 "Help.08" = "Bewege den Zeiger über eine Unicode-Kennzeichnung, um den im Unicode-Standard definierten Zeichennamen zu sehen.";
 "Help.09" = "Standardmäßig ist „Alle Glyphen“ aktiv. Wechsle die Ansicht per Rechtsklick oder mit ⌘1 zu „Einzelne Glyphe“, ⌘2 zu „Mehrere Zeichen“ und ⌘3 zu „Alle Glyphen“.";
-"Help.10" = "Klicke in „Mehrere Zeichen“ auf eine Glyphe, um ihre Varianten anzuzeigen. „Kontextvarianten“ und „Ligaturen“ sind standardmäßig aktiviert. Schalte sie per Rechtsklick oder mit ⌘5 und ⌘6 um. Vertikale Schrift lässt sich per Rechtsklick oder mit ⌘7 umschalten.";
+"Help.10" = "In der Mehrzeichenansicht zeigt ein Klick auf eine Glyphe deren Alternativen. Typografie im Darstellungs- und Kontextmenü enthält die nativen Schriftfunktionen: Häkchen markieren ausgewählte Optionen; in exklusiven Gruppen ist nur eine Auswahl möglich. ⌘5 schaltet die vertikale Schreibrichtung um. Unterstrichen ⌘U und Durchstreichen ⌘L gelten für die gesamte Mehrzeichenansicht. Schreibrichtung erscheint im Menü „Darstellung“, wenn CoreText meldet, dass die Schrift eine von rechts nach links geschriebene Sprache unterstützt. Textdekoration > Kontur ⌘Y zeigt die in der Schrift enthaltenen Konturen einschließlich Überlappungen. Sprache für den Schriftsatz zeigt die GSUB-Sprachtags der Schrift, ohne Wiederholungen zwischen Schriftsystemen. Ohne benannte Sprachsysteme wird das Menü ausgeblendet.";
 "Help.11" = "Doppelklicke in „Alle Glyphen“ auf eine Glyphe, um sie an den vorhandenen Text anzuhängen. Ein Klick auf eine Glyphe in der Seitenleiste lässt sie auch in der Gesamtübersicht blinken.";
 "Help.12" = "Mit ⌘+/⌘− vergrößerst oder verkleinerst du Glyphen; mit ⌥⌘+/⌥⌘− vergrößerst oder verkleinerst du die Ränder in „Mehrere Zeichen“. Auch die Zoomgeste auf dem Trackpad funktioniert.";
 "Help.13" = "Der Schatten zeigt Breite und Höhe der Glyphe sowie Zeilenhöhe und Durchschuss des Satzes. Mit ⌘4 blendest du ihn aus.";
@@ -81,8 +82,6 @@
 "Default" = "Standard";
 "Custom" = "Eigene";
 
-"Contextual Alternates" = "Kontextvarianten";
-"Ligatures" = "Ligaturen";
 
 /* Font Book copy alerts. Conflict buttons follow Finder. */
 "An item named “%@” already exists in Font Book." = "In der Schriftsammlung existiert bereits ein Objekt mit dem Namen „%@“.";
@@ -107,10 +106,25 @@
 "Decrease Line Spacing" = "Zeilenabstand verkleinern";
 
 /* Explicit defaults for newly opened font windows. */
-"Default to Single Glyph" = "Standardansicht: Einzelne Glyphe";
-"Default to Multi-Character" = "Standardansicht: Mehrere Zeichen";
-"Default to All Glyphs" = "Standardansicht: Alle Glyphen";
-"Show Bounding Box by Default" = "Begrenzungsrahmen standardmäßig einblenden";
-"Enable Contextual Alternates by Default" = "Kontextvarianten standardmäßig aktivieren";
-"Enable Ligatures by Default" = "Ligaturen standardmäßig aktivieren";
-"Use Vertical Writing by Default" = "Vertikalen Text standardmäßig verwenden";
+
+/* Saved-text deletion and full screen. */
+"Delete Saved Text" = "Gespeicherte Texte löschen";
+"Clear All Saved Text" = "Alle gespeicherten Texte löschen";
+"Enter Full Screen" = "Vollbild ein";
+
+/* Native typography and opening settings. */
+"Typography" = "Typografie ";
+"Other" = "Sonstige";
+"No Typography Features" = "Keine Typografiefunktionen";
+"Actual Size" = "Originalgröße";
+"Use as Defaults" = "Als Standard verwenden";
+"Restore to Defaults" = "Standard wiederherstellen";
+"Text Decorations" = "Textdekoration";
+
+"Writing Direction" = "Schreibrichtung";
+"Left to Right" = "Von links nach rechts";
+"Right to Left" = "Von rechts nach links";
+"Outline" = "Kontur";
+
+"Typesetting Language" = "Sprache für den Schriftsatz";
+"No System Language Mapping" = "Für dieses OpenType-Sprach-Tag ist keine Systemsprache zugeordnet.";

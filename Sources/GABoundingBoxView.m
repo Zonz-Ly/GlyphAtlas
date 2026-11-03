@@ -128,17 +128,25 @@ static BOOL GAAppearanceIsDark(NSAppearance *appearance) {
 }
 
 void GADrawPage(NSRect page, NSAppearance *appearance, GAPreviewColors *colors) {
-    BOOL darkAppearance = GAAppearanceIsDark(appearance);
     [NSGraphicsContext saveGraphicsState];
     NSShadow *shadow = [[NSShadow alloc] init];
-    shadow.shadowColor = [[NSColor blackColor]
-        colorWithAlphaComponent:darkAppearance ? 0.58 : 0.18];
+    [appearance performAsCurrentDrawingAppearance:^{
+        shadow.shadowColor = [[colors colorForRole:GAPreviewColorBoundingBox]
+            colorUsingColorSpace:NSColorSpace.sRGBColorSpace];
+    }];
     shadow.shadowBlurRadius = 22;
     shadow.shadowOffset = NSMakeSize(0, -8);
     [shadow set];
-    [[colors colorForRole:GAPreviewColorBoundingBox] setFill];
+    [[colors colorForRole:GAPreviewColorBackground] setFill];
     [[NSBezierPath bezierPathWithRoundedRect:page xRadius:2 yRadius:2] fill];
     [NSGraphicsContext restoreGraphicsState];
+}
+
+NSColor *GABoundingBoxShadowColor(void) {
+    return [NSColor colorWithName:@"GABoundingBoxShadow"
+                  dynamicProvider:^NSColor *(NSAppearance *appearance) {
+        return [NSColor.blackColor colorWithAlphaComponent:GAAppearanceIsDark(appearance) ? 0.58 : 0.18];
+    }];
 }
 
 NSColor *GABoundingBoxBackgroundColor(void) {

@@ -5,6 +5,7 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @interface GAAllGlyphsView : NSView
+@property(nonatomic) CGFloat cellScale;
 - (void)applyPreviewColors:(GAPreviewColors *)colors;
 @property (nonatomic, strong, nullable) GAFontDocument *document;
 @property (nonatomic, copy, nullable) void (^onGlyphDoubleClick)(GAAllGlyphEntry *entry);

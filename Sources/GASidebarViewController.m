@@ -2,6 +2,7 @@
 #import "GASidebarInput.h"
 #import "GAGlyphViews.h"
 #import "GAUnicode.h"
+#import "GAMacOS26.h"
 
 @interface GARowItem : NSObject
 @property (nonatomic, strong, nonnull) GACharacterGroup *group;
@@ -203,21 +204,31 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
     self.scrollView.autohidesScrollers = YES;
     self.scrollView.documentView = self.tableView;
     self.scrollView.contentInsets = NSEdgeInsetsMake(4, 0, 14, 0);
+    if (GAUsesMacOS26Layout()) {
+        self.scrollView.drawsBackground = NO;
+        self.tableView.backgroundColor = NSColor.clearColor;
+    }
     self.scrollView.accessibilityLabel = NSLocalizedString(@"Text and alternate glyph list", @"Text and alternate glyph list");
 
     [self.view addSubview:self.searchField];
     [self.view addSubview:self.scrollView];
 
+    BOOL tahoeLayout = GAUsesMacOS26Layout();
+    NSLayoutGuide *safeArea = self.view.safeAreaLayoutGuide;
     [NSLayoutConstraint activateConstraints:@[
-        [self.searchField.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor
-                                                        constant:9],
-        [self.searchField.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor
-                                                         constant:-9],
+        [self.searchField.leadingAnchor constraintEqualToAnchor:
+            tahoeLayout ? safeArea.leadingAnchor : self.view.leadingAnchor
+                                                        constant:tahoeLayout ? 12 : 9],
+        [self.searchField.trailingAnchor constraintEqualToAnchor:
+            tahoeLayout ? safeArea.trailingAnchor : self.view.trailingAnchor
+                                                         constant:tahoeLayout ? -12 : -9],
         [self.scrollView.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor],
         [self.scrollView.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor],
         [self.scrollView.topAnchor constraintEqualToAnchor:self.searchField.bottomAnchor
                                                    constant:9],
-        [self.scrollView.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor],
+        [self.scrollView.bottomAnchor constraintEqualToAnchor:
+            tahoeLayout ? safeArea.bottomAnchor : self.view.bottomAnchor
+                                                    constant:tahoeLayout ? -8 : 0],
     ]];
 }
 
@@ -230,9 +241,12 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
     if (self.view.window != nil) {
         NSLayoutGuide *guide = (NSLayoutGuide *)self.view.window.contentLayoutGuide;
         if (guide != nil) {
+            CGFloat topOffset = GAUsesMacOS26Layout() ? -8 : -1;
+            if (NSProcessInfo.processInfo.operatingSystemVersion.majorVersion >= 27)
+                topOffset = 0;
             self.searchTopConstraint = [self.searchField.topAnchor
                 constraintEqualToAnchor:guide.topAnchor
-                             constant:-1];
+                             constant:topOffset];
             self.searchTopConstraint.active = YES;
         }
     }

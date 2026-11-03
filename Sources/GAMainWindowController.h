@@ -1,6 +1,7 @@
 #import <AppKit/AppKit.h>
 #import "GAViewMode.h"
 #import "GAPreviewColors.h"
+#import "GAFontFeatures.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -12,9 +13,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly) BOOL showsMetrics;
 @property (nonatomic, readonly) NSTextAlignment textAlignment;
 @property (nonatomic, readonly) BOOL verticalWriting;
-/// Both optional native shaping switches default to YES.
-@property(nonatomic, readonly) BOOL usesContextualAlternates;
-@property(nonatomic, readonly) BOOL usesLigatures;
+@property(nonatomic, strong, readonly, nullable) GAFontFeatures *fontFeatures;
 - (void)loadFontAtURL:(NSURL *)url;
 - (void)setViewMode:(GAViewMode)viewMode;
 - (void)toggleShowsMetrics;
@@ -27,10 +26,23 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)setPreviewColor:(NSColor *)color forRole:(GAPreviewColorRole)role;
 - (void)followSystemColors;
 - (void)resetZoom;
+- (void)saveOpeningSettings;
++ (void)restoreOpeningSettings;
+@property(nonatomic, readonly) BOOL underlined;
+@property(nonatomic, readonly) BOOL struckThrough;
+@property(nonatomic, readonly) BOOL outlined;
+@property(nonatomic, readonly) NSWritingDirection baseWritingDirection;
+@property(nonatomic, readonly) BOOL hasRightToLeftLanguages;
+@property(nonatomic, copy, readonly) NSArray<NSString *> *typesettingLanguageTags;
+@property(nonatomic, copy, readonly) NSString *typesettingLanguageTag;
+- (void)setUnderlined:(BOOL)enabled;
+- (void)setStruckThrough:(BOOL)enabled;
+- (void)setOutlined:(BOOL)enabled;
+- (void)setBaseWritingDirection:(NSWritingDirection)direction;
+- (void)setTypesettingLanguageTag:(NSString *)tag;
 - (void)setTextAlignment:(NSTextAlignment)alignment;
 - (void)setVerticalWriting:(BOOL)vertical;
-- (void)setUsesContextualAlternates:(BOOL)enabled;
-- (void)setUsesLigatures:(BOOL)enabled;
+- (void)applyFontFeatureChoices;
 @property (nonatomic, copy, nullable) void (^onFontLoaded)(NSURL *url);
 @property (nonatomic, copy, nullable) void (^onFontDropRequest)(NSURL *url);
 @end

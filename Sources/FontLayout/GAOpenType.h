@@ -85,6 +85,8 @@ class OpenType {
     }
     size_t variationBranch(const std::vector<double> &normalized) const;
     std::vector<Tag> languages(Tag script) const;
+    /// All named language systems, deduplicated across scripts.
+    std::vector<Tag> languageTags() const;
     std::vector<LookupStep> plan(const Settings &settings, size_t branch = 0) const;
     std::vector<RelatedSubstitution> relatedSubstitutions(Glyph seed, const GDEF &gdef) const;
     void substitute(Buffer &buffer, const GDEF &gdef, const Settings &settings, size_t branch,

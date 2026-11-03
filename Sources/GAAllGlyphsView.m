@@ -345,7 +345,6 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
 @interface GAAllGlyphsView ()
 @property (nonatomic, strong) NSScrollView *scrollView;
 @property (nonatomic, strong) GAAllGlyphsGrid *grid;
-@property (nonatomic) CGFloat cellScale;
 @property (nonatomic) CGFloat magnificationStartScale;
 @end
 

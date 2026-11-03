@@ -9,7 +9,9 @@ typedef NS_ENUM(NSInteger, GAPreviewColorRole) {
 
 /// Per-window preview overrides. Sidebar controls retain their system colors.
 @interface GAPreviewColors : NSObject
-@property(nonatomic, readonly) BOOL followsSystem;
+@property(nonatomic, readonly) NSControlStateValue systemState;
+@property(nonatomic, copy, readonly) NSDictionary<NSString *, NSData *> *representation;
+- (instancetype)initWithRepresentation:(nullable NSDictionary<NSString *, NSData *> *)representation;
 - (NSColor *)colorForRole:(GAPreviewColorRole)role;
 - (void)setColor:(NSColor *)color forRole:(GAPreviewColorRole)role;
 - (void)followSystem;

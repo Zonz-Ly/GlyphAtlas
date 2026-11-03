@@ -10,6 +10,8 @@
 "Paste" = "Pegar";
 "Delete" = "Eliminar";
 "Select All" = "Seleccionar todo";
+"Underline" = "Subrayado";
+"Strikethrough" = "Tachado";
 "View" = "Visualización";
 "Window" = "Ventana";
 "Minimize" = "Minimizar";
@@ -26,7 +28,6 @@
 "Open" = "Abrir";
 "Zoom In" = "Acercar";
 "Zoom Out" = "Alejar";
-"Actual Size" = "Tamaño real";
 "Text Alignment" = "Alineación del texto";
 "Left" = "alinear a la izquierda";
 "Center" = "centrar";
@@ -69,7 +70,7 @@
 "Help.07" = "Usa ⌘C para copiar todos los caracteres codificados del glifo seleccionado.";
 "Help.08" = "Sitúa el puntero sobre una etiqueta Unicode para ver el nombre del carácter definido por el estándar Unicode.";
 "Help.09" = "La vista predeterminada es «Todos los glifos». Cámbiala con un clic secundario, o pulsa ⌘1 para «Un solo glifo», ⌘2 para «Varios caracteres» o ⌘3 para «Todos los glifos».";
-"Help.10" = "En « Varios caracteres », haz clic en un glifo para ver sus alternativas. Las alternativas contextuales y las ligaduras están activadas por omisión; cámbialas con un clic secundario o con ⌘5 y ⌘6. Cambia la dirección de escritura con un clic secundario o con ⌘7.";
+"Help.10" = "En Varios caracteres, haz clic en un glifo para ver sus alternativas. Tipografía en los menús de visualización y contextual muestra las funciones nativas: las marcas indican las opciones seleccionadas; los grupos excluyentes solo permiten una opción. ⌘5 cambia la escritura vertical. Subrayado ⌘U y Tachado ⌘L se aplican a toda la vista de varios caracteres. Dirección de escritura aparece en Visualización cuando CoreText indica compatibilidad con un idioma de derecha a izquierda. Decoración del texto > Contorno ⌘Y muestra los contornos conservados en la fuente, incluidos los solapamientos. Idioma de composición muestra las etiquetas de idioma GSUB de la fuente, sin duplicados entre escrituras. El menú se oculta si no se declaran sistemas de idioma con nombre.";
 "Help.11" = "En «Todos los glifos», haz doble clic en un glifo para añadirlo al texto existente. Al hacer clic en un glifo de la barra lateral, también parpadea en la vista completa.";
 "Help.12" = "Usa ⌘+/⌘− para ampliar o reducir los glifos y ⌥⌘+/⌥⌘− para aumentar o reducir los márgenes en «Varios caracteres». También puedes usar el gesto de pellizco en el trackpad.";
 "Help.13" = "La sombra indica la anchura y altura del glifo, así como la altura de línea y el interlineado de la composición. Pulsa ⌘4 para ocultarla.";
@@ -81,8 +82,6 @@
 "Default" = "Por omisión";
 "Custom" = "Personalizado";
 
-"Contextual Alternates" = "Alternativas contextuales";
-"Ligatures" = "Ligaduras";
 
 /* Font Book copy alerts. Conflict buttons follow Finder. */
 "An item named “%@” already exists in Font Book." = "Ya existe un ítem denominado “%@” en Catálogo Tipográfico.";
@@ -107,10 +106,25 @@
 "Decrease Line Spacing" = "Reducir interlineado";
 
 /* Explicit defaults for newly opened font windows. */
-"Default to Single Glyph" = "Vista predeterminada: Un solo glifo";
-"Default to Multi-Character" = "Vista predeterminada: Varios caracteres";
-"Default to All Glyphs" = "Vista predeterminada: Todos los glifos";
-"Show Bounding Box by Default" = "Mostrar cuadro delimitador por omisión";
-"Enable Contextual Alternates by Default" = "Activar alternativas contextuales por omisión";
-"Enable Ligatures by Default" = "Activar ligaduras por omisión";
-"Use Vertical Writing by Default" = "Usar escritura vertical por omisión";
+
+/* Saved-text deletion and full screen. */
+"Delete Saved Text" = "Eliminar textos guardados";
+"Clear All Saved Text" = "Borrar todos los textos guardados";
+"Enter Full Screen" = "Ver a pantalla completa";
+
+/* Native typography and opening settings. */
+"Typography" = "Tipografía";
+"Other" = "Otras";
+"No Typography Features" = "Sin funciones tipográficas";
+"Actual Size" = "Tamaño real";
+"Use as Defaults" = "Usar por omisión";
+"Restore to Defaults" = "Restaurar ajustes por omisión";
+"Text Decorations" = "Decoración del texto";
+
+"Writing Direction" = "Dirección de escritura";
+"Left to Right" = "De izquierda a derecha";
+"Right to Left" = "De derecha a izquierda";
+"Outline" = "Contorno";
+
+"Typesetting Language" = "Idioma de composición";
+"No System Language Mapping" = "No hay un idioma del sistema asociado a esta etiqueta de idioma OpenType.";

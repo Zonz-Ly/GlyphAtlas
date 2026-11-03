@@ -10,6 +10,8 @@
 "Paste" = "ペースト";
 "Delete" = "削除";
 "Select All" = "すべてを選択";
+"Underline" = "アンダーライン";
+"Strikethrough" = "取り消し線";
 "View" = "表示";
 "Window" = "ウインドウ";
 "Minimize" = "しまう";
@@ -26,7 +28,6 @@
 "Open" = "開く";
 "Zoom In" = "拡大";
 "Zoom Out" = "縮小";
-"Actual Size" = "実際のサイズ";
 "Text Alignment" = "テキストの配置";
 "Left" = "左揃え";
 "Center" = "中央揃え";
@@ -69,7 +70,7 @@
 "Help.07" = "⌘C で、選択したグリフに割り当てられたすべての符号化文字をコピーします。";
 "Help.08" = "Unicode バッジにポインタを重ねると、Unicode 標準で定義された文字名が表示されます。";
 "Help.09" = "デフォルトでは「すべてのグリフ」が表示されます。右クリックで表示を切り替えるか、⌘1 で「単一グリフ」、⌘2 で「複数文字」、⌘3 で「すべてのグリフ」を選びます。";
-"Help.10" = "「複数文字」でグリフをクリックすると異体字を表示します。「コンテキスト代替」と「リガチャ」はデフォルトでオンです。右クリックまたは ⌘5、⌘6 で切り替えます。縦書きは右クリックまたは ⌘7 で切り替えます。";
+"Help.10" = "複数文字表示ではグリフをクリックすると代替を確認できます。「表示」または右クリックメニューの「タイポグラフィ」にはフォントのネイティブ機能が並びます。選択中の項目にはチェックが付き、排他的なグループでは1項目だけを選択できます。⌘5 で縦書きを切り替えます。 アンダーライン ⌘U と取り消し線 ⌘L は複数文字のプレビュー全体に適用されます。 CoreTextが右から左へ書く言語のサポートを報告する場合、「表示」メニューに「書字方向」が表示されます。「テキスト装飾」の「アウトライン」⌘Y で、重なりを含むフォント内の輪郭を確認できます。 「組版言語」にはフォントのGSUB言語タグが表示されます。同じタグが複数のスクリプトにある場合は1回だけ表示し、名前付き言語システムがない場合は非表示になります。";
 "Help.11" = "「すべてのグリフ」でグリフをダブルクリックすると、既存のテキストに追加されます。サイドバーでグリフをクリックすると、一覧内の対応するグリフが点滅します。";
 "Help.12" = "⌘+/⌘− でグリフを拡大・縮小し、⌥⌘+/⌥⌘− で「複数文字」の余白を広げたり狭めたりできます。トラックパッドのピンチ操作も使えます。";
 "Help.13" = "影は、グリフの幅と高さ、および組版の行の高さと行送りを表します。⌘4 で非表示にできます。";
@@ -81,8 +82,6 @@
 "Default" = "デフォルト";
 "Custom" = "カスタム";
 
-"Contextual Alternates" = "コンテキスト代替";
-"Ligatures" = "リガチャ";
 
 /* Font Book copy alerts. Conflict buttons follow Finder. */
 "An item named “%@” already exists in Font Book." = "Font Bookに“%@”という項目がすでにあります。";
@@ -107,10 +106,25 @@
 "Decrease Line Spacing" = "行間を狭める";
 
 /* Explicit defaults for newly opened font windows. */
-"Default to Single Glyph" = "既定で単一グリフを開く";
-"Default to Multi-Character" = "既定で複数文字を開く";
-"Default to All Glyphs" = "既定ですべてのグリフを開く";
-"Show Bounding Box by Default" = "既定でバウンディングボックスを表示";
-"Enable Contextual Alternates by Default" = "既定でコンテキスト代替を有効にする";
-"Enable Ligatures by Default" = "既定でリガチャを有効にする";
-"Use Vertical Writing by Default" = "既定で縦書きを使用";
+
+/* Saved-text deletion and full screen. */
+"Delete Saved Text" = "保存したテキストを削除";
+"Clear All Saved Text" = "保存したテキストをすべて消去";
+"Enter Full Screen" = "フルスクリーンにする";
+
+/* Native typography and opening settings. */
+"Typography" = "タイポグラフィ";
+"Other" = "その他";
+"No Typography Features" = "タイポグラフィ機能なし";
+"Actual Size" = "実際のサイズ";
+"Use as Defaults" = "デフォルトとして使用";
+"Restore to Defaults" = "デフォルトに戻す";
+"Text Decorations" = "テキスト装飾";
+
+"Writing Direction" = "書字方向";
+"Left to Right" = "左から右";
+"Right to Left" = "右から左";
+"Outline" = "アウトライン";
+
+"Typesetting Language" = "組版言語";
+"No System Language Mapping" = "このOpenType言語タグに対応するシステム言語はありません。";

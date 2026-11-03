@@ -11,6 +11,8 @@
 "Paste" = "貼上";
 "Delete" = "刪除";
 "Select All" = "全選";
+"Underline" = "底線";
+"Strikethrough" = "刪除線";
 "View" = "顯示方式";
 "Window" = "視窗";
 "Minimize" = "縮到最小";
@@ -27,7 +29,6 @@
 "Open" = "打開";
 "Zoom In" = "放大";
 "Zoom Out" = "縮小";
-"Actual Size" = "實際大小";
 "Text Alignment" = "文字排列";
 "Left" = "齊左";
 "Center" = "置中";
@@ -70,7 +71,7 @@
 "Help.07" = "使用 ⌘C 複製選中字形的所有編碼字符。";
 "Help.08" = "鼠標在 Unicode 上靜置時顯示該 Unicode 標準規定的字符名稱。";
 "Help.09" = "默認打开全部字, 可以點右鍵切換或使用 ⌘1 單字形、⌘2 多字符、⌘3 全部字。";
-"Help.10" = "在多字符中點一下字形就能查看替換字。默認開啟上下文替代和連字，點右鍵或使用 ⌘5、⌘6 開關。支持豎排，點右鍵或使用 ⌘7 切換。";
+"Help.10" = "在多字元中點字形可查看替換字。「字體排印」選單列出字體原生提供的特性：勾號表示已選取；互斥選項每組只能選一項。可從顯示方式或右鍵選單開啟。按 ⌘5 切換豎排。 底線 ⌘U 和刪除線 ⌘L 會套用到整段多字元預覽。 CoreText 回報字體支援右至左語言時，主選單會顯示「書寫方向」。「文字裝飾」中的中空字 ⌘Y 可查看字體保留的輪廓，包括重疊部分。 「排版語言」列出字體的 GSUB 語言標籤，跨 Script 重複的同一標籤只列一次；沒有具名語言分支時隱藏。";
 "Help.11" = "在全部字中點兩下字形可以添加到已有文字中，在側邊欄中點一下字形還會在全部字中閃一閃。";
 "Help.12" = "用 ⌘+／⌘− 來放大或縮小字形，用 ⌥⌘+／⌥⌘− 來在多字符中放大或縮小邊距。也可以使用觸控板撐捏。";
 "Help.13" = "用陰影表示字形寬度高度和排版行高行距，用可用 ⌘4 隱藏。";
@@ -82,8 +83,6 @@
 "Default" = "預設";
 "Custom" = "自訂";
 
-"Contextual Alternates" = "上下文替代";
-"Ligatures" = "連字";
 
 /* Font Book copy alerts. Conflict buttons follow Finder. */
 "An item named “%@” already exists in Font Book." = "字體簿中已存在一個名為「%@」的項目。";
@@ -108,10 +107,25 @@
 "Decrease Line Spacing" = "減少行距";
 
 /* Explicit defaults for newly opened font windows. */
-"Default to Single Glyph" = "預設開啟單字形";
-"Default to Multi-Character" = "預設開啟多字元";
-"Default to All Glyphs" = "預設開啟全部字";
-"Show Bounding Box by Default" = "預設顯示邊界框";
-"Enable Contextual Alternates by Default" = "預設開啟上下文替代";
-"Enable Ligatures by Default" = "預設開啟連字";
-"Use Vertical Writing by Default" = "預設開啟直排";
+
+/* Saved-text deletion and full screen. */
+"Delete Saved Text" = "刪除常用文字";
+"Clear All Saved Text" = "清空所有已儲存的文字";
+"Enter Full Screen" = "進入全螢幕";
+
+/* Native typography and opening settings. */
+"Typography" = "字體排印";
+"Other" = "其他";
+"No Typography Features" = "沒有字體排印特性";
+"Actual Size" = "實際大小";
+"Use as Defaults" = "作為預設值";
+"Restore to Defaults" = "回復至預設值";
+"Text Decorations" = "文字裝飾";
+
+"Writing Direction" = "書寫方向";
+"Left to Right" = "由左至右";
+"Right to Left" = "由右至左";
+"Outline" = "中空字";
+
+"Typesetting Language" = "排版語言";
+"No System Language Mapping" = "這個 OpenType 語言標籤沒有可用的系統語言對應。";

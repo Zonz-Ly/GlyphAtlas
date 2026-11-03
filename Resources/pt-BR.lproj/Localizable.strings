@@ -10,6 +10,8 @@
 "Paste" = "Colar";
 "Delete" = "Apagar";
 "Select All" = "Selecionar Tudo";
+"Underline" = "Sublinhado";
+"Strikethrough" = "Tachado";
 "View" = "Visualizar";
 "Window" = "Janela";
 "Minimize" = "Minimizar";
@@ -26,7 +28,6 @@
 "Open" = "Abrir";
 "Zoom In" = "Ampliar";
 "Zoom Out" = "Reduzir";
-"Actual Size" = "Tamanho Real";
 "Text Alignment" = "Alinhamento do Texto";
 "Left" = "Alinhar à Esquerda";
 "Center" = "Centralizar";
@@ -69,7 +70,7 @@
 "Help.07" = "Use ⌘C para copiar todos os caracteres codificados do glifo selecionado.";
 "Help.08" = "Mantenha o cursor sobre uma etiqueta Unicode para ver o nome do caractere definido pelo padrão Unicode.";
 "Help.09" = "A visualização padrão é “Todos os Glifos”. Alterne com um clique secundário ou use ⌘1 para “Glifo Único”, ⌘2 para “Vários Caracteres” e ⌘3 para “Todos os Glifos”.";
-"Help.10" = "Em “Vários Caracteres”, clique em um glifo para ver suas alternativas. As alternativas contextuais e as ligaduras estão ativadas por padrão; alterne-as com um clique secundário ou com ⌘5 e ⌘6. Alterne a direção da escrita com um clique secundário ou com ⌘7.";
+"Help.10" = "Em Vários Caracteres, clique em um glifo para ver suas alternativas. Tipografia nos menus Visualizar e de contexto lista os recursos nativos: marcas de seleção indicam as opções selecionadas; grupos exclusivos permitem apenas uma escolha. ⌘5 alterna a escrita vertical. Sublinhado ⌘U e Tachado ⌘L são aplicados a toda a prévia de vários caracteres. Direção de escrita aparece no menu Visualizar quando o CoreText informa suporte a um idioma escrito da direita para a esquerda. Decoração do Texto > Contorno ⌘Y revela os contornos preservados na fonte, incluindo sobreposições. Idioma de composição lista as tags de idioma GSUB da fonte, sem duplicatas entre sistemas de escrita. O menu fica oculto se nenhum sistema de idioma nomeado for declarado.";
 "Help.11" = "Em “Todos os Glifos”, clique duas vezes em um glifo para adicioná-lo ao texto existente. Clicar em um glifo na barra lateral também o faz piscar na visualização completa.";
 "Help.12" = "Use ⌘+/⌘− para ampliar ou reduzir os glifos e ⌥⌘+/⌥⌘− para aumentar ou reduzir as margens em “Vários Caracteres”. O gesto de pinça no trackpad também funciona.";
 "Help.13" = "A sombra mostra a largura e a altura do glifo, além da altura da linha e da entrelinha da composição. Pressione ⌘4 para ocultá-la.";
@@ -81,8 +82,6 @@
 "Default" = "Padrão";
 "Custom" = "Personalizado";
 
-"Contextual Alternates" = "Alternativas Contextuais";
-"Ligatures" = "Ligaduras";
 
 /* Font Book copy alerts. Conflict buttons follow Finder. */
 "An item named “%@” already exists in Font Book." = "Já existe um item chamado “%@” no Catálogo de Fontes.";
@@ -107,10 +106,25 @@
 "Decrease Line Spacing" = "Diminuir Espaçamento entre Linhas";
 
 /* Explicit defaults for newly opened font windows. */
-"Default to Single Glyph" = "Visualização Padrão: Glifo Único";
-"Default to Multi-Character" = "Visualização Padrão: Vários Caracteres";
-"Default to All Glyphs" = "Visualização Padrão: Todos os Glifos";
-"Show Bounding Box by Default" = "Mostrar Caixa Delimitadora por Padrão";
-"Enable Contextual Alternates by Default" = "Ativar Alternativas Contextuais por Padrão";
-"Enable Ligatures by Default" = "Ativar Ligaduras por Padrão";
-"Use Vertical Writing by Default" = "Usar Escrita Vertical por Padrão";
+
+/* Saved-text deletion and full screen. */
+"Delete Saved Text" = "Apagar Textos Salvos";
+"Clear All Saved Text" = "Limpar Todos os Textos Salvos";
+"Enter Full Screen" = "Entrar em Tela Cheia";
+
+/* Native typography and opening settings. */
+"Typography" = "Tipografia";
+"Other" = "Outros";
+"No Typography Features" = "Sem recursos tipográficos";
+"Actual Size" = "Tamanho Real";
+"Use as Defaults" = "Usar como Padrão";
+"Restore to Defaults" = "Restaurar aos Padrões";
+"Text Decorations" = "Decoração do Texto";
+
+"Writing Direction" = "Direção de escrita";
+"Left to Right" = "Da esquerda para a direita";
+"Right to Left" = "Da direita para a esquerda";
+"Outline" = "Contorno";
+
+"Typesetting Language" = "Idioma de composição";
+"No System Language Mapping" = "Não há um idioma do sistema correspondente a esta tag de idioma OpenType.";

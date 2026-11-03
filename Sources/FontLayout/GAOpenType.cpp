@@ -445,6 +445,13 @@ std::vector<Tag> OpenType::languages(Tag script) const {
                 result.push_back(l.name);
     return result;
 }
+std::vector<Tag> OpenType::languageTags() const {
+    std::set<Tag> result;
+    for (const auto &script : scripts_)
+        for (const auto &language : script.languages)
+            if (language.name) result.insert(language.name);
+    return {result.begin(), result.end()};
+}
 static bool defaultFeature(Tag value, bool positioning) {
     if (positioning)
         return value == tag('k', 'e', 'r', 'n') || value == tag('m', 'a', 'r', 'k') ||

@@ -94,7 +94,7 @@ static Tag scalarScript(uint32_t scalar) {
     return shortName ? scriptTag(@(shortName)) : tag('D', 'F', 'L', 'T');
 }
 std::vector<TextRun> prepareText(NSString *text, const Cmap &cmap,
-                                 NSArray<GAGlyphSelectionRun *> *selections) {
+                                 NSArray<GAGlyphSelectionRun *> *selections, int baseDirection) {
     std::vector<TextRun> groups;
     if (!text.length)
         return {};
@@ -122,7 +122,8 @@ std::vector<TextRun> prepareText(NSString *text, const Cmap &cmap,
     void *bidi = ubidi_openSized(int32_t(text.length), 0, &status);
     if (!bidi)
         throw InvalidTable("Unicode bidi allocation failed");
-    ubidi_setPara(bidi, units.data(), int32_t(units.size()), 0xfe, nullptr, &status);
+    ubidi_setPara(bidi, units.data(), int32_t(units.size()),
+        baseDirection < 0 ? 0xfe : uint8_t(baseDirection), nullptr, &status);
     if (status > 0) {
         ubidi_close(bidi);
         throw InvalidTable("Unicode bidi analysis failed");

@@ -9,7 +9,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, strong, readonly) GAPreviewColors *previewColors;
 - (void)refreshPreviewColors;
 - (void)adjustLineSpacing:(NSInteger)steps;
-- (void)resetLineSpacing;
+- (NSDictionary *)currentPreviewSettings;
+- (void)applyOpeningSettings:(nullable NSDictionary *)settings;
 @property (nonatomic) GAViewMode viewMode;
 @property (nonatomic, copy, nullable) void (^onAllGlyphDoubleClick)(GAAllGlyphEntry *entry);
 @property(nonatomic, copy, nullable) void (^onGlyphSelected)
@@ -20,20 +21,24 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)setShowsMetrics:(BOOL)showsMetrics;
 - (void)zoomBoundingBoxIn;
 - (void)zoomBoundingBoxOut;
-- (void)resetBoundingBoxZoom;
 - (void)zoomAllGlyphsIn;
 - (void)zoomAllGlyphsOut;
-- (void)resetAllGlyphsZoom;
 - (void)revealAllGlyphID:(NSNumber *)glyphID quick:(BOOL)quick;
 - (BOOL)containsAllGlyphAtWindowPoint:(NSPoint)point;
 - (void)setMultiText:(NSString *)text groups:(NSArray<GACharacterGroup *> *)groups;
 - (void)setTextAlignment:(NSTextAlignment)alignment;
+- (void)setBaseWritingDirection:(NSWritingDirection)direction;
+- (void)setTypesettingLanguage:(NSString *)language;
 - (void)setWritingDirectionVertical:(BOOL)vertical;
-- (void)setUsesContextualAlternates:(BOOL)enabled;
-- (void)setUsesLigatures:(BOOL)enabled;
+- (void)setFeatureSettings:(NSArray<NSDictionary *> *)settings;
+- (void)setUnderlined:(BOOL)enabled;
+- (void)setStruckThrough:(BOOL)enabled;
+- (void)setOutlined:(BOOL)enabled;
+- (void)resetBoundingBoxZoom;
+- (void)resetAllGlyphsZoom;
+- (void)resetMultiTextZoom;
 - (void)zoomMultiTextIn;
 - (void)zoomMultiTextOut;
-- (void)resetMultiTextZoom;
 @end
 
 NS_ASSUME_NONNULL_END
