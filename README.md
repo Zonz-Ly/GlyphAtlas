@@ -8,7 +8,7 @@ A native macOS font and alternate-glyph inspector. Type text to see every altern
 
 ## Requirements
 
-- macOS 12.0 or later
+- macOS 12.0 or later.
 
 ## Support
 
@@ -19,7 +19,6 @@ A native macOS font and alternate-glyph inspector. Type text to see every altern
 
 ```
 ./build.sh
-open "dist/Glyph Atlas.app"
 ```
 
 The default build uses the current machine's architecture. Use a flag to select an architecture or create a ZIP:
