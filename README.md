@@ -15,6 +15,29 @@ A native macOS font and alternate-glyph inspector. Type text to see every altern
 - .ttf .otf .ttc .otc .woff .woff2 .dfont
 - English, Chinese, Japanese, Korean, German, French, Spanish, Italian, Brazilian Portuguese, Russian, Vietnamese, Thai.
 
+## Build
+
+```
+./build.sh
+open "dist/Glyph Atlas.app"
+```
+
+The default build uses the current machine's architecture. Use a flag to select an architecture or create a ZIP:
+
+```
+./build.sh -a       # arm64
+./build.sh -x       # x86_64
+./build.sh -u       # Universal (arm64 + x86_64)
+./build.sh -z       # Current architecture + ZIP
+./build.sh -u -z    # Universal + ZIP
+```
+
+## Opening the app
+
+- ZIPs created by the build script or downloaded from [Releases](https://github.com/Zonz-Ly/GlyphAtlas/releases) contain the app and `Clear Attributes.command`.
+- If macOS blocks the app from opening, extract `Clear Attributes.command` into the same folder as the app and double-click it to run `xattr -rc` on the app. You can then open the app.
+- If the app still won't open after using the script, open the built-in Terminal app, type `xattr -rc`, then **a space**, and drag the app into the window. Check that the app's file path has appeared, press Return, then open the app.
+
 ## Usage
 
 - Open a font, or drag one onto the app's window or Dock icon. Recently opened items are supported.
@@ -41,25 +64,6 @@ A native macOS font and alternate-glyph inspector. Type text to see every altern
 - Glyph height comes from CoreText's vertical advance when `vmtx` is present. Otherwise it uses `sTypoAscender + sTypoDescender`. If those are unavailable, or in Multi-Character, it uses CoreText `ascent + descent`.
 - Multi-Character layout and metrics come from the system TextView and match macOS behavior; some effects may be outside our control.
 
-## Build
-
-```
-./build.sh
-open "dist/Glyph Atlas.app"
-```
-
-The default build uses the current machine's architecture. Use a flag to select an architecture or create a ZIP:
-
-```
-./build.sh -a       # arm64
-./build.sh -x       # x86_64
-./build.sh -u       # Universal (arm64 + x86_64)
-./build.sh -z       # Current architecture + ZIP
-./build.sh -u -z    # Universal + ZIP
-```
-
-Adding `-z` creates a ZIP in `dist` containing the app and `Clear Attributes.command`. If macOS blocks the app from opening, extract both into the same folder and double-click the script to run `xattr -rc` on the app. If the script won't open either, open Terminal, type `xattr -rc` followed by a space, drag the app into the window, check that its path has appeared, and press Return.
-
 ---
 
 # Glyph Atlas
@@ -74,6 +78,12 @@ Adding `-z` creates a ZIP in `dist` containing the app and `Clear Attributes.com
 
 - .ttf .otf .ttc .otc .woff .woff2 .dfont
 - 中文、日文、韓文、英文、德文、法文、西班牙文、義大利文、巴西葡萄牙文、俄文、越南文、泰文。
+
+## 開啟
+
+- 構建生成或從 [Releases](https://github.com/Zonz-Ly/GlyphAtlas/releases) 下載的 zip 裡面有 app 和 `Clear Attributes.command`。
+- 如果 app 被系統攔住打不開，把 `Clear Attributes.command` 解壓到同一檔案夾內，按兩下腳本就能幫 app 執行 `xattr -rc`，然後就可以打開了。
+- 如果用了腳本還是打不開，就打開系統自帶的終端機 app，輸入 `xattr -rc`，**空格**，把 app 拖進來，確認終端機 app 中出現了 app 的文件路徑後，按回車，然後就可以打開了。
 
 ## 使用
 
@@ -100,22 +110,3 @@ Adding `-z` creates a ZIP in `dist` containing the app and `Clear Attributes.com
 - 字寬數據來自 CoreText 水平 advance。
 - 字高數據有 `vmtx` 時來自 CoreText 垂直 advance，無則使用 `sTypoAscender + sTypoDescender`，再無及多字符使用 CoreText `ascent + descent`。
 - 多字符排版及其度量由系統 TextView 提供，macOS 完全一致；部分效果可能不可控。
-
-## 構建
-
-```
-./build.sh
-open "dist/Glyph Atlas.app"
-```
-
-默認只生成本機架構，也可以加參數指定架構或生成 ZIP：
-
-```
-./build.sh -a       # arm64
-./build.sh -x       # x86_64
-./build.sh -u       # 通用版（arm64 + x86_64）
-./build.sh -z       # 本機架構 + ZIP
-./build.sh -u -z    # 通用版 + ZIP
-```
-
-加 `-z` 後會在 `dist` 裡生成 ZIP，裡面有 app 和 `Clear Attributes.command`。如果被系統攔住打不開，把兩者解壓到同一檔案夾，按兩下腳本就能幫 app 執行 `xattr -rc`。如果腳本也打不開，就打開終端機 app，輸入 `xattr -rc`，空格，把 app 拖進來，確認終端機 app 中輸入了 app 的文件路徑後，按回車。
