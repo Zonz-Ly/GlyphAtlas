@@ -64,17 +64,18 @@
 "Help.01" = "Öffne eine Schrift oder ziehe sie auf das App-Fenster oder das Dock-Symbol. Zuletzt benutzte Dateien werden ebenfalls unterstützt.";
 "Help.02" = "Über die Menüleiste kannst du die im aktuellen Fenster geöffnete Schrift mit einem Klick in deinen Benutzerordner für Schriften kopieren.";
 "Help.03" = "Beim Öffnen einer variablen Schrift erscheint neben den Fenstersteuerungen ein Variationsfenster. Ziehe es heraus, damit es geöffnet bleibt. Wähle einen Zahlenwert aus und passe ihn mit ↑/↓ oder ⇧↑/⇧↓ an.";
-"Help.04" = "Gib ein oder mehrere Zeichen in der Seitenleiste ein, um alle zugehörigen Glyphen zu sehen. Mit ⌥⏎ fügst du einen Zeilenumbruch ein. Per Rechtsklick findest du auch „Gespeicherte Texte“, um den aktuellen Text zu speichern oder zuvor gespeicherte Texte schnell einzufügen.";
+"Help.04" = "Gib ein oder mehrere Zeichen in der Seitenleiste ein, um alle zugehörigen Glyphen zu sehen. Mit ⌥⏎ fügst du einen Zeilenumbruch ein. Per Rechtsklick findest du auch „Gespeicherte Texte“, um den aktuellen Text zu speichern oder zuvor gespeicherte Texte schnell einzufügen. Halte in der Menüleiste ⌥ gedrückt, um gespeicherte Texte schnell zu löschen.";
 "Help.05" = "Doppelklicke auf eine Glyphe oder wähle sie aus und drücke Return, um die Standardglyphe zu ersetzen und die Alternativen dieser Glyphe anzuzeigen. Halte dabei die Umschalttaste gedrückt, um die Glyphe hinzuzufügen.";
 "Help.06" = "Mit ↑/↓ wechselst du zwischen Glyphen, mit ⌘↑/⌘↓ zwischen Basisglyphen. Mit ⌥↑/⌥↓ springst du zur ersten oder letzten Glyphe der Liste.";
 "Help.07" = "Mit ⌘C kopierst du alle codierten Zeichen der ausgewählten Glyphe.";
 "Help.08" = "Bewege den Zeiger über eine Unicode-Kennzeichnung, um den im Unicode-Standard definierten Zeichennamen zu sehen.";
 "Help.09" = "Standardmäßig ist „Alle Glyphen“ aktiv. Wechsle die Ansicht per Rechtsklick oder mit ⌘1 zu „Einzelne Glyphe“, ⌘2 zu „Mehrere Zeichen“ und ⌘3 zu „Alle Glyphen“.";
-"Help.10" = "In der Mehrzeichenansicht zeigt ein Klick auf eine Glyphe deren Alternativen. Typografie im Darstellungs- und Kontextmenü enthält die nativen Schriftfunktionen: Häkchen markieren ausgewählte Optionen; in exklusiven Gruppen ist nur eine Auswahl möglich. ⌘5 schaltet die vertikale Schreibrichtung um. Unterstrichen ⌘U und Durchstreichen ⌘L gelten für die gesamte Mehrzeichenansicht. Schreibrichtung erscheint im Menü „Darstellung“, wenn CoreText meldet, dass die Schrift eine von rechts nach links geschriebene Sprache unterstützt. Textdekoration > Kontur ⌘Y zeigt die in der Schrift enthaltenen Konturen einschließlich Überlappungen. Sprache für den Schriftsatz zeigt die GSUB-Sprachtags der Schrift, ohne Wiederholungen zwischen Schriftsystemen. Ohne benannte Sprachsysteme wird das Menü ausgeblendet.";
+"Help.10" = "In „Mehrere Zeichen“ zeigt ein Klick auf eine Glyphe deren Alternativen. Vertikaler Satz wird unterstützt; schalte ihn per Rechtsklick oder mit ⌘5 um. Dort findest du auch Textausrichtung und Typografie (OpenType-Funktionen). Weitere Optionen stehen im Menü „Darstellung“.";
 "Help.11" = "Doppelklicke in „Alle Glyphen“ auf eine Glyphe, um sie an den vorhandenen Text anzuhängen. Ein Klick auf eine Glyphe in der Seitenleiste lässt sie auch in der Gesamtübersicht blinken.";
-"Help.12" = "Mit ⌘+/⌘− vergrößerst oder verkleinerst du Glyphen; mit ⌥⌘+/⌥⌘− vergrößerst oder verkleinerst du die Ränder in „Mehrere Zeichen“. Auch die Zoomgeste auf dem Trackpad funktioniert.";
-"Help.13" = "Der Schatten zeigt Breite und Höhe der Glyphe sowie Zeilenhöhe und Durchschuss des Satzes. Mit ⌘4 blendest du ihn aus.";
-"Help.14" = "Der Dunkelmodus wird unterstützt. Aber Vorsicht: Ein Klick auf eine vollständig ausgefüllte Glyphe kann blenden.";
+"Help.12" = "Mit ⌘+/⌘− oder einer Pinch-Geste auf dem Trackpad vergrößerst oder verkleinerst du Glyphen. In „Mehrere Zeichen“ ändern ⌥⌘+/⌥⌘− oder horizontales Zusammenziehen und Spreizen die Ränder; ⌃⌘+/⌃⌘− oder eine vertikale Pinch-Geste ändern den Zeilenabstand. Mit ⌘0 stellst du die Standardgröße wieder her.";
+"Help.13" = "Der Schatten zeigt den Begrenzungsrahmen mit Breite und Höhe der Glyphe sowie Zeilenhöhe und Durchschuss des Satzes. Mit ⌘4 blendest du ihn aus.";
+"Help.14" = "Der Dunkelmodus wird unterstützt. Aber Vorsicht: Ein Klick auf eine vollständig ausgefüllte Glyphe kann blenden. Unter „Farben“ in der Menüleiste kannst du die Farben der Glyphe, des Begrenzungsrahmenschattens und des Hintergrunds ändern.";
+"Help.15" = "Mit „Als Standard verwenden“ in der Menüleiste speicherst du die aktuelle Ansicht, Farben, Größen und weitere Vorschaueinstellungen zusammen mit der Fenstergröße. Später geöffnete Schriftdateien verwenden diese Einstellungen. Halte ⌥ gedrückt, um stattdessen „Standard wiederherstellen“ zu wählen.";
 
 /* Variable font controls. */
 "Variable" = "Variabel";
@@ -128,3 +129,4 @@
 
 "Typesetting Language" = "Sprache für den Schriftsatz";
 "No System Language Mapping" = "Für dieses OpenType-Sprach-Tag ist keine Systemsprache zugeordnet.";
+"No Selectable Languages" = "Keine Sprachen zur Auswahl";

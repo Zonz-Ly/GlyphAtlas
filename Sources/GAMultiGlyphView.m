@@ -462,7 +462,7 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
     self.pinchHasPair = dx > 0 || dy > 0;
     if (!self.pinchHasPair) return;
     CGFloat angle = atan2(dy, dx) * 180.0 / M_PI;
-    self.pinchCandidate = angle <= 30 ? GAMagnificationBoundingBox
+    self.pinchCandidate = angle <= 35 ? GAMagnificationBoundingBox
         : angle >= 75 ? GAMagnificationLineSpacing : GAMagnificationText;
 }
 

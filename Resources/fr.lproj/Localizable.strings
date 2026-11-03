@@ -64,17 +64,18 @@
 "Help.01" = "Ouvrez une police ou faites-la glisser sur la fenêtre de l’app ou son icône dans le Dock. Les fichiers récemment utilisés sont également pris en charge.";
 "Help.02" = "Depuis la barre des menus, copiez en un clic la police ouverte dans la fenêtre actuelle vers votre dossier de polices utilisateur.";
 "Help.03" = "À l’ouverture d’une police variable, un panneau de variation apparaît près des boutons de la fenêtre. Détachez-le en le faisant glisser pour le garder ouvert. Sélectionnez une valeur numérique et ajustez-la avec ↑/↓ ou ⇧↑/⇧↓.";
-"Help.04" = "Saisissez un ou plusieurs caractères dans la barre latérale pour voir tous les glyphes associés. Utilisez ⌥⏎ pour insérer un saut de ligne. Vous pouvez aussi faire un clic droit et choisir « Textes enregistrés » pour enregistrer le texte actuel ou insérer rapidement un texte déjà enregistré.";
+"Help.04" = "Saisissez un ou plusieurs caractères dans la barre latérale pour voir tous les glyphes associés. Utilisez ⌥⏎ pour insérer un saut de ligne. Vous pouvez aussi faire un clic droit et choisir « Textes enregistrés » pour enregistrer le texte actuel ou insérer rapidement un texte déjà enregistré. Maintenez ⌥ dans la barre des menus pour supprimer rapidement les textes enregistrés.";
 "Help.05" = "Cliquez deux fois sur un glyphe, ou sélectionnez-le et appuyez sur Retour, pour remplacer le glyphe par défaut et afficher ses variantes. Maintenez la touche Maj pendant cette action pour ajouter le glyphe.";
 "Help.06" = "Utilisez ↑/↓ pour passer d’un glyphe à l’autre, ⌘↑/⌘↓ pour passer d’un glyphe de base à l’autre et ⌥↑/⌥↓ pour atteindre le premier ou le dernier glyphe de la liste.";
 "Help.07" = "Utilisez ⌘C pour copier tous les caractères encodés du glyphe sélectionné.";
 "Help.08" = "Survolez une étiquette Unicode pour voir le nom du caractère défini par la norme Unicode.";
 "Help.09" = "« Tous les glyphes » est la vue par défaut. Changez de vue par un clic droit, ou utilisez ⌘1 pour « Glyphe unique », ⌘2 pour « Plusieurs caractères » et ⌘3 pour « Tous les glyphes ».";
-"Help.10" = "Dans Plusieurs caractères, cliquez sur un glyphe pour voir ses variantes. Typographie, dans les menus Présentation et contextuel, affiche les fonctions natives : les coches indiquent les options sélectionnées ; les groupes exclusifs ne permettent qu’un seul choix. ⌘5 active ou désactive l’écriture verticale. Souligné ⌘U et Barré ⌘L s’appliquent à tout l’aperçu de plusieurs caractères. Sens d’écriture apparaît dans Présentation si CoreText indique la prise en charge d’une langue écrite de droite à gauche. Décoration du texte > Contour ⌘Y révèle les contours conservés dans la police, y compris leurs chevauchements. Langue de composition affiche les balises de langue GSUB de la police, sans doublons entre les écritures. Le menu est masqué si aucun système de langue nommé n’est déclaré.";
+"Help.10" = "Dans Plusieurs caractères, cliquez sur un glyphe pour voir ses variantes. L’écriture verticale est prise en charge ; faites un clic droit ou appuyez sur ⌘5 pour la changer. L’alignement du texte et Typographie (fonctions OpenType) se trouvent aussi ici. Le menu Présentation de la barre des menus propose d’autres options.";
 "Help.11" = "Dans « Tous les glyphes », cliquez deux fois sur un glyphe pour l’ajouter au texte existant. Cliquer sur un glyphe dans la barre latérale le fait également clignoter dans la vue d’ensemble.";
-"Help.12" = "Utilisez ⌘+/⌘− pour agrandir ou réduire les glyphes, et ⌥⌘+/⌥⌘− pour augmenter ou réduire les marges dans « Plusieurs caractères ». Le pincement sur le trackpad fonctionne également.";
-"Help.13" = "L’ombre indique la largeur et la hauteur du glyphe, ainsi que la hauteur de ligne et l’interligne de la composition. Appuyez sur ⌘4 pour la masquer.";
-"Help.14" = "Le mode sombre est pris en charge. Mais attention : cliquer sur un glyphe plein peut vous éblouir.";
+"Help.12" = "Utilisez ⌘+/⌘− ou un pincement sur le trackpad pour agrandir ou réduire les glyphes. Dans Plusieurs caractères, utilisez ⌥⌘+/⌥⌘− ou un pincement horizontal pour augmenter ou réduire les marges, et ⌃⌘+/⌃⌘− ou un pincement vertical pour augmenter ou réduire l’interligne. Appuyez sur ⌘0 pour rétablir la taille par défaut.";
+"Help.13" = "L’ombre indique le cadre englobant, avec la largeur et la hauteur du glyphe ainsi que la hauteur de ligne et l’interligne de la composition. Appuyez sur ⌘4 pour le masquer.";
+"Help.14" = "Le mode sombre est pris en charge. Mais attention : cliquer sur un glyphe plein peut vous éblouir. Vous pouvez changer la couleur des glyphes, de l’ombre du cadre englobant et de l’arrière-plan dans Couleurs, dans la barre des menus.";
+"Help.15" = "Choisissez Utiliser comme valeurs par défaut dans la barre des menus pour enregistrer la vue, les couleurs, la taille et les autres réglages d’aperçu actuels, ainsi que la taille de la fenêtre. Les fichiers de polices ouverts ensuite utiliseront ces réglages. Maintenez ⌥ pour choisir Restaurer les valeurs par défaut.";
 
 /* Variable font controls. */
 "Variable" = "Variable";
@@ -128,3 +129,4 @@
 
 "Typesetting Language" = "Langue de composition";
 "No System Language Mapping" = "Aucune langue système ne correspond à cette balise de langue OpenType.";
+"No Selectable Languages" = "Aucune langue disponible";

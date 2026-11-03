@@ -46,7 +46,7 @@
 "Help.05" = "Bấm hai lần vào một glyph, hoặc chọn glyph đó rồi nhấn ⏎, để thay thế glyph mặc định và hiển thị các glyph thay thế của nó. Giữ thêm ⇧ để thêm glyph đó.";
 "Cut" = "Cắt";
 "Help.06" = "Dùng ↑/↓ để di chuyển giữa các glyph, ⌘↑/⌘↓ để di chuyển giữa các glyph cơ sở và ⌥↑/⌥↓ để chuyển đến glyph đầu tiên hoặc cuối cùng trong danh sách.";
-"Help.04" = "Nhập một hoặc nhiều ký tự trong thanh bên để xem tất cả glyph liên quan. Dùng ⌥⏎ để chèn dấu ngắt dòng. Bạn cũng có thể nhấp chuột phải rồi chọn “Văn bản đã lưu” để lưu văn bản hiện tại hoặc nhập nhanh văn bản đã lưu trước đó.";
+"Help.04" = "Nhập một hoặc nhiều ký tự trong thanh bên để xem tất cả glyph liên quan. Dùng ⌥⏎ để chèn dấu ngắt dòng. Bạn cũng có thể nhấp chuột phải rồi chọn “Văn bản đã lưu” để lưu văn bản hiện tại hoặc nhập nhanh văn bản đã lưu trước đó. Giữ ⌥ trên thanh menu để xóa nhanh văn bản đã lưu.";
 "Help.07" = "Dùng ⌘C để sao chép tất cả ký tự được mã hóa của glyph đã chọn.";
 "Bounding Box Zoom Out" = "Thu nhỏ khung bao";
 "Help.03" = "Khi bạn mở phông chữ biến thiên, một bảng biến thiên xuất hiện cạnh các nút điều khiển cửa sổ. Kéo bảng ra để giữ bảng luôn mở. Chọn một giá trị số và dùng ↑/↓ hoặc ⇧↑/⇧↓ để điều chỉnh.";
@@ -60,11 +60,12 @@
 "Cannot Open Font" = "Không thể mở phông chữ";
 "Left" = "Căn trái";
 "Cannot Read Font" = "Không thể đọc phông chữ";
-"Help.10" = "Ở chế độ nhiều ký tự, nhấp vào hình chữ để xem các biến thể. Kiểu chữ trong menu Xem và menu ngữ cảnh liệt kê các tính năng gốc: dấu kiểm biểu thị mục được chọn; mỗi nhóm loại trừ chỉ cho phép một lựa chọn. ⌘5 chuyển chế độ viết dọc. Gạch chân ⌘U và Gạch xuyên ⌘L áp dụng cho toàn bộ bản xem trước nhiều ký tự. Hướng viết xuất hiện trong menu Xem khi CoreText báo hỗ trợ ngôn ngữ viết từ phải sang trái. Trang trí văn bản > Đường viền ⌘Y hiển thị các đường nét còn được lưu trong phông chữ, kể cả phần chồng lấp. Ngôn ngữ dàn chữ liệt kê các thẻ ngôn ngữ GSUB của phông chữ, không lặp lại cùng một thẻ giữa các hệ chữ. Menu bị ẩn nếu không có hệ ngôn ngữ được đặt tên.";
+"Help.10" = "Trong Nhiều ký tự, bấm vào glyph để xem các dạng thay thế. Có hỗ trợ viết dọc; bấm chuột phải hoặc nhấn ⌘5 để chuyển. Căn chỉnh văn bản và Chữ viết (tính năng OpenType) cũng ở đây. Menu Xem trên thanh menu có thêm các tùy chọn.";
 "Help.11" = "Trong chế độ Tất cả glyph, bấm hai lần vào một glyph để thêm vào văn bản hiện có. Bấm vào một glyph trong thanh bên cũng làm glyph đó nhấp nháy trong chế độ xem này.";
-"Help.12" = "Dùng ⌘+/⌘− để thu phóng glyph và ⌥⌘+/⌥⌘− để tăng hoặc giảm lề trong chế độ Nhiều ký tự. Bạn cũng có thể dùng cử chỉ chụm/mở trên bàn di chuột.";
-"Help.13" = "Bóng đổ thể hiện chiều rộng, chiều cao của glyph cũng như chiều cao dòng và khoảng cách dòng của bố cục; nhấn ⌘4 để ẩn bóng đổ.";
-"Help.14" = "Có hỗ trợ chế độ tối, nhưng hãy cẩn thận: bấm vào một glyph đặc có thể làm bạn chói mắt.";
+"Help.12" = "Dùng ⌘+/⌘− hoặc chụm và mở hai ngón tay trên bàn di chuột để phóng to hoặc thu nhỏ glyph. Trong Nhiều ký tự, dùng ⌥⌘+/⌥⌘− hoặc chụm theo chiều ngang để tăng hoặc giảm lề; dùng ⌃⌘+/⌃⌘− hoặc chụm theo chiều dọc để tăng hoặc giảm giãn dòng. Nhấn ⌘0 để khôi phục kích thước mặc định.";
+"Help.13" = "Bóng biểu thị khung bao, gồm chiều rộng và chiều cao của glyph, chiều cao dòng và khoảng cách dòng của phần dàn chữ. Nhấn ⌘4 để ẩn.";
+"Help.14" = "Có hỗ trợ chế độ tối, nhưng hãy cẩn thận: bấm vào một glyph đặc có thể làm bạn chói mắt. Bạn có thể đổi màu glyph, bóng của khung bao và nền trong Màu sắc trên thanh menu.";
+"Help.15" = "Chọn Sử dụng làm mặc định trên thanh menu để lưu chế độ xem, màu sắc, kích thước và các thiết lập xem trước hiện tại cùng kích thước cửa sổ. Các tệp phông chữ mở sau đó sẽ dùng những thiết lập này. Giữ ⌥ để chọn Khôi phục giá trị mặc định.";
 "Multi-Character" = "Nhiều ký tự";
 "Text Alignment" = "Căn chỉnh văn bản";
 "About Glyph Atlas" = "Giới thiệu về Glyph Atlas";
@@ -125,3 +126,4 @@
 
 "Typesetting Language" = "Ngôn ngữ dàn chữ";
 "No System Language Mapping" = "Không có ngôn ngữ hệ thống tương ứng với thẻ ngôn ngữ OpenType này.";
+"No Selectable Languages" = "Không có ngôn ngữ để chọn";

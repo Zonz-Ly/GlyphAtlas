@@ -109,12 +109,22 @@ xattr -cr "$APP" 2>/dev/null || true
 
 echo "Done: $APP"
 if "$CREATE_ZIP"; then
+  COMMAND="$DIST/Clear Attributes.command"
+  rm -f "$COMMAND"
+  cat > "$COMMAND" <<'SCRIPT'
+#!/bin/bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+/usr/bin/xattr -rc "$SCRIPT_DIR/Glyph Atlas.app"
+echo "Extended attributes cleared. You can now open Glyph Atlas.app."
+SCRIPT
+  chmod +x "$COMMAND"
   PACKAGE="$BUILD/package"
   rm -rf "$PACKAGE"
   mkdir -p "$PACKAGE"
   ditto --norsrc --noextattr "$APP" "$PACKAGE/Glyph Atlas.app"
-  cp "$ROOT/Resources/Clear Attributes.command" "$PACKAGE/"
-  chmod +x "$PACKAGE/Clear Attributes.command"
+  cp "$COMMAND" "$PACKAGE/"
   rm -f "$ZIP"
   ditto -c -k --norsrc --noextattr "$PACKAGE" "$ZIP"
   echo "Archive: $ZIP"

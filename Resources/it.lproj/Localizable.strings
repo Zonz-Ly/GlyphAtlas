@@ -64,17 +64,18 @@
 "Help.01" = "Apri un font oppure trascinalo sulla finestra dell’app o sulla sua icona nel Dock. Sono supportati anche i file usati di recente.";
 "Help.02" = "Dalla barra dei menu puoi copiare con un clic il font aperto nella finestra attuale nella tua cartella dei font.";
 "Help.03" = "Quando apri un font variabile, accanto ai controlli della finestra appare un pannello delle variazioni. Trascinalo all’esterno per tenerlo aperto. Seleziona un valore numerico e regolalo con ↑/↓ oppure ⇧↑/⇧↓.";
-"Help.04" = "Inserisci uno o più caratteri nella barra laterale per vedere tutti i glifi associati. Usa ⌥⏎ per inserire un’interruzione di riga. Puoi anche fare clic destro e scegliere «Testi salvati» per salvare il testo attuale o inserire rapidamente un testo già salvato.";
+"Help.04" = "Inserisci uno o più caratteri nella barra laterale per vedere tutti i glifi associati. Usa ⌥⏎ per inserire un’interruzione di riga. Puoi anche fare clic destro e scegliere «Testi salvati» per salvare il testo attuale o inserire rapidamente un testo già salvato. Tieni premuto ⌥ nella barra dei menu per eliminare rapidamente i testi salvati.";
 "Help.05" = "Fai doppio clic su un glifo, oppure selezionalo e premi A capo, per sostituire il glifo predefinito e mostrarne le alternative. Tieni premuto Maiuscole durante questa operazione per aggiungere il glifo.";
 "Help.06" = "Usa ↑/↓ per spostarti tra i glifi, ⌘↑/⌘↓ tra i glifi di base e ⌥↑/⌥↓ per passare al primo o all’ultimo glifo dell’elenco.";
 "Help.07" = "Usa ⌘C per copiare tutti i caratteri codificati del glifo selezionato.";
 "Help.08" = "Posiziona il puntatore su un’etichetta Unicode per vedere il nome del carattere definito dallo standard Unicode.";
 "Help.09" = "La vista predefinita è “Tutti i glifi”. Cambia vista con un clic secondario, oppure premi ⌘1 per “Glifo singolo”, ⌘2 per “Più caratteri” o ⌘3 per “Tutti i glifi”.";
-"Help.10" = "In Più caratteri, fai clic su un glifo per vedere le alternative. Tipografia nei menu Vista e contestuale elenca le funzioni native: i segni di spunta indicano le opzioni selezionate; i gruppi esclusivi consentono una sola scelta. ⌘5 attiva o disattiva la scrittura verticale. Sottolineato ⌘U e Barrato ⌘L si applicano all’intera anteprima di più caratteri. Direzione di scrittura appare nel menu Vista quando CoreText segnala il supporto di una lingua scritta da destra a sinistra. Decorazioni del testo > Contorno ⌘Y mostra i contorni conservati nel font, comprese le sovrapposizioni. Lingua di composizione elenca i tag di lingua GSUB del font, senza duplicati tra scritture. Il menu è nascosto se non sono dichiarati sistemi linguistici con nome.";
+"Help.10" = "In Più caratteri, fai clic su un glifo per vedere le sue alternative. È supportata la scrittura verticale; fai clic con il tasto destro o premi ⌘5 per cambiarla. Qui trovi anche l’allineamento del testo e Tipografia (funzionalità OpenType). Il menu Vista nella barra dei menu offre altre opzioni.";
 "Help.11" = "In “Tutti i glifi”, fai doppio clic su un glifo per aggiungerlo al testo esistente. Facendo clic su un glifo nella barra laterale, il glifo lampeggia anche nella vista completa.";
-"Help.12" = "Usa ⌘+/⌘− per ingrandire o ridurre i glifi e ⌥⌘+/⌥⌘− per aumentare o ridurre i margini in “Più caratteri”. Puoi anche usare il gesto di apertura o chiusura delle dita sul trackpad.";
-"Help.13" = "L’ombra indica la larghezza e l’altezza del glifo, oltre all’altezza della riga e all’interlinea della composizione. Premi ⌘4 per nasconderla.";
-"Help.14" = "È supportata la modalità scura. Ma attenzione: facendo clic su un glifo pieno potresti rimanere abbagliato.";
+"Help.12" = "Usa ⌘+/⌘− o il gesto di pizzicare sul trackpad per ingrandire o ridurre i glifi. In Più caratteri, usa ⌥⌘+/⌥⌘− o un pizzico orizzontale per aumentare o ridurre i margini e ⌃⌘+/⌃⌘− o un pizzico verticale per aumentare o ridurre l’interlinea. Premi ⌘0 per ripristinare le dimensioni di default.";
+"Help.13" = "L’ombra indica il riquadro di delimitazione, comprese la larghezza e l’altezza del glifo, l’altezza delle righe e l’interlinea della composizione. Premi ⌘4 per nasconderlo.";
+"Help.14" = "È supportata la modalità scura. Ma attenzione: facendo clic su un glifo pieno potresti rimanere abbagliato. Puoi cambiare i colori del glifo, dell’ombra del riquadro e dello sfondo in Colori, nella barra dei menu.";
+"Help.15" = "Scegli Usa come default nella barra dei menu per salvare la vista, i colori, le dimensioni e le altre impostazioni di anteprima attuali, insieme alle dimensioni della finestra. I file di font aperti in seguito useranno queste impostazioni. Tieni premuto ⌥ per scegliere Ripristina default.";
 
 /* Variable font controls. */
 "Variable" = "Variabile";
@@ -128,3 +129,4 @@
 
 "Typesetting Language" = "Lingua di composizione";
 "No System Language Mapping" = "Non è disponibile una lingua di sistema corrispondente a questo tag OpenType.";
+"No Selectable Languages" = "Nessuna lingua selezionabile";

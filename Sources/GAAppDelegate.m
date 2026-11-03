@@ -388,8 +388,6 @@ static NSString *const GASavedTextsKey = @"GASavedTexts";
                 item.enabled = textLayoutAvailable;
             if ([item.identifier isEqualToString:@"WritingDirection"])
                 item.hidden = !controller.hasRightToLeftLanguages;
-            if ([item.identifier isEqualToString:@"TypesettingLanguage"])
-                item.hidden = !controller.typesettingLanguageTags.count;
         }
         return;
     }
@@ -731,7 +729,6 @@ static NSString *const GASavedTextsKey = @"GASavedTexts";
         NSMenuItem *language = [menu addItemWithTitle:NSLocalizedString(@"Typesetting Language", @"OpenType localized language systems")
             action:nil keyEquivalent:@""];
         language.identifier = @"TypesettingLanguage";
-        language.hidden = YES;
         GALoclLanguageMenu *languages = [[GALoclLanguageMenu alloc] initWithTitle:language.title];
         languages.delegate = self;
         language.submenu = languages;
@@ -773,12 +770,24 @@ static NSString *const GASavedTextsKey = @"GASavedTexts";
 - (void)rebuildLoclLanguageMenu:(GALoclLanguageMenu *)menu {
     menu.controller = [self controllerForViewMenu:menu];
     [menu removeAllItems];
+    NSArray<NSString *> *tags = menu.controller.typesettingLanguageTags;
+    BOOL hasSelectableLanguage = NO;
+    for (NSString *tag in tags) {
+        if (GAIdentifierForOpenTypeLanguage(tag) != nil) {
+            hasSelectableLanguage = YES;
+            break;
+        }
+    }
+    if (!hasSelectableLanguage) {
+        NSMenuItem *empty = [menu addItemWithTitle:NSLocalizedString(@"No Selectable Languages", @"No applicable typesetting language choices")
+            action:nil keyEquivalent:@""];
+        empty.enabled = NO;
+        return;
+    }
     NSMenuItem *standard = [menu addItemWithTitle:NSLocalizedString(@"Default", @"Default")
         action:@selector(setTypesettingLanguage:) keyEquivalent:@""];
     standard.target = self;
     standard.representedObject = @"";
-    NSArray<NSString *> *tags = menu.controller.typesettingLanguageTags;
-    if (!tags.count) return;
     [menu addItem:NSMenuItem.separatorItem];
     NSLocale *locale = [NSLocale localeWithLocaleIdentifier:NSBundle.mainBundle.preferredLocalizations.firstObject];
     NSMutableArray<NSMenuItem *> *items = [NSMutableArray array];
@@ -1182,7 +1191,8 @@ static NSString *const GASavedTextsKey = @"GASavedTexts";
         NSLocalizedString(@"Help.11", @"Usage paragraph 11"),
         NSLocalizedString(@"Help.12", @"Usage paragraph 12"),
         NSLocalizedString(@"Help.13", @"Usage paragraph 13"),
-        NSLocalizedString(@"Help.14", @"Usage paragraph 14")
+        NSLocalizedString(@"Help.14", @"Usage paragraph 14"),
+        NSLocalizedString(@"Help.15", @"Usage paragraph 15")
     ];
     alert.informativeText = [@"• " stringByAppendingString:[paragraphs componentsJoinedByString:@"\n• "]];
     [alert addButtonWithTitle:NSLocalizedString(@"OK", @"OK")];
