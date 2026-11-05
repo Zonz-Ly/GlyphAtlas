@@ -37,6 +37,9 @@ struct Item {
     double xAdvance = 0, yAdvance = 0, xOffset = 0, yOffset = 0;
 };
 using Buffer = std::vector<Item>;
+inline bool sameGlyphAndSource(const Item &a, const Item &b) {
+    return a.glyph == b.glyph && a.source == b.source;
+}
 struct Cluster {
     Span source;
     std::vector<Glyph> glyphs;
@@ -115,6 +118,7 @@ struct Metrics {
     std::function<double(Glyph)> horizontalAdvance;
     std::function<double(Glyph)> verticalAdvance;
     std::vector<double> normalized;
+    bool variationCoordinatesValid = true;
 };
 struct GDEF {
     ClassDef glyphClasses, markAttachmentClasses;
@@ -128,12 +132,5 @@ struct LookupFlags {
 };
 inline bool accepts(const GDEF &gdef, const LookupFlags &flags, const Item &item) {
     return gdef.included(item.glyph, flags.flags, flags.markSet);
-}
-inline std::vector<size_t> visible(const Buffer &buffer, const GDEF &gdef, LookupFlags flags) {
-    std::vector<size_t> result;
-    for (size_t i = 0; i < buffer.size(); i++)
-        if (accepts(gdef, flags, buffer[i]))
-            result.push_back(i);
-    return result;
 }
 } // namespace ga::layout

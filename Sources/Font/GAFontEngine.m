@@ -151,8 +151,7 @@ static NSArray<NSNumber *> *GAScalarsForString(NSString *string) {
             index + 1 < string.length &&
             CFStringIsSurrogateLowCharacter([string characterAtIndex:index + 1])) {
             unichar low = [string characterAtIndex:index + 1];
-            uint32_t scalar = ((uint32_t)(unit - 0xD800) << 10) +
-                              (uint32_t)(low - 0xDC00) + 0x10000;
+            uint32_t scalar = CFStringGetLongCharacterForSurrogatePair(unit, low);
             [scalars addObject:@(scalar)];
             index++;
         } else {
@@ -160,23 +159,6 @@ static NSArray<NSNumber *> *GAScalarsForString(NSString *string) {
         }
     }
     return scalars;
-}
-
-NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text) {
-    NSMutableArray<GACharacterGroup *> *groups = [NSMutableArray array];
-    [text enumerateSubstringsInRange:NSMakeRange(0, text.length)
-                             options:NSStringEnumerationByComposedCharacterSequences
-                          usingBlock:^(NSString *substring, NSRange substringRange,
-                                       NSRange enclosingRange, BOOL *stop) {
-        (void)enclosingRange;
-        (void)stop;
-        GACharacterGroup *group = [[GACharacterGroup alloc] init];
-        group.text = substring;
-        group.textRange = substringRange;
-        group.variants = @[];
-        [groups addObject:group];
-    }];
-    return groups;
 }
 
 NSArray<GACharacterGroup *> *GAGroupsForScanResult(NSString *text, GARawScanResult *result) {
@@ -334,15 +316,7 @@ NSArray<GACharacterGroup *> *GAGroupsForScanResult(NSString *text, GARawScanResu
                 }
 
                 UniChar units[2];
-                CFIndex length = 1;
-                if (scalar <= 0xFFFF) {
-                    units[0] = (UniChar)scalar;
-                } else {
-                    uint32_t value = scalar - 0x10000;
-                    units[0] = (UniChar)(0xD800 + (value >> 10));
-                    units[1] = (UniChar)(0xDC00 + (value & 0x3FF));
-                    length = 2;
-                }
+                CFIndex length = CFStringGetSurrogatePairForLongCharacter(scalar, units) ? 2 : 1;
 
                 CGGlyph glyphs[2] = {0, 0};
                 if (!CTFontGetGlyphsForCharacters(_font, units, glyphs, length)) {
@@ -402,11 +376,6 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
            [multiUnicodePattern firstMatchInString:name options:0 range:range] != nil;
 }
 
-NSString *GAUsableGlyphName(CTFontRef font, CGGlyph glyph) {
-    NSString *name = CFBridgingRelease(CTFontCopyNameForGlyph(font, glyph));
-    return name.length > 0 && !GAGlyphNameLooksSynthetic(name) ? name : nil;
-}
-
 - (void)decorateVariant:(GAGlyphVariant *)variant
           withUnicodeMap:(NSDictionary<NSNumber *, NSArray<NSNumber *> *> *)map {
     NSMutableSet<NSNumber *> *scalars = [NSMutableSet set];
@@ -419,8 +388,8 @@ NSString *GAUsableGlyphName(CTFontRef font, CGGlyph glyph) {
         }
 
         CGGlyph glyph = (CGGlyph)glyphNumber.unsignedShortValue;
-        NSString *name = GAUsableGlyphName(_font, glyph);
-        if (name) {
+        NSString *name = CFBridgingRelease(CTFontCopyNameForGlyph(_font, glyph));
+        if (name.length > 0 && !GAGlyphNameLooksSynthetic(name)) {
             [glyphNames addObject:name];
         } else {
             [glyphNames addObject:[NSString stringWithFormat:@"GID %@", glyphNumber]];
@@ -498,45 +467,52 @@ NSString *GAUsableGlyphName(CTFontRef font, CGGlyph glyph) {
     };
     [ranges sortUsingComparator:order];
     NSArray<NSValue *> *roots = [ranges copy];
-    NSUInteger root = 0;
-    for (GACharacterGroup *group in GAGroupsForText(content)) {
-        while (root < roots.count && NSMaxRange(roots[root].rangeValue) <= group.textRange.location)
+    __block NSUInteger root = 0;
+    [content enumerateSubstringsInRange:NSMakeRange(0, content.length)
+                                options:NSStringEnumerationByComposedCharacterSequences |
+                                        NSStringEnumerationSubstringNotRequired
+                             usingBlock:^(NSString *substring, NSRange range,
+                                          NSRange enclosingRange, BOOL *stop) {
+        (void)substring;
+        (void)enclosingRange;
+        (void)stop;
+        while (root < roots.count && NSMaxRange(roots[root].rangeValue) <= range.location)
             root++;
-        if (root == roots.count || roots[root].rangeValue.location >= NSMaxRange(group.textRange))
-            [ranges addObject:[NSValue valueWithRange:group.textRange]];
-    }
+        if (root == roots.count || roots[root].rangeValue.location >= NSMaxRange(range))
+            [ranges addObject:[NSValue valueWithRange:range]];
+    }];
     [ranges sortUsingComparator:order];
     GARawScanResult *result = [[GARawScanResult alloc] init];
     result.incomplete = incomplete;
     result.sourceRanges = ranges;
     if (cancelled && cancelled())
         return nil;
-    NSArray<GACharacterGroup *> *groups = GAGroupsForScanResult(content, result);
+    NSArray<NSValue *> *sourceRanges = result.sourceRanges;
     NSMutableArray *candidates = [NSMutableArray array];
     for (GASubstitutionMatch *match in matches) {
         if (cancelled && cancelled())
             return nil;
         if (!match.sourceRange.length || NSMaxRange(match.sourceRange) > content.length)
             continue;
-        NSUInteger lo = 0, hi = groups.count;
+        NSUInteger lo = 0, hi = sourceRanges.count;
         while (lo < hi) {
             NSUInteger mid = (lo + hi) / 2;
-            if (NSMaxRange(groups[mid].textRange) <= match.sourceRange.location)
+            if (NSMaxRange(sourceRanges[mid].rangeValue) <= match.sourceRange.location)
                 lo = mid + 1;
             else
                 hi = mid;
         }
         NSUInteger first = lo;
-        hi = groups.count;
+        hi = sourceRanges.count;
         while (lo < hi) {
             NSUInteger mid = (lo + hi) / 2;
-            if (groups[mid].textRange.location < NSMaxRange(match.sourceRange))
+            if (sourceRanges[mid].rangeValue.location < NSMaxRange(match.sourceRange))
                 lo = mid + 1;
             else
                 hi = mid;
         }
         NSUInteger last = lo ? lo - 1 : NSNotFound;
-        if (first >= groups.count)
+        if (first >= sourceRanges.count)
             continue;
         GAScanCandidate *c = [[GAScanCandidate alloc] init];
         c.glyphIDs = match.glyphIDs;
@@ -636,8 +612,8 @@ NSString *GAUsableGlyphName(CTFontRef font, CGGlyph glyph) {
 - (NSNumber *)verticalSubstituteForGlyph:(CGGlyph)glyph {
     return [_substitutionEngine verticalGlyph:glyph];
 }
-- (NSArray<GACharacterGroup *> *)analyzeGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
-                                       cancelled:(BOOL (^)(void))cancelled {
+- (NSArray<GAGlyphVariant *> *)variantsForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
+                                        cancelled:(BOOL (^)(void))cancelled {
     if (!glyphIDs.count)
         return @[];
     NSArray<GASubstitutionMatch *> *matches = [_substitutionEngine discoverGlyphIDs:glyphIDs
@@ -657,10 +633,7 @@ NSString *GAUsableGlyphName(CTFontRef font, CGGlyph glyph) {
         [self decorateVariant:v withUnicodeMap:self.unicodeMap];
         [variants addObject:v];
     }
-    GACharacterGroup *group = [[GACharacterGroup alloc] init];
-    group.text = @"";
-    group.variants = variants;
-    return @[ group ];
+    return [variants copy];
 }
 
 #pragma mark - Drawing

@@ -9,9 +9,6 @@ NS_ASSUME_NONNULL_BEGIN
 /// The point size at which variants are shaped.
 FOUNDATION_EXPORT const CGFloat GAFontShapingSize;
 
-/// The CoreText glyph name when present and usable for display.
-FOUNDATION_EXPORT NSString * _Nullable GAUsableGlyphName(CTFontRef font, CGGlyph glyph);
-
 /// A small ARC-friendly owner for a CoreText font.
 @interface GAFontBox : NSObject
 @property (nonatomic, readonly) CTFontRef font;
@@ -73,9 +70,6 @@ typedef struct {
 /// overlaps existing source groups and must not be rendered as text.
 @property (nonatomic) BOOL insertedLigature;
 @end
-
-/// Splits text into one group per composed character, preserving UTF-16 ranges.
-FOUNDATION_EXPORT NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text);
 
 /// One verified candidate from a text query. Source ranges and target group
 /// indices refer to that input; applying the result needs no substring offset.
@@ -143,8 +137,8 @@ FOUNDATION_EXPORT NSArray<GACharacterGroup *> *GAGroupsForScanResult(NSString *t
                 groups:(NSArray<GACharacterGroup *> *)groups
              cancelled:(BOOL (^_Nullable)(void))cancelled;
 
-- (nullable NSArray<GACharacterGroup *> *)analyzeGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
-                                                 cancelled:(BOOL (^_Nullable)(void))cancelled;
+- (nullable NSArray<GAGlyphVariant *> *)variantsForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
+                                                  cancelled:(BOOL (^_Nullable)(void))cancelled;
 
 /// Resolves a missing native glyph against existing rows at the same source
 /// range. Returns a decorated temporary row and its existing parent.

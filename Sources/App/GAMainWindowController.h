@@ -7,6 +7,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface GAMainWindowController : NSWindowController
 @property (nonatomic, readonly, nullable) NSURL *fontURL;
+/// An in-session reference to the opened file, resolved through any symlink.
+@property (nonatomic, readonly, nullable) NSURL *fontFileReference;
 @property(nonatomic, readonly) NSString *inputText;
 - (void)replaceInputText:(NSString *)text;
 @property (nonatomic, readonly) GAViewMode viewMode;

@@ -64,6 +64,8 @@ NS_ASSUME_NONNULL_BEGIN
 @interface GAGlyphLayoutRun : NSObject
 @property(nonatomic) NSRange range;
 @property(nonatomic, copy) NSArray<NSNumber *> *glyphIDs;
+@property(nonatomic) NSRange leadingRange;
+@property(nonatomic, copy, nullable) NSArray<NSNumber *> *leadingGlyphIDs;
 @end
 
 @interface NSTextLayoutManager (GAGlyphReadback)
@@ -152,6 +154,13 @@ static NSArray<GAGlyphLayoutRun *> *MergeHits(NSArray<GAGlyphLayoutRun *> *atoms
                 hi = mid;
         }
         [glyphs[lo - 1] addObjectsFromArray:atom.glyphIDs];
+        GAGlyphLayoutRun *hit = result[lo - 1];
+        if (!hit.leadingGlyphIDs || atom.leadingRange.location < hit.leadingRange.location) {
+            hit.leadingRange = atom.leadingRange;
+            hit.leadingGlyphIDs = atom.glyphIDs;
+        } else if (NSEqualRanges(hit.leadingRange, atom.leadingRange)) {
+            hit.leadingGlyphIDs = [hit.leadingGlyphIDs arrayByAddingObjectsFromArray:atom.glyphIDs];
+        }
     }
     for (NSUInteger i = 0; i < result.count; i++)
         result[i].glyphIDs = glyphs[i];
@@ -173,13 +182,16 @@ static NSArray<GAGlyphLayoutRun *> *MapGlyphLayoutRuns(
         }
         if (first == NSUIntegerMax || last >= sourceText.length)
             continue;
-        NSRange range = [sourceText
-            rangeOfComposedCharacterSequencesForRange:NSMakeRange(first, last - first + 1)];
-        for (NSValue *value in atomicRanges)
-            if (NSIntersectionRange(range, value.rangeValue).length)
-                range = NSUnionRange(range, value.rangeValue);
+        NSRange component = NSMakeRange(first, last - first + 1);
+        NSRange range = [sourceText rangeOfComposedCharacterSequencesForRange:component];
+        for (NSValue *value in atomicRanges) {
+            NSRange atomic = value.rangeValue;
+            if (NSIntersectionRange(range, atomic).length) range = NSUnionRange(range, atomic);
+            if (NSIntersectionRange(component, atomic).length) component = NSUnionRange(component, atomic);
+        }
         GAGlyphLayoutRun *hit = [GAGlyphLayoutRun new];
         hit.range = range;
+        hit.leadingRange = component;
         hit.glyphIDs = display.glyphIDs;
         [atoms addObject:hit];
     }
@@ -730,7 +742,7 @@ static NSIndexSet *GAForeignCharactersToOmit(NSAttributedString *display, NSInde
             if (sourceIndices[i].unsignedIntegerValue == NSNotFound) continue;
             unichar c = [text characterAtIndex:i];
             NSGlyphInfo *glyphInfo = [display attribute:NSGlyphInfoAttributeName atIndex:i effectiveRange:NULL];
-            if ((c == 0xFE0F || c == 0x200D) && !glyphInfo) {
+            if ((c == 0xFE0E || c == 0xFE0F || c == 0x200D) && !glyphInfo) {
                 [controls addIndex:i];
             }
             if (!glyphInfo && GAIsTextLayoutControl(c)) continue;
@@ -975,7 +987,7 @@ static NSIndexSet *GAForeignCharactersToOmit(NSAttributedString *display, NSInde
     for (GAGlyphLayoutRun *hit in self.glyphHits)
         if (NSLocationInRange(sourceIndex, hit.range)) {
             if (self.onGlyphSelected)
-                self.onGlyphSelected(hit.glyphIDs, hit.range);
+                self.onGlyphSelected(hit.glyphIDs, hit.range, hit.leadingGlyphIDs, hit.leadingRange);
             break;
         }
 }

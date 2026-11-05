@@ -6,7 +6,7 @@
 #import "Font/GAUnicode.h"
 #import "Font/GAFontResource.h"
 #import "Views/GAVariationViewController.h"
-#import "Input/GAInputSupport.h"
+#import "Input/GAInput.h"
 #import "Font/GAFontFeatures.h"
 #import <CoreText/CoreText.h>
 
@@ -25,6 +25,17 @@ static NSNumber *GAInputScalarForGlyph(NSArray<NSNumber *> *scalars) {
 
 #pragma mark - Font title
 
+@interface GAFontTitleField : NSTextField
+@end
+
+@implementation GAFontTitleField
+
+- (BOOL)mouseDownCanMoveWindow {
+    return YES;
+}
+
+@end
+
 @interface GAFontTitleView : NSStackView
 @end
 
@@ -32,7 +43,8 @@ static NSNumber *GAInputScalarForGlyph(NSArray<NSNumber *> *scalars) {
 
 - (NSView *)hitTest:(NSPoint)point {
     NSView *hit = [super hitTest:point];
-    return [hit isKindOfClass:NSButton.class] ? hit : nil;
+    // AppKit must be able to find the label to expand its clipped text.
+    return hit == self ? nil : hit;
 }
 
 @end
@@ -183,6 +195,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 @property (nonatomic, strong, nullable) NSProgress *glyphFilterRequest;
 @property (nonatomic, copy, nullable) NSString *pendingGlyphFilterTag;
 @property (nonatomic, copy, readwrite, nullable) NSString *allGlyphFeatureTag;
+@property (nonatomic, weak, nullable) GAFontDocument *appliedGlyphFilterDocument;
 @property(nonatomic, strong, nullable) GATextQueryModel *queryModel;
 @property (nonatomic, copy, nullable) NSString *pendingWorkerText;
 @property (nonatomic, copy, nullable) NSArray<GAGlyphSelectionRun *> *pendingWorkerSelections;
@@ -203,8 +216,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 @property(nonatomic) NSWritingDirection baseWritingDirection;
 @property(nonatomic, copy) NSString *typesettingLanguageTag;
 @property (nonatomic, strong, nullable) GAGlyphVariant *lastSelectedVariant;
-/// Set by an all-glyph double-click append; consumed by the next reveal.
-@property (nonatomic) BOOL appendRevealPending;
 @end
 
 @implementation GAMainWindowController {
@@ -309,9 +320,10 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 
     window.contentViewController = split;
 
-    self.titleFontNameField = [NSTextField labelWithString:@""];
+    self.titleFontNameField = [GAFontTitleField labelWithString:@""];
     self.titleFontNameField.autoresizingMask = NSViewWidthSizable;
     self.titleFontNameField.lineBreakMode = NSLineBreakByTruncatingTail;
+    self.titleFontNameField.allowsExpansionToolTips = YES;
     NSFont *titleBarFont = [NSFont titleBarFontOfSize:13];
     NSFontDescriptor *titleDescriptor = [titleBarFont.fontDescriptor
         fontDescriptorByAddingAttributes:@{
@@ -326,8 +338,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
                                              target:self action:@selector(showVariations:)];
     self.variationButton.bordered = NO;
     self.variationButton.hidden = YES;
-    self.variationButton.toolTip = NSLocalizedString(@"Variable", @"Variable font controls");
-    self.variationButton.accessibilityLabel = self.variationButton.toolTip;
+    self.variationButton.accessibilityLabel = NSLocalizedString(@"Variable", @"Variable font controls");
     self.fontTitleView = [GAFontTitleView stackViewWithViews:@[self.variationButton, self.titleFontNameField]];
     self.fontTitleView.spacing = 5;
     [self.titleFontNameField setContentCompressionResistancePriority:NSLayoutPriorityDefaultLow
@@ -349,17 +360,16 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     self.sidebarViewController.onInputUndoRedo = ^{
         GAMainWindowController *controller = weakSelf;
         controller.pendingGlyphEdit = nil;
-        controller.appendRevealPending = NO;
         [controller.sidebarViewController selectGlyphKeyAfterNextReload:nil
                                                              textRange:NSMakeRange(NSNotFound, 0)
                                                                 scroll:GAPendingSelectionScrollGroup];
         [controller scheduleAnalysis];
     };
-    self.sidebarViewController.onSelectionChanged = ^(GAGlyphVariant *variant) {
+    self.sidebarViewController.onSelectionChanged = ^(GAGlyphVariant *variant, BOOL quickReveal) {
         [weakSelf cancelLayoutLookup];
         weakSelf.lastSelectedVariant = variant;
         [weakSelf.detailViewController setVariant:variant];
-        [weakSelf revealGlyphForVariant:variant];
+        [weakSelf revealGlyphForVariant:variant quick:quickReveal];
     };
     self.sidebarViewController.onGlyphActivated = ^(GACharacterGroup *group,
                                                     GAGlyphVariant *variant) {
@@ -372,8 +382,10 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     self.detailViewController.onAllGlyphDoubleClick = ^(GAAllGlyphEntry *entry) {
         [weakSelf appendAllGlyphEntry:entry];
     };
-    self.detailViewController.onGlyphSelected = ^(NSArray<NSNumber *> *glyphIDs, NSRange range) {
-      [weakSelf selectLayoutGlyphIDs:glyphIDs multiRange:range];
+    self.detailViewController.onGlyphSelected = ^(NSArray<NSNumber *> *glyphIDs, NSRange range,
+                                                   NSArray<NSNumber *> *leadingGlyphIDs, NSRange leadingRange) {
+        [weakSelf selectLayoutGlyphIDs:glyphIDs multiRange:range
+                       leadingGlyphIDs:leadingGlyphIDs leadingRange:leadingRange];
     };
 }
 
@@ -390,11 +402,13 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 }
 
 - (void)revealGlyphForVariant:(GAGlyphVariant *)variant {
+    [self revealGlyphForVariant:variant quick:NO];
+}
+
+- (void)revealGlyphForVariant:(GAGlyphVariant *)variant quick:(BOOL)quick {
     if (self.viewMode != GAViewModeAllGlyphs || variant.glyphIDs.count == 0) {
         return;
     }
-    BOOL quick = self.appendRevealPending;
-    self.appendRevealPending = NO;
     [self.detailViewController revealAllGlyphID:variant.glyphIDs.firstObject quick:quick];
 }
 
@@ -408,6 +422,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     self.pendingGlyphFilterTag = tag;
     if (!tag) {
         self.allGlyphFeatureTag = nil;
+        self.appliedGlyphFilterDocument = nil;
         [self.detailViewController setAllGlyphVisibleIDs:nil];
         [self revealGlyphForVariant:self.lastSelectedVariant];
         return;
@@ -426,7 +441,11 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
                 return;
             self.glyphFilterRequest = nil;
             self.pendingGlyphFilterTag = nil;
+            // Keep a complete result for this font when the new query fails.
+            if (!outputs && (!self.allGlyphFeatureTag || self.appliedGlyphFilterDocument == document))
+                return;
             self.allGlyphFeatureTag = outputs ? tag : nil;
+            self.appliedGlyphFilterDocument = outputs ? document : nil;
             [self.detailViewController setAllGlyphVisibleIDs:outputs];
             [self revealGlyphForVariant:self.lastSelectedVariant];
         });
@@ -440,20 +459,35 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     [self revealGlyphForVariant:self.lastSelectedVariant];
 }
 
-- (void)selectLayoutGlyphIDs:(NSArray<NSNumber *> *)glyphIDs multiRange:(NSRange)range {
+- (void)selectLayoutGlyphIDs:(NSArray<NSNumber *> *)glyphIDs multiRange:(NSRange)range
+              leadingGlyphIDs:(NSArray<NSNumber *> *)leadingGlyphIDs leadingRange:(NSRange)leadingRange {
     if (![self canEditFromScanSnapshotForText:self.sidebarViewController.text]) return;
     GAScanDisplaySnapshot *snapshot = self.scanSnapshot;
     GAFontDocument *document = self.fontDocument;
     if (!snapshot || !document) return;
     [self cancelLayoutLookup];
     NSRange source = NSMakeRange(NSNotFound, 0);
+    NSRange leadingSource = NSMakeRange(NSNotFound, 0);
     for (GACharacterGroup *group in snapshot.multiGroups)
         if (NSIntersectionRange(group.textRange, range).length) {
             GACharacterGroup *original = [snapshot.multiGroupSources objectForKey:group] ?: group;
+            if (leadingGlyphIDs.count && leadingRange.length < range.length &&
+                NSLocationInRange(leadingRange.location, group.textRange) &&
+                NSMaxRange(leadingRange) <= NSMaxRange(group.textRange)) {
+                NSUInteger offset = leadingRange.location - group.textRange.location;
+                leadingSource = NSMakeRange(original.textRange.location + offset, leadingRange.length);
+            }
             if (source.location == NSNotFound) {
                 source = original.textRange;
             } else {
-                if (NSMaxRange(source) != original.textRange.location) return;
+                if (NSMaxRange(source) != original.textRange.location) {
+                    // A missing component can leave a gap in the original
+                    // text even when the preview shapes one visible cluster.
+                    if (leadingSource.location == NSNotFound ||
+                        ![self.sidebarViewController selectGlyphIDs:leadingGlyphIDs textRange:leadingSource])
+                        [self.sidebarViewController selectBaseForTextRange:source];
+                    return;
+                }
                 source.length += original.textRange.length;
             }
         }
@@ -483,7 +517,8 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
                 ![(self.fontFeatures.replaySettings ?: @[]) isEqualToArray:features]) return;
             if (resolution)
                 [self.sidebarViewController showGlyphResolution:resolution];
-            else
+            else if (leadingSource.location == NSNotFound ||
+                     ![self.sidebarViewController selectGlyphIDs:leadingGlyphIDs textRange:leadingSource])
                 [self.sidebarViewController selectBaseForTextRange:source];
             if (self.layoutLookup == progress) self.layoutLookup = nil;
         });
@@ -622,9 +657,9 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     if (scalar == nil) {
         // The clicked glyph has no Unicode mapping of its own. Borrow the first
         // mapping from its replacement set and pin the clicked glyph with a run.
-        NSArray<GACharacterGroup *> *groups =
-            [self.fontDocument analyzeGlyphIDs:@[entry.glyphID] cancelled:nil];
-        for (GAGlyphVariant *variant in groups.firstObject.variants) {
+        NSArray<GAGlyphVariant *> *variants =
+            [self.fontDocument variantsForGlyphIDs:@[entry.glyphID] cancelled:nil];
+        for (GAGlyphVariant *variant in variants) {
             if (variant.unicodeScalars.count > 0) {
                 scalar = variant.unicodeScalars.firstObject;
                 break;
@@ -648,7 +683,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     if (range.location == NSNotFound) {
         return;
     }
-    self.appendRevealPending = YES;
     [self.sidebarViewController selectGlyphKeyAfterNextReload:entry.glyphID.stringValue
                                                     textRange:range
                                                        scroll:GAPendingSelectionScrollGroup];
@@ -749,6 +783,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 }
 
 - (void)loadFontAtURL:(NSURL *)url {
+    NSURL *fileReference = url.URLByResolvingSymlinksInPath.fileReferenceURL;
     CFArrayRef array = CTFontManagerCreateFontDescriptorsFromURL((__bridge CFURLRef)url);
     NSArray *descriptors = array ? CFBridgingRelease(array) : @[];
     if (descriptors.count == 0) {
@@ -758,7 +793,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     }
     NSArray<GAFontResource *> *resources = [GAFontResource resourcesFromDescriptors:descriptors];
     if (resources.count == 1) {
-        [self loadResource:resources.firstObject url:url];
+        [self loadResource:resources.firstObject url:url fileReference:fileReference];
         return;
     }
     NSAlert *alert = [[NSAlert alloc] init];
@@ -780,16 +815,16 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
             [weakSelf.window close];
             return;
         }
-        [weakSelf loadResource:popup.selectedItem.representedObject url:url];
+        [weakSelf loadResource:popup.selectedItem.representedObject url:url fileReference:fileReference];
     }];
 }
 
-- (void)loadResource:(GAFontResource *)resource url:(NSURL *)url {
+- (void)loadResource:(GAFontResource *)resource url:(NSURL *)url fileReference:(NSURL *)fileReference {
     [self.variationPopover close];
     self.fontResource = resource;
     self.variationCoordinates = resource.defaultCoordinates;
     self.variationButton.hidden = resource.axes.count == 0;
-    [self loadDescriptor:resource.defaultDescriptor url:url preservingSelection:NO];
+    [self loadDescriptor:resource.defaultDescriptor url:url fileReference:fileReference preservingSelection:NO];
 }
 
 #pragma mark - Variation controls
@@ -814,7 +849,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         if ([self.variationCoordinates isEqualToDictionary:coordinates]) return;
         self.variationCoordinates = coordinates;
         CTFontDescriptorRef descriptor = [self.fontResource copyDescriptorWithCoordinates:coordinates];
-        [self loadDescriptor:descriptor url:self.fontDocument.fontURL preservingSelection:YES];
+        [self loadDescriptor:descriptor url:self.fontURL fileReference:self.fontFileReference preservingSelection:YES];
         CFRelease(descriptor);
     };
     self.variationPopover = [[NSPopover alloc] init];
@@ -875,7 +910,8 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 #pragma mark - Font loading
 
 - (void)loadDescriptor:(CTFontDescriptorRef)descriptor
-                   url:(NSURL *)url preservingSelection:(BOOL)preserve {
+                   url:(NSURL *)url fileReference:(NSURL *)fileReference
+   preservingSelection:(BOOL)preserve {
     CTFontDescriptorRef retained = (CTFontDescriptorRef)CFRetain(descriptor);
     NSUInteger request;
     @synchronized (self) { request = ++self.fontLoadGeneration; }
@@ -902,6 +938,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
             [self cancelLayoutLookup];
             self.pendingGlyphEdit = nil;
             self.fontDocument = document;
+            self->_fontFileReference = fileReference;
             if (!document.hasRightToLeftLanguages)
                 [self setBaseWritingDirection:NSWritingDirectionNatural];
             NSString *languageTag = self.typesettingLanguageTag;
@@ -930,23 +967,25 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
             });
             [self.detailViewController setFontDocument:document];
             NSString *filter = self.pendingGlyphFilterTag ?: self.allGlyphFeatureTag;
-            if (preserve && filter.length && ![self.allGlyphFeatureTags containsObject:filter]) {
-                filter = self.allGlyphFeatureTag;
-                if (filter.length && ![self.allGlyphFeatureTags containsObject:filter]) filter = nil;
+            if (preserve && (filter.length || self.allGlyphFeatureTag.length)) {
+                NSArray<NSString *> *tags = self.allGlyphFeatureTags;
+                if (self.allGlyphFeatureTag.length && ![tags containsObject:self.allGlyphFeatureTag])
+                    [self filterAllGlyphsByFeature:nil];
+                if (filter.length && ![tags containsObject:filter])
+                    filter = self.allGlyphFeatureTag;
             }
-            if (!preserve || filter || self.allGlyphFeatureTag)
+            if (!preserve || filter || self.allGlyphFeatureTag || self.glyphFilterRequest)
                 [self filterAllGlyphsByFeature:preserve ? filter : nil];
             if (!preserve && self.onFontLoaded != nil) self.onFontLoaded(document.fontURL ?: url);
             NSString *displayName = self.fontResource.usesFamilyName ? self.fontResource.name : document.fullName;
             self.window.title = displayName;
             self.window.subtitle = document.fontURL.lastPathComponent ?: @"";
-            self.titleFontNameField.stringValue = displayName;
-            CTFontRef font = document.fontBox.font;
-            NSString *originalName = CFBridgingRelease(self.fontResource.usesFamilyName
-                ? CTFontCopyName(font, kCTFontFamilyNameKey) : CTFontCopyFullName(font));
-            self.titleFontNameField.toolTip = originalName.length && ![originalName isEqualToString:displayName]
-                ? [NSString stringWithFormat:@"%@\n%@", displayName, originalName] : displayName;
-            [self.titleFontNameField invalidateIntrinsicContentSize];
+            if (![self.titleFontNameField.stringValue isEqualToString:displayName]) {
+                self.titleFontNameField.stringValue = displayName;
+                [self.titleFontNameField invalidateIntrinsicContentSize];
+                // The native expansion region can stay cached if the title's bounds do not change.
+                [self.window invalidateCursorRectsForView:self.titleFontNameField];
+            }
             if (!preserve) [self.sidebarViewController setGroups:@[]];
             if (selected != nil) {
                 GAGlyphVariant *updated = [document rebindVariant:selected content:self.sidebarViewController.selectedGlyphSourceText];
@@ -967,11 +1006,10 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 #pragma mark - Selection runs and activation
 
 - (NSArray<GAGlyphSelectionRun *> *)selectionRunsInAttributedText:(NSMutableAttributedString *)text
-                                                        didChange:(BOOL *)didChange {
+                                                   changedRanges:(NSArray<NSValue *> **)changedRanges {
     NSMutableArray<GAGlyphSelectionRun *> *runs = [NSMutableArray array];
-    NSMutableArray<NSValue *> *invalidRanges = [NSMutableArray array];
+    NSMutableArray<NSValue *> *rangesToClear = [NSMutableArray array];
     NSMutableArray<GAGlyphSelectionRun *> *trimmedRuns = [NSMutableArray array];
-    NSMutableArray<NSValue *> *trimmedOldRanges = [NSMutableArray array];
     NSRange inputSelection = self.sidebarViewController.inputSelectionRange;
     [text enumerateAttribute:GAGlyphSelectionAttributeName
                      inRange:NSMakeRange(0, text.length)
@@ -983,12 +1021,12 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         }
         if (![value isKindOfClass:[GAGlyphSelection class]] ||
             range.length == 0) {
-            [invalidRanges addObject:[NSValue valueWithRange:range]];
+            [rangesToClear addObject:[NSValue valueWithRange:range]];
             return;
         }
         GAGlyphSelection *selection = value;
         if (selection.sourceText.length == 0 || selection.glyphIDs.count == 0) {
-            [invalidRanges addObject:[NSValue valueWithRange:range]];
+            [rangesToClear addObject:[NSValue valueWithRange:range]];
             return;
         }
 
@@ -1030,17 +1068,17 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
                 run.range = match;
                 [runs addObject:run];
                 [trimmedRuns addObject:run];
-                [trimmedOldRanges addObject:[NSValue valueWithRange:range]];
+                [rangesToClear addObject:[NSValue valueWithRange:range]];
                 return;
             }
         }
 
         // The user edited inside the run. The stored source text no longer
         // matches this range, so dissolve the run instead of guessing.
-        [invalidRanges addObject:[NSValue valueWithRange:range]];
+        [rangesToClear addObject:[NSValue valueWithRange:range]];
     }];
 
-    for (NSValue *value in trimmedOldRanges) {
+    for (NSValue *value in rangesToClear) {
         [text removeAttribute:GAGlyphSelectionAttributeName
                         range:value.rangeValue];
     }
@@ -1049,13 +1087,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
                      value:run.selection
                      range:run.range];
     }
-    for (NSValue *value in invalidRanges) {
-        [text removeAttribute:GAGlyphSelectionAttributeName
-                        range:value.rangeValue];
-    }
-    if (didChange != NULL) {
-        *didChange = invalidRanges.count > 0 || trimmedRuns.count > 0;
-    }
+    *changedRanges = rangesToClear;
     return runs;
 }
 
@@ -1250,12 +1282,12 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     [self cancelLayoutLookup];
     NSMutableAttributedString *attributedText =
         [self.sidebarViewController.attributedText mutableCopy];
-    BOOL didDissolveSelections = NO;
+    NSArray<NSValue *> *changedRanges;
     NSArray<GAGlyphSelectionRun *> *selections =
         [self selectionRunsInAttributedText:attributedText
-                                  didChange:&didDissolveSelections];
-    if (didDissolveSelections) {
-        [self.sidebarViewController setAttributedText:attributedText];
+                             changedRanges:&changedRanges];
+    if (changedRanges.count) {
+        [self.sidebarViewController updateGlyphSelectionsFromText:attributedText ranges:changedRanges];
     }
     NSString *text = attributedText.string;
 

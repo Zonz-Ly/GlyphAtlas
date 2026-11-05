@@ -4,7 +4,7 @@ namespace ga::layout {
 namespace {
 
 bool equivalentItem(const Item &a, const Item &b) {
-    return a.glyph == b.glyph && a.source == b.source && a.scalar == b.scalar &&
+    return sameGlyphAndSource(a, b) && a.scalar == b.scalar &&
            a.form == b.form && a.ignorable == b.ignorable && a.component == b.component &&
            a.components == b.components;
 }
@@ -23,10 +23,6 @@ size_t itemHash(const Item &item) {
         add(span.end);
     }
     return hash;
-}
-
-bool sameOutput(const Item &a, const Item &b) {
-    return a.glyph == b.glyph && a.source == b.source;
 }
 
 } // namespace
@@ -209,7 +205,7 @@ void SubstitutionBuffer::recordChanges(const SubstitutionBuffer &after, Trace &t
         const auto &b = after.pieces_[after.slotAt(first)];
         if (a.start == b.start && a.piece == b.piece) {
             first = a.start + a.piece->items.size();
-        } else if (sameOutput(a.piece->items[first - a.start], b.piece->items[first - b.start])) {
+        } else if (sameGlyphAndSource(a.piece->items[first - a.start], b.piece->items[first - b.start])) {
             ++first;
         } else {
             break;
@@ -232,7 +228,7 @@ void SubstitutionBuffer::recordChanges(const SubstitutionBuffer &after, Trace &t
         if (offA == offB && a.piece == b.piece && a.start >= first && b.start >= first) {
             oldEnd = a.start;
             newEnd = b.start;
-        } else if (sameOutput(a.piece->items[offA - 1], b.piece->items[offB - 1])) {
+        } else if (sameGlyphAndSource(a.piece->items[offA - 1], b.piece->items[offB - 1])) {
             --oldEnd;
             --newEnd;
         } else {

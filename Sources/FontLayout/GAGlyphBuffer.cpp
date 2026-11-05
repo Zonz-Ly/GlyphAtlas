@@ -33,11 +33,8 @@ std::vector<uint64_t> Change::inputKey() const {
     return key;
 }
 void Trace::changed(const Buffer &before, const Buffer &after, const std::string &feature) {
-    auto same = [](const Item &a, const Item &b) {
-        return a.glyph == b.glyph && a.source == b.source;
-    };
     auto [firstOld, firstNew] =
-        std::mismatch(before.begin(), before.end(), after.begin(), after.end(), same);
+        std::mismatch(before.begin(), before.end(), after.begin(), after.end(), sameGlyphAndSource);
     bool sameBuffer = firstOld == before.end() && firstNew == after.end();
     if (sameBuffer && std::none_of(before.begin(), before.end(),
                                   [](const Item &item) { return item.source.empty(); }))
@@ -46,7 +43,7 @@ void Trace::changed(const Buffer &before, const Buffer &after, const std::string
     if (!provenance && !sameBuffer) {
         auto [lastOldReversed, lastNewReversed] = std::mismatch(
             before.rbegin(), std::make_reverse_iterator(firstOld),
-            after.rbegin(), std::make_reverse_iterator(firstNew), same);
+            after.rbegin(), std::make_reverse_iterator(firstNew), sameGlyphAndSource);
         auto lastOld = lastOldReversed.base(), lastNew = lastNewReversed.base();
         Span scope{UINT32_MAX, 0};
         bool positive = true;

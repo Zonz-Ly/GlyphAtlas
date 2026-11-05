@@ -999,9 +999,9 @@ void AAT::substitute(Buffer &buffer, std::optional<AATSelector> selector, bool r
                      const Cancellation *cancellation) const {
     checkCancellation(cancellation);
     const std::string label = featureLabel(selector);
-    const Buffer original = trace && trace->inventory ? buffer : Buffer{};
-    const auto originalClusters = clusters(original);
     const bool inventory = trace && trace->inventory;
+    const Buffer original = inventory ? buffer : Buffer{};
+    const auto originalClusters = clusters(original);
     Budget discoveryBudget(buffer.size(), cancellation, inventory);
     // Inventory explores overlapping origins, unlike the deterministic run.
     // Leave room for those origins before reporting an incomplete inventory.
@@ -1078,11 +1078,8 @@ void AAT::substitute(Buffer &buffer, std::optional<AATSelector> selector, bool r
                 Buffer input = original;
                 if (reverse)
                     std::reverse(input.begin(), input.end());
-                bool same = input.size() == buffer.size() &&
-                            std::equal(input.begin(), input.end(), buffer.begin(),
-                                       [](const Item &a, const Item &b) {
-                                           return a.glyph == b.glyph && a.source == b.source;
-                                       });
+                bool same = std::equal(input.begin(), input.end(), buffer.begin(), buffer.end(),
+                                       sameGlyphAndSource);
                 if (!same && sub.type != 4)
                     explore(std::move(input));
                 std::set<std::pair<Span, std::vector<Glyph>>> visited;

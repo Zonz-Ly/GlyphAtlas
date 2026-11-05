@@ -14,5 +14,6 @@ struct TextRun {
 };
 std::vector<TextRun> prepareText(NSString *text, const Cmap &cmap,
                                  NSArray<GAGlyphSelectionRun *> *selections = nil,
-                                 int baseDirection = -1);
+                                 int baseDirection = -1,
+                                 std::vector<Span> *unpairedSelectors = nullptr);
 } // namespace ga::layout

@@ -60,7 +60,7 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.previewColors = [[GAPreviewColors alloc] initWithRepresentation:nil];
+    self.previewColors = [[GAPreviewColors alloc] init];
     if (GAUsesMacOS26Layout())
         ((GADetailContainerView *)self.view).previewColors = self.previewColors;
 
@@ -116,9 +116,10 @@
             weakSelf.onAllGlyphDoubleClick(entry);
         }
     };
-    self.multiView.onGlyphSelected = ^(NSArray<NSNumber *> *glyphIDs, NSRange range) {
-      if (weakSelf.onGlyphSelected)
-          weakSelf.onGlyphSelected(glyphIDs, range);
+    self.multiView.onGlyphSelected = ^(NSArray<NSNumber *> *glyphIDs, NSRange range,
+                                      NSArray<NSNumber *> *leadingGlyphIDs, NSRange leadingRange) {
+        if (weakSelf.onGlyphSelected)
+            weakSelf.onGlyphSelected(glyphIDs, range, leadingGlyphIDs, leadingRange);
     };
     self.multiView.onContentSizeChanged = ^{
         [weakSelf updateMultiLayout];

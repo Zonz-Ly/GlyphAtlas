@@ -1,6 +1,6 @@
 #import "GAVariationViewController.h"
 #import "Font/GAFontResource.h"
-#import "Input/GAInputSupport.h"
+#import "Input/GAInput.h"
 #import <math.h>
 
 @interface GAVariationBackgroundView : NSView
@@ -85,7 +85,7 @@
         NSTextField *label = [NSTextField labelWithString:name];
         label.translatesAutoresizingMaskIntoConstraints = NO;
         label.lineBreakMode = NSLineBreakByTruncatingTail;
-        label.toolTip = name;
+        label.allowsExpansionToolTips = YES;
         [label setContentCompressionResistancePriority:NSLayoutPriorityDefaultLow forOrientation:NSLayoutConstraintOrientationHorizontal];
         [row addSubview:label];
         NSSlider *slider = [NSSlider sliderWithValue:minimum minValue:minimum maxValue:maximum target:self action:@selector(changeAxisValue:)];

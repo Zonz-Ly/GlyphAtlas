@@ -66,13 +66,8 @@ static std::vector<Span> scalarSources(NSString *source, NSRange range,
     }
     std::vector<Span> result;
     for (uint32_t value : values) {
-        unichar units[2] = {unichar(value), 0};
-        NSUInteger length = 1;
-        if (value > 0xffff) {
-            units[0] = unichar(0xd800 + ((value - 0x10000) >> 10));
-            units[1] = unichar(0xdc00 + ((value - 0x10000) & 0x3ff));
-            length = 2;
-        }
+        unichar units[2];
+        NSUInteger length = CFStringGetSurrogatePairForLongCharacter(value, units) ? 2 : 1;
         NSString *part = [NSString stringWithCharacters:units length:length];
         Span span{uint32_t(NSMaxRange(range)), uint32_t(range.location)};
         for (uint32_t scalar : scalars(part.decomposedStringWithCanonicalMapping)) {
@@ -88,6 +83,17 @@ static std::vector<Span> scalarSources(NSString *source, NSRange range,
 static bool variationSelector(uint32_t scalar) {
     return (scalar >= 0xfe00 && scalar <= 0xfe0f) || (scalar >= 0xe0100 && scalar <= 0xe01ef);
 }
+static bool paragraphBreak(uint32_t scalar) {
+    return (scalar >= '\n' && scalar <= '\r') || scalar == 0x0085 ||
+           scalar == 0x2028 || scalar == 0x2029;
+}
+static bool isControlOrLineBreak(uint32_t scalar) {
+    static const int32_t category = u_getPropertyEnum("General_Category");
+    static const int32_t control = u_getPropertyValueEnum(category, "Cc");
+    static const int32_t format = u_getPropertyValueEnum(category, "Cf");
+    int32_t value = u_getIntPropertyValue(scalar, category);
+    return value == control || value == format || paragraphBreak(scalar);
+}
 static Tag scalarScript(uint32_t scalar) {
     int32_t error = 0;
     int32_t script = uscript_getScript(scalar, &error);
@@ -95,7 +101,8 @@ static Tag scalarScript(uint32_t scalar) {
     return shortName ? scriptTag(@(shortName)) : tag('D', 'F', 'L', 'T');
 }
 std::vector<TextRun> prepareText(NSString *text, const Cmap &cmap,
-                                 NSArray<GAGlyphSelectionRun *> *selections, int baseDirection) {
+                                 NSArray<GAGlyphSelectionRun *> *selections, int baseDirection,
+                                 std::vector<Span> *unpairedSelectors) {
     std::vector<TextRun> groups;
     if (!text.length)
         return {};
@@ -132,8 +139,15 @@ std::vector<TextRun> prepareText(NSString *text, const Cmap &cmap,
     const int32_t ignorableProperty = u_getPropertyEnum("Default_Ignorable_Code_Point");
     uint64_t identity = 1;
     for (NSUInteger start = 0; start < text.length;) {
-        NSRange range = [text rangeOfComposedCharacterSequenceAtIndex:start];
-        start = NSMaxRange(range);
+        NSUInteger end = NSMaxRange([text rangeOfComposedCharacterSequenceAtIndex:start]);
+        // Foundation can group a line break with the marks that follow it.
+        // Keep the break in its own group so only it is skipped during shaping.
+        if (end - start > 1) {
+            auto firstBreak = std::find_if(units.begin() + start, units.begin() + end, paragraphBreak);
+            end = std::max(start + 1, NSUInteger(firstBreak - units.begin()));
+        }
+        NSRange range = NSMakeRange(start, end - start);
+        start = end;
         TextRun group;
         group.source = {uint32_t(range.location), uint32_t(NSMaxRange(range))};
         group.level = ubidi_getLevelAt(bidi.get(), int32_t(range.location));
@@ -166,14 +180,17 @@ std::vector<TextRun> prepareText(NSString *text, const Cmap &cmap,
             auto sources = scalarSources(source, partRange, values);
             for (size_t i = 0; i < values.size(); i++) {
                 uint32_t scalar = values[i];
-                if (variationSelector(scalar))
+                if (variationSelector(scalar)) {
+                    if (unpairedSelectors) unpairedSelectors->push_back(sources[i]);
                     continue;
+                }
                 Item item;
                 item.scalar = scalar;
                 item.source = sources[i];
                 item.glyph = cmap.nominal(scalar);
                 item.identity = identity++;
-                if (i + 1 < values.size() && variationSelector(values[i + 1])) {
+                if (i + 1 < values.size() && variationSelector(values[i + 1]) &&
+                    !isControlOrLineBreak(scalar)) {
                     if (auto variant = cmap.variation(scalar, values[i + 1]))
                         item.glyph = *variant;
                     item.source = unite(item.source, sources[++i]);
@@ -264,8 +281,7 @@ std::vector<TextRun> prepareText(NSString *text, const Cmap &cmap,
     for (auto &group : groups) {
         bool newline = false;
         for (const auto &item : group.glyphs)
-            newline |= (item.scalar >= '\n' && item.scalar <= '\r') || item.scalar == 0x0085 ||
-                       item.scalar == 0x2028 || item.scalar == 0x2029;
+            newline |= paragraphBreak(item.scalar);
         if (newline) {
             paragraphStart = true;
             continue;

@@ -12,7 +12,7 @@ typedef NS_ENUM(NSInteger, GAPendingSelectionScroll) {
 
 @property (nonatomic, copy, nullable) void (^onTextChanged)(void);
 @property (nonatomic, copy, nullable) void (^onInputUndoRedo)(void);
-@property (nonatomic, copy, nullable) void (^onSelectionChanged)(GAGlyphVariant * _Nullable variant);
+@property (nonatomic, copy, nullable) void (^onSelectionChanged)(GAGlyphVariant * _Nullable variant, BOOL quickReveal);
 @property (nonatomic, copy, nullable) void (^onGlyphActivated)(GACharacterGroup *group, GAGlyphVariant *variant);
 /// Shift+Return or Shift+double-click: inserts the activated glyph after its
 /// own source range instead of replacing the glyph already there.
@@ -26,7 +26,8 @@ typedef NS_ENUM(NSInteger, GAPendingSelectionScroll) {
 /// Whether the sidebar input's field editor is its window's first responder.
 @property (nonatomic, readonly, getter=isInputFocused) BOOL inputFocused;
 
-- (void)setAttributedText:(NSAttributedString *)attributedText;
+- (void)updateGlyphSelectionsFromText:(NSAttributedString *)text
+                              ranges:(NSArray<NSValue *> *)ranges;
 - (BOOL)commitGlyphInput:(NSAttributedString *)attributedText actionName:(NSString *)actionName;
 /// Replaces the whole input through its native editor, retaining native undo
 /// and the existing plain-text/newline conversion.

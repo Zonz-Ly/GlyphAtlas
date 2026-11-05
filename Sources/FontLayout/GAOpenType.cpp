@@ -433,7 +433,12 @@ OpenType::OpenType(View table, bool positioning) : positioning_(positioning), da
     }
     for (auto &branch : branches_)
         for (auto &feature : branch) {
-            std::vector<unsigned> queue = feature.lookups;
+            auto &references = feature.lookups;
+            // Keep the other lookups usable when a feature reference is invalid.
+            references.erase(std::remove_if(references.begin(), references.end(), [&](unsigned index) {
+                return index >= lookups_.size();
+            }), references.end());
+            std::vector<unsigned> queue = references;
             std::set<unsigned> seen;
             for (size_t i = 0; i < queue.size(); i++) {
                 unsigned li = queue[i];

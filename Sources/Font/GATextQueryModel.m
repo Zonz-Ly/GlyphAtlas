@@ -81,8 +81,8 @@ static BOOL IntersectsSelection(NSRange range, NSArray<GAGlyphSelectionRun *> *r
 static GACharacterGroup *SelectionGroup(GAGlyphSelectionRun *run, GAFontDocument *document,
                                         BOOL (^cancelled)(void)) {
     GAGlyphSelection *selection = run.selection;
-    GACharacterGroup *storedGroup = [document analyzeGlyphIDs:selection.glyphIDs cancelled:cancelled].firstObject;
-    GAGlyphVariant *base = storedGroup.variants.firstObject;
+    NSArray<GAGlyphVariant *> *variants = [document variantsForGlyphIDs:selection.glyphIDs cancelled:cancelled];
+    GAGlyphVariant *base = variants.firstObject;
     if (base == nil) {
         return nil;
     }
@@ -96,7 +96,7 @@ static GACharacterGroup *SelectionGroup(GAGlyphSelectionRun *run, GAFontDocument
     GACharacterGroup *group = [[GACharacterGroup alloc] init];
     group.text = selection.sourceText;
     group.textRange = run.range;
-    group.variants = storedGroup.variants;
+    group.variants = variants;
     group.seeded = YES;
     return group;
 }

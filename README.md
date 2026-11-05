@@ -39,7 +39,7 @@ The default build uses the current machine's architecture. Use a flag to select 
 
 ## Usage
 
-- Open a font, or drag one onto the app's window or Dock icon. Recently opened items are supported. Hold `⌥` before choosing Open Font in the menu bar for more options.
+- Use “Open Font From” in the menu bar to open a font directly from a Fonts folder. You can also drag a font onto the app icon or onto a window with a font already open, or set Glyph Atlas as the default app for opening font files. Recently opened items are supported.
 - Use the menu bar to copy the font open in the current window to your user Fonts folder in one click. Hold `⌥` to copy it to the Fonts folder for all users.
 - When you open a variable font, a variation panel appears beside the window controls. Drag it out to keep it open. Select a numeric value and use `↑`/`↓` or `⇧↑`/`⇧↓` to adjust it.
 - Type one or more characters in the sidebar to see all associated glyphs. Use `⌥⏎` to insert a line break. You can also right-click and choose “Saved Text” to save the current text or quickly enter text you’ve saved before. Hold `⌥` in the menu bar to quickly delete saved text.
@@ -49,7 +49,7 @@ The default build uses the current machine's architecture. Use a flag to select 
 - Hover over a Unicode badge to see the character name defined by the Unicode standard.
 - All Glyphs is the default. Right-click to switch views, or press `⌘1` for Single Glyph, `⌘2` for Multi-Character, or `⌘3` for All Glyphs.
 - In Multi-Character, click a glyph to view its alternates. Right-click or press `⌘5` to switch between horizontal and vertical writing. Text alignment and Typography are here too. The View menu in the menu bar has more options.
-- In All Glyphs, hover over a glyph to see its details or double-click to add it to the existing text. Clicking a glyph in the sidebar makes it blink in All Glyphs. Right-click to find Filter by Feature.
+- In All Glyphs, double-click a glyph to add it to the existing text. Clicking a glyph in the sidebar makes it blink in All Glyphs. Right-click to find Filter by Feature.
 - Use `⌘+`/`⌘−` to zoom the glyphs, or pinch on the trackpad. In Multi-Character, use `⌥⌘+`/`⌥⌘−` or a horizontal pinch to increase or decrease the margins, and `⌃⌘+`/`⌃⌘−` or a vertical pinch to increase or decrease line spacing. Press `⌘0` to restore the default size.
 - The shadow shows the bounding box, including the glyph's width and height and the layout's line height and leading; press `⌘4` to hide it.
 - Dark mode is supported. Watch out when clicking a solid glyph, as it can dazzle you. You can change the glyph, bounding box shadow, and background colors under Colors in the menu bar. Choose Save Current Palette to keep your colors. Hold `⌥` to find Delete Palettes.
@@ -86,7 +86,7 @@ The default build uses the current machine's architecture. Use a flag to select 
 
 ## 使用
 
-- 打開字體，也可以把字體拖到 app 的窗口或圖標上，支持最近開啟的項目。在菜單欄點開啟字體前按住 `⌥` 還有更多選擇。
+- 在菜單欄中可以選擇快速在字體安裝檔案中打開字體，也可以把字體拖到 app 圖標或已開啟的字體窗口上來打開字體，更歡迎把本 app 設定為默認打開方式。支持最近開啟的項目。
 - 在菜單欄中可以把當前視窗的字體一鍵拷貝到用戶字體檔案夾。按住 `⌥` 可以改拷貝到所有用戶的字體檔案夾。
 - 打開可變字體時，在紅綠燈旁邊會有一個可變參數設置面板，還可以拖出來固定。選中數字後還可以按 `↑`／`↓` 或 `⇧↑`／`⇧↓` 調整數值。
 - 在側邊欄中輸入單個或多個字符來查看所有關聯字形，可以用 `⌥⏎` 換行，還可以點右鍵找到「常用文字」，記住目前文字或快速輸入之前記住的文字。也可以在菜單欄中按住 `⌥` 來快速刪除。
@@ -96,7 +96,7 @@ The default build uses the current machine's architecture. Use a flag to select 
 - 鼠標在 Unicode 上靜置時顯示該 Unicode 標準規定的字符名稱。
 - 默認打開全部字，可以點右鍵切換或使用 `⌘1` 單字形、`⌘2` 多字元、`⌘3` 全部字。
 - 在多字元中點一下字形就能查看替換字。支持豎排，點右鍵或使用 `⌘5` 切換，文字對齊和字體排印也在這裡。菜單欄「顯示方式」中還有更多選項。
-- 在全部字中停下鼠標可以看字形信息，點兩下字形可以添加到已有文字中，在側邊欄中點一下字形還會在全部字中閃一閃。點右鍵可以找到「篩選特性」。
+- 在全部字中點兩下字形可以添加到已有文字中，在側邊欄中點一下字形還會在全部字中閃一閃。點右鍵可以找到「篩選特性」。
 - 用 `⌘+`／`⌘−` 來放大或縮小字形，也可以使用觸控板撐捏。在多字元中還可以用 `⌥⌘+`／`⌥⌘−` 或橫著撐捏觸控板來放大或縮小邊距、用 `⌃⌘+`／`⌃⌘−` 或豎著撐捏觸控板來增加或減少行距。按 `⌘0` 恢復預設大小。
 - 用陰影表示邊界框，包括字形寬度高度和排版行高行距，可以用 `⌘4` 隱藏。
 - 有做暗黑模式，但要小心點到實心字形會眼瞎瞎喔。在菜單欄的「顏色」裡可以改字形、邊界框陰影和背景的顏色。調好的顏色可以點「儲存目前配色」，按住 `⌥` 可以刪除配色。

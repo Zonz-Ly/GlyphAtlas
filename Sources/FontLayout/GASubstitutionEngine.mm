@@ -61,15 +61,15 @@ struct Resource {
         read(tag('G', 'D', 'E', 'F'), [&](View data) { gdef = GDEF(data); });
         read(tag('G', 'S', 'U', 'B'), [&](View data) { gsub = OpenType(data); });
         read(tag('G', 'P', 'O', 'S'), [&](View data) { gpos = OpenType(data, true); });
-        read(tag('m', 'o', 'r', 'x'), [&](View data) { aat = AAT(data, true); });
+        read(tag('m', 'o', 'r', 'x'), [&](View data) { aat = AAT(data); });
         if (aat.empty())
             read(tag('m', 'o', 'r', 't'), [&](View data) { aat = AAT(data, false); });
         kerning = Kerning(tableBytes(font, tag('k', 'e', 'r', 'n')),
                           tableBytes(font, tag('k', 'e', 'r', 'x')));
         fvar = tableBytes(font, tag('f', 'v', 'a', 'r'));
         avar = tableBytes(font, tag('a', 'v', 'a', 'r'));
-        read(tag('O', 'S', '/', '2'), [&](View data) { os2 = data; });
-        read(tag('h', 'e', 'a', 'd'), [&](View data) { head = data; });
+        os2 = tableBytes(font, tag('O', 'S', '/', '2'));
+        head = tableBytes(font, tag('h', 'e', 'a', 'd'));
         read(tag('M', 'V', 'A', 'R'), [&](View data) { readVariationMetrics(data); });
         if (!aat.empty()) {
             aat.compileMachines(CTFontGetGlyphCount(font));
@@ -441,8 +441,6 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
 
 @interface GASubstitutionEngine ()
 @property(nonatomic, strong, readonly) GAFontProgram *program;
-@property(nonatomic, copy, readonly) NSDictionary<NSNumber *, NSNumber *> *coordinates;
-- (std::vector<double>)normalizedCoordinates;
 - (NSArray<NSDictionary *> *)relatedOutputs:(Glyph)glyph cancellation:(const Cancellation *)cancellation;
 - (NSArray<GASubstitutionMatch *> *)discoverContent:(NSString *)text
                        selections:(NSArray<GAGlyphSelectionRun *> *)selections
@@ -452,6 +450,7 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
 @end
 @implementation GASubstitutionEngine {
     CTFontRef _font;
+    std::optional<std::vector<double>> _normalizedCoordinates;
     std::shared_ptr<const ParagraphCache> _paragraphCache;
 }
 - (instancetype)initWithFont:(CTFontRef)font
@@ -461,7 +460,15 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
     if (self) {
         _font = (CTFontRef)CFRetain(font);
         _program = source.program ?: [[GAFontProgram alloc] initWithFont:font];
-        _coordinates = [coordinates copy] ?: @{};
+        const auto &resource = *_program->resource;
+        std::map<Tag, double> values;
+        for (NSNumber *axis in coordinates)
+            values[axis.unsignedIntValue] = [coordinates[axis] doubleValue];
+        try {
+            _normalizedCoordinates = normalizeCoordinates(resource.fvar, resource.avar, values);
+        } catch (const InvalidTable &) {
+            // Static layout remains usable when the variation coordinates are unknown.
+        }
     }
     return self;
 }
@@ -511,7 +518,8 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
     if (cached)
         return cached;
     const auto &r = *self.program->resource;
-    const auto runs = prepareText(text, r.cmap, selections);
+    std::vector<Span> unpairedSelectors;
+    const auto runs = prepareText(text, r.cmap, selections, -1, &unpairedSelectors);
     std::vector<bool> selectedRuns(runs.size());
     NSUInteger selectionIndex = 0;
     for (size_t i = 0; i < runs.size(); ++i) {
@@ -674,6 +682,15 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
                       {uint32_t(match.sourceRange.location), uint32_t(NSMaxRange(match.sourceRange))},
                       replacingGlyph(original, i, output), output[@"source"], NO);
     }
+    // Report these code points as missing without adding them to the shaping input.
+    for (Span span : unpairedSelectors) {
+        checkCancellation(cancellation);
+        auto next = inputSpans.lower_bound({span.start, 0});
+        if ((next != inputSpans.end() && next->start < span.end) ||
+            (next != inputSpans.begin() && std::prev(next)->end > span.start))
+            continue;
+        merge(seen, matches, span, {0}, nil, YES);
+    }
     checkCancellation(cancellation);
     nextParagraphs.emplace();
     for (auto &paragraph : paragraphs) {
@@ -744,7 +761,7 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
     const auto &r = *self.program->resource;
     NSMutableOrderedSet<NSString *> *tags = [NSMutableOrderedSet orderedSet];
     try {
-        const auto branch = r.gsub.variationBranch([self normalizedCoordinates]);
+        const auto branch = [self gsubBranch];
         for (const auto &feature : r.gsub.features(branch)) {
             if (feature.lookups.empty()) continue;
             NSString *label = @(tagName(feature.name).c_str());
@@ -765,8 +782,7 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
     try {
         cancellation.check();
         const bool openType = label.length == 4;
-        const auto branch = openType || !label.length
-            ? r.gsub.variationBranch([self normalizedCoordinates]) : 0;
+        const auto branch = openType || !label.length ? [self gsubBranch] : 0;
         NSArray *key = @[label, @(branch)];
         if (NSIndexSet *cached = [self.program.glyphOutputCache objectForKey:key])
             return cached;
@@ -828,7 +844,7 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
     for (NSArray *candidate in candidates)
         sources.push_back(glyphVector(candidate));
     try {
-        size_t branch = r.gsub.variationBranch([self normalizedCoordinates]);
+        size_t branch = [self gsubBranch];
         // This is our executor's replay, not a trace of TextKit internals.
         // Accept it only when its final sequence and complete source agree.
         for (const auto &run : prepareText(text, r.cmap, selections, int(direction))) {
@@ -996,12 +1012,9 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
     }
     return otherMode;
 }
-- (std::vector<double>)normalizedCoordinates {
-    const auto &r = *self.program->resource;
-    std::map<Tag, double> coordinates;
-    for (NSNumber *axis in self.coordinates)
-        coordinates[axis.unsignedIntValue] = [self.coordinates[axis] doubleValue];
-    return normalizeCoordinates(r.fvar, r.avar, coordinates);
+- (size_t)gsubBranch {
+    return _normalizedCoordinates
+        ? self.program->resource->gsub.variationBranch(*_normalizedCoordinates) : 0;
 }
 - (BOOL)typoMetricsAscender:(CGFloat *)ascender descender:(CGFloat *)descender {
     const auto &r = *self.program->resource;
@@ -1013,8 +1026,8 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
     double top = r.os2.s16(68);
     double bottom = r.os2.s16(70);
     try {
-        if (r.variationStore) {
-            std::vector<double> normalized = [self normalizedCoordinates];
+        if (r.variationStore && _normalizedCoordinates) {
+            const auto &normalized = *_normalizedCoordinates;
             if (r.ascenderVariation.present)
                 top += variationDelta(r.variationStore, r.ascenderVariation.outer,
                                       r.ascenderVariation.inner, normalized);
@@ -1055,7 +1068,10 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
         double value = std::max(std::abs(advance.width), std::abs(advance.height));
         return value ? value * scale : (CTFontGetAscent(font) + CTFontGetDescent(font)) * scale;
     };
-    metrics.normalized = [self normalizedCoordinates];
+    if (_normalizedCoordinates)
+        metrics.normalized = *_normalizedCoordinates;
+    else
+        metrics.variationCoordinatesValid = false;
     return metrics;
 }
 - (void)position:(Buffer &)buffer settings:(const Settings &)settings {
@@ -1064,7 +1080,7 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
     Buffer nominal = buffer;
     bool hasKerning = false;
     try {
-        size_t branch = r.gpos.variationBranch(metrics.normalized);
+        size_t branch = metrics.variationCoordinatesValid ? r.gpos.variationBranch(metrics.normalized) : 0;
         r.gpos.position(buffer, r.gdef, settings, metrics, branch);
         for (auto step : r.gpos.plan(settings, branch))
             if (step.feature == tag('k', 'e', 'r', 'n'))
@@ -1199,27 +1215,25 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
     try {
         const auto &r = *self.program->resource;
         for (const auto &domain : r.domains) {
-            if (domain.apple) {
-                if (domain.selector && domain.selector->type != 4)
-                    continue;
-                Buffer items = literalBuffer({glyph});
-                r.aat.substitute(items, domain.selector, false, true, nullptr, true);
-                if (items.size() == 1 && items.front().glyph != glyph)
-                    return @(items.front().glyph);
-            } else {
-                Tag name = r.verticalFeature(domain.branch);
-                for (const auto &feature : r.gsub.features(domain.branch)) {
-                    if (feature.name != name)
-                        continue;
-                    std::vector<LookupStep> steps;
-                    for (unsigned lookup : feature.lookups)
-                        steps.push_back({lookup, 1, name, true});
-                    Buffer items = literalBuffer({glyph});
-                    r.gsub.substituteLookups(items, r.gdef, steps);
-                    if (items.size() == 1 && items.front().glyph != glyph)
-                        return @(items.front().glyph);
-                }
-            }
+            if (!domain.apple || (domain.selector && domain.selector->type != 4))
+                continue;
+            Buffer items = literalBuffer({glyph});
+            r.aat.substitute(items, domain.selector, false, true, nullptr, true);
+            if (items.size() == 1 && items.front().glyph != glyph)
+                return @(items.front().glyph);
+        }
+        size_t branch = [self gsubBranch];
+        Tag name = r.verticalFeature(branch);
+        for (const auto &feature : r.gsub.features(branch)) {
+            if (feature.name != name)
+                continue;
+            std::vector<LookupStep> steps;
+            for (unsigned lookup : feature.lookups)
+                steps.push_back({lookup, 1, name, true});
+            Buffer items = literalBuffer({glyph});
+            r.gsub.substituteLookups(items, r.gdef, steps);
+            if (items.size() == 1 && items.front().glyph != glyph)
+                return @(items.front().glyph);
         }
     } catch (const std::exception &) {
         // A failed lookup has no vertical substitute.

@@ -1,6 +1,19 @@
 #import <AppKit/AppKit.h>
 
 NS_ASSUME_NONNULL_BEGIN
+
+/// Object is the original NSEvent. One application-wide mouse monitor posts
+/// blank-area left-mouse-down events while editing is active.
+FOUNDATION_EXPORT NSNotificationName const GAInputBlankClickNotification;
+
+/// Let AppKit validate and end field editing outside the clicked window.
+FOUNDATION_EXPORT BOOL GAEndInputEditingOutsideWindow(NSWindow *window);
+
+/// Native controls/cells with editing-lifetime hooks only; appearance is inherited.
+@interface GAInputTextField : NSTextField
+@end
+
+
 /// Input-only widgets, kept independent of the sidebar list controller.
 @interface GASearchField : NSSearchField
 @end
@@ -11,7 +24,9 @@ NS_ASSUME_NONNULL_BEGIN
 FOUNDATION_EXPORT BOOL GAModifiersAre(NSEventModifierFlags modifiers,
                                       NSEventModifierFlags expected);
 FOUNDATION_EXPORT NSString *const GALineBreakAttributeName;
-/// A marked U+23CE maps to a real line break; a literal U+23CE remains literal.
+/// Returns the visible symbol for a separator, or 0 for ordinary text.
+FOUNDATION_EXPORT unichar GAInputSeparatorMarker(unichar separator);
+/// Restores the original separators recorded on the visible markers.
 FOUNDATION_EXPORT NSAttributedString *
 GAModelTextFromFieldText(NSAttributedString *fieldText);
 FOUNDATION_EXPORT NSAttributedString *

@@ -35,8 +35,6 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
 @property (nonatomic) NSTimeInterval highlightElapsed;
 @property (nonatomic) BOOL highlightAppendStyle;
 @property (nonatomic, strong, nullable) NSTimer *highlightTimer;
-@property (nonatomic) NSToolTipTag glyphToolTipTag;
-@property (nonatomic) NSRect glyphToolTipRect;
 @property (nonatomic, copy, nullable) void (^onDoubleClick)(GAAllGlyphEntry *entry);
 - (void)updateLayoutForWidth:(CGFloat)width;
 - (void)revealGlyph:(NSNumber *)glyphID quick:(BOOL)quick;
@@ -54,84 +52,12 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
         _columns = 1;
         _topInset = GAAllGlyphsVerticalMargin;
         _highlightIndex = NSNotFound;
-        NSTrackingArea *tracking = [[NSTrackingArea alloc] initWithRect:NSZeroRect
-            options:NSTrackingMouseEnteredAndExited | NSTrackingMouseMoved |
-                    NSTrackingActiveInKeyWindow | NSTrackingInVisibleRect
-            owner:self userInfo:nil];
-        [self addTrackingArea:tracking];
     }
     return self;
 }
 
 - (void)dealloc {
     [_highlightTimer invalidate];
-    [NSNotificationCenter.defaultCenter removeObserver:self];
-}
-
-- (void)viewDidMoveToSuperview {
-    [super viewDidMoveToSuperview];
-    [NSNotificationCenter.defaultCenter removeObserver:self name:NSViewBoundsDidChangeNotification object:nil];
-    if ([self.superview isKindOfClass:NSClipView.class]) {
-        NSClipView *clipView = (NSClipView *)self.superview;
-        clipView.postsBoundsChangedNotifications = YES;
-        [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(clipBoundsDidChange:)
-            name:NSViewBoundsDidChangeNotification object:clipView];
-    }
-    [self setGlyphToolTipRect:NSZeroRect];
-}
-
-- (void)setGlyphToolTipRect:(NSRect)rect {
-    if (NSEqualRects(_glyphToolTipRect, rect)) return;
-    if (self.glyphToolTipTag) [self removeToolTip:self.glyphToolTipTag];
-    _glyphToolTipRect = rect;
-    self.glyphToolTipTag = NSIsEmptyRect(rect) ? 0 : [self addToolTipRect:rect owner:self userData:NULL];
-}
-
-- (void)updateGlyphToolTipAtWindowPoint:(NSPoint)windowPoint {
-    NSPoint point = [self convertPoint:windowPoint fromView:nil];
-    NSRect visible = self.visibleRect;
-    NSInteger index = NSMouseInRect(point, visible, self.isFlipped) ? [self indexAtPoint:point] : -1;
-    [self setGlyphToolTipRect:index < 0 ? NSZeroRect
-        : NSIntersectionRect(visible, [self rectForIndex:(NSUInteger)index])];
-}
-
-- (void)refreshGlyphToolTip {
-    if (self.window.isKeyWindow)
-        [self updateGlyphToolTipAtWindowPoint:self.window.mouseLocationOutsideOfEventStream];
-}
-
-- (void)clipBoundsDidChange:(NSNotification *)notification {
-    [self refreshGlyphToolTip];
-}
-
-- (void)mouseEntered:(NSEvent *)event {
-    [self updateGlyphToolTipAtWindowPoint:event.locationInWindow];
-}
-
-- (void)mouseMoved:(NSEvent *)event {
-    [self updateGlyphToolTipAtWindowPoint:event.locationInWindow];
-}
-
-- (void)mouseExited:(NSEvent *)event {
-    [self setGlyphToolTipRect:NSZeroRect];
-}
-
-- (NSString *)view:(NSView *)view stringForToolTip:(NSToolTipTag)tag point:(NSPoint)point userData:(void *)data {
-    NSInteger index = [self indexAtPoint:point];
-    if (index < 0 || self.fontBox == nil) return @"";
-    GAAllGlyphEntry *entry = self.entries[(NSUInteger)index];
-    NSString *name = GAUsableGlyphName(self.fontBox.font, entry.glyphID.unsignedShortValue);
-    NSMutableArray<NSString *> *lines = [NSMutableArray arrayWithCapacity:3];
-    if (name) [lines addObject:name];
-    [lines addObject:[NSString stringWithFormat:@"GID %@", entry.glyphID]];
-    if (entry.unicodeScalars.count) {
-        NSMutableArray<NSString *> *codes = [NSMutableArray arrayWithCapacity:entry.unicodeScalars.count];
-        for (NSNumber *scalar in entry.unicodeScalars) {
-            [codes addObject:[NSString stringWithFormat:@"U+%04X", scalar.unsignedIntValue]];
-        }
-        [lines addObject:[codes componentsJoinedByString:@", "]];
-    }
-    return [lines componentsJoinedByString:@"\n"];
 }
 
 - (void)setEntries:(NSArray<GAAllGlyphEntry *> *)entries {
@@ -185,7 +111,6 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
     if (fabs(current.width - width) > 0.5 || fabs(current.height - target) > 0.5) {
         self.frame = NSMakeRect(0, 0, width, target);
     }
-    [self refreshGlyphToolTip];
     [self setNeedsDisplay:YES];
 }
 

@@ -102,36 +102,105 @@ static const CGFloat GABadgeHeight = 16.0;
 static const CGFloat GABadgeGap = 3.0;
 static const CGFloat GABadgeHorizontalPadding = 4.0;
 
+static NSFont *GABadgeFont(void) {
+    return [NSFont monospacedDigitSystemFontOfSize:10 weight:NSFontWeightRegular];
+}
+
+@interface GAUnicodeBadgeLabel : NSTextField
+@property (nonatomic, getter=isRowSelected) BOOL rowSelected;
++ (instancetype)labelWithText:(NSString *)text scalar:(uint32_t)scalar;
+@end
+
+@implementation GAUnicodeBadgeLabel {
+    uint32_t _scalar;
+    BOOL _didResolveName;
+    NSTextFieldCell *_expansionCell;
+}
+
++ (instancetype)labelWithText:(NSString *)text scalar:(uint32_t)scalar {
+    GAUnicodeBadgeLabel *label = [self labelWithString:text];
+    label->_scalar = scalar;
+    label.font = GABadgeFont();
+    label.rowSelected = NO;
+    label.alignment = NSTextAlignmentCenter;
+    label.lineBreakMode = NSLineBreakByClipping;
+    label.accessibilityElement = NO;
+    label.allowsExpansionToolTips = YES;
+    return label;
+}
+
+- (void)setRowSelected:(BOOL)rowSelected {
+    _rowSelected = rowSelected;
+    self.alphaValue = rowSelected ? 1.0 : 0.75;
+}
+
+- (NSRect)expansionFrameWithFrame:(NSRect)contentFrame {
+    if (!_didResolveName) {
+        _didResolveName = YES;
+        NSString *name = GAUnicodeNameForScalar(_scalar);
+        if (name.length) {
+            _expansionCell = [[NSTextFieldCell alloc] initTextCell:name];
+            _expansionCell.font = self.font;
+            _expansionCell.alignment = NSTextAlignmentLeft;
+            _expansionCell.lineBreakMode = NSLineBreakByClipping;
+        }
+    }
+    if (!_expansionCell) return NSZeroRect;
+    NSView *badge = self.superview;
+    if (badge) contentFrame = [self convertRect:badge.bounds fromView:badge];
+    contentFrame.size.width = ceil(_expansionCell.cellSize.width) + 2 * GABadgeHorizontalPadding;
+    return contentFrame;
+}
+
+- (void)drawWithExpansionFrame:(NSRect)contentFrame inView:(NSView *)view {
+    _expansionCell.textColor = self.isRowSelected ? NSColor.labelColor : NSColor.secondaryLabelColor;
+    CGFloat verticalInset = MAX(0, (NSHeight(contentFrame) - _expansionCell.cellSize.height) / 2);
+    [_expansionCell drawInteriorWithFrame:NSInsetRect(contentFrame, GABadgeHorizontalPadding, verticalInset)
+                                  inView:view];
+}
+
+@end
+
 @interface GAUnicodeBadgeView : NSView
-@property (nonatomic, copy, readonly) NSString *text;
+@property (nonatomic, strong, readonly) GAUnicodeBadgeLabel *label;
 @property (nonatomic) NSBackgroundStyle backgroundStyle;
-- (instancetype)initWithText:(NSString *)text toolTip:(NSString *)toolTip;
+@property (nonatomic, readonly) CGFloat badgeWidth;
+- (instancetype)initWithText:(NSString *)text scalar:(uint32_t)scalar;
 + (CGFloat)widthForText:(NSString *)text;
 @end
 
 @implementation GAUnicodeBadgeView
 
-- (instancetype)initWithText:(NSString *)text toolTip:(NSString *)toolTip {
+- (instancetype)initWithText:(NSString *)text scalar:(uint32_t)scalar {
     self = [super initWithFrame:NSZeroRect];
     if (self) {
-        _text = [text copy];
-        self.toolTip = toolTip.length > 0 ? toolTip : text;
-        _backgroundStyle = NSBackgroundStyleRaised;
+        _label = [GAUnicodeBadgeLabel labelWithText:text scalar:scalar];
+        _label.translatesAutoresizingMaskIntoConstraints = NO;
+        [self addSubview:_label];
+        [NSLayoutConstraint activateConstraints:@[
+            [_label.leadingAnchor constraintEqualToAnchor:self.leadingAnchor],
+            [_label.trailingAnchor constraintEqualToAnchor:self.trailingAnchor],
+            [_label.centerYAnchor constraintEqualToAnchor:self.centerYAnchor],
+        ]];
+        self.backgroundStyle = NSBackgroundStyleRaised;
     }
     return self;
 }
 
+- (CGFloat)badgeWidth {
+    return [self.class widthForText:_label.stringValue];
+}
+
 + (CGFloat)widthForText:(NSString *)text {
-    NSDictionary *attributes = @{
-        NSFontAttributeName: [NSFont monospacedDigitSystemFontOfSize:10
-                                                              weight:NSFontWeightRegular],
-    };
+    NSDictionary *attributes = @{NSFontAttributeName: GABadgeFont()};
     return ceil([text sizeWithAttributes:attributes].width) +
            GABadgeHorizontalPadding * 2;
 }
 
 - (void)setBackgroundStyle:(NSBackgroundStyle)backgroundStyle {
     _backgroundStyle = backgroundStyle;
+    _label.textColor = backgroundStyle == NSBackgroundStyleEmphasized
+        ? NSColor.alternateSelectedControlTextColor : NSColor.secondaryLabelColor;
     [self setNeedsDisplay:YES];
 }
 
@@ -140,39 +209,19 @@ static const CGFloat GABadgeHorizontalPadding = 4.0;
     NSColor *background = emphasized
         ? [[NSColor alternateSelectedControlTextColor] colorWithAlphaComponent:0.16]
         : [[NSColor labelColor] colorWithAlphaComponent:0.07];
-    NSColor *foreground = emphasized
-        ? [NSColor alternateSelectedControlTextColor]
-        : [NSColor secondaryLabelColor];
-
     NSBezierPath *path = [NSBezierPath bezierPathWithRoundedRect:self.bounds
                                                         xRadius:4
                                                         yRadius:4];
     [background setFill];
     [path fill];
-
-    NSMutableParagraphStyle *paragraph = [[NSMutableParagraphStyle alloc] init];
-    paragraph.alignment = NSTextAlignmentCenter;
-    paragraph.lineBreakMode = NSLineBreakByClipping;
-    NSDictionary *attributes = @{
-        NSFontAttributeName: [NSFont monospacedDigitSystemFontOfSize:10
-                                                              weight:NSFontWeightRegular],
-        NSForegroundColorAttributeName: foreground,
-        NSParagraphStyleAttributeName: paragraph,
-    };
-    NSSize textSize = [self.text sizeWithAttributes:attributes];
-    NSRect textRect = NSMakeRect(0,
-                                 floor((NSHeight(self.bounds) - textSize.height) / 2.0),
-                                 NSWidth(self.bounds),
-                                 textSize.height);
-    [self.text drawInRect:textRect withAttributes:attributes];
 }
 
 @end
 
-/// A vertical column of Unicode code badges. Each badge has its own
-/// tooltip with that scalar's Unicode name.
+/// A vertical column of Unicode code badges.
 @interface GAUnicodeCodesView : NSView
-@property (nonatomic, copy, nonnull) NSArray<NSNumber *> *unicodeScalars;
+@property (nonatomic, getter=isRowSelected) BOOL rowSelected;
+- (void)setUnicodeScalars:(NSArray<NSNumber *> *)unicodeScalars;
 + (CGFloat)heightForScalars:(NSArray<NSNumber *> * _Nonnull)scalars;
 + (CGFloat)widthForScalars:(NSArray<NSNumber *> * _Nonnull)scalars;
 @property (nonatomic, strong) NSMutableArray<GAUnicodeBadgeView *> *labels;
@@ -199,28 +248,32 @@ static const CGFloat GABadgeHorizontalPadding = 4.0;
 }
 
 - (void)setUnicodeScalars:(NSArray<NSNumber *> *)unicodeScalars {
-    _unicodeScalars = [unicodeScalars copy] ?: @[];
-
     for (GAUnicodeBadgeView *badge in self.labels) {
         [badge removeFromSuperview];
     }
     [self.labels removeAllObjects];
 
     NSMutableArray<NSString *> *codes = [NSMutableArray array];
-    for (NSNumber *scalarNumber in _unicodeScalars) {
+    for (NSNumber *scalarNumber in unicodeScalars) {
         uint32_t scalar = scalarNumber.unsignedIntValue;
         NSString *text = [self.class codeTextForScalar:scalar];
         [codes addObject:text];
-        NSString *name = GAUnicodeNameForScalar(scalar);
-        GAUnicodeBadgeView *badge = [[GAUnicodeBadgeView alloc]
-            initWithText:text toolTip:name];
+        GAUnicodeBadgeView *badge = [[GAUnicodeBadgeView alloc] initWithText:text scalar:scalar];
         badge.backgroundStyle = self.backgroundStyle;
+        badge.label.rowSelected = self.isRowSelected;
         [self addSubview:badge];
         [self.labels addObject:badge];
     }
     self.accessibilityLabel = [codes componentsJoinedByString:@", "];
     [self setNeedsLayout:YES];
     [self setNeedsDisplay:YES];
+}
+
+- (void)setRowSelected:(BOOL)rowSelected {
+    _rowSelected = rowSelected;
+    for (GAUnicodeBadgeView *badge in self.labels) {
+        badge.label.rowSelected = rowSelected;
+    }
 }
 
 - (void)setBackgroundStyle:(NSBackgroundStyle)backgroundStyle {
@@ -235,7 +288,7 @@ static const CGFloat GABadgeHorizontalPadding = 4.0;
     CGFloat y = 0;
     CGFloat width = MAX(1.0, self.bounds.size.width);
     for (GAUnicodeBadgeView *badge in self.labels) {
-        CGFloat badgeWidth = [GAUnicodeBadgeView widthForText:badge.text];
+        CGFloat badgeWidth = badge.badgeWidth;
         badge.frame = NSMakeRect(width - badgeWidth, y, badgeWidth, GABadgeHeight);
         y += GABadgeHeight + GABadgeGap;
     }
@@ -301,18 +354,18 @@ static const CGFloat GABadgeHorizontalPadding = 4.0;
         _glyphView = [[GAGlyphView alloc] initWithFrame:NSZeroRect];
 
         _nameLabel = [NSTextField labelWithString:@""];
-        _nameLabel.translatesAutoresizingMaskIntoConstraints = NO;
         _nameLabel.textColor = [NSColor labelColor];
-        _nameLabel.lineBreakMode = NSLineBreakByTruncatingTail;
-        _nameLabel.maximumNumberOfLines = 1;
 
         _sourceLabel = [NSTextField labelWithString:@""];
-        _sourceLabel.translatesAutoresizingMaskIntoConstraints = NO;
         _sourceLabel.font = [NSFont monospacedDigitSystemFontOfSize:10
                                                             weight:NSFontWeightRegular];
         _sourceLabel.textColor = [NSColor secondaryLabelColor];
-        _sourceLabel.lineBreakMode = NSLineBreakByTruncatingTail;
-        _sourceLabel.maximumNumberOfLines = 1;
+        for (NSTextField *label in @[_nameLabel, _sourceLabel]) {
+            label.translatesAutoresizingMaskIntoConstraints = NO;
+            label.lineBreakMode = NSLineBreakByTruncatingTail;
+            label.maximumNumberOfLines = 1;
+            label.allowsExpansionToolTips = YES;
+        }
 
         _codesView = [[GAUnicodeCodesView alloc] initWithFrame:NSZeroRect];
 
@@ -359,19 +412,13 @@ static const CGFloat GABadgeHorizontalPadding = 4.0;
 - (void)configureWithVariant:(GAGlyphVariant *)variant {
     self.glyphView.variant = variant;
 
-    NSMutableArray<NSString *> *gids = [NSMutableArray arrayWithCapacity:variant.glyphIDs.count];
-    for (NSNumber *glyph in variant.glyphIDs) {
-        [gids addObject:[NSString stringWithFormat:@"GID %@", glyph]];
-    }
     NSString *name = variant.glyphName;
-    NSString *toolTip = name;
     if (name.length == 0) {
+        NSMutableArray<NSString *> *gids = [NSMutableArray arrayWithCapacity:variant.glyphIDs.count];
+        for (NSNumber *glyph in variant.glyphIDs) {
+            [gids addObject:[NSString stringWithFormat:@"GID %@", glyph]];
+        }
         name = gids.count > 0 ? [gids componentsJoinedByString:@" + "] : @"GID ?";
-        toolTip = name;
-    } else if (gids.count) {
-        NSString *gidLine = [gids componentsJoinedByString:@"/"];
-        if (![name isEqualToString:gidLine])
-            toolTip = [NSString stringWithFormat:@"%@\n%@", name, gidLine];
     }
     self.nameLabel.stringValue = name;
     self.nameLabel.textColor = variant.isTemporary ? NSColor.secondaryLabelColor : NSColor.labelColor;
@@ -379,19 +426,17 @@ static const CGFloat GABadgeHorizontalPadding = 4.0;
                                            weight:variant.isBase
                                                ? NSFontWeightBold
                                                : NSFontWeightRegular];
-    self.nameLabel.toolTip = toolTip;
 
     NSArray<NSString *> *sources = variant.featureSources;
     NSString *sourceText = [sources componentsJoinedByString:@", "];
     self.sourceLabel.stringValue = sourceText;
-    self.sourceLabel.toolTip = sources.count > 0 ? sourceText : nil;
     self.sourceLabel.hidden = sources.count == 0;
     self.sourceTopConstraint.active = sources.count > 0;
     self.sourceHeightConstraint.constant = [self.class sourceHeightForVariant:variant];
 
     CGFloat codeHeight = [GAUnicodeCodesView heightForScalars:variant.unicodeScalars];
     CGFloat codeWidth = [GAUnicodeCodesView widthForScalars:variant.unicodeScalars];
-    self.codesView.unicodeScalars = variant.unicodeScalars;
+    [self.codesView setUnicodeScalars:variant.unicodeScalars];
     self.codesHeightConstraint.constant = codeHeight;
     self.codesWidthConstraint.constant = codeWidth;
     self.codesView.hidden = codeHeight <= 0;
@@ -423,6 +468,27 @@ static const CGFloat GABadgeHorizontalPadding = 4.0;
 - (void)setBackgroundStyle:(NSBackgroundStyle)backgroundStyle {
     [super setBackgroundStyle:backgroundStyle];
     [self applyBackgroundStyle:backgroundStyle];
+}
+
+@end
+
+@implementation GAVariantRowView
+
+- (void)updateBadgeSelectionInView:(NSView *)view {
+    if ([view isKindOfClass:GAVariantCellView.class])
+        ((GAVariantCellView *)view).codesView.rowSelected = self.isSelected;
+}
+
+- (void)didAddSubview:(NSView *)subview {
+    [super didAddSubview:subview];
+    [self updateBadgeSelectionInView:subview];
+}
+
+- (void)setSelected:(BOOL)selected {
+    [super setSelected:selected];
+    for (NSView *subview in self.subviews) {
+        [self updateBadgeSelectionInView:subview];
+    }
 }
 
 @end

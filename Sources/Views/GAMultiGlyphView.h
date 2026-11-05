@@ -39,7 +39,8 @@ NS_ASSUME_NONNULL_BEGIN
 /// Called when the text layout changes the required document size.
 @property (nonatomic, copy, nullable) void (^onContentSizeChanged)(void);
 @property(nonatomic, copy, nullable) void (^onGlyphSelected)
-    (NSArray<NSNumber *> *glyphIDs, NSRange range);
+    (NSArray<NSNumber *> *glyphIDs, NSRange range, NSArray<NSNumber *> * _Nullable leadingGlyphIDs,
+     NSRange leadingRange);
 
 - (void)setText:(NSString *)text groups:(NSArray<GACharacterGroup *> *)groups
       omissions:(NSIndexSet *)omissions;

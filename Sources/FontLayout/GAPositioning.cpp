@@ -19,7 +19,7 @@ void valueRecord(Item &item, View parent, size_t at, unsigned format, const GDEF
         if (format & (1u << bit)) {
             if (bit < 4)
                 value[bit] += parent.s16(at);
-            else
+            else if (metrics.variationCoordinatesValid)
                 value[bit - 4] +=
                     deviceDelta(parent.offset16(at), gdef.variations, metrics.normalized);
             at += 2;
@@ -38,7 +38,7 @@ std::optional<Point> anchor(View table, const GDEF &gdef, const Metrics &metrics
     Point p{double(table.s16(2)), double(table.s16(4))};
     if (format == 2)
         table.require(6, 2); // Contour indices are only needed for grid fitting.
-    if (format == 3) {
+    if (format == 3 && metrics.variationCoordinatesValid) {
         p.x += deviceDelta(table.offset16(6), gdef.variations, metrics.normalized);
         p.y += deviceDelta(table.offset16(8), gdef.variations, metrics.normalized);
     }

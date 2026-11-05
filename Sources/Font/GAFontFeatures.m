@@ -46,17 +46,24 @@ static BOOL GASelectorDefault(NSDictionary *selector) {
         group.definition = definition;
         group.exclusive = [definition[(__bridge NSString *)kCTFontFeatureTypeExclusiveKey] boolValue];
         NSArray *selectors = definition[(__bridge NSString *)kCTFontFeatureTypeSelectorsKey];
-        if (!group.exclusive) {
+        if (type && !group.exclusive) {
             NSMutableSet *identifiers = [NSMutableSet set];
             for (NSDictionary *selector in selectors) {
                 NSNumber *identifier = selector[(__bridge NSString *)kCTFontFeatureSelectorIdentifierKey];
                 if (identifier) [identifiers addObject:identifier];
             }
             NSMutableArray *visible = [NSMutableArray array];
+            NSMutableSet *visibleIdentifiers = [NSMutableSet set];
             for (NSDictionary *selector in selectors) {
                 NSNumber *identifier = selector[(__bridge NSString *)kCTFontFeatureSelectorIdentifierKey];
-                if (identifier && (identifier.unsignedIntegerValue & 1) &&
-                    [identifiers containsObject:@(identifier.unsignedIntegerValue ^ 1)]) continue;
+                if (identifier) {
+                    NSUInteger value = identifier.unsignedIntegerValue;
+                    // CoreText can report both names of an on/off pair under
+                    // the same even ID. The sorted AAT names put On first.
+                    if ([visibleIdentifiers containsObject:identifier] ||
+                        ((value & 1) && [identifiers containsObject:@(value ^ 1)])) continue;
+                    [visibleIdentifiers addObject:identifier];
+                }
                 [visible addObject:selector];
             }
             selectors = visible;

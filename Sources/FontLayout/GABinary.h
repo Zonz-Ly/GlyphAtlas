@@ -39,6 +39,8 @@ class View {
     size_t size() const {
         return length_;
     }
+    // Identifies a subtable among views of the same backing table.
+    size_t tableOffset() const { return begin_; }
     explicit operator bool() const {
         return length_ != 0;
     }
@@ -110,6 +112,7 @@ class Coverage {
 
   public:
     Coverage() = default;
+    size_t tableOffset() const { return data_.tableOffset(); }
     explicit Coverage(View data) : data_(data) {
         if (!data_)
             return;
@@ -176,6 +179,7 @@ class ClassDef {
 
   public:
     ClassDef() = default;
+    size_t tableOffset() const { return data_.tableOffset(); }
     explicit ClassDef(View data) : data_(data) {
         if (!data_)
             return;

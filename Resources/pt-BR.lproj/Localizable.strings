@@ -7,6 +7,7 @@
 "All Users" = "Todos os Usuários";
 "System Fonts" = "Fontes do Sistema";
 "Open Recent" = "Abrir Recente";
+"Recent Folders" = "Pastas recentes…";
 "Clear Menu" = "Limpar Menu";
 "Close Window" = "Fechar Janela";
 "Cut" = "Cortar";
@@ -46,12 +47,10 @@
 "Hide Others" = "Ocultar Outros";
 "Quit Glyph Atlas" = "Encerrar Glyph Atlas";
 "Glyph Atlas Help" = "Ajuda do Glyph Atlas";
-"Open Font" = "Abrir Fonte";
 "Open Font From" = "Abrir Fonte de";
 "No Recent Fonts" = "Nenhuma Fonte Recente";
 "Single Glyph" = "Glifo Único";
 "Multi-Character" = "Vários Caracteres";
-"Switch to Multi-Character to enable" = "Alterne para Vários Caracteres para ativar esta opção";
 "All Glyphs" = "Todos os Glifos";
 "Show Bounding Box" = "Mostrar Caixa Delimitadora";
 "Bounding Box Zoom In" = "Ampliar Caixa Delimitadora";
@@ -68,8 +67,7 @@
 "CoreText could not create this font." = "O CoreText não pôde criar esta fonte.";
 "Bounding Box" = "Caixa Delimitadora";
 "Text and alternate glyph list" = "Lista de texto e glifos alternativos";
-"CONTROL CHARACTER" = "CARACTERE DE CONTROLE";
-"Help.01" = "Abra uma fonte ou arraste-a para a janela do app ou seu ícone no Dock. Arquivos usados recentemente também são compatíveis. Mantenha ⌥ pressionado antes de escolher “Abrir Fonte” na barra de menus para ver mais opções.";
+"Help.01" = "Use “Abrir Fonte de” na barra de menus para abrir uma fonte diretamente de uma pasta de fontes. Você também pode arrastar a fonte para o ícone do app ou para uma janela que já tenha uma fonte aberta, ou definir o Glyph Atlas como app padrão para abrir arquivos de fontes. É possível reabrir arquivos recentes.";
 "Help.02" = "Na barra de menus, copie com um clique a fonte aberta na janela atual para a pasta de fontes do seu usuário. Mantenha ⌥ pressionado para copiar a fonte para a pasta de fontes de todos os usuários.";
 "Help.03" = "Ao abrir uma fonte variável, um painel de variações aparece ao lado dos controles da janela. Arraste-o para fora para mantê-lo aberto. Selecione um valor numérico e ajuste-o com ↑/↓ ou ⇧↑/⇧↓.";
 "Help.04" = "Digite um ou mais caracteres na barra lateral para ver todos os glifos associados. Use ⌥⏎ para inserir uma quebra de linha. Você também pode clicar com o botão direito e escolher “Textos salvos” para salvar o texto atual ou inserir rapidamente um texto salvo antes. Mantenha ⌥ pressionado na barra de menus para apagar rapidamente os textos salvos.";
@@ -79,7 +77,7 @@
 "Help.08" = "Mantenha o cursor sobre uma etiqueta Unicode para ver o nome do caractere definido pelo padrão Unicode.";
 "Help.09" = "A visualização padrão é “Todos os Glifos”. Alterne com um clique secundário ou use ⌘1 para “Glifo Único”, ⌘2 para “Vários Caracteres” e ⌘3 para “Todos os Glifos”.";
 "Help.10" = "Em Vários Caracteres, clique em um glifo para ver suas alternativas. A escrita vertical é compatível; clique com o botão direito ou pressione ⌘5 para alterná-la. O alinhamento do texto e Tipografia também estão aqui. O menu Visualizar na barra de menus tem mais opções.";
-"Help.11" = "Passe o ponteiro sobre um glifo para ver seus detalhes. Em “Todos os Glifos”, clique duas vezes em um glifo para adicioná-lo ao texto existente. Clicar em um glifo na barra lateral também o faz piscar na visualização completa. Clique com o botão direito para encontrar “Filtrar por recurso”.";
+"Help.11" = "Em “Todos os Glifos”, clique duas vezes em um glifo para adicioná-lo ao texto existente. Clicar em um glifo na barra lateral também o faz piscar na visualização completa. Clique com o botão direito para encontrar “Filtrar por recurso”.";
 "Help.12" = "Use ⌘+/⌘− ou o gesto de pinça no trackpad para ampliar ou reduzir os glifos. Em Vários Caracteres, use ⌥⌘+/⌥⌘− ou uma pinça horizontal para aumentar ou diminuir as margens, e ⌃⌘+/⌃⌘− ou uma pinça vertical para aumentar ou diminuir o espaçamento entre linhas. Pressione ⌘0 para restaurar o tamanho padrão.";
 "Help.13" = "A sombra indica a caixa delimitadora, incluindo a largura e a altura do glifo, a altura das linhas e o espaçamento da composição. Pressione ⌘4 para ocultá-la.";
 "Help.14" = "O Modo Escuro é compatível. Mas cuidado: clicar em um glifo sólido pode ofuscar seus olhos. Você pode mudar as cores do glifo, da sombra da caixa delimitadora e do fundo em Cores, na barra de menus. Escolha “Salvar Paleta Atual” para guardar as cores ajustadas. Mantenha ⌥ pressionado para ver “Apagar Paletas”.";
@@ -135,8 +133,6 @@
 "Filter by Feature" = "Filtrar por recurso";
 "No Features to Filter" = "Nenhum recurso para filtrar";
 "No Feature" = "Sem recurso";
-"Switch to All Glyphs to enable" = "Alterne para “Todos os Glifos” para ativar";
-"Switch to Single Glyph or Multi-Character to enable" = "Alterne para “Glifo Único” ou “Vários Caracteres” para ativar";
 
 "Writing Direction" = "Direção de escrita";
 "Left to Right" = "Da esquerda para a direita";
@@ -144,5 +140,4 @@
 "Outline" = "Contorno";
 
 "Typesetting Language" = "Idioma de composição";
-"No System Language Mapping" = "Não há um idioma do sistema correspondente a esta tag de idioma OpenType.";
 "No Selectable Languages" = "Nenhum idioma disponível";

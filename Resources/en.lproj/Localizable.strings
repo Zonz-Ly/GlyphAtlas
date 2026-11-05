@@ -7,6 +7,7 @@
 "All Users" = "All Users";
 "System Fonts" = "System Fonts";
 "Open Recent" = "Open Recent";
+"Recent Folders" = "Recent Folders…";
 "Clear Menu" = "Clear Menu";
 "Close Window" = "Close Window";
 "Cut" = "Cut";
@@ -46,12 +47,10 @@
 "Hide Others" = "Hide Others";
 "Quit Glyph Atlas" = "Quit Glyph Atlas";
 "Glyph Atlas Help" = "Glyph Atlas Help";
-"Open Font" = "Open Font";
 "Open Font From" = "Open Font From";
 "No Recent Fonts" = "No Recent Fonts";
 "Single Glyph" = "Single Glyph";
 "Multi-Character" = "Multi-Character";
-"Switch to Multi-Character to enable" = "Switch to Multi-Character to enable";
 "All Glyphs" = "All Glyphs";
 "Show Bounding Box" = "Show Bounding Box";
 "Bounding Box Zoom In" = "Bounding Box Zoom In";
@@ -68,8 +67,7 @@
 "CoreText could not create this font." = "CoreText could not create this font.";
 "Bounding Box" = "Bounding Box";
 "Text and alternate glyph list" = "Text and alternate glyph list";
-"CONTROL CHARACTER" = "CONTROL CHARACTER";
-"Help.01" = "Open a font, or drag one onto the app's window or Dock icon. Recently opened items are supported. Hold ⌥ before choosing Open Font in the menu bar for more options.";
+"Help.01" = "Use “Open Font From” in the menu bar to open a font directly from a Fonts folder. You can also drag a font onto the app icon or onto a window with a font already open, or set Glyph Atlas as the default app for opening font files. Recently opened items are supported.";
 "Help.02" = "Use the menu bar to copy the font open in the current window to your user Fonts folder in one click. Hold ⌥ to copy it to the Fonts folder for all users.";
 "Help.03" = "When you open a variable font, a variation panel appears beside the window controls. Drag it out to keep it open. Select a numeric value and use ↑/↓ or ⇧↑/⇧↓ to adjust it.";
 "Help.04" = "Type one or more characters in the sidebar to see all associated glyphs. Use ⌥⏎ to insert a line break. You can also right-click and choose “Saved Text” to save the current text or quickly enter text you’ve saved before. Hold ⌥ in the menu bar to quickly delete saved text.";
@@ -79,7 +77,7 @@
 "Help.08" = "Hover over a Unicode badge to see the character name defined by the Unicode standard.";
 "Help.09" = "All Glyphs is the default. Right-click to switch views, or press ⌘1 for Single Glyph, ⌘2 for Multi-Character, or ⌘3 for All Glyphs.";
 "Help.10" = "In Multi-Character, click a glyph to view its alternates. Right-click or press ⌘5 to switch between horizontal and vertical writing. Text alignment and Typography are here too. The View menu in the menu bar has more options.";
-"Help.11" = "In All Glyphs, hover over a glyph to see its details or double-click to add it to the existing text. Clicking a glyph in the sidebar makes it blink in All Glyphs. Right-click to find Filter by Feature.";
+"Help.11" = "In All Glyphs, double-click a glyph to add it to the existing text. Clicking a glyph in the sidebar makes it blink in All Glyphs. Right-click to find Filter by Feature.";
 "Help.12" = "Use ⌘+/⌘− to zoom the glyphs, or pinch on the trackpad. In Multi-Character, use ⌥⌘+/⌥⌘− or a horizontal pinch to increase or decrease the margins, and ⌃⌘+/⌃⌘− or a vertical pinch to increase or decrease line spacing. Press ⌘0 to restore the default size.";
 "Help.13" = "The shadow shows the bounding box, including the glyph's width and height and the layout's line height and leading; press ⌘4 to hide it.";
 "Help.14" = "Dark mode is supported. Watch out when clicking a solid glyph, as it can dazzle you. You can change the glyph, bounding box shadow, and background colors under Colors in the menu bar. Choose Save Current Palette to keep your colors. Hold ⌥ to find Delete Palettes.";
@@ -135,8 +133,6 @@
 "Filter by Feature" = "Filter by Feature";
 "No Features to Filter" = "No Features to Filter";
 "No Feature" = "No Feature";
-"Switch to All Glyphs to enable" = "Switch to All Glyphs to enable";
-"Switch to Single Glyph or Multi-Character to enable" = "Switch to Single Glyph or Multi-Character to enable";
 
 "Writing Direction" = "Writing Direction";
 "Left to Right" = "Left to Right";
@@ -144,5 +140,4 @@
 "Outline" = "Outline";
 
 "Typesetting Language" = "Typesetting Language";
-"No System Language Mapping" = "No system language mapping is available for this OpenType tag.";
 "No Selectable Languages" = "No Selectable Languages";

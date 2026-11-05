@@ -6,37 +6,40 @@ Cmap::Cmap(View table) {
     unsigned count = table.u16(2);
     table.array(4, count, 8);
     for (unsigned i = 0; i < count; i++) {
-        size_t p = 4 + i * 8;
-        unsigned platform = table.u16(p), encoding = table.u16(p + 2);
-        View data = table.offset32(p + 4);
-        unsigned format = data.u16(0);
-        unsigned length = format == 14 ? data.u32(2)
-                          : (format == 8 || format == 10 || format == 12 || format == 13)
-                              ? data.u32(4)
-                              : data.u16(2);
-        data = data.slice(0, length);
-        if (format == 14) {
-            variation_ = data;
-            continue;
+        try {
+            size_t p = 4 + i * 8;
+            unsigned platform = table.u16(p), encoding = table.u16(p + 2);
+            View data = table.offset32(p + 4);
+            unsigned format = data.u16(0);
+            if (format == 14) {
+                data = data.slice(0, data.u32(2));
+                data.array(10, data.u32(6), 11);
+                variation_ = data;
+                continue;
+            }
+            bool macRoman = platform == 1 && encoding == 0;
+            if (platform != 0 && !macRoman &&
+                !(platform == 3 && (encoding == 0 || encoding == 1 || encoding == 10)))
+                continue;
+            if (format != 0 && format != 2 && format != 4 && format != 6 && format != 8 &&
+                format != 10 && format != 12 && format != 13)
+                continue;
+            unsigned length = format >= 8 ? data.u32(4) : data.u16(2);
+            data = data.slice(0, length);
+            unsigned rank = (format == 12   ? 60
+                             : format == 4  ? 40
+                             : format == 13 ? 20
+                                            : 10) +
+                            (platform == 3 && encoding == 10 ? 5 : 0);
+            subtables_.push_back({data, platform == 3 && encoding == 0, macRoman, macRoman ? 0 : rank});
+        } catch (const InvalidTable &) {
+            // Each encoding record is independent of the other subtables.
         }
-        bool macRoman = platform == 1 && encoding == 0;
-        if (platform != 0 && !macRoman &&
-            !(platform == 3 && (encoding == 0 || encoding == 1 || encoding == 10)))
-            continue;
-        unsigned rank = (format == 12   ? 60
-                         : format == 4  ? 40
-                         : format == 13 ? 20
-                                        : 10) +
-                        (platform == 3 && encoding == 10 ? 5 : 0);
-        if (format != 0 && format != 2 && format != 4 && format != 6 && format != 8 &&
-            format != 10 && format != 12 && format != 13)
-            continue;
-        subtables_.push_back({data, platform == 3 && encoding == 0, macRoman, macRoman ? 0 : rank});
     }
     std::stable_sort(subtables_.begin(), subtables_.end(),
                      [](const Subtable &a, const Subtable &b) { return a.rank > b.rank; });
 }
-static Glyph nominalAt(View data, uint32_t scalar) {
+static Glyph nominalAt(View data, uint32_t scalar) try {
     unsigned format = data.u16(0);
     if (format == 0)
         return scalar < 256 ? data.u8(6 + scalar) : 0;
@@ -81,14 +84,12 @@ static Glyph nominalAt(View data, uint32_t scalar) {
         Glyph glyph = data.u16(offsetAt + offset + (scalar - first) * 2);
         return glyph ? Glyph(glyph + delta) : 0;
     }
-    if (format == 6) {
-        unsigned first = data.u16(6), count = data.u16(8);
-        return scalar >= first && scalar - first < count ? data.u16(10 + (scalar - first) * 2) : 0;
-    }
-    if (format == 10) {
-        uint32_t first = data.u32(12), count = data.u32(16);
-        return scalar >= first && scalar - first < count ? data.u16(20 + size_t(scalar - first) * 2)
-                                                         : 0;
+    if (format == 6 || format == 10) {
+        uint32_t first = format == 6 ? data.u16(6) : data.u32(12);
+        uint32_t count = format == 6 ? data.u16(8) : data.u32(16);
+        size_t glyphs = format == 6 ? 10 : 20;
+        return scalar >= first && scalar - first < count
+            ? data.u16(glyphs + size_t(scalar - first) * 2) : 0;
     }
     size_t countAt = format == 8 ? 8204 : 12, recordsAt = countAt + 4;
     uint32_t count = data.u32(countAt);
@@ -110,6 +111,9 @@ static Glyph nominalAt(View data, uint32_t scalar) {
             return glyph <= 0xffff ? Glyph(glyph) : 0;
         }
     }
+    return 0;
+} catch (const InvalidTable &) {
+    // An invalid mapping is missing here. Other code points may still work.
     return 0;
 }
 static std::optional<uint32_t> macRomanCode(uint32_t scalar) {
@@ -150,11 +154,10 @@ Glyph Cmap::nominal(uint32_t scalar) const {
     }
     return 0;
 }
-std::optional<Glyph> Cmap::variation(uint32_t scalar, uint32_t selector) const {
+std::optional<Glyph> Cmap::variation(uint32_t scalar, uint32_t selector) const try {
     if (!variation_)
         return {};
     unsigned count = variation_.u32(6);
-    variation_.array(10, count, 11);
     size_t lo = 0, hi = count;
     while (lo < hi) {
         size_t m = (lo + hi) / 2;
@@ -166,19 +169,23 @@ std::optional<Glyph> Cmap::variation(uint32_t scalar, uint32_t selector) const {
     if (lo == count || variation_.u24(10 + lo * 11) != selector)
         return {};
     size_t p = 10 + lo * 11;
-    if (View mappings = variation_.offset32(p + 7)) {
-        unsigned n = mappings.u32(0);
-        mappings.array(4, n, 5);
-        size_t a = 0, b = n;
-        while (a < b) {
-            size_t m = (a + b) / 2;
-            if (mappings.u24(4 + m * 5) < scalar)
-                a = m + 1;
-            else
-                b = m;
+    try {
+        if (View mappings = variation_.offset32(p + 7)) {
+            unsigned n = mappings.u32(0);
+            mappings.array(4, n, 5);
+            size_t a = 0, b = n;
+            while (a < b) {
+                size_t m = (a + b) / 2;
+                if (mappings.u24(4 + m * 5) < scalar)
+                    a = m + 1;
+                else
+                    b = m;
+            }
+            if (a < n && mappings.u24(4 + a * 5) == scalar)
+                return mappings.u16(7 + a * 5);
         }
-        if (a < n && mappings.u24(4 + a * 5) == scalar)
-            return mappings.u16(7 + a * 5);
+    } catch (const InvalidTable &) {
+        // Default mappings for this selector are stored separately.
     }
     if (View defaults = variation_.offset32(p + 3)) {
         unsigned n = defaults.u32(0);
@@ -195,6 +202,8 @@ std::optional<Glyph> Cmap::variation(uint32_t scalar, uint32_t selector) const {
                 return nominal(scalar);
         }
     }
+    return {};
+} catch (const InvalidTable &) {
     return {};
 }
 } // namespace ga::layout
