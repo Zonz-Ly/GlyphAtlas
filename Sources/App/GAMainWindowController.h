@@ -10,6 +10,10 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, readonly) NSString *inputText;
 - (void)replaceInputText:(NSString *)text;
 @property (nonatomic, readonly) GAViewMode viewMode;
+@property (nonatomic, copy, readonly) NSArray<NSString *> *allGlyphFeatureTags;
+@property (nonatomic, copy, readonly, nullable) NSString *allGlyphFeatureTag;
+/// Nil shows the full grid. An empty tag shows glyphs without feature outputs.
+- (void)filterAllGlyphsByFeature:(nullable NSString *)tag;
 @property (nonatomic, readonly) BOOL showsMetrics;
 @property (nonatomic, readonly) NSTextAlignment textAlignment;
 @property (nonatomic, readonly) BOOL verticalWriting;
@@ -23,6 +27,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)zoomMetricsOut;
 - (void)adjustLineSpacing:(NSInteger)steps;
 @property(nonatomic, readonly) GAPreviewColors *previewColors;
+- (void)applyPreviewColorRepresentation:(NSDictionary<NSString *, NSData *> *)representation;
 - (void)setPreviewColor:(NSColor *)color forRole:(GAPreviewColorRole)role;
 - (void)followSystemColors;
 - (void)resetZoom;

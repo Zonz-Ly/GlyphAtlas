@@ -167,10 +167,11 @@ static NSArray<GAGlyphLayoutRun *> *MapGlyphLayoutRuns(
         NSUInteger first = NSUIntegerMax, last = 0;
         for (NSUInteger i = display.range.location; i < NSMaxRange(display.range); i++) {
             NSUInteger source = sourceIndices[i].unsignedIntegerValue;
+            if (source == NSNotFound) continue;
             first = MIN(first, source);
             last = MAX(last, source);
         }
-        if (last >= sourceText.length)
+        if (first == NSUIntegerMax || last >= sourceText.length)
             continue;
         NSRange range = [sourceText
             rangeOfComposedCharacterSequencesForRange:NSMakeRange(first, last - first + 1)];
@@ -188,7 +189,8 @@ static NSArray<GAGlyphLayoutRun *> *MapGlyphLayoutRuns(
 /// Reads native GIDs, preserving composed characters and explicit selections.
 static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
     NSTextLayoutManager *layout, NSArray<NSNumber *> *sourceIndices,
-    NSArray<NSValue *> *atomicRanges, NSString *sourceText) {
+    NSArray<NSValue *> *atomicRanges, NSString *sourceText, NSString *fontName,
+    NSMutableIndexSet *foreignCharacters) {
     NSTextContentManager *content = layout.textContentManager;
     id<NSTextLocation> start = content.documentRange.location;
     NSMutableArray *result = [NSMutableArray array];
@@ -197,6 +199,7 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
                                         usingBlock:^BOOL(NSTextLayoutFragment *fragment) {
         NSInteger offset = [content offsetFromLocation:start
                                            toLocation:fragment.rangeInElement.location];
+        if (offset < 0) return YES;
         for (NSTextLineFragment *line in fragment.textLineFragments) {
             CTLineRef native = line.lineRef;
             if (!native || !line.characterRange.length)
@@ -211,6 +214,22 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
                 CFIndex count = CTRunGetGlyphCount(run);
                 if (!count)
                     continue;
+                CTFontRef runFont = (__bridge CTFontRef)((__bridge NSDictionary *)CTRunGetAttributes(run))
+                    [(__bridge NSString *)kCTFontAttributeName];
+                if (runFont) {
+                    NSString *runName = CFBridgingRelease(CTFontCopyPostScriptName(runFont));
+                    if (![runName isEqualToString:fontName]) {
+                        if (offset >= 0 && range.location >= 0 && range.length > 0) {
+                            NSRange foreignRange = NSIntersectionRange(
+                                NSMakeRange(range.location, range.length), line.characterRange);
+                            if (foreignRange.length && offset + NSMaxRange(foreignRange) <= sourceIndices.count) {
+                                foreignRange.location += offset;
+                                [foreignCharacters addIndexesInRange:foreignRange];
+                            }
+                        }
+                        continue;
+                    }
+                }
                 NSMutableData *glyphData = [NSMutableData dataWithLength:count * sizeof(CGGlyph)];
                 NSMutableData *indexData = [NSMutableData dataWithLength:count * sizeof(CFIndex)];
                 CGGlyph *glyphs = glyphData.mutableBytes;
@@ -223,9 +242,12 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
                     do {
                         [ids addObject:@(glyphs[i++])];
                     } while (i < count && (NSUInteger)indices[i] == index);
-                    if (!NSLocationInRange(index, line.characterRange))
+                    if (!NSLocationInRange(index, line.characterRange) ||
+                        index >= sourceIndices.count || (NSUInteger)offset >= sourceIndices.count - index)
                         continue;
                     [boundaries addIndex:index];
+                    if (sourceIndices[(NSUInteger)offset + index].unsignedIntegerValue == NSNotFound)
+                        continue;
                     GAGlyphLayoutRun *hit = [GAGlyphLayoutRun new];
                     hit.range = NSMakeRange(index, 0);
                     hit.glyphIDs = ids;
@@ -252,6 +274,7 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
 @property (nonatomic, copy) NSString *text;
 @property (nonatomic, copy) NSArray<NSNumber *> *displaySourceIndices;
 @property (nonatomic, copy, readonly) NSArray<GACharacterGroup *> *groups;
+@property (nonatomic, copy) NSIndexSet *omissions;
 @property(nonatomic, copy) NSArray<GAGlyphLayoutRun *> *glyphHits;
 @property (nonatomic) NSSize pageContentSize;
 @property (nonatomic) CGFloat magnificationStartTextScale;
@@ -316,9 +339,11 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
     [self rebuildLayout];
 }
 
-- (void)setText:(NSString *)text groups:(NSArray<GACharacterGroup *> *)groups {
+- (void)setText:(NSString *)text groups:(NSArray<GACharacterGroup *> *)groups
+      omissions:(NSIndexSet *)omissions {
     _text = [text copy];
     _groups = [groups copy] ?: @[];
+    self.omissions = omissions;
     [self rebuildLayout];
 }
 
@@ -371,8 +396,18 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
     [self rebuildLayout];
 }
 
-- (void)resetTextZoom {
-    self.textScale = 1.0;
+- (void)resetLayoutScale {
+    CGFloat defaultInset = GABoundingBoxDefaultSideInsetFraction;
+    BOOL insetChanged = fabs(_sideInsetFraction - defaultInset) >= 1e-9;
+    if (!insetChanged && fabs(_textScale - 1.0) < 1e-9 && fabs(_lineSpacingAdjustment) < 1e-9) return;
+    GAPreserveScrollPosition(self.enclosingScrollView, ^{
+        self->_textScale = 1.0;
+        self->_lineSpacingAdjustment = 0.0;
+        self->_sideInsetFraction = defaultInset;
+        [self rebuildLayout];
+        if (insetChanged && self.onSideInsetFractionChanged)
+            self.onSideInsetFractionChanged(defaultInset);
+    });
 }
 
 - (void)setTextScale:(CGFloat)textScale {
@@ -602,7 +637,16 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
            NSMaxRange(range) <= length;
 }
 
-- (NSAttributedString *)displayAttributedStringForFont:(NSFont *)font {
+// A zero-size attachment separates shaping runs without drawing fallback ink.
+static NSTextAttachment *GAOmittedGlyphAttachment(void) {
+    NSTextAttachment *attachment = [[NSTextAttachment alloc] init];
+    attachment.image = [[NSImage alloc] initWithSize:NSMakeSize(1, 1)];
+    attachment.bounds = NSZeroRect;
+    return attachment;
+}
+
+- (NSMutableAttributedString *)displayAttributedStringForFont:(NSFont *)font
+                                                sourceIndices:(NSMutableArray<NSNumber *> *)sourceIndices {
     NSMutableParagraphStyle *paragraph = [[NSMutableParagraphStyle alloc] init];
     paragraph.alignment = self.textAlignment;
     paragraph.baseWritingDirection = self.baseWritingDirection;
@@ -625,9 +669,16 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
 
     NSMutableAttributedString *display =
         [[NSMutableAttributedString alloc] initWithString:self.text attributes:attributes];
-    NSMutableArray<NSNumber *> *sourceIndices = [NSMutableArray arrayWithCapacity:self.text.length];
     for (NSUInteger i = 0; i < self.text.length; i++)
         [sourceIndices addObject:@(i)];
+    if (self.omissions.count) {
+        NSTextAttachment *attachment = GAOmittedGlyphAttachment();
+        [self.omissions enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
+            if (index >= display.length) { *stop = YES; return; }
+            [display addAttribute:NSAttachmentAttributeName value:attachment range:NSMakeRange(index, 1)];
+            sourceIndices[index] = @(NSNotFound);
+        }];
+    }
     // Descending replacements leave earlier source ranges valid even when a
     // multiple substitution expands one source character into several glyphs.
     NSArray *ordered = [self.groups
@@ -663,8 +714,48 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
         if (replacement)
             GAReplaceSeedDisplayRange(display, sourceIndices, group.textRange, replacement);
     }
-    self.displaySourceIndices = sourceIndices;
     return display;
+}
+
+/// Retry a foreign-font cluster with its base text before omitting foreign glyphs.
+/// Keep controls in clusters the selected font has already laid out successfully.
+static NSIndexSet *GAForeignCharactersToOmit(NSAttributedString *display, NSIndexSet *foreign,
+                                             NSArray<NSNumber *> *sourceIndices, BOOL *retryControls) {
+    NSMutableIndexSet *controls = [NSMutableIndexSet indexSet];
+    NSMutableIndexSet *characters = [NSMutableIndexSet indexSet];
+    NSString *text = display.string;
+    [foreign enumerateRangesUsingBlock:^(NSRange range, BOOL *stop) {
+        (void)stop;
+        for (NSUInteger i = range.location; i < NSMaxRange(range); i++) {
+            if (sourceIndices[i].unsignedIntegerValue == NSNotFound) continue;
+            unichar c = [text characterAtIndex:i];
+            NSGlyphInfo *glyphInfo = [display attribute:NSGlyphInfoAttributeName atIndex:i effectiveRange:NULL];
+            if ((c == 0xFE0F || c == 0x200D) && !glyphInfo) {
+                [controls addIndex:i];
+            }
+            if (!glyphInfo && GAIsTextLayoutControl(c)) continue;
+            NSRange removal = NSMakeRange(i, 1);
+            if (glyphInfo) {
+                // The display copy maps every character of one fixed-GID replacement
+                // to the same source index, including multi-glyph replacements.
+                NSNumber *source = sourceIndices[i];
+                NSUInteger start = i, end = i + 1;
+                while (start && [sourceIndices[start - 1] isEqual:source]) start--;
+                while (end < text.length && [sourceIndices[end] isEqual:source]) end++;
+                removal = NSMakeRange(start, end - start);
+                i = end - 1;
+            } else if (CFStringIsSurrogateHighCharacter(c) && i + 1 < text.length &&
+                       CFStringIsSurrogateLowCharacter([text characterAtIndex:i + 1])) {
+                removal.length++;
+            } else if (CFStringIsSurrogateLowCharacter(c) && i > 0 &&
+                       CFStringIsSurrogateHighCharacter([text characterAtIndex:i - 1])) {
+                removal = NSMakeRange(i - 1, 2);
+            }
+            [characters addIndexesInRange:removal];
+        }
+    }];
+    *retryControls = controls.count != 0;
+    return *retryControls ? controls : characters;
 }
 
 - (void)rebuildLayout {
@@ -703,16 +794,50 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
         ? NSTextLayoutOrientationVertical
         : NSTextLayoutOrientationHorizontal];
     self.textView.textContainer.containerSize = NSMakeSize(lineLength, 0);
-    self.textView.textStorage.attributedString = [self displayAttributedStringForFont:font];
-    [self.textView.textLayoutManager
-        ensureLayoutForBounds:NSMakeRect(0, 0, lineLength, 1000000.0)];
-
     NSMutableArray *atomic = [NSMutableArray array];
     for (GACharacterGroup *group in self.groups)
         if (group.seeded)
             [atomic addObject:[NSValue valueWithRange:group.textRange]];
-    self.glyphHits = GAReadDisplayGlyphRuns(self.textView.textLayoutManager,
-                                           self.displaySourceIndices, atomic, self.text);
+
+    NSMutableArray<NSNumber *> *sourceIndices = [NSMutableArray arrayWithCapacity:self.text.length];
+    NSMutableAttributedString *display = [self displayAttributedStringForFont:font sourceIndices:sourceIndices];
+    NSString *fontName = CFBridgingRelease(CTFontCopyPostScriptName((__bridge CTFontRef)font));
+    NSTextLayoutManager *layout = self.textView.textLayoutManager;
+    while (YES) {
+        self.textView.textStorage.attributedString = display;
+        [layout ensureLayoutForRange:layout.documentRange];
+        NSMutableIndexSet *foreign = [NSMutableIndexSet indexSet];
+        NSArray *hits = GAReadDisplayGlyphRuns(layout,
+            sourceIndices, atomic, self.text, fontName, foreign);
+        BOOL retryControls = NO;
+        NSIndexSet *omit = foreign.count
+            ? GAForeignCharactersToOmit(display, foreign, sourceIndices, &retryControls) : nil;
+        if (!omit.count) {
+            self.glyphHits = hits;
+            break;
+        }
+        NSTextAttachment *attachment = retryControls ? nil : GAOmittedGlyphAttachment();
+        [omit enumerateRangesWithOptions:NSEnumerationReverse usingBlock:^(NSRange range, BOOL *stop) {
+            (void)stop;
+            [sourceIndices removeObjectsInRange:range];
+            if (retryControls) {
+                [display deleteCharactersInRange:range];
+            } else {
+                NSDictionary *attributes = @{
+                    NSAttachmentAttributeName: attachment,
+                    NSFontAttributeName: font,
+                    NSParagraphStyleAttributeName:
+                        [display attribute:NSParagraphStyleAttributeName atIndex:range.location effectiveRange:NULL]
+                            ?: NSParagraphStyle.defaultParagraphStyle,
+                };
+                NSAttributedString *boundary = [[NSAttributedString alloc] initWithString:@"\uFFFC"
+                                                                              attributes:attributes];
+                [display replaceCharactersInRange:range withAttributedString:boundary];
+                [sourceIndices insertObject:@(NSNotFound) atIndex:range.location];
+            }
+        }];
+    }
+    self.displaySourceIndices = sourceIndices;
 
     NSRect usage = self.textView.textLayoutManager.usageBoundsForTextContainer;
     CGFloat pageWidth = self.vertical ? MAX(1.0, ceil(usage.size.height)) : page.width;
@@ -846,6 +971,7 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
         return;
     }
     NSUInteger sourceIndex = self.displaySourceIndices[(NSUInteger)hitIndex].unsignedIntegerValue;
+    if (sourceIndex == NSNotFound) return;
     for (GAGlyphLayoutRun *hit in self.glyphHits)
         if (NSLocationInRange(sourceIndex, hit.range)) {
             if (self.onGlyphSelected)

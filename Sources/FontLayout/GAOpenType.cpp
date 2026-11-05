@@ -1,4 +1,5 @@
 #include "GAOpenType.h"
+#include "GASubstitutionBuffer.h"
 
 namespace ga::layout {
 std::string featureLabel(Tag feature, unsigned value) {
@@ -161,7 +162,8 @@ static std::vector<Pattern> readContexts(View sub, unsigned type) {
     }
     return result;
 }
-std::optional<std::vector<size_t>> match(const Pattern &pattern, const Buffer &buffer, size_t start,
+template <typename Sequence>
+static std::optional<std::vector<size_t>> matchSequence(const Pattern &pattern, const Sequence &buffer, size_t start,
                                          const GDEF &gdef, LookupFlags flags, Span *scope) {
     if (start >= buffer.size() || pattern.input.empty() || !accepts(gdef, flags, buffer[start]))
         return {};
@@ -207,6 +209,15 @@ std::optional<std::vector<size_t>> match(const Pattern &pattern, const Buffer &b
         *scope = range;
     return input;
 }
+std::optional<std::vector<size_t>> match(const Pattern &pattern, const Buffer &buffer, size_t start,
+                                         const GDEF &gdef, LookupFlags flags, Span *scope) {
+    return matchSequence(pattern, buffer, start, gdef, flags, scope);
+}
+std::optional<std::vector<size_t>> match(const Pattern &pattern, const SubstitutionBuffer &buffer,
+                                         size_t start, const GDEF &gdef, LookupFlags flags, Span *scope) {
+    return matchSequence(pattern, buffer, start, gdef, flags, scope);
+}
+
 
 static std::vector<Feature> readFeatures(View list) {
     if (!list)
@@ -590,5 +601,13 @@ std::vector<Glyph> substitutionOutputs(const Subtable &s, Glyph glyph) {
         return result;
     }
     return {};
+}
+Glyph reverseSubstitutionOutput(const Subtable &sub, unsigned coverageIndex) {
+    View data = sub.data;
+    size_t at = 6 + data.u16(4) * 2;
+    at += 2 + data.u16(at) * 2;
+    if (coverageIndex >= data.u16(at))
+        throw InvalidTable("reverse substitute exceeds coverage");
+    return data.u16(at + 2 + coverageIndex * 2);
 }
 } // namespace ga::layout

@@ -71,6 +71,12 @@ NSColor *GAGlyphForegroundColor(void) {
     if (_overrides.count == 0) return NSControlStateValueOn;
     return _overrides.count == 3 ? NSControlStateValueOff : NSControlStateValueMixed;
 }
+- (BOOL)matchesColors:(GAPreviewColors *)colors {
+    return [_overrides isEqualToDictionary:colors->_overrides];
+}
+- (BOOL)followsSystemForRole:(GAPreviewColorRole)role {
+    return _overrides[@(role)] == nil;
+}
 - (NSColor *)colorForRole:(GAPreviewColorRole)role {
     if (_overrides[@(role)]) return _overrides[@(role)];
     if (role == GAPreviewColorGlyph) return GAGlyphForegroundColor();

@@ -98,6 +98,8 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
 @property (nonatomic, strong) NSArray<GARowItem *> *rows;
 @property (nonatomic, strong, nullable) GAGlyphResolution *temporaryResolution;
 @property (nonatomic, copy, nullable) NSString *displayedText;
+@property (nonatomic, copy, nullable) NSString *trackedFieldText;
+@property (nonatomic, strong, nullable) NSMutableData *displayedSourceEdits;
 @property (nonatomic, strong, nullable) GAGlyphVariant *selectedVariant;
 @property (nonatomic) NSRange selectedVariantTextRange;
 @property (nonatomic) BOOL suppressSelectionCallback;
@@ -377,6 +379,9 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
 - (void)setAttributedText:(NSAttributedString *)attributedText {
     NSAttributedString *fieldText = GAFieldTextFromModelText(attributedText);
     NSAttributedString *normalized = [self plainCopyOfAttributedText:fieldText];
+    if (![self.trackedFieldText isEqualToString:normalized.string]) {
+        self.displayedSourceEdits = nil;
+    }
     NSTextView *editor = (NSTextView *)self.searchField.currentEditor;
     NSRange selection = editor != nil ? editor.selectedRange : NSMakeRange(NSNotFound, 0);
     self.suppressTextChangeCallback = YES;
@@ -515,9 +520,58 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
     if (self.searchFieldEditor == nil) {
         GASearchFieldEditor *editor = [[GASearchFieldEditor alloc] initWithFrame:NSZeroRect];
         editor.fieldEditor = YES;
+        editor.allowsUndo = YES;
         self.searchFieldEditor = editor;
+        [NSNotificationCenter.defaultCenter addObserver:self
+            selector:@selector(recordFieldEdit:) name:NSTextStorageWillProcessEditingNotification
+            object:editor.textStorage];
     }
     return self.searchFieldEditor;
+}
+
+- (NSString *)currentFieldText {
+    return self.searchField.currentEditor.string ?: self.searchField.stringValue;
+}
+
+- (void)recordFieldEdit:(NSNotification *)notification {
+    NSTextStorage *storage = notification.object;
+    if (!self.displayedSourceEdits || self.suppressTextChangeCallback ||
+        self.searchField.currentEditor != self.searchFieldEditor ||
+        !(storage.editedMask & NSTextStorageEditedCharacters)) {
+        return;
+    }
+    NSRange changed = storage.editedRange;
+    NSString *before = self.trackedFieldText;
+    NSString *after = storage.string;
+    NSInteger shift = storage.changeInLength;
+    NSInteger oldLength = (NSInteger)changed.length - shift;
+    if (changed.location > before.length || NSMaxRange(changed) > after.length ||
+        oldLength < 0 || (NSUInteger)oldLength > before.length - changed.location ||
+        (NSInteger)before.length + shift != (NSInteger)after.length) {
+        self.displayedSourceEdits = nil;
+        return;
+    }
+    NSRange replaced = NSMakeRange(changed.location, (NSUInteger)oldLength);
+    if (![[before substringToIndex:replaced.location] isEqualToString:[after substringToIndex:changed.location]] ||
+        ![[before substringFromIndex:NSMaxRange(replaced)] isEqualToString:[after substringFromIndex:NSMaxRange(changed)]]) {
+        self.displayedSourceEdits = nil;
+        return;
+    }
+    GASourceEdit edit = { replaced, shift };
+    [self.displayedSourceEdits appendBytes:&edit length:sizeof(edit)];
+    self.trackedFieldText = after;
+}
+
+- (NSRange)currentInputRangeForDisplayedRange:(NSRange)range {
+    if (!self.displayedSourceEdits || ![self.trackedFieldText isEqualToString:self.currentFieldText]) {
+        return NSMakeRange(NSNotFound, 0);
+    }
+    const GASourceEdit *edits = self.displayedSourceEdits.bytes;
+    NSUInteger count = self.displayedSourceEdits.length / sizeof(*edits);
+    for (NSUInteger index = 0; index < count && range.location != NSNotFound; index++) {
+        range = GARemapSourceRange(range, edits[index]);
+    }
+    return range;
 }
 
 - (void)setGlyphListDimmed:(BOOL)dimmed {
@@ -921,6 +975,8 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
 - (void)updateGroups:(NSArray<GACharacterGroup *> *)groups
            sourceText:(NSString *)text
          fontDocument:(GAFontDocument *)document {
+    self.trackedFieldText = self.currentFieldText;
+    self.displayedSourceEdits = [NSMutableData data];
     self.temporaryResolution = [self rebindTemporaryForGroups:groups sourceText:text document:document];
     NSArray<GARowItem *> *rows = GARowsForGroups(groups, self.temporaryResolution);
     if ([self updateGroupsWithSameRows:groups rows:rows]) {
@@ -931,6 +987,7 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
 }
 
 - (void)setGroups:(NSArray<GACharacterGroup *> *)groups {
+    self.displayedSourceEdits = nil;
     self.temporaryResolution = nil;
     [self setGroups:groups sourceText:nil rows:GARowsForGroups(groups, nil)];
 }

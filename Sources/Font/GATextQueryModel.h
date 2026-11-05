@@ -23,20 +23,23 @@ NS_ASSUME_NONNULL_BEGIN
 
 /// Build sidebar rows from current scan data and literal selections. This data
 /// path is independent of windows and never excludes a result for crossing a seed.
-FOUNDATION_EXPORT NSArray<GACharacterGroup *> *
+FOUNDATION_EXPORT NSArray<GACharacterGroup *> * _Nullable
 GABuildDisplayGroups(NSArray<GACharacterGroup *> *groups, NSString *text,
-                     NSArray<GAGlyphSelectionRun *> *selections, GAFontDocument *document);
+                     NSArray<GAGlyphSelectionRun *> *selections, GAFontDocument *document,
+                     BOOL (^_Nullable cancelled)(void));
 /// A complete sidebar and native-preview projection of one query.
 @interface GAScanDisplaySnapshot : NSObject
 @property (nonatomic, strong) NSArray<GACharacterGroup *> *display;
 @property (nonatomic, copy) NSString *text;
 @property (nonatomic, copy) NSArray<GAGlyphSelectionRun *> *selections;
 @property (nonatomic, copy, nonnull) NSString *multiText;
+/// Locations of zero-width shaping boundaries in multiText.
+@property (nonatomic, copy, nonnull) NSIndexSet *multiOmissions;
 @property (nonatomic, strong, nonnull) NSArray<GACharacterGroup *> *multiGroups;
 @property (nonatomic, strong, nonnull) NSMapTable<GACharacterGroup *, GACharacterGroup *> *multiGroupSources;
 @end
 
-FOUNDATION_EXPORT GAScanDisplaySnapshot *GABuildScanDisplaySnapshot(NSString *text,
-    NSArray<GACharacterGroup *> *groups);
+FOUNDATION_EXPORT GAScanDisplaySnapshot * _Nullable GABuildScanDisplaySnapshot(NSString *text,
+    NSArray<GACharacterGroup *> *groups, BOOL (^_Nullable cancelled)(void));
 
 NS_ASSUME_NONNULL_END

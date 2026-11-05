@@ -12,4 +12,7 @@ NSString *GAStringFromUnicodeScalars(NSArray<NSNumber *> *scalars);
 /// is rotated a quarter turn in vertical text (values R and Tr).
 BOOL GAVerticalScalarRotates(uint32_t scalar);
 
+/// Nonprinting characters that affect layout independently of a glyph mapping.
+BOOL GAIsTextLayoutControl(unichar character);
+
 NS_ASSUME_NONNULL_END

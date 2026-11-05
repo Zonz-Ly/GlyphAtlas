@@ -16,6 +16,8 @@ typedef NS_ENUM(NSInteger, GAPreviewColorRole) {
 @property(nonatomic, readonly) NSControlStateValue systemState;
 @property(nonatomic, copy, readonly) NSDictionary<NSString *, NSData *> *representation;
 - (instancetype)initWithRepresentation:(nullable NSDictionary<NSString *, NSData *> *)representation;
+- (BOOL)matchesColors:(GAPreviewColors *)colors;
+- (BOOL)followsSystemForRole:(GAPreviewColorRole)role;
 - (NSColor *)colorForRole:(GAPreviewColorRole)role;
 - (void)setColor:(NSColor *)color forRole:(GAPreviewColorRole)role;
 - (void)followSystem;

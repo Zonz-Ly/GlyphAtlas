@@ -15,7 +15,7 @@ class Catalogue {
     const std::vector<Lookup> &lookups_;
     const GDEF &gdef_;
     Glyph seed_;
-    Budget budget_{1};
+    Budget budget_;
     std::map<unsigned, std::vector<Output>> memo_;
     std::set<unsigned> active_;
     const std::vector<Output> empty_;
@@ -64,8 +64,9 @@ class Catalogue {
     }
 
   public:
-    Catalogue(const std::vector<Lookup> &lookups, const GDEF &gdef, Glyph seed)
-        : lookups_(lookups), gdef_(gdef), seed_(seed) {}
+    Catalogue(const std::vector<Lookup> &lookups, const GDEF &gdef, Glyph seed,
+              const Cancellation *cancellation)
+        : lookups_(lookups), gdef_(gdef), seed_(seed), budget_(1, cancellation) {}
     const std::vector<Output> &lookup(unsigned index) {
         budget_.step();
         if (index >= lookups_.size() || active_.count(index) || active_.size() >= 64)
@@ -98,12 +99,7 @@ class Catalogue {
                 int ci = sub.coverage.index(seed_);
                 if (ci < 0)
                     continue;
-                View d = sub.data;
-                size_t at = 6 + d.u16(4) * 2;
-                at += 2 + d.u16(at) * 2;
-                if (unsigned(ci) >= d.u16(at))
-                    throw InvalidTable("reverse substitute exceeds coverage");
-                append(outputs, 0, {d.u16(at + 2 + ci * 2)});
+                append(outputs, 0, {reverseSubstitutionOutput(sub, unsigned(ci))});
             } else
                 for (const auto &pattern : sub.patterns) {
                     std::vector<unsigned> slots(pattern.input.size());
@@ -142,10 +138,11 @@ class Catalogue {
 };
 } // namespace
 std::vector<RelatedSubstitution> OpenType::relatedSubstitutions(Glyph seed,
-                                                                const GDEF &gdef) const {
+                                                                const GDEF &gdef,
+                                                                const Cancellation *cancellation) const {
     if (positioning_)
         throw InvalidTable("positioning program used as substitution catalogue");
-    Catalogue catalogue(lookups_, gdef, seed);
+    Catalogue catalogue(lookups_, gdef, seed, cancellation);
     std::vector<RelatedSubstitution> result;
     std::set<std::tuple<Tag, unsigned, std::vector<Glyph>>> seen;
     auto add = [&](const std::vector<Glyph> &glyphs, Tag feature, unsigned value) {

@@ -25,9 +25,18 @@ NS_ASSUME_NONNULL_BEGIN
 - (instancetype)initWithFont:(CTFontRef)font
                  coordinates:(nullable NSDictionary<NSNumber *, NSNumber *> *)coordinates
                      sharing:(nullable GASubstitutionEngine *)source;
-- (NSArray<GASubstitutionMatch *> *)discoverText:(NSString *)text selections:(NSArray<GAGlyphSelectionRun *> *)selections;
-- (NSArray<GASubstitutionMatch *> *)discoverGlyphIDs:(NSArray<NSNumber *> *)glyphIDs;
+/// nil indicates cancellation, distinct from a completed empty result.
+/// Incomplete results retain verified candidates but may be retried.
+- (nullable NSArray<GASubstitutionMatch *> *)discoverText:(NSString *)text
+                                                selections:(NSArray<GAGlyphSelectionRun *> *)selections
+                                                incomplete:(BOOL * _Nullable)incomplete
+                                                 cancelled:(BOOL (^_Nullable)(void))cancelled;
+- (nullable NSArray<GASubstitutionMatch *> *)discoverGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
+                                                        cancelled:(BOOL (^_Nullable)(void))cancelled;
 - (NSArray<NSString *> *)languageTags;
+- (NSArray<NSString *> *)glyphFeatureTags;
+- (nullable NSIndexSet *)glyphOutputsForFeatureTag:(NSString *)tag
+                                          cancelled:(BOOL (^_Nullable)(void))cancelled;
 /// Lazy reverse lookup for a missing native layout GID/sequence. Candidate
 /// rows all belong to sourceRange, in their existing sidebar order.
 - (nullable GASubstitutionOrigin *)originForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs

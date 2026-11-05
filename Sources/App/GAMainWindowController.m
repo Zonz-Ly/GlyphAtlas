@@ -12,6 +12,17 @@
 
 static NSString *const GAOpeningSettingsKey = @"GAOpeningSettings";
 
+/// Prefer a non-C0/DEL mapping for input, keeping the first if none qualifies.
+static NSNumber *GAInputScalarForGlyph(NSArray<NSNumber *> *scalars) {
+    for (NSNumber *scalar in scalars) {
+        uint32_t value = scalar.unsignedIntValue;
+        if (value > 0x1F && value != 0x7F) {
+            return scalar;
+        }
+    }
+    return scalars.firstObject;
+}
+
 #pragma mark - Font title
 
 @interface GAFontTitleView : NSStackView
@@ -139,6 +150,18 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 
 #pragma mark - Main window
 
+@interface GAPendingGlyphEdit : NSObject
+@property (nonatomic, strong) GACharacterGroup *group;
+@property (nonatomic, strong) GAGlyphVariant *variant;
+@property (nonatomic) BOOL insert;
+@end
+@implementation GAPendingGlyphEdit
+@end
+
+static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup *group) {
+    return variant.isLigature ? variant.sourceTextRange : group.textRange;
+}
+
 @interface GAMainWindowController () <NSWindowDelegate, NSToolbarDelegate, NSPopoverDelegate>
 @property (nonatomic, strong) NSSplitViewController *splitViewController;
 @property (nonatomic, strong) GASidebarViewController *sidebarViewController;
@@ -156,12 +179,20 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 @property (nonatomic, strong, nullable) GAFontDocument *workerFontDocument;
 @property (nonatomic, strong) dispatch_queue_t fontQueue;
 @property (nonatomic, strong) dispatch_queue_t analysisQueue;
+@property (nonatomic, strong) dispatch_queue_t glyphFilterQueue;
+@property (nonatomic, strong, nullable) NSProgress *glyphFilterRequest;
+@property (nonatomic, copy, nullable) NSString *pendingGlyphFilterTag;
+@property (nonatomic, copy, readwrite, nullable) NSString *allGlyphFeatureTag;
 @property(nonatomic, strong, nullable) GATextQueryModel *queryModel;
 @property (nonatomic, copy, nullable) NSString *pendingWorkerText;
 @property (nonatomic, copy, nullable) NSArray<GAGlyphSelectionRun *> *pendingWorkerSelections;
-@property (nonatomic) NSUInteger workerGeneration;
+@property (nonatomic, strong, nullable) GAFontDocument *pendingWorkerDocument;
 @property (nonatomic) BOOL didFocusInitialField;
+@property (nonatomic) BOOL opensFullScreen;
+@property (nonatomic) NSSize windowedSize;
 @property (nonatomic, strong, nullable) GAScanDisplaySnapshot *scanSnapshot;
+@property (nonatomic) NSUInteger scanSnapshotGeneration;
+@property (nonatomic, strong, nullable) GAPendingGlyphEdit *pendingGlyphEdit;
 @property (nonatomic, strong, nullable) NSProgress *layoutLookup;
 @property (nonatomic) NSTextAlignment textAlignment;
 @property (nonatomic) BOOL verticalWriting;
@@ -176,7 +207,9 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 @property (nonatomic) BOOL appendRevealPending;
 @end
 
-@implementation GAMainWindowController
+@implementation GAMainWindowController {
+    _Atomic(NSUInteger) _workerGeneration;
+}
 
 - (instancetype)init {
     NSRect frame = NSMakeRect(0, 0, 600, 400);
@@ -198,6 +231,7 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
     self = [super initWithWindow:window];
     if (self) {
         NSDictionary *settings = [NSUserDefaults.standardUserDefaults dictionaryForKey:GAOpeningSettingsKey];
+        _opensFullScreen = [settings[@"fullScreen"] boolValue];
         _viewMode = (GAViewMode)[settings[@"viewMode"] integerValue];
         _showsMetrics = settings[@"showsMetrics"] ? [settings[@"showsMetrics"] boolValue] : YES;
         _verticalWriting = [settings[@"vertical"] boolValue];
@@ -215,6 +249,8 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
         [self.detailViewController setUnderlined:_underlined];
         [self.detailViewController setStruckThrough:_struckThrough];
         [self.detailViewController setOutlined:_outlined];
+        [self.detailViewController setTextAlignment:_textAlignment];
+        [self.detailViewController setWritingDirectionVertical:_verticalWriting];
         [self.detailViewController setBaseWritingDirection:_baseWritingDirection];
         [self.detailViewController setTypesettingLanguage:
             GAIdentifierForOpenTypeLanguage(_typesettingLanguageTag) ?: @""];
@@ -245,6 +281,7 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
     self.fontQueue = dispatch_queue_create("com.zonz.GlyphAtlas.font", DISPATCH_QUEUE_SERIAL);
     self.analysisQueue = dispatch_queue_create("com.zonz.GlyphAtlas.analysis",
                                                DISPATCH_QUEUE_SERIAL);
+    self.glyphFilterQueue = dispatch_queue_create("com.zonz.GlyphAtlas.glyphFilter", DISPATCH_QUEUE_SERIAL);
 
     self.sidebarViewController = [[GASidebarViewController alloc] init];
     self.detailViewController = [[GADetailViewController alloc] init];
@@ -317,11 +354,11 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
     };
     self.sidebarViewController.onGlyphActivated = ^(GACharacterGroup *group,
                                                     GAGlyphVariant *variant) {
-        [weakSelf activateGlyphVariant:variant inGroup:group];
+        [weakSelf editGlyphVariant:variant inGroup:group insert:NO];
     };
     self.sidebarViewController.onGlyphShiftActivated = ^(GACharacterGroup *group,
                                                          GAGlyphVariant *variant) {
-        [weakSelf insertGlyphVariant:variant inGroup:group];
+        [weakSelf editGlyphVariant:variant inGroup:group insert:YES];
     };
     self.detailViewController.onAllGlyphDoubleClick = ^(GAAllGlyphEntry *entry) {
         [weakSelf appendAllGlyphEntry:entry];
@@ -352,34 +389,67 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
     [self.detailViewController revealAllGlyphID:variant.glyphIDs.firstObject quick:quick];
 }
 
+- (NSArray<NSString *> *)allGlyphFeatureTags {
+    return self.fontDocument.glyphFeatureTags ?: @[];
+}
+
+- (void)filterAllGlyphsByFeature:(NSString *)tag {
+    [self.glyphFilterRequest cancel];
+    self.glyphFilterRequest = nil;
+    self.pendingGlyphFilterTag = tag;
+    if (!tag) {
+        self.allGlyphFeatureTag = nil;
+        [self.detailViewController setAllGlyphVisibleIDs:nil];
+        [self revealGlyphForVariant:self.lastSelectedVariant];
+        return;
+    }
+    GAFontDocument *document = self.fontDocument;
+    NSProgress *request = [NSProgress discreteProgressWithTotalUnitCount:1];
+    self.glyphFilterRequest = request;
+    __weak typeof(self) weakSelf = self;
+    dispatch_async(self.glyphFilterQueue, ^{
+        NSIndexSet *outputs = [document glyphOutputsForFeatureTag:tag
+                                                       cancelled:^BOOL { return request.cancelled; }];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            __strong typeof(weakSelf) self = weakSelf;
+            if (!self || request.cancelled || self.glyphFilterRequest != request ||
+                self.fontDocument != document)
+                return;
+            self.glyphFilterRequest = nil;
+            self.pendingGlyphFilterTag = nil;
+            self.allGlyphFeatureTag = outputs ? tag : nil;
+            [self.detailViewController setAllGlyphVisibleIDs:outputs];
+            [self revealGlyphForVariant:self.lastSelectedVariant];
+        });
+    });
+}
+
 - (void)setViewMode:(GAViewMode)viewMode {
     [self cancelLayoutLookup];
     _viewMode = viewMode;
     self.detailViewController.viewMode = viewMode;
     [self revealGlyphForVariant:self.lastSelectedVariant];
-    if (viewMode == GAViewModeMultiCharacter) {
-        [self.detailViewController setMultiText:self.scanSnapshot.multiText ?: @""
-                                         groups:self.scanSnapshot.multiGroups ?: @[]];
-        [self.detailViewController setTextAlignment:self.textAlignment];
-        [self.detailViewController setWritingDirectionVertical:self.verticalWriting];
-        [self.detailViewController setFeatureSettings:self.fontFeatures.settings ?: @[]];
-    }
 }
 
 - (void)selectLayoutGlyphIDs:(NSArray<NSNumber *> *)glyphIDs multiRange:(NSRange)range {
-    [self cancelLayoutLookup];
-    NSRange source = NSMakeRange(NSNotFound, 0);
-    for (GACharacterGroup *group in self.scanSnapshot.multiGroups)
-        if (NSIntersectionRange(group.textRange, range).length) {
-            GACharacterGroup *original = [self.scanSnapshot.multiGroupSources objectForKey:group] ?: group;
-            source = source.location == NSNotFound ? original.textRange
-                                                   : NSUnionRange(source, original.textRange);
-        }
-    if (source.location == NSNotFound) return;
-    if ([self.sidebarViewController selectGlyphIDs:glyphIDs textRange:source]) return;
+    if (![self canEditFromScanSnapshotForText:self.sidebarViewController.text]) return;
     GAScanDisplaySnapshot *snapshot = self.scanSnapshot;
     GAFontDocument *document = self.fontDocument;
     if (!snapshot || !document) return;
+    [self cancelLayoutLookup];
+    NSRange source = NSMakeRange(NSNotFound, 0);
+    for (GACharacterGroup *group in snapshot.multiGroups)
+        if (NSIntersectionRange(group.textRange, range).length) {
+            GACharacterGroup *original = [snapshot.multiGroupSources objectForKey:group] ?: group;
+            if (source.location == NSNotFound) {
+                source = original.textRange;
+            } else {
+                if (NSMaxRange(source) != original.textRange.location) return;
+                source.length += original.textRange.length;
+            }
+        }
+    if (source.location == NSNotFound) return;
+    if ([self.sidebarViewController selectGlyphIDs:glyphIDs textRange:source]) return;
     BOOL vertical = self.verticalWriting;
     NSWritingDirection direction = self.baseWritingDirection;
     NSString *languageTag = self.typesettingLanguageTag;
@@ -396,6 +466,7 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
             cancelled:^BOOL { return progress.cancelled; }];
         dispatch_async(dispatch_get_main_queue(), ^{
             if (progress.cancelled || self.scanSnapshot != snapshot ||
+                ![self canEditFromScanSnapshotForText:self.sidebarViewController.text] ||
                 self.fontDocument != document || self.viewMode != GAViewModeMultiCharacter ||
                 self.verticalWriting != vertical ||
                 self.baseWritingDirection != direction ||
@@ -443,13 +514,15 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 
 - (void)saveOpeningSettings {
     NSMutableDictionary *settings = [self.detailViewController.currentPreviewSettings mutableCopy];
+    BOOL fullScreen = (self.window.styleMask & NSWindowStyleMaskFullScreen) != 0;
+    NSSize windowSize = fullScreen ? self.windowedSize : self.window.frame.size;
     [settings addEntriesFromDictionary:@{
         @"viewMode":@(self.viewMode), @"showsMetrics":@(self.showsMetrics),
         @"vertical":@(self.verticalWriting), @"alignment":@(self.textAlignment),
         @"underlined":@(self.underlined), @"struckThrough":@(self.struckThrough),
         @"outlined":@(self.outlined), @"baseWritingDirection":@(self.baseWritingDirection),
         @"typesettingLanguageTag":self.typesettingLanguageTag,
-        @"windowSize":NSStringFromSize(self.window.frame.size),
+        @"windowSize":NSStringFromSize(windowSize), @"fullScreen":@(fullScreen),
     }];
     [NSUserDefaults.standardUserDefaults setObject:settings forKey:GAOpeningSettingsKey];
 }
@@ -504,6 +577,10 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
     return self.detailViewController.previewColors;
 }
 
+- (void)applyPreviewColorRepresentation:(NSDictionary<NSString *, NSData *> *)representation {
+    [self.detailViewController applyPreviewColorRepresentation:representation];
+}
+
 - (void)setPreviewColor:(NSColor *)color forRole:(GAPreviewColorRole)role {
     [self.previewColors setColor:color forRole:role];
     [self.detailViewController refreshPreviewColors];
@@ -530,26 +607,30 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
     [self.detailViewController setFeatureSettings:self.fontFeatures.settings ?: @[]];
 }
 
+- (void)registerUndoForGlyphEditFromText:(NSAttributedString *)text {
+    [self.window.undoManager registerUndoWithTarget:self handler:^(GAMainWindowController *target) {
+        [target registerUndoForGlyphEditFromText:target.sidebarViewController.attributedText];
+        target.pendingGlyphEdit = nil;
+        target.appendRevealPending = NO;
+        [target.sidebarViewController selectGlyphKeyAfterNextReload:nil
+                                                           textRange:NSMakeRange(NSNotFound, 0)
+                                                              scroll:GAPendingSelectionScrollGroup];
+        [target.sidebarViewController setAttributedText:text];
+        [target scheduleAnalysis];
+    }];
+}
+
 - (void)appendAllGlyphEntry:(GAAllGlyphEntry *)entry {
-    NSNumber *scalar = entry.unicodeScalars.firstObject;
+    NSNumber *scalar = GAInputScalarForGlyph(entry.unicodeScalars);
     BOOL needsSelection = scalar == nil;
     if (scalar == nil) {
         // The clicked glyph has no Unicode mapping of its own. Borrow the first
         // mapping from its replacement set and pin the clicked glyph with a run.
         NSArray<GACharacterGroup *> *groups =
-            [self.fontDocument analyzeGlyphIDs:@[entry.glyphID]];
+            [self.fontDocument analyzeGlyphIDs:@[entry.glyphID] cancelled:nil];
         for (GAGlyphVariant *variant in groups.firstObject.variants) {
             if (variant.unicodeScalars.count > 0) {
                 scalar = variant.unicodeScalars.firstObject;
-                break;
-            }
-        }
-    } else if (scalar.unsignedIntValue <= 0x1F || scalar.unsignedIntValue == 0x7F) {
-        for (NSUInteger index = 1; index < entry.unicodeScalars.count; index++) {
-            NSNumber *candidate = entry.unicodeScalars[index];
-            uint32_t value = candidate.unsignedIntValue;
-            if (value > 0x1F && value != 0x7F) {
-                scalar = candidate;
                 break;
             }
         }
@@ -565,11 +646,13 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
                                                   featureSources:@[]
                                                         ligature:NO];
     }
+    NSAttributedString *before = self.sidebarViewController.attributedText;
     NSRange range = [self.sidebarViewController appendInputString:string
                                                        selection:selection];
     if (range.location == NSNotFound) {
         return;
     }
+    [self registerUndoForGlyphEditFromText:before];
     self.appendRevealPending = YES;
     [self.sidebarViewController selectGlyphKeyAfterNextReload:entry.glyphID.stringValue
                                                     textRange:range
@@ -579,6 +662,11 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 }
 
 #pragma mark - Window and input focus
+
+- (void)windowWillEnterFullScreen:(NSNotification *)notification {
+    self.windowedSize = self.window.frame.size;
+    self.opensFullScreen = NO;
+}
 
 - (BOOL)windowShouldZoom:(NSWindow *)window toFrame:(NSRect)newFrame {
     NSEvent *event = NSApp.currentEvent;
@@ -777,6 +865,14 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 - (void)windowWillClose:(NSNotification *)notification {
     [self cancelLayoutLookup];
     if (notification.object == self.window) {
+        [self.glyphFilterRequest cancel];
+        self.glyphFilterRequest = nil;
+        self.pendingGlyphFilterTag = nil;
+        @synchronized (self) {
+            self.fontLoadGeneration += 1;
+        }
+        [self invalidateWorkerQueries];
+        self.pendingGlyphEdit = nil;
         [self.variationPopover close];
     }
 }
@@ -809,6 +905,7 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
             }
             GAGlyphVariant *selected = preserve ? self.lastSelectedVariant : nil;
             [self cancelLayoutLookup];
+            self.pendingGlyphEdit = nil;
             self.fontDocument = document;
             if (!document.hasRightToLeftLanguages)
                 [self setBaseWritingDirection:NSWritingDirectionNatural];
@@ -818,11 +915,7 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
             [self setTypesettingLanguageTag:languageTag];
             if (!preserve) self.fontFeatures = [[GAFontFeatures alloc] initWithFont:document.fontBox.font];
             [self applyFontFeatureChoices];
-            @synchronized (self) {
-                self.pendingWorkerText = nil;
-                self.pendingWorkerSelections = nil;
-                self.workerGeneration += 1;
-            }
+            [self invalidateWorkerQueries];
             // Swap all model-owned state on its queue after the old batch yields.
             dispatch_async(self.analysisQueue, ^{
                 self.workerFontDocument = document;
@@ -841,12 +934,23 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
                 });
             });
             [self.detailViewController setFontDocument:document];
+            NSString *filter = self.pendingGlyphFilterTag ?: self.allGlyphFeatureTag;
+            if (preserve && filter.length && ![self.allGlyphFeatureTags containsObject:filter]) {
+                filter = self.allGlyphFeatureTag;
+                if (filter.length && ![self.allGlyphFeatureTags containsObject:filter]) filter = nil;
+            }
+            if (!preserve || filter || self.allGlyphFeatureTag)
+                [self filterAllGlyphsByFeature:preserve ? filter : nil];
             if (!preserve && self.onFontLoaded != nil) self.onFontLoaded(document.fontURL ?: url);
             NSString *displayName = self.fontResource.usesFamilyName ? self.fontResource.name : document.fullName;
             self.window.title = displayName;
             self.window.subtitle = document.fontURL.lastPathComponent ?: @"";
             self.titleFontNameField.stringValue = displayName;
-            self.titleFontNameField.toolTip = displayName;
+            CTFontRef font = document.fontBox.font;
+            NSString *originalName = CFBridgingRelease(self.fontResource.usesFamilyName
+                ? CTFontCopyName(font, kCTFontFamilyNameKey) : CTFontCopyFullName(font));
+            self.titleFontNameField.toolTip = originalName.length && ![originalName isEqualToString:displayName]
+                ? [NSString stringWithFormat:@"%@\n%@", displayName, originalName] : displayName;
             [self.titleFontNameField invalidateIntrinsicContentSize];
             if (!preserve) [self.sidebarViewController setGroups:@[]];
             if (selected != nil) {
@@ -856,6 +960,10 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
             }
             if (self.sidebarViewController.text.length == 0) {
                 [self.detailViewController setVariant:nil];
+            }
+            if (!preserve && self.opensFullScreen && self.window.isVisible) {
+                self.opensFullScreen = NO;
+                [self.window toggleFullScreen:nil];
             }
         });
     });
@@ -911,7 +1019,7 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
                 inputSelection.length == 0 &&
                 inputSelection.location == NSMaxRange(range);
 
-            NSRange match = NSMakeRange(NSNotFound, 0);
+            NSRange match;
             if (caretAtEnd && [current hasPrefix:source]) {
                 match = NSMakeRange(range.location, source.length);
             } else if (caretAtStart && [current hasSuffix:source]) {
@@ -995,7 +1103,7 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 }
 
 /// Returns the text that activation puts at the source range. An encoded glyph
-/// contributes its first Unicode scalar; an unencoded glyph contributes the
+/// contributes its preferred input scalar; an unencoded glyph contributes the
 /// existing source text and a run through `outSelection`.
 /// The caller must provide a variable to receive the optional selection.
 - (NSString *)activationPayloadForVariant:(GAGlyphVariant *)variant
@@ -1004,7 +1112,7 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
     NSArray<NSNumber *> *scalars = variant.unicodeScalars;
     if (variant.glyphIDs.count == 1 && scalars.count > 0) {
         NSString *replacement =
-            GAStringFromUnicodeScalars(@[scalars.firstObject]);
+            GAStringFromUnicodeScalars(@[GAInputScalarForGlyph(scalars)]);
         if (replacement.length == 0) {
             return nil;
         }
@@ -1024,93 +1132,121 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
     return sourceText;
 }
 
-- (void)activateGlyphVariant:(GAGlyphVariant *)variant inGroup:(GACharacterGroup *)group {
-    NSAttributedString *currentText = self.sidebarViewController.attributedText;
-    NSString *text = currentText.string;
-    NSRange range = [self sourceRangeForVariant:variant inGroup:group text:text];
-    if (range.location == NSNotFound || range.length == 0 ||
-        NSMaxRange(range) > text.length) {
-        NSBeep();
-        return;
-    }
-
-    NSMutableAttributedString *attributedText = [currentText mutableCopy];
-    NSRange removalRange = [self fullSelectionRangeCoveringRange:range
-                                              inAttributedText:attributedText];
-    if (removalRange.location != NSNotFound && removalRange.length > 0 &&
-        NSMaxRange(removalRange) <= attributedText.length) {
-        [attributedText removeAttribute:GAGlyphSelectionAttributeName
-                                  range:removalRange];
-    }
-
-    GAGlyphSelection *selection = nil;
-    NSString *payload =
-        [self activationPayloadForVariant:variant
-                               sourceText:[text substringWithRange:range]
-                                selection:&selection];
-    if (payload == nil) {
-        NSBeep();
-        return;
-    }
-
-    NSRange selectedRange = range;
-    if (selection != nil) {
-        [attributedText addAttribute:GAGlyphSelectionAttributeName
-                              value:selection
-                              range:range];
-    } else {
-        // Activation inserts a single source character. Copy still uses all
-        // encodings of the glyph.
-        [attributedText replaceCharactersInRange:range withString:payload];
-        selectedRange = NSMakeRange(range.location, payload.length);
-    }
-
-    [self.sidebarViewController
-        selectGlyphKeyAfterNextReload:variant.glyphKey
-                            textRange:selectedRange
-                               scroll:GAPendingSelectionScrollSelectedToTopIfNeeded];
-    [self.sidebarViewController setAttributedText:attributedText];
-    [self scheduleAnalysis];
+- (BOOL)canEditFromScanSnapshotForText:(NSString *)text {
+    return self.scanSnapshotGeneration == self.workerGeneration &&
+        [self.scanSnapshot.text isEqualToString:text];
 }
 
-- (void)insertGlyphVariant:(GAGlyphVariant *)variant inGroup:(GACharacterGroup *)group {
+- (void)deferGlyphEditForVariant:(GAGlyphVariant *)variant inGroup:(GACharacterGroup *)group
+                         insert:(BOOL)insert {
+    GAPendingGlyphEdit *edit = [[GAPendingGlyphEdit alloc] init];
+    edit.group = group;
+    edit.variant = variant;
+    edit.insert = insert;
+    self.pendingGlyphEdit = edit;
+}
+
+/// Resolve against the new rows while the sidebar still has the old source map.
+- (GAPendingGlyphEdit *)resolvedGlyphEditInSnapshot:(GAScanDisplaySnapshot *)snapshot {
+    GAPendingGlyphEdit *edit = self.pendingGlyphEdit;
+    self.pendingGlyphEdit = nil;
+    if (!edit) return nil;
+
+    NSRange source = GAExactGlyphSourceRange(edit.variant, edit.group);
+    if (source.location == NSNotFound || !source.length ||
+        NSMaxRange(source) > self.scanSnapshot.text.length) {
+        return nil;
+    }
+    NSRange mapped = [self.sidebarViewController currentInputRangeForDisplayedRange:source];
+    if (mapped.location == NSNotFound || NSMaxRange(mapped) > snapshot.text.length ||
+        ![[self.scanSnapshot.text substringWithRange:source]
+            isEqualToString:[snapshot.text substringWithRange:mapped]]) {
+        return nil;
+    }
+
+    GAPendingGlyphEdit *match = nil;
+    for (GACharacterGroup *group in snapshot.display) {
+        if (!NSIntersectionRange(group.textRange, mapped).length ||
+            group.seeded != edit.group.seeded ||
+            group.insertedLigature != edit.group.insertedLigature) continue;
+        for (GAGlyphVariant *variant in group.variants) {
+            if (variant.isLigature != edit.variant.isLigature ||
+                !NSEqualRanges(GAExactGlyphSourceRange(variant, group), mapped) ||
+                ![variant.glyphIDs isEqualToArray:edit.variant.glyphIDs]) continue;
+            if (match) return nil;
+            match = [[GAPendingGlyphEdit alloc] init];
+            match.group = group;
+            match.variant = variant;
+            match.insert = edit.insert;
+        }
+    }
+    return match;
+}
+
+- (void)editGlyphVariant:(GAGlyphVariant *)variant inGroup:(GACharacterGroup *)group insert:(BOOL)insert {
     NSAttributedString *currentText = self.sidebarViewController.attributedText;
     NSString *text = currentText.string;
+    if (![self canEditFromScanSnapshotForText:text]) {
+        [self deferGlyphEditForVariant:variant inGroup:group insert:insert];
+        return;
+    }
     NSRange range = [self sourceRangeForVariant:variant inGroup:group text:text];
-    if (range.location == NSNotFound || range.length == 0 ||
-        NSMaxRange(range) > text.length) {
+    if (range.location == NSNotFound || !range.length || NSMaxRange(range) > text.length) {
         NSBeep();
         return;
     }
 
     GAGlyphSelection *selection = nil;
-    NSString *payload =
-        [self activationPayloadForVariant:variant
-                               sourceText:[text substringWithRange:range]
-                                selection:&selection];
+    NSString *payload = [self activationPayloadForVariant:variant sourceText:[text substringWithRange:range]
+                                               selection:&selection];
     if (payload == nil) {
         NSBeep();
         return;
     }
-
-    NSUInteger location = NSMaxRange(range);
-    NSMutableAttributedString *inserted =
-        [[NSMutableAttributedString alloc] initWithString:payload];
-    if (selection != nil) {
-        [inserted addAttribute:GAGlyphSelectionAttributeName
-                         value:selection
-                         range:NSMakeRange(0, inserted.length)];
-    }
-
     NSMutableAttributedString *attributedText = [currentText mutableCopy];
-    [attributedText insertAttributedString:inserted atIndex:location];
-    // Shift insertion keeps the current selection; only normal activation
-    // selects the resulting glyph.
+    if (insert) {
+        NSMutableAttributedString *inserted = [[NSMutableAttributedString alloc] initWithString:payload];
+        if (selection) {
+            [inserted addAttribute:GAGlyphSelectionAttributeName value:selection
+                             range:NSMakeRange(0, inserted.length)];
+        }
+        // Shift insertion keeps the current selection.
+        [attributedText insertAttributedString:inserted atIndex:NSMaxRange(range)];
+    } else {
+        NSRange removalRange = [self fullSelectionRangeCoveringRange:range inAttributedText:attributedText];
+        if (removalRange.location != NSNotFound && removalRange.length > 0 &&
+            NSMaxRange(removalRange) <= attributedText.length) {
+            [attributedText removeAttribute:GAGlyphSelectionAttributeName range:removalRange];
+        }
+        if (selection) {
+            [attributedText addAttribute:GAGlyphSelectionAttributeName value:selection range:range];
+        } else {
+            [attributedText replaceCharactersInRange:range withString:payload];
+            range.length = payload.length;
+        }
+        [self.sidebarViewController selectGlyphKeyAfterNextReload:variant.glyphKey textRange:range
+            scroll:GAPendingSelectionScrollSelectedToTopIfNeeded];
+    }
+    if (![attributedText isEqualToAttributedString:currentText])
+        [self registerUndoForGlyphEditFromText:currentText];
     [self.sidebarViewController setAttributedText:attributedText];
     [self scheduleAnalysis];
 }
 
 #pragma mark - Analysis
+
+- (NSUInteger)workerGeneration {
+    return _workerGeneration;
+}
+
+- (void)invalidateWorkerQueries {
+    @synchronized (self) {
+        self.pendingWorkerText = nil;
+        self.pendingWorkerSelections = nil;
+        self.pendingWorkerDocument = nil;
+        _workerGeneration += 1;
+    }
+}
 
 - (void)scheduleAnalysis {
     [self cancelLayoutLookup];
@@ -1132,7 +1268,8 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
     @synchronized (self) {
         self.pendingWorkerText = text;
         self.pendingWorkerSelections = selections;
-        self.workerGeneration += 1;
+        self.pendingWorkerDocument = self.fontDocument;
+        self->_workerGeneration += 1;
     }
     if (text.length == 0) {
         [self clearScanDisplay];
@@ -1145,10 +1282,11 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 /// Main-thread-only reset for an empty input.
 - (void)clearScanDisplay {
     [self cancelLayoutLookup];
+    self.pendingGlyphEdit = nil;
     self.scanSnapshot = nil;
     [self.sidebarViewController setGroups:@[]];
     [self.detailViewController setVariant:nil];
-    [self.detailViewController setMultiText:@"" groups:@[]];
+    [self.detailViewController setMultiText:@"" groups:@[] omissions:NSIndexSet.indexSet];
 }
 
 #pragma mark - Worker (analysisQueue only)
@@ -1156,62 +1294,68 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 - (void)workerRun {
     if (!self.queryModel || !self.workerFontDocument)
         return;
-    while (YES) {
+    while (YES) @autoreleasepool {
         NSString *text;
         NSArray<GAGlyphSelectionRun *> *selections;
         NSUInteger generation;
         @synchronized (self) {
+            if (self.pendingWorkerDocument != self.workerFontDocument)
+                return;
             text = self.pendingWorkerText;
             selections = self.pendingWorkerSelections ?: @[];
-            generation = self.workerGeneration;
+            generation = self->_workerGeneration;
             self.pendingWorkerText = nil;
             self.pendingWorkerSelections = nil;
+            self.pendingWorkerDocument = nil;
         }
         if (!text)
             return;
-        BOOL complete = [self.queryModel analyzeText:text
-                                          selections:selections
-                                           cancelled:^BOOL {
-                                             @synchronized(self) {
-                                                 return generation != self.workerGeneration;
-                                             }
-                                           }];
-        if (complete)
-            [self publishWorkerSnapshotWithText:text selections:selections generation:generation];
+        BOOL (^cancelled)(void) = ^BOOL {
+            return generation != self->_workerGeneration;
+        };
+        if ([self.queryModel analyzeText:text selections:selections cancelled:cancelled])
+            [self publishWorkerSnapshotWithText:text selections:selections generation:generation
+                                       cancelled:cancelled];
     }
 }
 
 - (void)publishWorkerSnapshotWithText:(NSString *)text
                            selections:(NSArray<GAGlyphSelectionRun *> *)selections
-                           generation:(NSUInteger)generation {
-    @synchronized (self) {
-        if (generation != self.workerGeneration) {
-            return;
-        }
-    }
+                           generation:(NSUInteger)generation
+                            cancelled:(BOOL (^)(void))cancelled {
+    if (cancelled())
+        return;
     NSArray<GACharacterGroup *> *display =
-        GABuildDisplayGroups(self.queryModel.groups, text, selections, self.workerFontDocument);
-    GAScanDisplaySnapshot *snapshot = GABuildScanDisplaySnapshot(text, display);
+        GABuildDisplayGroups(self.queryModel.groups, text, selections, self.workerFontDocument,
+                             cancelled);
+    if (!display)
+        return;
+    GAScanDisplaySnapshot *snapshot = GABuildScanDisplaySnapshot(text, display, cancelled);
+    if (!snapshot || cancelled())
+        return;
     snapshot.selections = selections;
 
     dispatch_async(dispatch_get_main_queue(), ^{
-        if (self.fontDocument == nil ||
-            generation != self.workerGeneration) {
-            return;
-        }
-        [self applyScanSnapshot:snapshot];
+        [self applyScanSnapshot:snapshot generation:generation];
     });
 }
 
-- (void)applyScanSnapshot:(GAScanDisplaySnapshot *)snapshot {
-    if (![snapshot.text isEqualToString:self.sidebarViewController.text]) {
+- (void)applyScanSnapshot:(GAScanDisplaySnapshot *)snapshot generation:(NSUInteger)generation {
+    if (self.fontDocument == nil || generation != self.workerGeneration ||
+        ![snapshot.text isEqualToString:self.sidebarViewController.text]) {
         return;
     }
     [self cancelLayoutLookup];
+    GAPendingGlyphEdit *edit = [self resolvedGlyphEditInSnapshot:snapshot];
     self.scanSnapshot = snapshot;
+    self.scanSnapshotGeneration = generation;
     [self.sidebarViewController updateGroups:snapshot.display sourceText:snapshot.text
                                   fontDocument:self.fontDocument];
-    [self.detailViewController setMultiText:snapshot.multiText groups:snapshot.multiGroups];
+    [self.detailViewController setMultiText:snapshot.multiText groups:snapshot.multiGroups
+                                  omissions:snapshot.multiOmissions];
+    if (edit) {
+        [self editGlyphVariant:edit.variant inGroup:edit.group insert:edit.insert];
+    }
 }
 
 #pragma mark - Errors
@@ -1221,10 +1365,16 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
     alert.messageText = title;
     alert.informativeText = message;
     [alert addButtonWithTitle:NSLocalizedString(@"OK", @"OK")];
+    __weak typeof(self) weakSelf = self;
+    void (^dismiss)(NSModalResponse) = ^(NSModalResponse response) {
+        if (response == NSAlertFirstButtonReturn && weakSelf.fontDocument == nil) {
+            [weakSelf.window close];
+        }
+    };
     if (self.window != nil && self.window.isVisible) {
-        [alert beginSheetModalForWindow:self.window completionHandler:nil];
+        [alert beginSheetModalForWindow:self.window completionHandler:dismiss];
     } else {
-        [alert runModal];
+        dismiss([alert runModal]);
     }
 }
 

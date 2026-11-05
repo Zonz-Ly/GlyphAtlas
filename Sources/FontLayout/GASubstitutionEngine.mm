@@ -8,6 +8,7 @@
 #include <cmath>
 #include <map>
 #include <deque>
+#include <unordered_map>
 
 using namespace ga::layout;
 @implementation GASubstitutionMatch
@@ -27,6 +28,8 @@ struct Domain {
     bool apple;
     size_t branch;
     std::optional<AATSelector> selector;
+    size_t sharedSchedule = 0;
+    bool lastUseOfSchedule = false;
 };
 struct Resource {
     Cmap cmap;
@@ -43,7 +46,8 @@ struct Resource {
     bool verticalAAT;
     double unitsPerEm;
     std::vector<Domain> domains;
-    std::vector<Feature> featureSpecs;
+    std::vector<std::pair<Tag, unsigned>> featureSpecs;
+    std::map<std::string, AATSelector, std::less<>> outputSelectors;
     Resource(CTFontRef font)
         : unitsPerEm(CTFontGetUnitsPerEm(font)) {
         auto read = [&](Tag name, auto &&assign) {
@@ -68,14 +72,30 @@ struct Resource {
         read(tag('h', 'e', 'a', 'd'), [&](View data) { head = data; });
         read(tag('M', 'V', 'A', 'R'), [&](View data) { readVariationMetrics(data); });
         if (!aat.empty()) {
+            aat.compileMachines(CTFontGetGlyphCount(font));
             domains.push_back({true, 0, {}});
             for (auto selector : aat.selectors())
                 domains.push_back({true, 0, selector});
+            if (aat.canIndexHorizontalSchedules()) {
+                std::map<std::vector<size_t>, std::vector<size_t>> schedules;
+                for (size_t i = 0; i < domains.size(); ++i)
+                    schedules[aat.horizontalSchedule(domains[i].selector)].push_back(i);
+                for (const auto &entry : schedules) {
+                    const auto &indices = entry.second;
+                    if (indices.size() < 2)
+                        continue;
+                    for (size_t index : indices)
+                        domains[index].sharedSchedule = indices.front() + 1;
+                    domains[indices.back()].lastUseOfSchedule = true;
+                }
+            }
         }
         if (aat.empty() || !gsub.features().empty())
             for (size_t i = 0; i < gsub.branchCount(); i++)
                 domains.push_back({false, i, {}});
         featureSpecs = collectFeatures();
+        for (auto selector : aat.outputSelectors())
+            outputSelectors.emplace(aat.featureLabel(selector), selector);
         verticalAAT = aat.hasVerticalSubstitutions();
     }
     void readVariationMetrics(View mvar) {
@@ -118,26 +138,27 @@ struct Resource {
                 return feature.name;
         return tag('v', 'e', 'r', 't');
     }
-    std::vector<Feature> collectFeatures() const {
-        std::vector<Feature> result;
+    std::vector<std::pair<Tag, unsigned>> collectFeatures() const {
+        std::vector<std::pair<Tag, unsigned>> result;
         for (size_t branch = 0; branch < gsub.branchCount(); branch++)
             for (const auto &f : gsub.features(branch)) {
-                auto found = std::find_if(result.begin(), result.end(), [&](const Feature &other) {
-                    return other.name == f.name;
+                auto found = std::find_if(result.begin(), result.end(), [&](const auto &other) {
+                    return other.first == f.name;
                 });
                 if (found == result.end())
-                    result.push_back(f);
+                    result.emplace_back(f.name, f.maximum);
                 else
-                    found->maximum = std::max(found->maximum, f.maximum);
+                    found->second = std::max(found->second, f.maximum);
             }
         return result;
     }
     void substitute(Buffer &items, const Domain &domain, const Settings &settings,
-                    Trace *trace = nullptr) const {
+                    Trace *trace = nullptr, const Cancellation *cancellation = nullptr) const {
         if (domain.apple)
-            aat.substitute(items, domain.selector, settings.rtl, settings.vertical, trace);
+            aat.substitute(items, domain.selector, settings.rtl, settings.vertical, trace,
+                           false, {}, cancellation);
         else
-            gsub.substitute(items, gdef, settings, domain.branch, trace);
+            gsub.substitute(items, gdef, settings, domain.branch, trace, cancellation);
     }
 };
 NSArray<NSNumber *> *glyphArray(const std::vector<Glyph> &glyphs) {
@@ -160,25 +181,155 @@ std::vector<Glyph> replacingGlyph(const std::vector<Glyph> &glyphs, size_t index
     sequence.insert(sequence.begin() + index, replacement.begin(), replacement.end());
     return sequence;
 }
-void merge(NSMutableDictionary *seen, NSMutableArray<GASubstitutionMatch *> *matches, Span span,
+struct MatchKey {
+    Span source;
+    std::vector<Glyph> glyphs;
+    bool operator==(const MatchKey &other) const {
+        return source == other.source && glyphs == other.glyphs;
+    }
+};
+
+struct MatchKeyHash {
+    size_t operator()(const MatchKey &key) const {
+        size_t hash = size_t(key.source.start) * 1000003 + key.source.end;
+        for (Glyph glyph : key.glyphs)
+            hash = hash * 1000003 + glyph;
+        return hash;
+    }
+};
+
+using MatchIndex = std::unordered_map<MatchKey, GASubstitutionMatch *, MatchKeyHash>;
+
+bool merge(MatchIndex &seen, NSMutableArray<GASubstitutionMatch *> *matches, Span span,
            const std::vector<Glyph> &glyphs, NSString *source, BOOL base) {
     if (span.empty())
-        return;
-    NSArray *ids = glyphArray(glyphs);
-    NSString *key = [NSString stringWithFormat:@"%u:%u:%@", span.start, span.end, ids];
-    GASubstitutionMatch *match = seen[key];
-    if (!match) {
-        match = [[GASubstitutionMatch alloc] init];
-        match.glyphIDs = ids;
-        match.sourceRange = NSMakeRange(span.start, span.end - span.start);
-        match.sources = @[];
-        seen[key] = match;
-        [matches addObject:match];
+        return false;
+    auto [entry, inserted] = seen.try_emplace(MatchKey{span, glyphs}, nil);
+    if (inserted) {
+        GASubstitutionMatch *candidate = [[GASubstitutionMatch alloc] init];
+        candidate.glyphIDs = glyphArray(glyphs);
+        candidate.sourceRange = NSMakeRange(span.start, span.end - span.start);
+        candidate.sources = @[];
+        entry->second = candidate;
+        [matches addObject:candidate];
     }
+    GASubstitutionMatch *match = entry->second;
     match.base |= base;
-    if (source.length && ![match.sources containsObject:source])
+    if (source.length && ![match.sources containsObject:source]) {
         match.sources = [match.sources arrayByAddingObject:source];
+        return true;
+    }
+    return inserted;
 }
+
+using ParagraphKey = std::vector<uint32_t>;
+struct ParagraphMatch {
+    Span source;
+    std::vector<Glyph> glyphs;
+    NSString *label;
+};
+struct ParagraphOutput {
+    std::map<size_t, std::vector<ParagraphMatch>> domains;
+    size_t cost = 0;
+};
+using ParagraphCache = std::map<ParagraphKey, std::shared_ptr<const ParagraphOutput>>;
+constexpr size_t paragraphCacheBudget = 4 * 1024 * 1024;
+
+struct QueryParagraph {
+    Span source;
+    size_t firstRun, endRun;
+    ParagraphKey key;
+    std::shared_ptr<const ParagraphOutput> reused;
+    std::shared_ptr<ParagraphOutput> output;
+
+    void remember(size_t domain, Span span, const std::vector<Glyph> &glyphs, NSString *label,
+                  size_t &remaining) {
+        if (!output) return;
+        // Count backing storage as well as the record, with room for vector growth.
+        const size_t cost = 2 * sizeof(ParagraphMatch) + 2 * glyphs.size() * sizeof(Glyph) +
+                            2 * label.length + 64;
+        if (cost > remaining || span.start < source.start || span.end > source.end) {
+            output.reset();
+            return;
+        }
+        remaining -= cost;
+        output->cost += cost;
+        output->domains[domain].push_back(
+            {{span.start - source.start, span.end - source.start}, glyphs, label});
+    }
+};
+
+std::vector<QueryParagraph> queryParagraphs(NSString *text, const std::vector<TextRun> &runs,
+                                            const Cancellation *cancellation) {
+    if (runs.size() < 2) return {};
+    constexpr size_t maxCachedParagraphs = 4096;
+    std::vector<QueryParagraph> paragraphs;
+    size_t firstRun = 0;
+    for (NSUInteger at = 0; firstRun < runs.size();) {
+        checkCancellation(cancellation);
+        NSUInteger end, contentsEnd;
+        [text getLineStart:nullptr end:&end contentsEnd:&contentsEnd forRange:NSMakeRange(at, 0)];
+        size_t endRun = firstRun;
+        while (endRun < runs.size() && runs[endRun].source.start < end) {
+            // A literal seed can cover a newline. Keep the full-query path
+            // when an existing search run cannot be contained in one line.
+            if (runs[endRun].source.start < at || runs[endRun].source.end > contentsEnd)
+                return {};
+            ++endRun;
+        }
+        if (endRun != firstRun) {
+            if (paragraphs.size() == maxCachedParagraphs) return {};
+            paragraphs.push_back({{uint32_t(at), uint32_t(contentsEnd)}, firstRun, endRun, {}, {}, {}});
+        }
+        firstRun = endRun;
+        at = end;
+        if (at >= text.length && firstRun < runs.size()) return {};
+    }
+    if (paragraphs.size() < 2) return {};
+    return paragraphs;
+}
+
+void prepareParagraphCache(std::vector<QueryParagraph> &paragraphs, const std::vector<TextRun> &runs,
+                           const std::vector<bool> &selectedRuns,
+                           const ParagraphCache *previous, size_t &remaining,
+                           const Cancellation *cancellation) {
+    for (auto &paragraph : paragraphs) {
+        checkCancellation(cancellation);
+        constexpr size_t overhead = 128;
+        size_t words = 1;
+        for (size_t i = paragraph.firstRun; i < paragraph.endRun; ++i)
+            words += 6 + 6 * runs[i].glyphs.size();
+        size_t cost = overhead + words * sizeof(uint32_t);
+        if (cost > remaining) continue;
+        const uint32_t base = paragraph.source.start;
+        auto &key = paragraph.key;
+        key.reserve(words);
+        key.push_back(paragraph.source.end - base);
+        for (size_t i = paragraph.firstRun; i < paragraph.endRun; ++i) {
+            const auto &run = runs[i];
+            key.insert(key.end(), {run.source.start - base, run.source.end - base,
+                                   run.script, run.level, uint32_t(selectedRuns[i]),
+                                   uint32_t(run.glyphs.size())});
+            // Prepared identities are unique within the run. Only their
+            // correspondence to slots matters, so absolute IDs are omitted.
+            for (const auto &item : run.glyphs)
+                key.insert(key.end(), {item.glyph, item.source.start - base, item.source.end - base,
+                                       item.scalar, item.form, uint32_t(item.ignorable)});
+        }
+        if (previous) {
+            auto hit = previous->find(key);
+            if (hit != previous->end() && hit->second->cost <= remaining) {
+                paragraph.reused = hit->second;
+                remaining -= paragraph.reused->cost;
+                continue;
+            }
+        }
+        paragraph.output = std::make_shared<ParagraphOutput>();
+        paragraph.output->cost = cost;
+        remaining -= cost;
+    }
+}
+
 Buffer literalBuffer(const std::vector<Glyph> &glyphs) {
     Buffer buffer;
     for (size_t i = 0; i < glyphs.size(); i++) {
@@ -253,9 +404,9 @@ bool primaryChange(const Change &change, const std::vector<Cluster> &roots) {
 std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Domain &domain) {
     std::vector<std::pair<Tag, unsigned>> result{{0, 0}};
     if (!domain.apple)
-        for (const auto &feature : resource.featureSpecs)
-            for (unsigned value = 1; value <= feature.maximum; value++)
-                result.emplace_back(feature.name, value);
+        for (const auto &[feature, maximum] : resource.featureSpecs)
+            for (unsigned value = 1; value <= maximum; value++)
+                result.emplace_back(feature, value);
     return result;
 }
 } // namespace
@@ -267,6 +418,7 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
     std::shared_ptr<Resource> resource;
 }
 @property(nonatomic, strong, readonly) NSCache<id, NSArray<GASubstitutionMatch *> *> *cache;
+@property(nonatomic, strong, readonly) NSCache<NSArray *, NSIndexSet *> *glyphOutputCache;
 @property(nonatomic, strong, readonly) NSCache<NSNumber *, NSArray<NSDictionary *> *> *relatedCache;
 @end
 @implementation GAFontProgram
@@ -275,6 +427,8 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
     if (self) {
         resource = std::make_shared<Resource>(font);
         _cache = [[NSCache alloc] init];
+        _glyphOutputCache = [[NSCache alloc] init];
+        _glyphOutputCache.countLimit = 24;
         _relatedCache = [[NSCache alloc] init];
         _relatedCache.countLimit = 2048;
         _relatedCache.totalCostLimit = 16 * 1024 * 1024;
@@ -289,12 +443,16 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
 @property(nonatomic, strong, readonly) GAFontProgram *program;
 @property(nonatomic, copy, readonly) NSDictionary<NSNumber *, NSNumber *> *coordinates;
 - (std::vector<double>)normalizedCoordinates;
-- (NSArray<NSDictionary *> *)relatedOutputs:(Glyph)glyph;
+- (NSArray<NSDictionary *> *)relatedOutputs:(Glyph)glyph cancellation:(const Cancellation *)cancellation;
 - (NSArray<GASubstitutionMatch *> *)discoverContent:(NSString *)text
-                       selections:(NSArray<GAGlyphSelectionRun *> *)selections;
+                       selections:(NSArray<GAGlyphSelectionRun *> *)selections
+                     cancellation:(const Cancellation *)cancellation
+                   nextParagraphs:(std::optional<ParagraphCache> &)nextParagraphs
+                       incomplete:(BOOL &)incomplete;
 @end
 @implementation GASubstitutionEngine {
     CTFontRef _font;
+    std::shared_ptr<const ParagraphCache> _paragraphCache;
 }
 - (instancetype)initWithFont:(CTFontRef)font
                  coordinates:(NSDictionary *)coordinates
@@ -311,14 +469,14 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
     if (_font)
         CFRelease(_font);
 }
-- (NSArray<NSDictionary *> *)relatedOutputs:(Glyph)glyph {
+- (NSArray<NSDictionary *> *)relatedOutputs:(Glyph)glyph cancellation:(const Cancellation *)cancellation {
     NSArray *cached = [self.program.relatedCache objectForKey:@(glyph)];
     if (cached)
         return cached;
     NSMutableArray *outputs = [NSMutableArray array];
     try {
         const auto &r = *self.program->resource;
-        for (const auto &output : r.gsub.relatedSubstitutions(glyph, r.gdef)) {
+        for (const auto &output : r.gsub.relatedSubstitutions(glyph, r.gdef, cancellation)) {
             std::string label = featureLabel(output.feature, output.value);
             [outputs addObject:@{
                 @"glyphs" : glyphArray(output.glyphs),
@@ -329,91 +487,173 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
             for (const auto &domain : r.domains) {
                 if (!domain.apple || (domain.selector && domain.selector->type != 4)) continue;
                 Buffer input = literalBuffer({glyph});
-                r.aat.substitute(input,domain.selector,false,true,nullptr,true);
+                r.aat.substitute(input, domain.selector, false, true, nullptr, true, {}, cancellation);
                 auto ids = identifiers(input);
                 if (ids == std::vector<Glyph>{glyph}) continue;
-                std::string source = r.aat.name();
-                if (domain.selector) source += ":" + std::to_string(domain.selector->type) + ":" + std::to_string(domain.selector->setting);
+                std::string source = r.aat.featureLabel(domain.selector);
                 [outputs addObject:@{@"glyphs":glyphArray(ids),@"source":@(source.c_str()),@"vertical":@YES}];
             }
     } catch (const InvalidTable &) {
         // Keep any catalogue entries already collected.
     }
+    checkCancellation(cancellation);
     [self.program.relatedCache setObject:outputs forKey:@(glyph) cost:outputs.count * 128];
     return outputs;
 }
 - (NSArray<GASubstitutionMatch *> *)discoverContent:(NSString *)text
-                       selections:(NSArray<GAGlyphSelectionRun *> *)selections {
+                       selections:(NSArray<GAGlyphSelectionRun *> *)selections
+                     cancellation:(const Cancellation *)cancellation
+                   nextParagraphs:(std::optional<ParagraphCache> &)nextParagraphs
+                       incomplete:(BOOL &)incomplete {
+    checkCancellation(cancellation);
     GAGlyphQueryIdentity *queryKey = GAGlyphQueryKey(text, selections);
     NSArray<GASubstitutionMatch *> *cached = [self.program.cache objectForKey:queryKey];
     if (cached)
         return cached;
     const auto &r = *self.program->resource;
-    auto runs = prepareText(text, r.cmap, selections);
+    const auto runs = prepareText(text, r.cmap, selections);
+    std::vector<bool> selectedRuns(runs.size());
+    NSUInteger selectionIndex = 0;
+    for (size_t i = 0; i < runs.size(); ++i) {
+        const Span span = runs[i].source;
+        while (selectionIndex < selections.count &&
+               NSMaxRange(selections[selectionIndex].range) <= span.start)
+            ++selectionIndex;
+        selectedRuns[i] = selectionIndex < selections.count &&
+                          selections[selectionIndex].range.location < span.end;
+    }
+    auto paragraphs = queryParagraphs(text, runs, cancellation);
+    size_t remaining = paragraphCacheBudget;
+    if (!paragraphs.empty()) {
+        std::shared_ptr<const ParagraphCache> previous;
+        @synchronized (self) { previous = _paragraphCache; }
+        prepareParagraphCache(paragraphs, runs, selectedRuns, previous.get(), remaining, cancellation);
+    }
+    std::vector<std::vector<Cluster>> runRoots;
+    runRoots.reserve(runs.size());
+    for (const auto &run : runs) {
+        checkCancellation(cancellation);
+        runRoots.push_back(clusters(run.glyphs));
+    }
     NSMutableArray *matches = [NSMutableArray array];
-    NSMutableDictionary *seen = [NSMutableDictionary dictionary];
+    MatchIndex seen;
     std::set<Span> inputSpans;
     // The root is the prepared cmap/UVS input (or the user's literal seed).
     // Shaping results are discoveries, never replacements for this row.
-    for (const auto &run : runs)
-        for (const auto &cluster : clusters(run.glyphs)) {
+    for (const auto &roots : runRoots)
+        for (const auto &cluster : roots) {
+            checkCancellation(cancellation);
             merge(seen, matches, cluster.source, cluster.glyphs, nil, YES);
             inputSpans.insert(cluster.source);
         }
     // Catalogue order comes first; text matches below merge into these rows.
     // Preserve other GIDs belonging to the same atomic input cluster.
-    for (const auto &run : runs)
-        for (const auto &cluster : clusters(run.glyphs))
+    for (const auto &roots : runRoots)
+        for (const auto &cluster : roots)
             for (size_t i = 0; i < cluster.glyphs.size(); i++)
-                for (NSDictionary *output in [self relatedOutputs:cluster.glyphs[i]]) {
+                for (NSDictionary *output in [self relatedOutputs:cluster.glyphs[i] cancellation:cancellation]) {
+                    checkCancellation(cancellation);
                     auto sequence = replacingGlyph(cluster.glyphs, i, output);
                     merge(seen, matches, cluster.source, sequence, output[@"source"], NO);
                 }
-    for (const auto &domain : r.domains) {
-        for (const auto &run : runs) {
-            const auto roots = clusters(run.glyphs);
-            std::vector<Tag> scripts{run.script};
-            if (!domain.apple)
-                for (GAGlyphSelectionRun *selection : selections)
-                    if (NSIntersectionRange(
-                            selection.range,
-                            NSMakeRange(run.source.start, run.source.end - run.source.start))
-                            .length) {
-                        for (const auto &script : r.gsub.scripts())
-                            if (std::find(scripts.begin(), scripts.end(), script.name) ==
-                                scripts.end())
-                                scripts.push_back(script.name);
-                        break;
+    std::vector<std::map<size_t, Trace>> appleResults(runs.size());
+    for (size_t domainIndex = 0; domainIndex < r.domains.size(); ++domainIndex) {
+        const auto &domain = r.domains[domainIndex];
+        size_t paragraphIndex = 0;
+        for (size_t runIndex = 0; runIndex < runs.size(); ++runIndex) {
+            QueryParagraph *paragraph = nullptr;
+            if (!paragraphs.empty()) {
+                if (runIndex == paragraphs[paragraphIndex].endRun)
+                    ++paragraphIndex;
+                paragraph = &paragraphs[paragraphIndex];
+                if (paragraph->reused) {
+                    if (runIndex == paragraph->firstRun) {
+                        checkCancellation(cancellation);
+                        auto cachedDomain = paragraph->reused->domains.find(domainIndex);
+                        if (cachedDomain != paragraph->reused->domains.end())
+                            for (const auto &match : cachedDomain->second) {
+                                checkCancellation(cancellation);
+                                const uint32_t base = paragraph->source.start;
+                                merge(seen, matches, {match.source.start + base, match.source.end + base},
+                                      match.glyphs, match.label, NO);
+                            }
                     }
+                    continue;
+                }
+            }
+            const auto &run = runs[runIndex];
+            const auto &roots = runRoots[runIndex];
+            std::vector<Tag> scripts{run.script};
+            if (!domain.apple && selectedRuns[runIndex])
+                for (const auto &script : r.gsub.scripts())
+                    if (std::find(scripts.begin(), scripts.end(), script.name) == scripts.end())
+                        scripts.push_back(script.name);
+            using StepKey = std::tuple<unsigned, unsigned, Tag, bool>;
+            std::set<std::vector<StepKey>> executed;
             for (Tag script : scripts) {
                 auto languages = domain.apple ? std::vector<Tag>{0} : r.gsub.languages(script);
                 for (Tag language : languages)
                     for (auto plan : plans(r, domain)) {
+                        checkCancellation(cancellation);
                         Settings settings;
                         settings.script = script;
                         settings.language = language;
                         settings.rtl = run.level & 1;
                         if (plan.first)
                             settings.features[plan.first] = plan.second;
-                        Buffer items = run.glyphs;
-                        Trace trace;
-                        trace.inventory = true;
-                        try {
-                            r.substitute(items, domain, settings, &trace);
-                        } catch (const InvalidTable &) {
-                            trace = {};
+                        Trace found;
+                        const Trace *trace = &found;
+                        auto &shared = appleResults[runIndex];
+                        auto previous = shared.find(domain.sharedSchedule);
+                        if (previous != shared.end()) {
+                            trace = &previous->second;
+                        } else {
+                            Buffer items = run.glyphs;
+                            found.inventory = true;
+                            try {
+                                if (domain.apple) {
+                                    r.substitute(items, domain, settings, &found, cancellation);
+                                } else {
+                                    const auto steps = r.gsub.plan(settings, domain.branch);
+                                    std::vector<StepKey> key;
+                                    for (const auto &step : steps)
+                                        key.emplace_back(step.lookup, step.value, step.feature,
+                                                         step.explicitValue);
+                                    if (!executed.insert(std::move(key)).second)
+                                        continue;
+                                    r.gsub.substituteLookups(items, r.gdef, steps, &found, cancellation);
+                                }
+                            } catch (const InvalidTable &) {
+                                found = {};
+                                if (paragraph) paragraph->output.reset();
+                            }
                         }
-                        for (auto change : trace.changes) {
+                        if (trace->incomplete) {
+                            incomplete = YES;
+                            if (paragraph) paragraph->output.reset();
+                        }
+                        const auto appleLabel = domain.apple
+                            ? r.aat.featureLabel(domain.selector) : std::string{};
+                        for (const auto &change : trace->changes) {
+                            checkCancellation(cancellation);
                             // Keep direct changes of the original input and
                             // newly formed combinations. Later changes of a
                             // variant are resolved lazily when clicked.
                             if (!primaryChange(change, roots))
                                 continue;
+                            auto glyphs = change.glyphs;
                             if (settings.rtl)
-                                std::reverse(change.glyphs.begin(), change.glyphs.end());
-                            merge(seen, matches, change.source, change.glyphs,
-                                  @(change.feature.c_str()), NO);
+                                std::reverse(glyphs.begin(), glyphs.end());
+                            const auto &label = domain.apple ? appleLabel : change.feature;
+                            NSString *source = @(label.c_str());
+                            if (merge(seen, matches, change.source, glyphs, source, NO) && paragraph)
+                                paragraph->remember(domainIndex, change.source, glyphs, source, remaining);
                         }
+                        if (domain.lastUseOfSchedule) {
+                            if (previous != shared.end())
+                                shared.erase(previous);
+                        } else if (domain.sharedSchedule && previous == shared.end())
+                            shared.emplace(domain.sharedSchedule, std::move(found));
                     }
             }
         }
@@ -423,27 +663,46 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
     NSArray *firstLevel = [matches copy];
     std::set<Span> compositionRoots;
     for (GASubstitutionMatch *match in firstLevel) {
+        checkCancellation(cancellation);
         Span span{uint32_t(match.sourceRange.location), uint32_t(NSMaxRange(match.sourceRange))};
         if (inputSpans.count(span) || !compositionRoots.insert(span).second)
             continue;
         auto original = glyphVector(match.glyphIDs);
         for (size_t i = 0; i < original.size(); i++)
-            for (NSDictionary *output in [self relatedOutputs:original[i]])
+            for (NSDictionary *output in [self relatedOutputs:original[i] cancellation:cancellation])
                 merge(seen, matches,
                       {uint32_t(match.sourceRange.location), uint32_t(NSMaxRange(match.sourceRange))},
                       replacingGlyph(original, i, output), output[@"source"], NO);
     }
-    [self.program.cache setObject:matches
-                           forKey:queryKey
-                             cost:text.length * 2 + matches.count * 128];
+    checkCancellation(cancellation);
+    nextParagraphs.emplace();
+    for (auto &paragraph : paragraphs) {
+        auto result = paragraph.reused ? paragraph.reused : std::move(paragraph.output);
+        if (result)
+            nextParagraphs->try_emplace(std::move(paragraph.key), std::move(result));
+    }
+    if (!incomplete)
+        [self.program.cache setObject:matches
+                               forKey:queryKey
+                                 cost:text.length * 2 + matches.count * 128];
     return matches;
 }
 - (NSArray<GASubstitutionMatch *> *)discoverText:(NSString *)text
-                                      selections:(NSArray<GAGlyphSelectionRun *> *)selections {
+                                      selections:(NSArray<GAGlyphSelectionRun *> *)selections
+                                      incomplete:(BOOL *)incomplete
+                                       cancelled:(BOOL (^)(void))cancelled {
+    if (incomplete) *incomplete = NO;
+    if (cancelled && cancelled())
+        return nil;
     if (!text.length)
         return @[];
+    Cancellation cancellation{[cancelled] { return cancelled() != NO; }};
+    const Cancellation *check = cancelled ? &cancellation : nullptr;
     try {
-        NSMutableArray *matches = [[self discoverContent:text selections:selections] mutableCopy];
+        std::optional<ParagraphCache> nextParagraphs;
+        BOOL didExhaust = NO;
+        NSMutableArray *matches = [[self discoverContent:text selections:selections cancellation:check
+                                           nextParagraphs:nextParagraphs incomplete:didExhaust] mutableCopy];
         [matches sortWithOptions:NSSortStable usingComparator:^NSComparisonResult(GASubstitutionMatch *a,
                                                          GASubstitutionMatch *b) {
           if (a.base != b.base)
@@ -456,7 +715,18 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
                                                                      : NSOrderedDescending;
           return NSOrderedSame;
         }];
+        checkCancellation(check);
+        if (nextParagraphs) {
+            @synchronized (self) {
+                checkCancellation(check);
+                _paragraphCache = nextParagraphs->empty() ? nullptr
+                    : std::make_shared<const ParagraphCache>(std::move(*nextParagraphs));
+            }
+        }
+        if (incomplete) *incomplete = didExhaust;
         return matches;
+    } catch (const QueryCancelled &) {
+        return nil;
     } catch (const std::exception &) {
         // Failed discovery yields no candidates.
     }
@@ -468,6 +738,75 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
     for (Tag language : r.gsub.languageTags())
         [result addObject:@(tagName(language).c_str())];
     return result;
+}
+
+- (NSArray<NSString *> *)glyphFeatureTags {
+    const auto &r = *self.program->resource;
+    NSMutableOrderedSet<NSString *> *tags = [NSMutableOrderedSet orderedSet];
+    try {
+        const auto branch = r.gsub.variationBranch([self normalizedCoordinates]);
+        for (const auto &feature : r.gsub.features(branch)) {
+            if (feature.lookups.empty()) continue;
+            NSString *label = @(tagName(feature.name).c_str());
+            if (label.length == 4)
+                [tags addObject:label];
+        }
+    } catch (const InvalidTable &) {
+        // AAT labels are still available if GSUB variation data is invalid.
+    }
+    for (const auto &entry : r.outputSelectors)
+        [tags addObject:@(entry.first.c_str())];
+    return tags.array;
+}
+
+- (NSIndexSet *)glyphOutputsForFeatureTag:(NSString *)label cancelled:(BOOL (^)(void))cancelled {
+    const auto &r = *self.program->resource;
+    Cancellation cancellation{[cancelled] { return cancelled && cancelled(); }};
+    try {
+        cancellation.check();
+        const bool openType = label.length == 4;
+        const auto branch = openType || !label.length
+            ? r.gsub.variationBranch([self normalizedCoordinates]) : 0;
+        NSArray *key = @[label, @(branch)];
+        if (NSIndexSet *cached = [self.program.glyphOutputCache objectForKey:key])
+            return cached;
+        if (!label.length) {
+            NSMutableIndexSet *unfeatured = [NSMutableIndexSet indexSetWithIndexesInRange:
+                NSMakeRange(0, CTFontGetGlyphCount(_font))];
+            for (NSString *feature in self.glyphFeatureTags) {
+                NSIndexSet *outputs = [self glyphOutputsForFeatureTag:feature cancelled:cancelled];
+                if (!outputs) return nil;
+                [unfeatured removeIndexes:outputs];
+            }
+            cancellation.check();
+            NSIndexSet *result = [unfeatured copy];
+            [self.program.glyphOutputCache setObject:result forKey:key];
+            return result;
+        }
+        const char *name = label.UTF8String;
+        if (!name)
+            return [NSIndexSet indexSet];
+        std::vector<bool> outputs(std::min<size_t>(CTFontGetGlyphCount(_font), 65536));
+        if (openType) {
+            r.gsub.collectFeatureOutputs(tag(name), branch, r.gdef, outputs, &cancellation);
+        } else {
+            auto entry = r.outputSelectors.find(name);
+            if (entry != r.outputSelectors.end())
+                r.aat.collectFeatureOutputs(entry->second, outputs, &cancellation);
+        }
+        NSMutableIndexSet *glyphs = [NSMutableIndexSet indexSet];
+        for (size_t i = 0; i < outputs.size(); ++i)
+            if (outputs[i])
+                [glyphs addIndex:i];
+        cancellation.check();
+        NSIndexSet *result = [glyphs copy];
+        [self.program.glyphOutputCache setObject:result forKey:key];
+        return result;
+    } catch (const QueryCancelled &) {
+        return nil;
+    } catch (const InvalidTable &) {
+        return nil;
+    }
 }
 
 - (GASubstitutionOrigin *)originForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
@@ -578,7 +917,7 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
                 // Static single-GID catalogue plus actual full-context matches
                 // cover contextual and multi-GID/composition sources alike.
                 for (size_t i = 0; i < state.glyphs.size(); i++)
-                    for (NSDictionary *output in [self relatedOutputs:state.glyphs[i]]) {
+                    for (NSDictionary *output in [self relatedOutputs:state.glyphs[i] cancellation:nullptr]) {
                         std::string label = [output[@"source"] UTF8String];
                         outputs.push_back({replacingGlyph(state.glyphs, i, output), label,
                                            verticalSource(label) || [output[@"vertical"] boolValue]});
@@ -782,20 +1121,26 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
     }
     return @[];
 }
-- (NSArray<GASubstitutionMatch *> *)discoverGlyphIDs:(NSArray<NSNumber *> *)glyphIDs {
+- (NSArray<GASubstitutionMatch *> *)discoverGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
+                               cancelled:(BOOL (^)(void))cancelled {
+    if (cancelled && cancelled())
+        return nil;
     if (!glyphIDs.count)
         return @[];
     NSArray *key = @[ @"glyphs", [glyphIDs copy] ];
     NSArray<GASubstitutionMatch *> *cached = [self.program.cache objectForKey:key];
     if (cached)
         return cached;
+    Cancellation cancellation{[cancelled] { return cancelled() != NO; }};
+    const Cancellation *check = cancelled ? &cancellation : nullptr;
     try {
         const auto &r = *self.program->resource;
         auto original = glyphVector(glyphIDs);
         const auto roots = clusters(literalBuffer(original));
         Span whole{0, uint32_t(original.size())};
         NSMutableArray *matches = [NSMutableArray array];
-        NSMutableDictionary *seen = [NSMutableDictionary dictionary];
+        MatchIndex seen;
+        bool complete = true;
         merge(seen, matches, whole, original, nil, YES);
         for (const auto &domain : r.domains) {
             std::vector<Tag> scripts;
@@ -815,8 +1160,10 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
                         Buffer items = literalBuffer(original);
                         Trace trace;
                         trace.inventory = true;
-                        r.substitute(items, domain, settings, &trace);
+                        r.substitute(items, domain, settings, &trace, check);
+                        complete &= !trace.incomplete;
                         for (const auto &change : trace.changes) {
+                            checkCancellation(check);
                             if (!primaryChange(change, roots) ||
                                 change.source.end > original.size())
                                 continue;
@@ -830,14 +1177,19 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
                     }
         }
         for (size_t i = 0; i < original.size(); i++)
-            for (NSDictionary *output in [self relatedOutputs:original[i]]) {
+            for (NSDictionary *output in [self relatedOutputs:original[i] cancellation:check]) {
+                checkCancellation(check);
                 auto sequence = replacingGlyph(original, i, output);
                 merge(seen, matches, whole, sequence, output[@"source"], NO);
             }
-        [self.program.cache setObject:matches
-                               forKey:key
-                                 cost:glyphIDs.count * 2 + matches.count * 128];
+        checkCancellation(check);
+        if (complete)
+            [self.program.cache setObject:matches
+                                   forKey:key
+                                     cost:glyphIDs.count * 2 + matches.count * 128];
         return matches;
+    } catch (const QueryCancelled &) {
+        return nil;
     } catch (const std::exception &) {
         // Failed discovery yields no candidates.
     }

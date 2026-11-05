@@ -2,6 +2,10 @@
 
 "File" = "Archivo";
 "Copy to Font Book" = "Copiar a Catálogo Tipográfico";
+"Copy to All Users" = "Copiar para todos los usuarios";
+"Current User" = "Usuario actual";
+"All Users" = "Todos los usuarios";
+"System Fonts" = "Tipos de letra del sistema";
 "Open Recent" = "Abrir recientes";
 "Clear Menu" = "Vaciar menú";
 "Close Window" = "Cerrar ventana";
@@ -40,10 +44,12 @@
 "Hide Others" = "Ocultar otros";
 "Quit Glyph Atlas" = "Salir de Glyph Atlas";
 "Glyph Atlas Help" = "Ayuda de Glyph Atlas";
-"Open Font…" = "Abrir tipo de letra…";
+"Open Font" = "Abrir tipo de letra";
+"Open Font From" = "Abrir tipo de letra desde";
 "No Recent Fonts" = "No hay tipos de letra recientes";
 "Single Glyph" = "Un solo glifo";
 "Multi-Character" = "Varios caracteres";
+"Switch to Multi-Character to enable" = "Cambia a «Varios caracteres» para activar esta opción";
 "All Glyphs" = "Todos los glifos";
 "Show Bounding Box" = "Mostrar cuadro delimitador";
 "Bounding Box Zoom In" = "Ampliar cuadro delimitador";
@@ -61,8 +67,8 @@
 "Bounding Box" = "Cuadro delimitador";
 "Text and alternate glyph list" = "Lista de texto y glifos alternativos";
 "CONTROL CHARACTER" = "CARÁCTER DE CONTROL";
-"Help.01" = "Abre un tipo de letra o arrástralo a la ventana de la app o a su icono en el Dock. También se admiten los archivos usados recientemente.";
-"Help.02" = "Desde la barra de menús, copia con un clic el tipo de letra abierto en la ventana actual a tu carpeta de tipos de letra de usuario.";
+"Help.01" = "Abre un tipo de letra o arrástralo a la ventana de la app o a su icono en el Dock. También se admiten los archivos usados recientemente. Mantén pulsada ⌥ antes de elegir «Abrir tipo de letra» en la barra de menús para ver más opciones.";
+"Help.02" = "Desde la barra de menús, copia con un clic el tipo de letra abierto en la ventana actual a tu carpeta de tipos de letra de usuario. Mantén pulsada ⌥ para copiarlo en la carpeta de tipos de letra de todos los usuarios.";
 "Help.03" = "Al abrir un tipo de letra variable, aparece un panel de variación junto a los controles de la ventana. Arrástralo fuera para mantenerlo abierto. Selecciona un valor numérico y ajústalo con ↑/↓ o ⇧↑/⇧↓.";
 "Help.04" = "Introduce uno o varios caracteres en la barra lateral para ver todos los glifos asociados. Usa ⌥⏎ para insertar un salto de línea. También puedes hacer clic derecho y elegir «Textos guardados» para guardar el texto actual o insertar rápidamente uno que hayas guardado antes. Mantén pulsada ⌥ en la barra de menús para eliminar rápidamente los textos guardados.";
 "Help.05" = "Haz doble clic en un glifo, o selecciónalo y pulsa Retorno, para sustituir el glifo predeterminado y mostrar sus alternativas. Mantén pulsada la tecla Mayúsculas al hacerlo para añadir el glifo.";
@@ -70,11 +76,11 @@
 "Help.07" = "Usa ⌘C para copiar todos los caracteres codificados del glifo seleccionado.";
 "Help.08" = "Sitúa el puntero sobre una etiqueta Unicode para ver el nombre del carácter definido por el estándar Unicode.";
 "Help.09" = "La vista predeterminada es «Todos los glifos». Cámbiala con un clic secundario, o pulsa ⌘1 para «Un solo glifo», ⌘2 para «Varios caracteres» o ⌘3 para «Todos los glifos».";
-"Help.10" = "En Varios caracteres, haz clic en un glifo para ver sus alternativas. Se admite la escritura vertical; haz clic con el botón derecho o pulsa ⌘5 para cambiarla. Allí también están la alineación del texto y Tipografía (funciones OpenType). El menú Visualización de la barra de menús ofrece más opciones.";
-"Help.11" = "En «Todos los glifos», haz doble clic en un glifo para añadirlo al texto existente. Al hacer clic en un glifo de la barra lateral, también parpadea en la vista completa.";
+"Help.10" = "En Varios caracteres, haz clic en un glifo para ver sus alternativas. Se admite la escritura vertical; haz clic con el botón derecho o pulsa ⌘5 para cambiarla. Allí también están la alineación del texto y Tipografía. El menú Visualización de la barra de menús ofrece más opciones.";
+"Help.11" = "Sitúa el puntero sobre un glifo para ver sus detalles. En «Todos los glifos», haz doble clic en un glifo para añadirlo al texto existente. Al hacer clic en un glifo de la barra lateral, también parpadea en la vista completa. Haz clic con el botón derecho para encontrar «Filtrar por característica».";
 "Help.12" = "Usa ⌘+/⌘− o un gesto de pellizco en el trackpad para ampliar o reducir los glifos. En Varios caracteres, usa ⌥⌘+/⌥⌘− o un pellizco horizontal para aumentar o reducir los márgenes, y ⌃⌘+/⌃⌘− o un pellizco vertical para aumentar o reducir el interlineado. Pulsa ⌘0 para restaurar el tamaño por omisión.";
 "Help.13" = "La sombra muestra el cuadro delimitador, con la anchura y altura del glifo, además de la altura y el espacio entre líneas de la composición. Pulsa ⌘4 para ocultarlo.";
-"Help.14" = "Se admite el modo oscuro. Pero ten cuidado: hacer clic en un glifo sólido puede deslumbrarte. Puedes cambiar los colores del glifo, de la sombra del cuadro delimitador y del fondo en Colores, en la barra de menús.";
+"Help.14" = "Se admite el modo oscuro. Pero ten cuidado: hacer clic en un glifo sólido puede deslumbrarte. Puedes cambiar los colores del glifo, de la sombra del cuadro delimitador y del fondo en Colores, en la barra de menús. Elige «Guardar paleta actual» para guardar los colores que has ajustado. Mantén pulsada ⌥ para ver «Eliminar paletas».";
 "Help.15" = "Elige Usar por omisión en la barra de menús para guardar la vista, los colores, el tamaño y otros ajustes de previsualización actuales junto con el tamaño de la ventana. Los archivos de fuentes que abras después usarán estos ajustes. Mantén pulsada ⌥ para elegir Restaurar ajustes por omisión.";
 
 /* Variable font controls. */
@@ -94,15 +100,18 @@
 /* User-saved plain text. */
 "Saved Text" = "Textos guardados";
 "Save Current Text" = "Guardar texto actual";
-"Remove from Saved Text" = "Eliminar de los textos guardados";
 "No Saved Text" = "No hay textos guardados";
 
 /* Preview colors and native line spacing. */
 "Colors" = "Colores";
+"Delete Palettes" = "Eliminar paletas";
+"Save Current Palette" = "Guardar paleta actual";
+"Clear All Saved Palettes" = "Vaciar la lista de paletas guardadas";
+"No Saved Palettes" = "No hay paletas guardadas";
 "Follow System" = "Seguir al sistema";
-"Glyph Color…" = "Color de los glifos…";
-"Background Color…" = "Color de fondo…";
-"Bounding Box Color…" = "Color del cuadro delimitador…";
+"Glyph…" = "Glifo…";
+"Background…" = "Fondo…";
+"Bounding Box…" = "Cuadro delimitador…";
 "Increase Line Spacing" = "Aumentar interlineado";
 "Decrease Line Spacing" = "Reducir interlineado";
 
@@ -110,17 +119,21 @@
 
 /* Saved-text deletion and full screen. */
 "Delete Saved Text" = "Eliminar textos guardados";
-"Clear All Saved Text" = "Borrar todos los textos guardados";
+"Clear All Saved Text" = "Vaciar la lista de textos guardados";
 "Enter Full Screen" = "Ver a pantalla completa";
 
 /* Native typography and opening settings. */
 "Typography" = "Tipografía";
 "Other" = "Otras";
 "No Typography Features" = "Sin funciones tipográficas";
-"Actual Size" = "Tamaño real";
+"Default Size" = "Tamaño por omisión";
 "Use as Defaults" = "Usar por omisión";
 "Restore to Defaults" = "Restaurar ajustes por omisión";
 "Text Decorations" = "Decoración del texto";
+"Filter by Feature" = "Filtrar por característica";
+"No Feature" = "Sin característica";
+"Switch to All Glyphs to enable" = "Cambia a «Todos los glifos» para activar esta opción";
+"Switch to Single Glyph or Multi-Character to enable" = "Cambia a «Un solo glifo» o «Varios caracteres» para activar esta opción";
 
 "Writing Direction" = "Dirección de escritura";
 "Left to Right" = "De izquierda a derecha";

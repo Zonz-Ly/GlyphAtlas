@@ -2,15 +2,100 @@
 #import "GAMainWindowController.h"
 #import "Font/GAFontResource.h"
 #import "Font/GAFontFeatures.h"
+#include <math.h>
 
 static NSString *const GARecentFontPathsKey = @"GAPersistentRecentFontPaths";
 static NSString *const GASavedTextsKey = @"GASavedTexts";
+static NSString *const GASavedPalettesKey = @"GASavedPalettes";
+
+static const GAPreviewColorRole GAPaletteRoles[] = {
+    GAPreviewColorGlyph, GAPreviewColorBoundingBox, GAPreviewColorBackground,
+};
+enum { GAPaletteRoleCount = sizeof(GAPaletteRoles) / sizeof(*GAPaletteRoles) };
+
+static NSString *GAPaletteRoleTitle(GAPreviewColorRole role) {
+    switch (role) {
+        case GAPreviewColorGlyph: return NSLocalizedString(@"Glyph…", @"Choose preview glyph color");
+        case GAPreviewColorBoundingBox: return NSLocalizedString(@"Bounding Box…", @"Choose shadow color");
+        case GAPreviewColorBackground: return NSLocalizedString(@"Background…", @"Choose preview background color");
+    }
+}
+
+static void GAFillPaletteSwatch(GAPreviewColors *palette, GAPreviewColorRole role, NSRect swatch) {
+    if (role == GAPreviewColorBoundingBox) {
+        [[palette colorForRole:GAPreviewColorBackground] setFill];
+        NSRectFill(swatch);
+    }
+    [[palette colorForRole:role] setFill];
+    NSRectFillUsingOperation(swatch, NSCompositingOperationSourceOver);
+}
+
+static NSImage *GAPaletteSwatchImage(GAPreviewColors *palette, NSAppearance *appearance) {
+    NSAppearance *light = [NSAppearance appearanceNamed:NSAppearanceNameAqua];
+    NSAppearance *dark = [NSAppearance appearanceNamed:NSAppearanceNameDarkAqua];
+    const CGFloat swatchWidth = 15;
+    const CGFloat swatchSpacing = 3;
+    NSSize size = NSMakeSize(GAPaletteRoleCount * swatchWidth + (GAPaletteRoleCount - 1) * swatchSpacing, 12);
+    return [NSImage imageWithSize:size flipped:NO drawingHandler:^BOOL(NSRect rect) {
+        [appearance performAsCurrentDrawingAppearance:^{
+            CGFloat x = NSMinX(rect);
+            for (NSUInteger i = 0; i < GAPaletteRoleCount; i++) {
+                GAPreviewColorRole role = GAPaletteRoles[i];
+                NSRect swatch = NSMakeRect(x, NSMinY(rect), swatchWidth, NSHeight(rect));
+                BOOL usesSystemBackground = role == GAPreviewColorBoundingBox &&
+                    [palette followsSystemForRole:GAPreviewColorBackground];
+                if ([palette followsSystemForRole:role] || usesSystemBackground) {
+                    [light performAsCurrentDrawingAppearance:^{ GAFillPaletteSwatch(palette, role, swatch); }];
+                    [NSGraphicsContext saveGraphicsState];
+                    NSBezierPath *darkHalf = [NSBezierPath bezierPath];
+                    [darkHalf moveToPoint:NSMakePoint(NSMinX(swatch), NSMinY(swatch))];
+                    [darkHalf lineToPoint:NSMakePoint(NSMaxX(swatch), NSMinY(swatch))];
+                    [darkHalf lineToPoint:NSMakePoint(NSMaxX(swatch), NSMaxY(swatch))];
+                    [darkHalf closePath];
+                    [darkHalf addClip];
+                    [dark performAsCurrentDrawingAppearance:^{ GAFillPaletteSwatch(palette, role, swatch); }];
+                    [NSGraphicsContext restoreGraphicsState];
+                } else {
+                    GAFillPaletteSwatch(palette, role, swatch);
+                }
+                [NSColor.separatorColor set];
+                NSFrameRectWithWidth(swatch, 0.5);
+                x += swatchWidth + swatchSpacing;
+            }
+        }];
+        return YES;
+    }];
+}
+
+typedef NS_ENUM(NSInteger, GAFontFolder) {
+    GAFontFolderCurrentUser,
+    GAFontFolderAllUsers,
+    GAFontFolderSystem,
+};
+
+static NSURL *GAFontFolderURL(GAFontFolder folder) {
+    switch (folder) {
+        case GAFontFolderCurrentUser:
+            return [NSURL fileURLWithPath:[NSHomeDirectory() stringByAppendingPathComponent:@"Library/Fonts"] isDirectory:YES];
+        case GAFontFolderAllUsers:
+            return [NSURL fileURLWithPath:@"/Library/Fonts" isDirectory:YES];
+        case GAFontFolderSystem:
+            return [NSURL fileURLWithPath:@"/System/Library/Fonts" isDirectory:YES];
+    }
+}
 
 @interface GASavedTextMenu : NSMenu
 @property(nonatomic, weak) GAMainWindowController *controller;
 @property(nonatomic) BOOL deleting;
 @end
 @implementation GASavedTextMenu
+@end
+
+@interface GAColorMenu : NSMenu
+@property(nonatomic, weak) GAMainWindowController *controller;
+@property(nonatomic) BOOL deleting;
+@end
+@implementation GAColorMenu
 @end
 
 @interface GAContextViewMenu : NSMenu
@@ -25,6 +110,12 @@ static NSString *const GASavedTextsKey = @"GASavedTexts";
 @implementation GAFontFeaturesMenu
 @end
 
+@interface GAGlyphFeatureFilterMenu : NSMenu
+@property(nonatomic, weak) GAMainWindowController *controller;
+@end
+@implementation GAGlyphFeatureFilterMenu
+@end
+
 @interface GALoclLanguageMenu : NSMenu
 @property(nonatomic, weak) GAMainWindowController *controller;
 @end
@@ -35,6 +126,7 @@ static NSString *const GASavedTextsKey = @"GASavedTexts";
 @property (nonatomic, strong) NSMutableArray<GAMainWindowController *> *windowControllers;
 @property (nonatomic, strong) NSMutableArray<NSURL *> *pendingFontURLs;
 @property (nonatomic, strong, nullable) NSOpenPanel *openPanel;
+@property (nonatomic, strong, nullable) NSURL *pendingOpenPanelDirectory;
 @property (nonatomic, strong, nullable) NSMenu *recentMenu;
 @property(nonatomic, strong) NSMenu *editMenu;
 @property(nonatomic, strong) NSMenu *viewMenu;
@@ -106,6 +198,7 @@ static NSString *const GASavedTextsKey = @"GASavedTexts";
         return;
     }
 
+    self.pendingOpenPanelDirectory = nil;
     [self.openPanel cancel:nil];
     self.handlingOpenFiles = YES;
     for (NSString *filename in filenames) {
@@ -161,7 +254,22 @@ static NSString *const GASavedTextsKey = @"GASavedTexts";
 #pragma mark - Open panel
 
 - (void)openFont:(id)sender {
+    [self showFontOpenPanelAtDirectory:nil];
+}
+
+- (void)openFontFromFolder:(NSMenuItem *)sender {
+    [self showFontOpenPanelAtDirectory:GAFontFolderURL(sender.tag)];
+}
+
+- (void)showFontOpenPanelAtDirectory:(NSURL *)directory {
     if (self.openPanel != nil) {
+        if (directory) {
+            // Set the requested location on a fresh panel before presenting it.
+            BOOL alreadyClosing = self.pendingOpenPanelDirectory != nil;
+            self.pendingOpenPanelDirectory = directory;
+            if (!alreadyClosing) [self.openPanel cancel:nil];
+            return;
+        }
         [NSApp activateIgnoringOtherApps:YES];
         [self.openPanel makeKeyAndOrderFront:nil];
         return;
@@ -169,18 +277,21 @@ static NSString *const GASavedTextsKey = @"GASavedTexts";
     NSOpenPanel *panel = [NSOpenPanel openPanel];
     panel.allowsMultipleSelection = YES;
     panel.allowedContentTypes = GAFontContentTypes();
+    if (directory) panel.directoryURL = directory;
     self.openPanel = panel;
 
     [NSApp activateIgnoringOtherApps:YES];
     __weak typeof(self) weakSelf = self;
     [panel beginWithCompletionHandler:^(NSModalResponse result) {
         __strong typeof(weakSelf) self = weakSelf;
-        NSArray<NSURL *> *urls = [panel.URLs copy];
+        NSURL *nextDirectory = self.pendingOpenPanelDirectory;
+        self.pendingOpenPanelDirectory = nil;
         self.openPanel = nil;
         if (result != NSModalResponseOK) {
+            if (nextDirectory) [self showFontOpenPanelAtDirectory:nextDirectory];
             return;
         }
-        for (NSURL *url in urls) {
+        for (NSURL *url in [panel.URLs copy]) {
             [self openWindowForFontURL:url];
         }
     }];
@@ -296,16 +407,17 @@ static NSString *const GASavedTextsKey = @"GASavedTexts";
     [menu removeAllItems];
     NSArray<NSString *> *texts = [self.preferences arrayForKey:GASavedTextsKey] ?: @[];
     NSString *current = menu.controller.inputText;
-    NSString *title = menu.deleting
-        ? NSLocalizedString(@"Clear All Saved Text", @"Delete every saved text")
-        : [texts containsObject:current ?: @""]
-        ? NSLocalizedString(@"Remove from Saved Text", @"Remove current text from saved list")
-        : NSLocalizedString(@"Save Current Text", @"Save whole sidebar input as plain text");
-    NSMenuItem *save = [menu addItemWithTitle:title
-        action:menu.deleting ? @selector(clearSavedTexts:) : @selector(toggleSavedText:)
-        keyEquivalent:@""];
-    save.target = self;
-    [menu addItem:NSMenuItem.separatorItem];
+    BOOL canSave = menu.controller.fontURL && current.length && ![texts containsObject:current];
+    if (menu.deleting ? texts.count > 0 : canSave) {
+        NSString *title = menu.deleting
+            ? NSLocalizedString(@"Clear All Saved Text", @"Delete every saved text")
+            : NSLocalizedString(@"Save Current Text", @"Save whole sidebar input as plain text");
+        NSMenuItem *command = [menu addItemWithTitle:title
+            action:menu.deleting ? @selector(clearSavedTexts:) : @selector(saveCurrentText:)
+            keyEquivalent:@""];
+        command.target = self;
+        [menu addItem:NSMenuItem.separatorItem];
+    }
     if (!texts.count) {
         NSMenuItem *empty = [menu addItemWithTitle:NSLocalizedString(@"No Saved Text", @"Empty saved text list")
                                           action:nil keyEquivalent:@""];
@@ -321,13 +433,14 @@ static NSString *const GASavedTextsKey = @"GASavedTexts";
     }
 }
 
-- (void)toggleSavedText:(NSMenuItem *)sender {
-    NSString *text = ((GASavedTextMenu *)sender.menu).controller.inputText;
-    if (!text.length) return;
+- (void)saveCurrentText:(NSMenuItem *)sender {
+    GAMainWindowController *controller = ((GASavedTextMenu *)sender.menu).controller;
+    NSString *text = controller.inputText;
+    if (!controller.fontURL || !text.length) return;
     NSMutableArray *texts = [[self.preferences arrayForKey:GASavedTextsKey] mutableCopy]
         ?: [NSMutableArray array];
-    if ([texts containsObject:text]) [texts removeObject:text];
-    else [texts insertObject:text atIndex:0];
+    if ([texts containsObject:text]) return;
+    [texts insertObject:text atIndex:0];
     [self.preferences setObject:texts forKey:GASavedTextsKey];
 }
 
@@ -351,10 +464,12 @@ static NSString *const GASavedTextsKey = @"GASavedTexts";
     if (menu == self.editMenu) {
         // Keep the command attached to the window that opened the Edit menu;
         // ending menu tracking or another field editor can change keyWindow.
+        GAMainWindowController *controller = self.activeMainWindowController;
         for (NSMenuItem *item in menu.itemArray) {
             if ([item.submenu isKindOfClass:GASavedTextMenu.class]) {
                 GASavedTextMenu *saved = (GASavedTextMenu *)item.submenu;
-                saved.controller = self.activeMainWindowController;
+                saved.controller = controller;
+                item.enabled = saved.deleting || controller.fontURL != nil;
                 [self rebuildSavedTextMenu:saved];
             }
         }
@@ -362,6 +477,10 @@ static NSString *const GASavedTextsKey = @"GASavedTexts";
     }
     if ([menu isKindOfClass:GASavedTextMenu.class]) {
         [self rebuildSavedTextMenu:(GASavedTextMenu *)menu];
+        return;
+    }
+    if ([menu isKindOfClass:GAColorMenu.class]) {
+        [self rebuildColorMenu:(GAColorMenu *)menu];
         return;
     }
     if (menu == self.recentMenu) {
@@ -372,6 +491,10 @@ static NSString *const GASavedTextsKey = @"GASavedTexts";
         [self rebuildFontFeaturesMenu:(GAFontFeaturesMenu *)menu];
         return;
     }
+    if ([menu isKindOfClass:GAGlyphFeatureFilterMenu.class]) {
+        [self rebuildGlyphFeatureFilterMenu:(GAGlyphFeatureFilterMenu *)menu];
+        return;
+    }
     if ([menu isKindOfClass:GALoclLanguageMenu.class]) {
         [self rebuildLoclLanguageMenu:(GALoclLanguageMenu *)menu];
         return;
@@ -379,21 +502,43 @@ static NSString *const GASavedTextsKey = @"GASavedTexts";
     if (menu == self.viewMenu) {
         GAMainWindowController *controller = self.activeMainWindowController;
         BOOL textLayoutAvailable = controller && GAViewModeSupportsTextLayout(controller.viewMode);
+        NSString *textLayoutToolTip = controller && !textLayoutAvailable
+            ? NSLocalizedString(@"Switch to Multi-Character to enable", @"Disabled text layout menu item") : nil;
         for (NSMenuItem *item in menu.itemArray) {
-            if ([item.identifier isEqualToString:@"TextAlignment"] ||
+            if ([item.submenu isKindOfClass:GAColorMenu.class]) {
+                GAColorMenu *colors = (GAColorMenu *)item.submenu;
+                colors.controller = controller;
+                item.enabled = colors.deleting || controller.fontURL != nil;
+            }
+            if (item.action == @selector(toggleWritingDirection:) ||
+                [item.identifier isEqualToString:@"TextAlignment"] ||
                 [item.identifier isEqualToString:@"WritingDirection"] ||
                 [item.identifier isEqualToString:@"TypesettingLanguage"] ||
                 [item.identifier isEqualToString:@"FontFeatures"] ||
-                [item.identifier isEqualToString:@"TextDecorations"])
+                [item.identifier isEqualToString:@"TextDecorations"]) {
                 item.enabled = textLayoutAvailable;
+                item.toolTip = textLayoutToolTip;
+            }
             if ([item.identifier isEqualToString:@"WritingDirection"])
                 item.hidden = !controller.hasRightToLeftLanguages;
+            if ([item.identifier isEqualToString:@"GlyphFeatureFilter"]) {
+                BOOL allGlyphs = controller && controller.viewMode == GAViewModeAllGlyphs;
+                item.enabled = allGlyphs && controller.fontURL != nil;
+                item.toolTip = controller && !allGlyphs
+                    ? NSLocalizedString(@"Switch to All Glyphs to enable", @"Disabled glyph filter") : nil;
+            }
+            if (item.action == @selector(toggleShowMetrics:)) {
+                item.toolTip = controller && !GAViewModeSupportsMetrics(controller.viewMode)
+                    ? NSLocalizedString(@"Switch to Single Glyph or Multi-Character to enable",
+                                          @"Disabled bounding box control") : nil;
+            }
         }
         return;
     }
     // Re-evaluate context View menus on every open;
     // the same menu is shared by the three views.
-    GAViewMode mode = [self controllerForViewMenu:menu].viewMode;
+    GAMainWindowController *controller = [self controllerForViewMenu:menu];
+    GAViewMode mode = controller.viewMode;
     for (NSMenuItem *item in menu.itemArray) {
         BOOL textOnly = [item.identifier isEqualToString:@"FontFeatures"] ||
                         item.action == @selector(toggleWritingDirection:) ||
@@ -401,6 +546,10 @@ static NSString *const GASavedTextsKey = @"GASavedTexts";
         item.hidden =
             (textOnly && !GAViewModeSupportsTextLayout(mode)) ||
             (item.action == @selector(toggleShowMetrics:) && !GAViewModeSupportsMetrics(mode));
+        if ([item.identifier isEqualToString:@"GlyphFeatureFilter"]) {
+            item.hidden = !controller || mode != GAViewModeAllGlyphs;
+            item.enabled = !item.hidden && controller.fontURL != nil;
+        }
     }
     NSMenuItem *separator = nil;
     BOOL hasVisibleItem = NO;
@@ -475,17 +624,40 @@ static NSString *const GASavedTextsKey = @"GASavedTexts";
     NSMenu *fileMenu = [[NSMenu alloc] initWithTitle:NSLocalizedString(@"File", @"File")];
     fileItem.submenu = fileMenu;
 
+    NSString *openTitle = NSLocalizedString(@"Open Font", @"Open font menu command");
     NSMenuItem *open = [fileMenu
-        addItemWithTitle:NSLocalizedString(@"Open Font…", @"Open Font…")
+        addItemWithTitle:[openTitle stringByAppendingString:@"…"]
                   action:@selector(openFont:)
-           keyEquivalent:@"o"];
+           keyEquivalent:@""];
     open.target = self;
 
-    NSMenuItem *openWithNewShortcut = [open copy];
-    openWithNewShortcut.keyEquivalent = @"n";
-    openWithNewShortcut.hidden = YES;
-    openWithNewShortcut.allowsKeyEquivalentWhenHidden = YES;
-    [fileMenu addItem:openWithNewShortcut];
+    NSString *openFromTitle = NSLocalizedString(@"Open Font From", @"Open font folder submenu");
+    NSMenuItem *openFromFolder = [fileMenu addItemWithTitle:openFromTitle action:nil keyEquivalent:@""];
+    openFromFolder.alternate = YES;
+    openFromFolder.keyEquivalentModifierMask = NSEventModifierFlagOption;
+    NSMenu *fontFolders = [[NSMenu alloc] initWithTitle:openFromTitle];
+    openFromFolder.submenu = fontFolders;
+    NSArray<NSString *> *folderTitles = @[
+        NSLocalizedString(@"Current User", @"Font Book installation location"),
+        NSLocalizedString(@"All Users", @"Font Book installation location"),
+        NSLocalizedString(@"System Fonts", @"Fonts included in macOS"),
+    ];
+    for (GAFontFolder folder = GAFontFolderCurrentUser; folder <= GAFontFolderSystem; folder++) {
+        NSMenuItem *item = [fontFolders addItemWithTitle:[folderTitles[folder] stringByAppendingString:@"…"]
+            action:@selector(openFontFromFolder:) keyEquivalent:@""];
+        item.target = self;
+        item.tag = folder;
+    }
+
+    // AppKit clears a submenu's key equivalent. Keep the visible pair matched
+    // and route the shortcuts through separate menu items.
+    for (NSString *key in @[@"o", @"n"]) {
+        NSMenuItem *shortcut = [open copy];
+        shortcut.keyEquivalent = key;
+        shortcut.hidden = YES;
+        shortcut.allowsKeyEquivalentWhenHidden = YES;
+        [fileMenu addItem:shortcut];
+    }
 
     NSMenuItem *recentItem = [fileMenu addItemWithTitle:NSLocalizedString(@"Open Recent", @"Open Recent")
                                                  action:nil
@@ -501,6 +673,14 @@ static NSString *const GASavedTextsKey = @"GASavedTexts";
                   action:@selector(copyToFontBook:)
            keyEquivalent:@""];
     copyToFontBook.target = self;
+    NSMenuItem *copyToAllUsers = [fileMenu
+        addItemWithTitle:NSLocalizedString(@"Copy to All Users", @"Copy font to the shared Fonts folder")
+                  action:@selector(copyToFontBook:)
+           keyEquivalent:@""];
+    copyToAllUsers.target = self;
+    copyToAllUsers.tag = GAFontFolderAllUsers;
+    copyToAllUsers.alternate = YES;
+    copyToAllUsers.keyEquivalentModifierMask = NSEventModifierFlagOption;
 
     [fileMenu addItem:[NSMenuItem separatorItem]];
 
@@ -572,23 +752,100 @@ static NSString *const GASavedTextsKey = @"GASavedTexts";
     NSApp.mainMenu = mainMenu;
 }
 
-- (NSMenu *)colorMenu {
-    NSMenu *menu = [NSMenu new];
-    NSMenuItem *system = [menu addItemWithTitle:NSLocalizedString(@"Follow System", @"Restore all preview colors")
-        action:@selector(followSystemColors:) keyEquivalent:@""];
-    system.target = self;
-    [menu addItem:NSMenuItem.separatorItem];
-    NSArray *titles = @[NSLocalizedString(@"Glyph Color…", @"Choose preview glyph color"),
-        NSLocalizedString(@"Bounding Box Color…", @"Choose shadow color"),
-        NSLocalizedString(@"Background Color…", @"Choose preview background color")];
-    NSArray *roles = @[@(GAPreviewColorGlyph), @(GAPreviewColorBoundingBox), @(GAPreviewColorBackground)];
-    for (NSUInteger i = 0; i < roles.count; i++) {
-        NSMenuItem *item = [menu addItemWithTitle:titles[i]
-            action:@selector(choosePreviewColor:)
+- (NSString *)toolTipForPalette:(GAPreviewColors *)palette appearance:(NSAppearance *)appearance {
+    NSMutableArray<NSString *> *lines = [NSMutableArray arrayWithCapacity:GAPaletteRoleCount];
+    NSCharacterSet *ellipsis = [NSCharacterSet characterSetWithCharactersInString:@"…"];
+    NSString *labelFormat = NSLocalizedString(@"%@: %@", @"Palette tooltip color role and value");
+    [appearance performAsCurrentDrawingAppearance:^{
+        for (NSUInteger i = 0; i < GAPaletteRoleCount; i++) {
+            GAPreviewColorRole role = GAPaletteRoles[i];
+            NSString *title = [GAPaletteRoleTitle(role) stringByTrimmingCharactersInSet:ellipsis];
+            if ([palette followsSystemForRole:role]) {
+                [lines addObject:[NSString stringWithFormat:labelFormat, title,
+                    NSLocalizedString(@"Follow System", @"Restore all preview colors")]];
+                continue;
+            }
+            NSColor *color = [[palette colorForRole:role] colorUsingColorSpace:NSColorSpace.sRGBColorSpace];
+            if (!color) {
+                [lines addObject:title];
+                continue;
+            }
+            NSString *hex = [NSString stringWithFormat:@"#%02lX%02lX%02lX",
+                (unsigned long)lround(color.redComponent * 255),
+                (unsigned long)lround(color.greenComponent * 255),
+                (unsigned long)lround(color.blueComponent * 255)];
+            if (role == GAPreviewColorBoundingBox)
+                hex = [NSString stringWithFormat:NSLocalizedString(@"%@ (%.0f%%)", @"Palette tooltip shadow color and opacity"),
+                    hex, color.alphaComponent * 100];
+            [lines addObject:[NSString stringWithFormat:labelFormat, title, hex]];
+        }
+    }];
+    return [lines componentsJoinedByString:@"\n"];
+}
+
+- (void)rebuildColorMenu:(GAColorMenu *)menu {
+    [menu removeAllItems];
+    NSArray *saved = [self.preferences arrayForKey:GASavedPalettesKey];
+    if (menu.deleting && saved.count == 0) {
+        NSMenuItem *empty = [menu addItemWithTitle:NSLocalizedString(@"No Saved Palettes", @"Empty saved palettes list")
+            action:nil keyEquivalent:@""];
+        empty.enabled = NO;
+        return;
+    }
+    GAPreviewColors *current = menu.controller.previewColors;
+    BOOL hasFont = menu.controller.fontURL != nil;
+    NSAppearance *appearance = menu.controller.window.effectiveAppearance ?: NSApp.effectiveAppearance;
+    if (!menu.deleting) {
+        NSMenuItem *system = [menu addItemWithTitle:NSLocalizedString(@"Follow System", @"Restore all preview colors")
+            action:@selector(followSystemColors:) keyEquivalent:@""];
+        system.target = self;
+        system.enabled = hasFont;
+        system.state = current.systemState;
+    }
+    BOOL currentIsSaved = NO;
+    for (NSDictionary *entry in saved) {
+        GAPreviewColors *palette = [[GAPreviewColors alloc] initWithRepresentation:entry];
+        BOOL matches = [current matchesColors:palette];
+        currentIsSaved |= matches;
+        NSMenuItem *item = [menu addItemWithTitle:@""
+            action:menu.deleting ? @selector(deleteSavedPalette:) : @selector(useSavedPalette:)
             keyEquivalent:@""];
         item.target = self;
-        item.tag = [roles[i] integerValue];
+        item.representedObject = entry;
+        item.enabled = menu.deleting || hasFont;
+        if (!menu.deleting && matches) item.state = NSControlStateValueOn;
+        item.toolTip = [self toolTipForPalette:palette appearance:appearance];
+        item.image = GAPaletteSwatchImage(palette, appearance);
+        item.image.accessibilityDescription = item.toolTip;
     }
+    [menu addItem:NSMenuItem.separatorItem];
+    if (menu.deleting) {
+        NSMenuItem *clear = [menu addItemWithTitle:NSLocalizedString(@"Clear All Saved Palettes", @"Delete every saved palette")
+            action:@selector(clearSavedPalettes:) keyEquivalent:@""];
+        clear.target = self;
+        return;
+    }
+    for (NSUInteger i = 0; i < GAPaletteRoleCount; i++) {
+        GAPreviewColorRole role = GAPaletteRoles[i];
+        NSMenuItem *item = [menu addItemWithTitle:GAPaletteRoleTitle(role)
+            action:@selector(choosePreviewColor:) keyEquivalent:@""];
+        item.target = self;
+        item.tag = role;
+        item.enabled = hasFont;
+    }
+    if (hasFont && current.systemState != NSControlStateValueOn && !currentIsSaved) {
+        NSMenuItem *save = [menu addItemWithTitle:NSLocalizedString(@"Save Current Palette", @"Save the three current preview colors")
+            action:@selector(saveCurrentPalette:) keyEquivalent:@""];
+        save.target = self;
+    }
+}
+
+- (NSMenu *)colorMenuDeleting:(BOOL)deleting {
+    GAColorMenu *menu = [GAColorMenu new];
+    menu.deleting = deleting;
+    menu.delegate = self;
+    menu.autoenablesItems = NO;
+    [self rebuildColorMenu:menu];
     return menu;
 }
 
@@ -609,6 +866,10 @@ static NSString *const GASavedTextsKey = @"GASavedTexts";
         item.tag = modeTags[(NSUInteger)index].integerValue;
     }
     [menu addItem:[NSMenuItem separatorItem]];
+    if (!includeZoom) {
+        [self addGlyphFeatureFilterToMenu:menu];
+        [menu addItem:NSMenuItem.separatorItem];
+    }
 
     NSMenuItem *metrics = [menu addItemWithTitle:NSLocalizedString(@"Show Bounding Box", @"Show Bounding Box")
                                           action:@selector(toggleShowMetrics:)
@@ -616,7 +877,13 @@ static NSString *const GASavedTextsKey = @"GASavedTexts";
     metrics.target = self;
     if (includeZoom) {
         NSMenuItem *colors = [menu addItemWithTitle:NSLocalizedString(@"Colors", @"Preview colors") action:nil keyEquivalent:@""];
-        colors.submenu = [self colorMenu];
+        colors.submenu = [self colorMenuDeleting:NO];
+        NSMenuItem *deletePalettes = [menu
+            addItemWithTitle:NSLocalizedString(@"Delete Palettes", @"Delete saved palettes submenu")
+            action:nil keyEquivalent:@""];
+        deletePalettes.submenu = [self colorMenuDeleting:YES];
+        deletePalettes.alternate = YES;
+        deletePalettes.keyEquivalentModifierMask = NSEventModifierFlagOption;
     }
     [menu addItem:[NSMenuItem separatorItem]];
 
@@ -659,10 +926,10 @@ static NSString *const GASavedTextsKey = @"GASavedTexts";
     spacingOut.target = self;
     spacingOut.keyEquivalentModifierMask = NSEventModifierFlagCommand | NSEventModifierFlagControl;
     spacingOut.alternate = YES;
-    NSMenuItem *actualSize = [menu addItemWithTitle:NSLocalizedString(@"Actual Size", @"Actual Size")
+    NSMenuItem *defaultSize = [menu addItemWithTitle:NSLocalizedString(@"Default Size", @"Reset the current view to its default size")
                                              action:@selector(resetZoom:)
                                       keyEquivalent:@"0"];
-    actualSize.target = self;
+    defaultSize.target = self;
     [menu addItem:[NSMenuItem separatorItem]];
 
     [self addViewAlignmentItemsToMenu:menu];
@@ -755,7 +1022,53 @@ static NSString *const GASavedTextsKey = @"GASavedTexts";
         NSMenuItem *outline = [decorationMenu addItemWithTitle:NSLocalizedString(@"Outline", @"Outline text to inspect glyph contours")
             action:@selector(togglePreviewOutline:) keyEquivalent:@"y"];
         outline.target = self;
+        [menu addItem:NSMenuItem.separatorItem];
+        [self addGlyphFeatureFilterToMenu:menu];
     }
+}
+
+- (void)addGlyphFeatureFilterToMenu:(NSMenu *)menu {
+    NSString *title = NSLocalizedString(@"Filter by Feature", @"All Glyphs feature output filter");
+    NSMenuItem *item = [menu addItemWithTitle:title action:nil keyEquivalent:@""];
+    item.identifier = @"GlyphFeatureFilter";
+    GAGlyphFeatureFilterMenu *choices = [[GAGlyphFeatureFilterMenu alloc] initWithTitle:title];
+    choices.delegate = self;
+    choices.autoenablesItems = NO;
+    item.submenu = choices;
+}
+
+- (void)rebuildGlyphFeatureFilterMenu:(GAGlyphFeatureFilterMenu *)menu {
+    GAMainWindowController *controller = [self controllerForViewMenu:menu];
+    menu.controller = controller;
+    [menu removeAllItems];
+    if (!controller.fontURL || controller.viewMode != GAViewModeAllGlyphs)
+        return;
+    NSMenuItem *all = [menu addItemWithTitle:NSLocalizedString(@"All Glyphs", @"All Glyphs")
+                                    action:@selector(chooseGlyphFeatureFilter:) keyEquivalent:@""];
+    all.target = self;
+    all.state = controller.allGlyphFeatureTag ? NSControlStateValueOff : NSControlStateValueOn;
+    NSMenuItem *unfeatured = [menu addItemWithTitle:NSLocalizedString(@"No Feature", @"Glyphs outside feature outputs")
+                                           action:@selector(chooseGlyphFeatureFilter:) keyEquivalent:@""];
+    unfeatured.target = self;
+    unfeatured.representedObject = @"";
+    unfeatured.state = [controller.allGlyphFeatureTag isEqualToString:@""]
+        ? NSControlStateValueOn : NSControlStateValueOff;
+    NSArray<NSString *> *tags = controller.allGlyphFeatureTags;
+    if (tags.count) [menu addItem:NSMenuItem.separatorItem];
+    for (NSString *tag in tags) {
+        NSMenuItem *item = [menu addItemWithTitle:tag action:@selector(chooseGlyphFeatureFilter:)
+                                  keyEquivalent:@""];
+        item.target = self;
+        item.representedObject = tag;
+        item.state = [tag isEqualToString:controller.allGlyphFeatureTag]
+            ? NSControlStateValueOn : NSControlStateValueOff;
+    }
+}
+
+- (void)chooseGlyphFeatureFilter:(NSMenuItem *)sender {
+    GAMainWindowController *controller = ((GAGlyphFeatureFilterMenu *)sender.menu).controller;
+    if (controller.viewMode == GAViewModeAllGlyphs)
+        [controller filterAllGlyphsByFeature:sender.representedObject];
 }
 
 - (NSString *)alignmentTitle:(NSTextAlignment)alignment vertical:(BOOL)vertical {
@@ -877,16 +1190,55 @@ static NSString *const GASavedTextsKey = @"GASavedTexts";
 }
 
 - (void)followSystemColors:(NSMenuItem *)sender {
-    [[self controllerForViewMenu:sender.menu] followSystemColors];
+    [((GAColorMenu *)sender.menu).controller followSystemColors];
+}
+
+- (void)saveCurrentPalette:(NSMenuItem *)sender {
+    GAMainWindowController *controller = ((GAColorMenu *)sender.menu).controller;
+    if (!controller.fontURL) return;
+    GAPreviewColors *current = controller.previewColors;
+    NSDictionary *representation = current.representation;
+    if (representation.count == 0) return;
+    NSMutableArray *palettes = [[self.preferences arrayForKey:GASavedPalettesKey] mutableCopy]
+        ?: [NSMutableArray array];
+    for (NSDictionary *entry in palettes) {
+        GAPreviewColors *palette = [[GAPreviewColors alloc] initWithRepresentation:entry];
+        if ([current matchesColors:palette]) return;
+    }
+    [palettes addObject:representation];
+    [self.preferences setObject:palettes forKey:GASavedPalettesKey];
+}
+
+- (void)useSavedPalette:(NSMenuItem *)sender {
+    [((GAColorMenu *)sender.menu).controller applyPreviewColorRepresentation:sender.representedObject];
+}
+
+- (void)deleteSavedPalette:(NSMenuItem *)sender {
+    NSMutableArray *palettes = [[self.preferences arrayForKey:GASavedPalettesKey] mutableCopy];
+    [palettes removeObject:sender.representedObject];
+    [self.preferences setObject:palettes forKey:GASavedPalettesKey];
+}
+
+- (void)clearSavedPalettes:(NSMenuItem *)sender {
+    [self.preferences setObject:@[] forKey:GASavedPalettesKey];
 }
 
 - (void)choosePreviewColor:(NSMenuItem *)sender {
-    self.colorOwner = self.activeMainWindowController;
+    self.colorOwner = ((GAColorMenu *)sender.menu).controller;
     self.editingColorRole = (GAPreviewColorRole)sender.tag;
     NSColorPanel *panel = NSColorPanel.sharedColorPanel;
     panel.target = nil;
     panel.showsAlpha = self.editingColorRole == GAPreviewColorBoundingBox;
-    panel.color = [self.colorOwner.previewColors colorForRole:self.editingColorRole];
+    GAPreviewColors *colors = self.colorOwner.previewColors;
+    NSColor *color = [colors colorForRole:self.editingColorRole];
+    if (panel.showsAlpha && [colors followsSystemForRole:self.editingColorRole]) {
+        // Alpha edits on the dynamic system color produce an unarchivable color.
+        [self.colorOwner.window.effectiveAppearance performAsCurrentDrawingAppearance:^{
+            panel.color = [color colorUsingColorSpace:NSColorSpace.sRGBColorSpace];
+        }];
+    } else {
+        panel.color = color;
+    }
     panel.target = self;
     panel.action = @selector(changePreviewColor:);
     panel.continuous = YES;
@@ -1005,13 +1357,14 @@ static NSString *const GASavedTextsKey = @"GASavedTexts";
     SEL action = item.action;
     // Application-level commands do not require an open font window.
     if (action == @selector(showHelp:) ||
-        action == @selector(openFont:) || action == @selector(openRecentFont:) ||
+        action == @selector(openFont:) || action == @selector(openFontFromFolder:) ||
+        action == @selector(openRecentFont:) ||
         action == @selector(clearRecentFonts:) || action == @selector(restoreOpeningSettings:)) {
         return YES;
     }
-    if (action == @selector(toggleSavedText:) || action == @selector(useSavedText:)) {
+    if (action == @selector(saveCurrentText:) || action == @selector(useSavedText:)) {
         GAMainWindowController *owner = ((GASavedTextMenu *)item.menu).controller;
-        return owner.fontURL != nil && (action != @selector(toggleSavedText:) || owner.inputText.length > 0);
+        return owner.fontURL != nil && (action != @selector(saveCurrentText:) || owner.inputText.length > 0);
     }
     if (action == @selector(deleteSavedText:) || action == @selector(clearSavedTexts:))
         return [self.preferences arrayForKey:GASavedTextsKey].count > 0;
@@ -1022,11 +1375,7 @@ static NSString *const GASavedTextsKey = @"GASavedTexts";
     if (action == @selector(copyToFontBook:)) {
         return controller.fontURL != nil;
     }
-    if (action == @selector(followSystemColors:)) {
-        item.state = controller.previewColors.systemState;
-        return YES;
-    }
-    if (action == @selector(choosePreviewColor:) || action == @selector(saveOpeningSettings:)) return YES;
+    if (action == @selector(saveOpeningSettings:)) return YES;
     if (action == @selector(increaseLineSpacing:) || action == @selector(decreaseLineSpacing:))
         return GAViewModeSupportsTextLayout(controller.viewMode);
     if (action == @selector(switchViewMode:)) {
@@ -1089,13 +1438,13 @@ static NSString *const GASavedTextsKey = @"GASavedTexts";
 
 #pragma mark - File and application actions
 
-- (void)copyToFontBook:(id)sender {
+- (void)copyToFontBook:(NSMenuItem *)sender {
     GAMainWindowController *controller = self.activeMainWindowController;
     NSURL *fontURL = controller.fontURL;
     if (fontURL == nil)
         return;
-    NSURL *directory = [NSURL fileURLWithPath:
-        [NSHomeDirectory() stringByAppendingPathComponent:@"Library/Fonts"] isDirectory:YES];
+    GAFontFolder folder = sender.tag;
+    NSURL *directory = GAFontFolderURL(folder);
     NSFileManager *files = [NSFileManager defaultManager];
     NSError *error = nil;
     NSURLRelationship relationship;
@@ -1111,6 +1460,7 @@ static NSString *const GASavedTextsKey = @"GASavedTexts";
         alert.messageText = [NSString localizedStringWithFormat:
             NSLocalizedString(@"“%@” is already in Font Book.", @"Font already in user Fonts folder"),
             fontURL.lastPathComponent];
+        if (folder == GAFontFolderAllUsers) alert.informativeText = directory.path;
         [alert addButtonWithTitle:NSLocalizedString(@"OK", @"OK")];
         [alert beginSheetModalForWindow:controller.window completionHandler:nil];
         return;
@@ -1125,6 +1475,7 @@ static NSString *const GASavedTextsKey = @"GASavedTexts";
     alert.messageText = [NSString localizedStringWithFormat:
         NSLocalizedString(@"An item named “%@” already exists in Font Book.", @"Font filename conflict"),
         fontURL.lastPathComponent];
+    if (folder == GAFontFolderAllUsers) alert.informativeText = directory.path;
     NSButton *replace = [alert addButtonWithTitle:NSLocalizedString(@"Replace", @"Finder file conflict button")];
     replace.keyEquivalent = @"";
     [alert addButtonWithTitle:NSLocalizedString(@"Keep Both", @"Finder file conflict button")];

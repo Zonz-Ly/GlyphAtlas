@@ -2,6 +2,10 @@
 
 "File" = "Fichier";
 "Copy to Font Book" = "Copier vers Livre des polices";
+"Copy to All Users" = "Copier pour tous les utilisateurs";
+"Current User" = "Utilisateur actif";
+"All Users" = "Tous les utilisateurs";
+"System Fonts" = "Polices système";
 "Open Recent" = "Ouvrir l’élément récent";
 "Clear Menu" = "Effacer le menu";
 "Close Window" = "Fermer la fenêtre";
@@ -40,10 +44,12 @@
 "Hide Others" = "Masquer les autres";
 "Quit Glyph Atlas" = "Quitter Glyph Atlas";
 "Glyph Atlas Help" = "Aide Glyph Atlas";
-"Open Font…" = "Ouvrir une police…";
+"Open Font" = "Ouvrir une police";
+"Open Font From" = "Ouvrir une police depuis";
 "No Recent Fonts" = "Aucune police récente";
 "Single Glyph" = "Glyphe unique";
 "Multi-Character" = "Plusieurs caractères";
+"Switch to Multi-Character to enable" = "Passez à « Plusieurs caractères » pour activer cette option";
 "All Glyphs" = "Tous les glyphes";
 "Show Bounding Box" = "Afficher le cadre englobant";
 "Bounding Box Zoom In" = "Agrandir le cadre englobant";
@@ -61,8 +67,8 @@
 "Bounding Box" = "Cadre englobant";
 "Text and alternate glyph list" = "Liste du texte et des glyphes alternatifs";
 "CONTROL CHARACTER" = "CARACTÈRE DE CONTRÔLE";
-"Help.01" = "Ouvrez une police ou faites-la glisser sur la fenêtre de l’app ou son icône dans le Dock. Les fichiers récemment utilisés sont également pris en charge.";
-"Help.02" = "Depuis la barre des menus, copiez en un clic la police ouverte dans la fenêtre actuelle vers votre dossier de polices utilisateur.";
+"Help.01" = "Ouvrez une police ou faites-la glisser sur la fenêtre de l’app ou son icône dans le Dock. Les fichiers récemment utilisés sont également pris en charge. Maintenez la touche ⌥ avant de choisir « Ouvrir une police » dans la barre des menus pour afficher plus d’options.";
+"Help.02" = "Depuis la barre des menus, copiez en un clic la police ouverte dans la fenêtre actuelle vers votre dossier de polices utilisateur. Maintenez la touche ⌥ pour copier la police dans le dossier de polices de tous les utilisateurs.";
 "Help.03" = "À l’ouverture d’une police variable, un panneau de variation apparaît près des boutons de la fenêtre. Détachez-le en le faisant glisser pour le garder ouvert. Sélectionnez une valeur numérique et ajustez-la avec ↑/↓ ou ⇧↑/⇧↓.";
 "Help.04" = "Saisissez un ou plusieurs caractères dans la barre latérale pour voir tous les glyphes associés. Utilisez ⌥⏎ pour insérer un saut de ligne. Vous pouvez aussi faire un clic droit et choisir « Textes enregistrés » pour enregistrer le texte actuel ou insérer rapidement un texte déjà enregistré. Maintenez ⌥ dans la barre des menus pour supprimer rapidement les textes enregistrés.";
 "Help.05" = "Cliquez deux fois sur un glyphe, ou sélectionnez-le et appuyez sur Retour, pour remplacer le glyphe par défaut et afficher ses variantes. Maintenez la touche Maj pendant cette action pour ajouter le glyphe.";
@@ -70,11 +76,11 @@
 "Help.07" = "Utilisez ⌘C pour copier tous les caractères encodés du glyphe sélectionné.";
 "Help.08" = "Survolez une étiquette Unicode pour voir le nom du caractère défini par la norme Unicode.";
 "Help.09" = "« Tous les glyphes » est la vue par défaut. Changez de vue par un clic droit, ou utilisez ⌘1 pour « Glyphe unique », ⌘2 pour « Plusieurs caractères » et ⌘3 pour « Tous les glyphes ».";
-"Help.10" = "Dans Plusieurs caractères, cliquez sur un glyphe pour voir ses variantes. L’écriture verticale est prise en charge ; faites un clic droit ou appuyez sur ⌘5 pour la changer. L’alignement du texte et Typographie (fonctions OpenType) se trouvent aussi ici. Le menu Présentation de la barre des menus propose d’autres options.";
-"Help.11" = "Dans « Tous les glyphes », cliquez deux fois sur un glyphe pour l’ajouter au texte existant. Cliquer sur un glyphe dans la barre latérale le fait également clignoter dans la vue d’ensemble.";
+"Help.10" = "Dans Plusieurs caractères, cliquez sur un glyphe pour voir ses variantes. L’écriture verticale est prise en charge ; faites un clic droit ou appuyez sur ⌘5 pour la changer. L’alignement du texte et Typographie se trouvent aussi ici. Le menu Présentation de la barre des menus propose d’autres options.";
+"Help.11" = "Survolez un glyphe pour afficher ses détails. Dans « Tous les glyphes », cliquez deux fois sur un glyphe pour l’ajouter au texte existant. Cliquer sur un glyphe dans la barre latérale le fait également clignoter dans la vue d’ensemble. Faites un clic droit pour accéder à « Filtrer par fonctionnalité ».";
 "Help.12" = "Utilisez ⌘+/⌘− ou un pincement sur le trackpad pour agrandir ou réduire les glyphes. Dans Plusieurs caractères, utilisez ⌥⌘+/⌥⌘− ou un pincement horizontal pour augmenter ou réduire les marges, et ⌃⌘+/⌃⌘− ou un pincement vertical pour augmenter ou réduire l’interligne. Appuyez sur ⌘0 pour rétablir la taille par défaut.";
 "Help.13" = "L’ombre indique le cadre englobant, avec la largeur et la hauteur du glyphe ainsi que la hauteur de ligne et l’interligne de la composition. Appuyez sur ⌘4 pour le masquer.";
-"Help.14" = "Le mode sombre est pris en charge. Mais attention : cliquer sur un glyphe plein peut vous éblouir. Vous pouvez changer la couleur des glyphes, de l’ombre du cadre englobant et de l’arrière-plan dans Couleurs, dans la barre des menus.";
+"Help.14" = "Le mode sombre est pris en charge. Mais attention : cliquer sur un glyphe plein peut vous éblouir. Vous pouvez changer la couleur des glyphes, de l’ombre du cadre englobant et de l’arrière-plan dans Couleurs, dans la barre des menus. Choisissez « Enregistrer la palette actuelle » pour conserver vos couleurs. Maintenez la touche ⌥ pour afficher « Supprimer des palettes ».";
 "Help.15" = "Choisissez Utiliser comme valeurs par défaut dans la barre des menus pour enregistrer la vue, les couleurs, la taille et les autres réglages d’aperçu actuels, ainsi que la taille de la fenêtre. Les fichiers de polices ouverts ensuite utiliseront ces réglages. Maintenez ⌥ pour choisir Restaurer les valeurs par défaut.";
 
 /* Variable font controls. */
@@ -94,15 +100,20 @@
 /* User-saved plain text. */
 "Saved Text" = "Textes enregistrés";
 "Save Current Text" = "Enregistrer le texte actuel";
-"Remove from Saved Text" = "Retirer des textes enregistrés";
 "No Saved Text" = "Aucun texte enregistré";
 
 /* Preview colors and native line spacing. */
 "Colors" = "Couleurs";
+"Delete Palettes" = "Supprimer des palettes";
+"Save Current Palette" = "Enregistrer la palette actuelle";
+"Clear All Saved Palettes" = "Effacer toutes les palettes enregistrées";
+"No Saved Palettes" = "Aucune palette enregistrée";
+"%@: %@" = "%@ : %@";
+"%@ (%.0f%%)" = "%@ (%.0f %%)";
 "Follow System" = "Suivre le système";
-"Glyph Color…" = "Couleur des glyphes…";
-"Background Color…" = "Couleur d’arrière-plan…";
-"Bounding Box Color…" = "Couleur du cadre englobant…";
+"Glyph…" = "Glyphe…";
+"Background…" = "Arrière-plan…";
+"Bounding Box…" = "Cadre englobant…";
 "Increase Line Spacing" = "Augmenter l’interligne";
 "Decrease Line Spacing" = "Réduire l’interligne";
 
@@ -117,10 +128,14 @@
 "Typography" = "Typographie";
 "Other" = "Autres";
 "No Typography Features" = "Aucune fonction typographique";
-"Actual Size" = "Taille réelle";
+"Default Size" = "Taille par défaut";
 "Use as Defaults" = "Utiliser comme valeurs par défaut";
 "Restore to Defaults" = "Restaurer les valeurs par défaut";
 "Text Decorations" = "Décoration du texte";
+"Filter by Feature" = "Filtrer par fonctionnalité";
+"No Feature" = "Sans fonctionnalité";
+"Switch to All Glyphs to enable" = "Passez à « Tous les glyphes » pour activer cette option";
+"Switch to Single Glyph or Multi-Character to enable" = "Passez à « Glyphe unique » ou « Plusieurs caractères » pour activer cette option";
 
 "Writing Direction" = "Sens d’écriture";
 "Left to Right" = "De gauche à droite";

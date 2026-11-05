@@ -264,8 +264,8 @@ std::vector<TextRun> prepareText(NSString *text, const Cmap &cmap,
     for (auto &group : groups) {
         bool newline = false;
         for (const auto &item : group.glyphs)
-            newline |= item.scalar == '\n' || item.scalar == '\r' || item.scalar == 0x2028 ||
-                       item.scalar == 0x2029;
+            newline |= (item.scalar >= '\n' && item.scalar <= '\r') || item.scalar == 0x0085 ||
+                       item.scalar == 0x2028 || item.scalar == 0x2029;
         if (newline) {
             paragraphStart = true;
             continue;

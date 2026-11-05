@@ -31,7 +31,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic) BOOL underlined;
 @property(nonatomic) BOOL struckThrough;
 @property(nonatomic) BOOL outlined;
-- (void)resetTextZoom;
+- (void)resetLayoutScale;
 /// Visible size of the enclosing scroll view; drives wrapping and margins.
 @property (nonatomic) NSSize viewportSize;
 /// Size needed to show the whole page plus its margins.
@@ -41,7 +41,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, copy, nullable) void (^onGlyphSelected)
     (NSArray<NSNumber *> *glyphIDs, NSRange range);
 
-- (void)setText:(NSString *)text groups:(NSArray<GACharacterGroup *> *)groups;
+- (void)setText:(NSString *)text groups:(NSArray<GACharacterGroup *> *)groups
+      omissions:(NSIndexSet *)omissions;
 - (void)zoomTextIn;
 - (void)zoomTextOut;
 

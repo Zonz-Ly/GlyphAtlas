@@ -57,11 +57,12 @@ const CGFloat GAFontShapingSize = 200.0;
 
 - (NSString *)glyphKey {
     NSArray<NSNumber *> *glyphIDs = self.glyphIDs;
+    if (glyphIDs.count < 2) return glyphIDs.firstObject.stringValue ?: @"∅";
     NSMutableArray<NSString *> *parts = [NSMutableArray arrayWithCapacity:glyphIDs.count];
     for (NSNumber *glyph in glyphIDs) {
         [parts addObject:glyph.stringValue];
     }
-    return parts.count ? [parts componentsJoinedByString:@","] : @"∅";
+    return [parts componentsJoinedByString:@","];
 }
 
 @end
@@ -293,6 +294,7 @@ NSArray<GACharacterGroup *> *GAGroupsForScanResult(NSString *text, GARawScanResu
         [candidates addObject:c];
     }
     GARawScanResult *rebound = [[GARawScanResult alloc] init];
+    rebound.incomplete = result.incomplete;
     rebound.candidates = candidates;
     rebound.sourceRanges = result.sourceRanges;
     return rebound;
@@ -400,6 +402,11 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
            [multiUnicodePattern firstMatchInString:name options:0 range:range] != nil;
 }
 
+NSString *GAUsableGlyphName(CTFontRef font, CGGlyph glyph) {
+    NSString *name = CFBridgingRelease(CTFontCopyNameForGlyph(font, glyph));
+    return name.length > 0 && !GAGlyphNameLooksSynthetic(name) ? name : nil;
+}
+
 - (void)decorateVariant:(GAGlyphVariant *)variant
           withUnicodeMap:(NSDictionary<NSNumber *, NSArray<NSNumber *> *> *)map {
     NSMutableSet<NSNumber *> *scalars = [NSMutableSet set];
@@ -412,8 +419,8 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
         }
 
         CGGlyph glyph = (CGGlyph)glyphNumber.unsignedShortValue;
-        NSString *name = CFBridgingRelease(CTFontCopyNameForGlyph(_font, glyph));
-        if (name.length > 0 && !GAGlyphNameLooksSynthetic(name)) {
+        NSString *name = GAUsableGlyphName(_font, glyph);
+        if (name) {
             [glyphNames addObject:name];
         } else {
             [glyphNames addObject:[NSString stringWithFormat:@"GID %@", glyphNumber]];
@@ -473,9 +480,15 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
 }
 
 - (GARawScanResult *)rawScanContent:(NSString *)content
-                         selections:(NSArray<GAGlyphSelectionRun *> *)selections {
+                         selections:(NSArray<GAGlyphSelectionRun *> *)selections
+                          cancelled:(BOOL (^)(void))cancelled {
+    BOOL incomplete = NO;
     NSArray<GASubstitutionMatch *> *matches = [_substitutionEngine discoverText:content
-                                                                     selections:selections];
+                                                                     selections:selections
+                                                                     incomplete:&incomplete
+                                                                      cancelled:cancelled];
+    if (!matches)
+        return nil;
     NSMutableArray<NSValue *> *ranges = [NSMutableArray array];
     for (GASubstitutionMatch *match in matches)
         if (match.base) [ranges addObject:[NSValue valueWithRange:match.sourceRange]];
@@ -494,10 +507,15 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
     }
     [ranges sortUsingComparator:order];
     GARawScanResult *result = [[GARawScanResult alloc] init];
+    result.incomplete = incomplete;
     result.sourceRanges = ranges;
+    if (cancelled && cancelled())
+        return nil;
     NSArray<GACharacterGroup *> *groups = GAGroupsForScanResult(content, result);
     NSMutableArray *candidates = [NSMutableArray array];
     for (GASubstitutionMatch *match in matches) {
+        if (cancelled && cancelled())
+            return nil;
         if (!match.sourceRange.length || NSMaxRange(match.sourceRange) > content.length)
             continue;
         NSUInteger lo = 0, hi = groups.count;
@@ -534,12 +552,15 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
         [candidates addObject:c];
     }
     result.candidates = candidates;
-    return result;
+    return cancelled && cancelled() ? nil : result;
 }
 
-- (void)applyRawResult:(GARawScanResult *)result
-                groups:(NSArray<GACharacterGroup *> *)groups {
+- (BOOL)applyRawResult:(GARawScanResult *)result
+                groups:(NSArray<GACharacterGroup *> *)groups
+             cancelled:(BOOL (^)(void))cancelled {
     for (GAScanCandidate *candidate in result.candidates) {
+        if (cancelled && cancelled())
+            return NO;
         NSUInteger target = candidate.targetGroupIndex;
         if (target >= groups.count) {
             continue;
@@ -583,6 +604,15 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
         [variants addObject:variant];
         group.variants = variants;
     }
+    return !cancelled || !cancelled();
+}
+
+- (NSArray<NSString *> *)glyphFeatureTags {
+    return [_substitutionEngine glyphFeatureTags];
+}
+
+- (NSIndexSet *)glyphOutputsForFeatureTag:(NSString *)tag cancelled:(BOOL (^)(void))cancelled {
+    return [_substitutionEngine glyphOutputsForFeatureTag:tag cancelled:cancelled];
 }
 
 - (NSArray<GAAllGlyphEntry *> *)allGlyphEntries {
@@ -606,11 +636,18 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
 - (NSNumber *)verticalSubstituteForGlyph:(CGGlyph)glyph {
     return [_substitutionEngine verticalGlyph:glyph];
 }
-- (NSArray<GACharacterGroup *> *)analyzeGlyphIDs:(NSArray<NSNumber *> *)glyphIDs {
+- (NSArray<GACharacterGroup *> *)analyzeGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
+                                       cancelled:(BOOL (^)(void))cancelled {
     if (!glyphIDs.count)
         return @[];
+    NSArray<GASubstitutionMatch *> *matches = [_substitutionEngine discoverGlyphIDs:glyphIDs
+                                                                             cancelled:cancelled];
+    if (!matches)
+        return nil;
     NSMutableArray *variants = [NSMutableArray array];
-    for (GASubstitutionMatch *match in [_substitutionEngine discoverGlyphIDs:glyphIDs]) {
+    for (GASubstitutionMatch *match in matches) {
+        if (cancelled && cancelled())
+            return nil;
         GAGlyphVariant *v = [[GAGlyphVariant alloc] init];
         v.fontBox = _fontBox;
         v.glyphIDs = match.glyphIDs;

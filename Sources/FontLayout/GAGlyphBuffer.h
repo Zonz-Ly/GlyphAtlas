@@ -59,22 +59,56 @@ struct Trace {
     std::vector<Change> changes;
     bool inventory = false;
     bool provenance = false;
+    bool incomplete = false;
     std::vector<TraceStep> steps;
     void changed(const Buffer &before, const Buffer &after, const std::string &feature);
 };
+// Limits on discovery are separate from table errors and cancellation.
+struct DiscoveryLimit {};
+// Distinct from a malformed or exhausted font program.
+struct QueryCancelled {};
+struct Cancellation {
+    std::function<bool()> requested;
+    void check() const {
+        if (requested && requested())
+            throw QueryCancelled{};
+    }
+};
+inline void checkCancellation(const Cancellation *cancellation) {
+    if (cancellation)
+        cancellation->check();
+}
 struct Budget {
+    static constexpr unsigned pollInterval = 32;
     size_t remaining, maxGlyphs;
-    explicit Budget(size_t input)
+    const Cancellation *cancellation;
+    unsigned pendingPolls = 0;
+    bool discovery = false;
+    explicit Budget(size_t input, const Cancellation *check = nullptr, bool isDiscovery = false)
         : remaining(1000000 + std::min<size_t>(input, 1000000) * 10000),
-          maxGlyphs(std::max<size_t>(65536, std::min<size_t>(1000000, input * 64))) {}
+          maxGlyphs(std::max<size_t>(65536, std::min<size_t>(1000000, input * 64))),
+          cancellation(check), discovery(isDiscovery) {}
     void step() {
-        if (!remaining)
+        if (!remaining) {
+            if (discovery) throw DiscoveryLimit{};
             throw InvalidTable("font execution budget exhausted");
+        }
         --remaining;
+        if (cancellation && remaining % pollInterval == 0)
+            cancellation->check();
+    }
+    // For inventory loops that do not charge the font execution budget.
+    void poll() {
+        if (++pendingPolls == pollInterval) {
+            pendingPolls = 0;
+            checkCancellation(cancellation);
+        }
     }
     void growth(size_t size) const {
-        if (size > maxGlyphs)
+        if (size > maxGlyphs) {
+            if (discovery) throw DiscoveryLimit{};
             throw InvalidTable("font output exceeds glyph budget");
+        }
     }
 };
 struct Metrics {

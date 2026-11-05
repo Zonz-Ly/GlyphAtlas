@@ -183,6 +183,13 @@
 
 #pragma mark - Shared display state
 
+- (void)applyPreviewColorRepresentation:(NSDictionary<NSString *, NSData *> *)representation {
+    self.previewColors = [[GAPreviewColors alloc] initWithRepresentation:representation];
+    self.boundingBoxView.previewColors = self.previewColors;
+    self.multiView.previewColors = self.previewColors;
+    [self refreshPreviewColors];
+}
+
 - (void)refreshPreviewColors {
     if (GAUsesMacOS26Layout()) {
         ((GADetailContainerView *)self.view).previewColors = self.previewColors;
@@ -206,6 +213,10 @@
 - (void)setFontDocument:(GAFontDocument *)document {
     self.allGlyphsView.document = document;
     self.multiView.document = document;
+}
+
+- (void)setAllGlyphVisibleIDs:(NSIndexSet *)glyphIDs {
+    [self.allGlyphsView setVisibleGlyphIDs:glyphIDs];
 }
 
 - (void)setShowsMetrics:(BOOL)showsMetrics {
@@ -268,12 +279,7 @@
             self.boundingBoxInsetFraction = GABoundingBoxDefaultSideInsetFraction;
             break;
         case GAViewModeMultiCharacter:
-            // Actual Size resets text, spacing and the shared page inset together.
-            GAPreserveScrollPosition(self.multiScrollView, ^{
-                [self.multiView resetTextZoom];
-                self.multiView.lineSpacingAdjustment = 0;
-                self.boundingBoxInsetFraction = GABoundingBoxDefaultSideInsetFraction;
-            });
+            [self.multiView resetLayoutScale];
             break;
     }
 }
@@ -300,9 +306,10 @@
     [self.multiScrollView reflectScrolledClipView:self.multiScrollView.contentView];
 }
 
-- (void)setMultiText:(NSString *)text groups:(NSArray<GACharacterGroup *> *)groups {
+- (void)setMultiText:(NSString *)text groups:(NSArray<GACharacterGroup *> *)groups
+           omissions:(NSIndexSet *)omissions {
     NSPoint origin = self.multiScrollView.contentView.bounds.origin;
-    [self.multiView setText:text groups:groups];
+    [self.multiView setText:text groups:groups omissions:omissions];
     [self scrollMultiToPoint:origin];
 }
 
@@ -335,12 +342,7 @@
 
 - (void)applyOpeningSettings:(NSDictionary *)settings {
     [self view];
-    if ([settings[@"colors"] count]) {
-        self.previewColors = [[GAPreviewColors alloc] initWithRepresentation:settings[@"colors"]];
-        self.boundingBoxView.previewColors = self.previewColors;
-        self.multiView.previewColors = self.previewColors;
-        [self refreshPreviewColors];
-    }
+    if ([settings[@"colors"] count]) [self applyPreviewColorRepresentation:settings[@"colors"]];
     if (settings[@"boxInset"]) self.boundingBoxInsetFraction = [settings[@"boxInset"] doubleValue];
     if (settings[@"textScale"]) self.multiView.textScale = [settings[@"textScale"] doubleValue];
     if (settings[@"lineSpacing"]) self.multiView.lineSpacingAdjustment = [settings[@"lineSpacing"] doubleValue];

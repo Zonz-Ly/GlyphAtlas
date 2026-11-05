@@ -14,6 +14,10 @@
 "Strikethrough" = "Gạch xuyên";
 "File" = "Tệp";
 "Copy to Font Book" = "Sao chép vào Sổ quản lý Phông chữ";
+"Copy to All Users" = "Sao chép cho tất cả người dùng";
+"Current User" = "Người dùng hiện tại";
+"All Users" = "Tất cả người dùng";
+"System Fonts" = "Phông chữ Hệ thống";
 "Show Bounding Box" = "Hiển thị khung bao";
 "Font File" = "Tệp phông chữ";
 "Variable" = "Biến thiên";
@@ -36,9 +40,9 @@
 "Custom" = "Tùy chỉnh";
 "No Recent Fonts" = "Không có phông chữ gần đây";
 "Justified" = "Căn đều";
-"Help.01" = "Mở một phông chữ hoặc kéo phông chữ vào cửa sổ hay biểu tượng của ứng dụng trên Dock. Có hỗ trợ tệp được sử dụng gần đây.";
+"Help.01" = "Mở một phông chữ hoặc kéo phông chữ vào cửa sổ hay biểu tượng của ứng dụng trên Dock. Có hỗ trợ tệp được sử dụng gần đây. Giữ ⌥ trước khi chọn “Mở phông chữ” trên thanh menu để xem thêm tùy chọn.";
 "Default" = "Mặc định";
-"Help.02" = "Từ thanh menu, bạn có thể sao chép phông chữ đang mở trong cửa sổ hiện tại vào thư mục phông chữ của người dùng chỉ bằng một lần bấm.";
+"Help.02" = "Từ thanh menu, bạn có thể sao chép phông chữ đang mở trong cửa sổ hiện tại vào thư mục phông chữ của người dùng chỉ bằng một lần bấm. Giữ ⌥ để sao chép phông chữ vào thư mục phông chữ dành cho tất cả người dùng.";
 "CoreText could not create this font." = "CoreText không thể tạo phông chữ này.";
 "Open" = "Mở";
 "Undo" = "Hoàn tác";
@@ -60,13 +64,14 @@
 "Cannot Open Font" = "Không thể mở phông chữ";
 "Left" = "Căn trái";
 "Cannot Read Font" = "Không thể đọc phông chữ";
-"Help.10" = "Trong Nhiều ký tự, bấm vào glyph để xem các dạng thay thế. Có hỗ trợ viết dọc; bấm chuột phải hoặc nhấn ⌘5 để chuyển. Căn chỉnh văn bản và Chữ viết (tính năng OpenType) cũng ở đây. Menu Xem trên thanh menu có thêm các tùy chọn.";
-"Help.11" = "Trong chế độ Tất cả glyph, bấm hai lần vào một glyph để thêm vào văn bản hiện có. Bấm vào một glyph trong thanh bên cũng làm glyph đó nhấp nháy trong chế độ xem này.";
+"Help.10" = "Trong Nhiều ký tự, bấm vào glyph để xem các dạng thay thế. Có hỗ trợ viết dọc; bấm chuột phải hoặc nhấn ⌘5 để chuyển. Căn chỉnh văn bản và Chữ viết cũng ở đây. Menu Xem trên thanh menu có thêm các tùy chọn.";
+"Help.11" = "Đưa con trỏ lên một glyph để xem thông tin chi tiết. Trong chế độ Tất cả glyph, bấm hai lần vào một glyph để thêm vào văn bản hiện có. Bấm vào một glyph trong thanh bên cũng làm glyph đó nhấp nháy trong chế độ xem này. Bấm chuột phải để tìm mục “Lọc theo tính năng”.";
 "Help.12" = "Dùng ⌘+/⌘− hoặc chụm và mở hai ngón tay trên bàn di chuột để phóng to hoặc thu nhỏ glyph. Trong Nhiều ký tự, dùng ⌥⌘+/⌥⌘− hoặc chụm theo chiều ngang để tăng hoặc giảm lề; dùng ⌃⌘+/⌃⌘− hoặc chụm theo chiều dọc để tăng hoặc giảm giãn dòng. Nhấn ⌘0 để khôi phục kích thước mặc định.";
 "Help.13" = "Bóng biểu thị khung bao, gồm chiều rộng và chiều cao của glyph, chiều cao dòng và khoảng cách dòng của phần dàn chữ. Nhấn ⌘4 để ẩn.";
-"Help.14" = "Có hỗ trợ chế độ tối, nhưng hãy cẩn thận: bấm vào một glyph đặc có thể làm bạn chói mắt. Bạn có thể đổi màu glyph, bóng của khung bao và nền trong Màu sắc trên thanh menu.";
+"Help.14" = "Có hỗ trợ chế độ tối, nhưng hãy cẩn thận: bấm vào một glyph đặc có thể làm bạn chói mắt. Bạn có thể đổi màu glyph, bóng của khung bao và nền trong Màu sắc trên thanh menu. Chọn “Lưu bảng màu hiện tại” để lưu các màu đã chỉnh. Giữ ⌥ để thấy mục “Xóa bảng màu”.";
 "Help.15" = "Chọn Sử dụng làm mặc định trên thanh menu để lưu chế độ xem, màu sắc, kích thước và các thiết lập xem trước hiện tại cùng kích thước cửa sổ. Các tệp phông chữ mở sau đó sẽ dùng những thiết lập này. Giữ ⌥ để chọn Khôi phục giá trị mặc định.";
 "Multi-Character" = "Nhiều ký tự";
+"Switch to Multi-Character to enable" = "Chuyển sang Nhiều ký tự để bật tùy chọn này";
 "Text Alignment" = "Căn chỉnh văn bản";
 "About Glyph Atlas" = "Giới thiệu về Glyph Atlas";
 "Copy" = "Sao chép";
@@ -78,7 +83,8 @@
 "Right" = "Căn phải";
 "Zoom" = "Thu phóng";
 "Untitled Font" = "Phông chữ chưa có tên";
-"Open Font…" = "Mở phông chữ…";
+"Open Font" = "Mở phông chữ";
+"Open Font From" = "Mở phông chữ từ";
 "Font Name" = "Tên phông chữ";
 
 /* Font Book copy alerts. Conflict buttons follow Finder. */
@@ -91,15 +97,18 @@
 /* User-saved plain text. */
 "Saved Text" = "Văn bản đã lưu";
 "Save Current Text" = "Lưu văn bản hiện tại";
-"Remove from Saved Text" = "Xóa khỏi văn bản đã lưu";
 "No Saved Text" = "Không có văn bản đã lưu";
 
 /* Preview colors and native line spacing. */
 "Colors" = "Màu sắc";
+"Delete Palettes" = "Xóa bảng màu";
+"Save Current Palette" = "Lưu bảng màu hiện tại";
+"Clear All Saved Palettes" = "Xóa tất cả bảng màu đã lưu";
+"No Saved Palettes" = "Không có bảng màu đã lưu";
 "Follow System" = "Theo hệ thống";
-"Glyph Color…" = "Màu glyph…";
-"Background Color…" = "Màu nền…";
-"Bounding Box Color…" = "Màu khung bao…";
+"Glyph…" = "Glyph…";
+"Background…" = "Nền…";
+"Bounding Box…" = "Khung bao…";
 "Increase Line Spacing" = "Tăng giãn dòng";
 "Decrease Line Spacing" = "Giảm giãn dòng";
 
@@ -114,10 +123,14 @@
 "Typography" = "Chữ viết";
 "Other" = "Khác";
 "No Typography Features" = "Không có tính năng kiểu chữ";
-"Actual Size" = "Kích thước thực";
+"Default Size" = "Kích thước mặc định";
 "Use as Defaults" = "Sử dụng làm mặc định";
 "Restore to Defaults" = "Khôi phục giá trị mặc định";
 "Text Decorations" = "Trang trí văn bản";
+"Filter by Feature" = "Lọc theo tính năng";
+"No Feature" = "Không có tính năng";
+"Switch to All Glyphs to enable" = "Chuyển sang “Tất cả glyph” để bật";
+"Switch to Single Glyph or Multi-Character to enable" = "Chuyển sang “Một glyph” hoặc “Nhiều ký tự” để bật";
 
 "Writing Direction" = "Hướng viết";
 "Left to Right" = "Từ trái sang phải";

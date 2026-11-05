@@ -2,6 +2,10 @@
 
 "File" = "Ablage";
 "Copy to Font Book" = "In die Schriftsammlung kopieren";
+"Copy to All Users" = "Für alle Benutzer:innen kopieren";
+"Current User" = "Aktuelle:r Benutzer:in";
+"All Users" = "Alle Benutzer:innen";
+"System Fonts" = "Systemschriften";
 "Open Recent" = "Benutzte Dokumente";
 "Clear Menu" = "Einträge löschen";
 "Close Window" = "Fenster schließen";
@@ -40,10 +44,12 @@
 "Hide Others" = "Andere ausblenden";
 "Quit Glyph Atlas" = "Glyph Atlas beenden";
 "Glyph Atlas Help" = "Glyph Atlas-Hilfe";
-"Open Font…" = "Schrift öffnen…";
+"Open Font" = "Schrift öffnen";
+"Open Font From" = "Schrift aus Ordner öffnen";
 "No Recent Fonts" = "Keine zuletzt benutzten Schriften";
 "Single Glyph" = "Einzelne Glyphe";
 "Multi-Character" = "Mehrere Zeichen";
+"Switch to Multi-Character to enable" = "Zum Aktivieren zu „Mehrere Zeichen“ wechseln";
 "All Glyphs" = "Alle Glyphen";
 "Show Bounding Box" = "Begrenzungsrahmen einblenden";
 "Bounding Box Zoom In" = "Begrenzungsrahmen vergrößern";
@@ -61,8 +67,8 @@
 "Bounding Box" = "Begrenzungsrahmen";
 "Text and alternate glyph list" = "Liste der Zeichen und alternativen Glyphen";
 "CONTROL CHARACTER" = "STEUERZEICHEN";
-"Help.01" = "Öffne eine Schrift oder ziehe sie auf das App-Fenster oder das Dock-Symbol. Zuletzt benutzte Dateien werden ebenfalls unterstützt.";
-"Help.02" = "Über die Menüleiste kannst du die im aktuellen Fenster geöffnete Schrift mit einem Klick in deinen Benutzerordner für Schriften kopieren.";
+"Help.01" = "Öffne eine Schrift oder ziehe sie auf das App-Fenster oder das Dock-Symbol. Zuletzt benutzte Dateien werden ebenfalls unterstützt. Halte vor der Auswahl von „Schrift öffnen“ in der Menüleiste ⌥ gedrückt, um weitere Optionen zu sehen.";
+"Help.02" = "Über die Menüleiste kannst du die im aktuellen Fenster geöffnete Schrift mit einem Klick in deinen Benutzerordner für Schriften kopieren. Halte ⌥ gedrückt, um die Schrift in den Schriftenordner für alle Benutzer:innen zu kopieren.";
 "Help.03" = "Beim Öffnen einer variablen Schrift erscheint neben den Fenstersteuerungen ein Variationsfenster. Ziehe es heraus, damit es geöffnet bleibt. Wähle einen Zahlenwert aus und passe ihn mit ↑/↓ oder ⇧↑/⇧↓ an.";
 "Help.04" = "Gib ein oder mehrere Zeichen in der Seitenleiste ein, um alle zugehörigen Glyphen zu sehen. Mit ⌥⏎ fügst du einen Zeilenumbruch ein. Per Rechtsklick findest du auch „Gespeicherte Texte“, um den aktuellen Text zu speichern oder zuvor gespeicherte Texte schnell einzufügen. Halte in der Menüleiste ⌥ gedrückt, um gespeicherte Texte schnell zu löschen.";
 "Help.05" = "Doppelklicke auf eine Glyphe oder wähle sie aus und drücke Return, um die Standardglyphe zu ersetzen und die Alternativen dieser Glyphe anzuzeigen. Halte dabei die Umschalttaste gedrückt, um die Glyphe hinzuzufügen.";
@@ -70,11 +76,11 @@
 "Help.07" = "Mit ⌘C kopierst du alle codierten Zeichen der ausgewählten Glyphe.";
 "Help.08" = "Bewege den Zeiger über eine Unicode-Kennzeichnung, um den im Unicode-Standard definierten Zeichennamen zu sehen.";
 "Help.09" = "Standardmäßig ist „Alle Glyphen“ aktiv. Wechsle die Ansicht per Rechtsklick oder mit ⌘1 zu „Einzelne Glyphe“, ⌘2 zu „Mehrere Zeichen“ und ⌘3 zu „Alle Glyphen“.";
-"Help.10" = "In „Mehrere Zeichen“ zeigt ein Klick auf eine Glyphe deren Alternativen. Vertikaler Satz wird unterstützt; schalte ihn per Rechtsklick oder mit ⌘5 um. Dort findest du auch Textausrichtung und Typografie (OpenType-Funktionen). Weitere Optionen stehen im Menü „Darstellung“.";
-"Help.11" = "Doppelklicke in „Alle Glyphen“ auf eine Glyphe, um sie an den vorhandenen Text anzuhängen. Ein Klick auf eine Glyphe in der Seitenleiste lässt sie auch in der Gesamtübersicht blinken.";
+"Help.10" = "In „Mehrere Zeichen“ zeigt ein Klick auf eine Glyphe deren Alternativen. Vertikaler Satz wird unterstützt; schalte ihn per Rechtsklick oder mit ⌘5 um. Dort findest du auch Textausrichtung und Typografie. Weitere Optionen stehen im Menü „Darstellung“.";
+"Help.11" = "Bewege den Zeiger über eine Glyphe, um ihre Details zu sehen. Doppelklicke in „Alle Glyphen“ auf eine Glyphe, um sie an den vorhandenen Text anzuhängen. Ein Klick auf eine Glyphe in der Seitenleiste lässt sie auch in der Gesamtübersicht blinken. Per Rechtsklick findest du „Nach Funktion filtern“.";
 "Help.12" = "Mit ⌘+/⌘− oder einer Pinch-Geste auf dem Trackpad vergrößerst oder verkleinerst du Glyphen. In „Mehrere Zeichen“ ändern ⌥⌘+/⌥⌘− oder horizontales Zusammenziehen und Spreizen die Ränder; ⌃⌘+/⌃⌘− oder eine vertikale Pinch-Geste ändern den Zeilenabstand. Mit ⌘0 stellst du die Standardgröße wieder her.";
 "Help.13" = "Der Schatten zeigt den Begrenzungsrahmen mit Breite und Höhe der Glyphe sowie Zeilenhöhe und Durchschuss des Satzes. Mit ⌘4 blendest du ihn aus.";
-"Help.14" = "Der Dunkelmodus wird unterstützt. Aber Vorsicht: Ein Klick auf eine vollständig ausgefüllte Glyphe kann blenden. Unter „Farben“ in der Menüleiste kannst du die Farben der Glyphe, des Begrenzungsrahmenschattens und des Hintergrunds ändern.";
+"Help.14" = "Der Dunkelmodus wird unterstützt. Aber Vorsicht: Ein Klick auf eine vollständig ausgefüllte Glyphe kann blenden. Unter „Farben“ in der Menüleiste kannst du die Farben der Glyphe, des Begrenzungsrahmenschattens und des Hintergrunds ändern. Mit „Aktuelle Farbpalette sichern“ kannst du deine Farben sichern. Halte ⌥ gedrückt, um „Farbpaletten löschen“ zu sehen.";
 "Help.15" = "Mit „Als Standard verwenden“ in der Menüleiste speicherst du die aktuelle Ansicht, Farben, Größen und weitere Vorschaueinstellungen zusammen mit der Fenstergröße. Später geöffnete Schriftdateien verwenden diese Einstellungen. Halte ⌥ gedrückt, um stattdessen „Standard wiederherstellen“ zu wählen.";
 
 /* Variable font controls. */
@@ -94,15 +100,18 @@
 /* User-saved plain text. */
 "Saved Text" = "Gespeicherte Texte";
 "Save Current Text" = "Aktuellen Text sichern";
-"Remove from Saved Text" = "Aus gespeicherten Texten entfernen";
 "No Saved Text" = "Keine gespeicherten Texte";
 
 /* Preview colors and native line spacing. */
 "Colors" = "Farben";
+"Delete Palettes" = "Farbpaletten löschen";
+"Save Current Palette" = "Aktuelle Farbpalette sichern";
+"Clear All Saved Palettes" = "Alle gesicherten Farbpaletten löschen";
+"No Saved Palettes" = "Keine gesicherten Farbpaletten";
 "Follow System" = "Systemeinstellung verwenden";
-"Glyph Color…" = "Glyphenfarbe…";
-"Background Color…" = "Hintergrundfarbe…";
-"Bounding Box Color…" = "Farbe des Begrenzungsrahmens…";
+"Glyph…" = "Glyphe…";
+"Background…" = "Hintergrund…";
+"Bounding Box…" = "Begrenzungsrahmen…";
 "Increase Line Spacing" = "Zeilenabstand vergrößern";
 "Decrease Line Spacing" = "Zeilenabstand verkleinern";
 
@@ -117,10 +126,14 @@
 "Typography" = "Typografie ";
 "Other" = "Sonstige";
 "No Typography Features" = "Keine Typografiefunktionen";
-"Actual Size" = "Originalgröße";
+"Default Size" = "Standardgröße";
 "Use as Defaults" = "Als Standard verwenden";
 "Restore to Defaults" = "Standard wiederherstellen";
 "Text Decorations" = "Textdekoration";
+"Filter by Feature" = "Nach Funktion filtern";
+"No Feature" = "Ohne Merkmal";
+"Switch to All Glyphs to enable" = "Zum Aktivieren zu „Alle Glyphen“ wechseln";
+"Switch to Single Glyph or Multi-Character to enable" = "Zum Aktivieren zu „Einzelne Glyphe“ oder „Mehrere Zeichen“ wechseln";
 
 "Writing Direction" = "Schreibrichtung";
 "Left to Right" = "Von links nach rechts";

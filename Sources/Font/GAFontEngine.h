@@ -9,6 +9,9 @@ NS_ASSUME_NONNULL_BEGIN
 /// The point size at which variants are shaped.
 FOUNDATION_EXPORT const CGFloat GAFontShapingSize;
 
+/// The CoreText glyph name when present and usable for display.
+FOUNDATION_EXPORT NSString * _Nullable GAUsableGlyphName(CTFontRef font, CGGlyph glyph);
+
 /// A small ARC-friendly owner for a CoreText font.
 @interface GAFontBox : NSObject
 @property (nonatomic, readonly) CTFontRef font;
@@ -74,7 +77,7 @@ typedef struct {
 /// Splits text into one group per composed character, preserving UTF-16 ranges.
 FOUNDATION_EXPORT NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text);
 
-/// One candidate from a complete text query. Source ranges and target group
+/// One verified candidate from a text query. Source ranges and target group
 /// indices refer to that input; applying the result needs no substring offset.
 @interface GAScanCandidate : NSObject
 @property (nonatomic, copy) NSArray<NSNumber *> *glyphIDs;
@@ -92,6 +95,8 @@ FOUNDATION_EXPORT NSArray<GACharacterGroup *> *GAGroupsForText(NSString *text);
 
 @interface GARawScanResult : NSObject
 @property (nonatomic, copy) NSArray<GAScanCandidate *> *candidates;
+/// YES if substitution discovery reached its safety limit.
+@property (nonatomic) BOOL incomplete;
 /// Disjoint nominal component ranges after cmap/Unicode preparation. A source
 /// that cannot be edited independently remains one atomic range.
 @property(nonatomic, copy) NSArray<NSValue *> *sourceRanges;
@@ -121,18 +126,25 @@ FOUNDATION_EXPORT NSArray<GACharacterGroup *> *GAGroupsForScanResult(NSString *t
 
 /// All GIDs in the font, including glyphs without Unicode mappings.
 - (NSArray<GAAllGlyphEntry *> *)allGlyphEntries;
+- (NSArray<NSString *> *)glyphFeatureTags;
+/// An empty tag returns the glyphs outside the union of the listed feature outputs.
+- (nullable NSIndexSet *)glyphOutputsForFeatureTag:(NSString *)tag
+                                          cancelled:(BOOL (^_Nullable)(void))cancelled;
 
 /// Scans the complete input text with its explicit glyph selections.
 /// The underlying query cache is keyed by both text and those selections.
-- (GARawScanResult *)rawScanContent:(NSString *)content
-                         selections:(NSArray<GAGlyphSelectionRun *> *)selections;
+- (nullable GARawScanResult *)rawScanContent:(NSString *)content
+                                  selections:(NSArray<GAGlyphSelectionRun *> *)selections
+                                   cancelled:(BOOL (^_Nullable)(void))cancelled;
 
 /// Applies a full-text result to groups made by GAGroupsForScanResult in place.
 /// Candidates use targetGroupIndex; source ranges already refer to the full text.
-- (void)applyRawResult:(GARawScanResult *)result
-                groups:(NSArray<GACharacterGroup *> *)groups;
+- (BOOL)applyRawResult:(GARawScanResult *)result
+                groups:(NSArray<GACharacterGroup *> *)groups
+             cancelled:(BOOL (^_Nullable)(void))cancelled;
 
-- (NSArray<GACharacterGroup *> *)analyzeGlyphIDs:(NSArray<NSNumber *> *)glyphIDs;
+- (nullable NSArray<GACharacterGroup *> *)analyzeGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
+                                                 cancelled:(BOOL (^_Nullable)(void))cancelled;
 
 /// Resolves a missing native glyph against existing rows at the same source
 /// range. Returns a decorated temporary row and its existing parent.

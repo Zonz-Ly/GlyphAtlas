@@ -78,3 +78,23 @@ NSString *GAStringFromUnicodeScalars(NSArray<NSNumber *> *scalars) {
     }
     return result;
 }
+
+
+BOOL GAIsTextLayoutControl(unichar character) {
+    switch (character) {
+        case 0x0009: // Tab.
+        case 0x00AD: // Soft hyphen.
+        case 0x061C: // Arabic letter mark.
+        case 0x200B: // Zero width space.
+        case 0x200C: // Zero width non-joiner.
+        case 0x200E: // Left-to-right mark.
+        case 0x200F: // Right-to-left mark.
+        case 0x2060: // Word joiner.
+        case 0xFEFF: // Zero width no-break space.
+            return YES;
+        default:
+            return (character >= 0x202A && character <= 0x202E) ||
+                   (character >= 0x2066 && character <= 0x2069) ||
+                   [NSCharacterSet.newlineCharacterSet characterIsMember:character];
+    }
+}

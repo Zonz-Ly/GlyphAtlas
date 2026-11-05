@@ -8,6 +8,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic) CGFloat cellScale;
 - (void)applyPreviewColors:(GAPreviewColors *)colors;
 @property (nonatomic, strong, nullable) GAFontDocument *document;
+- (void)setVisibleGlyphIDs:(nullable NSIndexSet *)glyphIDs;
 @property (nonatomic, copy, nullable) void (^onGlyphDoubleClick)(GAAllGlyphEntry *entry);
 - (void)zoomIn;
 - (void)zoomOut;

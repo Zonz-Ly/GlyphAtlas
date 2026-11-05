@@ -6,7 +6,7 @@ ARCH="$1"
 OUT="$2"
 mkdir -p "$OUT"
 FLAGS=(-std=c++17 -Wall -Wextra -mmacosx-version-min=12.0 -arch "$ARCH" -I "$ROOT/Sources" -I "$CORE")
-FLAGS+=(-Oz -flto -ffunction-sections -fdata-sections -fvisibility=hidden -fvisibility-inlines-hidden)
+FLAGS+=(-O2 -flto -ffunction-sections -fdata-sections -fvisibility=hidden -fvisibility-inlines-hidden)
 SOURCES=("$CORE"/*.cpp "$CORE"/*.mm)
 # Rebuild when compiler flags or the source list change.
 printf -v CONFIGURATION '%q ' "${FLAGS[@]}" "${SOURCES[@]}"

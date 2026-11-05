@@ -359,13 +359,19 @@ static const CGFloat GABadgeHorizontalPadding = 4.0;
 - (void)configureWithVariant:(GAGlyphVariant *)variant {
     self.glyphView.variant = variant;
 
+    NSMutableArray<NSString *> *gids = [NSMutableArray arrayWithCapacity:variant.glyphIDs.count];
+    for (NSNumber *glyph in variant.glyphIDs) {
+        [gids addObject:[NSString stringWithFormat:@"GID %@", glyph]];
+    }
     NSString *name = variant.glyphName;
+    NSString *toolTip = name;
     if (name.length == 0) {
-        NSMutableArray<NSString *> *gids = [NSMutableArray arrayWithCapacity:variant.glyphIDs.count];
-        for (NSNumber *glyph in variant.glyphIDs) {
-            [gids addObject:[NSString stringWithFormat:@"GID %@", glyph]];
-        }
         name = gids.count > 0 ? [gids componentsJoinedByString:@" + "] : @"GID ?";
+        toolTip = name;
+    } else if (gids.count) {
+        NSString *gidLine = [gids componentsJoinedByString:@"/"];
+        if (![name isEqualToString:gidLine])
+            toolTip = [NSString stringWithFormat:@"%@\n%@", name, gidLine];
     }
     self.nameLabel.stringValue = name;
     self.nameLabel.textColor = variant.isTemporary ? NSColor.secondaryLabelColor : NSColor.labelColor;
@@ -373,7 +379,7 @@ static const CGFloat GABadgeHorizontalPadding = 4.0;
                                            weight:variant.isBase
                                                ? NSFontWeightBold
                                                : NSFontWeightRegular];
-    self.nameLabel.toolTip = name;
+    self.nameLabel.toolTip = toolTip;
 
     NSArray<NSString *> *sources = variant.featureSources;
     NSString *sourceText = [sources componentsJoinedByString:@", "];

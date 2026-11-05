@@ -1,5 +1,6 @@
 #import "GATextQueryModel.h"
 #import "GAFontEngine.h"
+#import "GAUnicode.h"
 
 #pragma mark - Query state
 
@@ -17,11 +18,6 @@
     }
     return self;
 }
-- (void)projectResult {
-    NSArray *groups = GAGroupsForScanResult(_text, _result);
-    [_document applyRawResult:_result groups:groups];
-    _groups = groups;
-}
 - (BOOL)analyzeText:(NSString *)text
          selections:(NSArray<GAGlyphSelectionRun *> *)selections
           cancelled:(BOOL (^)(void))cancelled {
@@ -30,20 +26,27 @@
     GAGlyphQueryIdentity *identity = GAGlyphQueryKey(text, selections);
     if ([_identity isEqual:identity])
         return YES;
-    GARawScanResult *result = [_document rawScanContent:text selections:selections];
-    if (cancelled && cancelled())
+    GARawScanResult *result = [_document rawScanContent:text
+                                            selections:selections
+                                             cancelled:cancelled];
+    if (!result)
+        return NO;
+    NSArray *groups = GAGroupsForScanResult(text, result);
+    if (![_document applyRawResult:result groups:groups cancelled:cancelled])
         return NO;
     _text = [text copy];
-    _identity = identity;
+    _identity = result.incomplete ? nil : identity;
     _result = result;
-    [self projectResult];
+    _groups = groups;
     return YES;
 }
 - (void)updateFontDocument:(GAFontDocument *)document {
     _document = document;
     if (_result) {
         _result = [document rebindResult:_result content:_text];
-        [self projectResult];
+        NSArray *groups = GAGroupsForScanResult(_text, _result);
+        [document applyRawResult:_result groups:groups cancelled:nil];
+        _groups = groups;
     }
 }
 @end
@@ -75,9 +78,10 @@ static BOOL IntersectsSelection(NSRange range, NSArray<GAGlyphSelectionRun *> *r
     return NO;
 }
 
-static GACharacterGroup *SelectionGroup(GAGlyphSelectionRun *run, GAFontDocument *document) {
+static GACharacterGroup *SelectionGroup(GAGlyphSelectionRun *run, GAFontDocument *document,
+                                        BOOL (^cancelled)(void)) {
     GAGlyphSelection *selection = run.selection;
-    GACharacterGroup *storedGroup = [document analyzeGlyphIDs:selection.glyphIDs].firstObject;
+    GACharacterGroup *storedGroup = [document analyzeGlyphIDs:selection.glyphIDs cancelled:cancelled].firstObject;
     GAGlyphVariant *base = storedGroup.variants.firstObject;
     if (base == nil) {
         return nil;
@@ -100,15 +104,23 @@ static GACharacterGroup *SelectionGroup(GAGlyphSelectionRun *run, GAFontDocument
 NSArray<GACharacterGroup *> *GABuildDisplayGroups(NSArray<GACharacterGroup *> *groups,
                                                   NSString *text,
                                                   NSArray<GAGlyphSelectionRun *> *selections,
-                                                  GAFontDocument *document) {
+                                                  GAFontDocument *document,
+                                                  BOOL (^cancelled)(void)) {
     NSMutableArray<GAGlyphSelectionRun *> *validSelections = [NSMutableArray array];
     NSMutableArray<GACharacterGroup *> *selectionGroups = [NSMutableArray array];
     for (GAGlyphSelectionRun *run in selections) {
-        GACharacterGroup *selectionGroup = SelectionGroup(run, document);
+        if (cancelled && cancelled())
+            return nil;
+        GACharacterGroup *selectionGroup = SelectionGroup(run, document, cancelled);
         if (selectionGroup != nil) {
             NSMutableArray *variants = [selectionGroup.variants mutableCopy];
-            for (GACharacterGroup *source in groups)
+            for (GACharacterGroup *source in groups) {
+                if (cancelled && cancelled())
+                    return nil;
+                if (!NSIntersectionRange(source.textRange, run.range).length) continue;
                 for (GAGlyphVariant *candidate in source.variants) {
+                    if (cancelled && cancelled())
+                        return nil;
                     if (!candidate.fromGlyphSeed || candidate.isLigature ||
                         !NSEqualRanges(candidate.sourceTextRange, run.range))
                         continue;
@@ -127,6 +139,7 @@ NSArray<GACharacterGroup *> *GABuildDisplayGroups(NSArray<GACharacterGroup *> *g
                     copy.base = NO;
                     [variants addObject:copy];
                 }
+            }
             selectionGroup.variants = variants;
             [validSelections addObject:run];
             [selectionGroups addObject:selectionGroup];
@@ -135,7 +148,11 @@ NSArray<GACharacterGroup *> *GABuildDisplayGroups(NSArray<GACharacterGroup *> *g
 
     NSMutableArray<GAGlyphVariant *> *ligatureVariants = [NSMutableArray array];
     for (GACharacterGroup *group in groups) {
+        if (cancelled && cancelled())
+            return nil;
         for (GAGlyphVariant *variant in group.variants) {
+            if (cancelled && cancelled())
+                return nil;
             if (variant.isLigature && variant.sourceTextRange.length > 0 &&
                 variant.sourceTextRange.location <= text.length &&
                 variant.sourceTextRange.length <= text.length - variant.sourceTextRange.location) {
@@ -158,6 +175,8 @@ NSArray<GACharacterGroup *> *GABuildDisplayGroups(NSArray<GACharacterGroup *> *g
 
     NSMutableArray<GACharacterGroup *> *sourceGroups = [NSMutableArray array];
     for (GACharacterGroup *group in groups) {
+        if (cancelled && cancelled())
+            return nil;
         if (([group.text isEqualToString:@"\n"]) ||
             IntersectsSelection(group.textRange, validSelections)) {
             continue;
@@ -181,6 +200,8 @@ NSArray<GACharacterGroup *> *GABuildDisplayGroups(NSArray<GACharacterGroup *> *g
         [NSMutableDictionary dictionary];
     NSMutableDictionary<NSValue *, NSNumber *> *spanLengths = [NSMutableDictionary dictionary];
     for (GAGlyphVariant *variant in ligatureVariants) {
+        if (cancelled && cancelled())
+            return nil;
         NSRange range = variant.sourceTextRange;
         NSValue *rangeValue = [NSValue valueWithRange:range];
         NSMutableArray<GAGlyphVariant *> *variants = byRange[rangeValue];
@@ -215,8 +236,13 @@ NSArray<GACharacterGroup *> *GABuildDisplayGroups(NSArray<GACharacterGroup *> *g
           }
           return NSOrderedSame;
         }];
-    NSMutableArray<GACharacterGroup *> *display = [sourceGroups mutableCopy];
+    if (!rangeOrder.count) return sourceGroups;
+    NSMutableDictionary<NSNumber *, NSMutableArray<GACharacterGroup *> *> *ligaturesAtEnd =
+        [NSMutableDictionary dictionary];
+    NSMutableArray<NSNumber *> *endOrder = [NSMutableArray array];
     for (NSValue *rangeValue in rangeOrder) {
+        if (cancelled && cancelled())
+            return nil;
         NSRange range = rangeValue.rangeValue;
         NSMutableArray<GAGlyphVariant *> *variants = byRange[rangeValue];
         NSMutableArray<GAGlyphVariant *> *unique = [NSMutableArray array];
@@ -238,19 +264,38 @@ NSArray<GACharacterGroup *> *GABuildDisplayGroups(NSArray<GACharacterGroup *> *g
         ligatureGroup.variants = unique;
         ligatureGroup.insertedLigature = YES;
 
-        // A combination belongs after its last source character. Insert after
-        // the last display item ending at this range's end so earlier results
-        // with the same anchor stay ahead of later ones.
-        NSUInteger insertIndex = display.count;
-        NSUInteger rangeEnd = NSMaxRange(range);
-        for (NSInteger index = (NSInteger)display.count - 1; index >= 0; index--) {
-            GACharacterGroup *item = display[(NSUInteger)index];
-            if (NSMaxRange(item.textRange) == rangeEnd) {
-                insertIndex = (NSUInteger)index + 1;
-                break;
-            }
+        NSNumber *end = @(NSMaxRange(range));
+        NSMutableArray<GACharacterGroup *> *atEnd = ligaturesAtEnd[end];
+        if (!atEnd) {
+            atEnd = [NSMutableArray array];
+            ligaturesAtEnd[end] = atEnd;
+            [endOrder addObject:end];
         }
-        [display insertObject:ligatureGroup atIndex:insertIndex];
+        [atEnd addObject:ligatureGroup];
+    }
+
+    // The last source group with a matching end anchors the whole bucket.
+    // Unanchored combinations keep their first-appearance order at the end.
+    NSMutableDictionary<NSNumber *, NSNumber *> *anchors = [NSMutableDictionary dictionary];
+    [sourceGroups enumerateObjectsUsingBlock:^(GACharacterGroup *group, NSUInteger index, BOOL *stop) {
+        (void)stop;
+        NSNumber *end = @(NSMaxRange(group.textRange));
+        if (ligaturesAtEnd[end]) anchors[end] = @(index);
+    }];
+    NSMutableArray<GACharacterGroup *> *display =
+        [NSMutableArray arrayWithCapacity:sourceGroups.count + rangeOrder.count];
+    for (NSUInteger index = 0; index < sourceGroups.count; ++index) {
+        if (cancelled && cancelled()) return nil;
+        GACharacterGroup *group = sourceGroups[index];
+        [display addObject:group];
+        NSNumber *end = @(NSMaxRange(group.textRange));
+        NSNumber *anchor = anchors[end];
+        if (anchor && anchor.unsignedIntegerValue == index)
+            [display addObjectsFromArray:ligaturesAtEnd[end]];
+    }
+    for (NSNumber *end in endOrder) {
+        if (cancelled && cancelled()) return nil;
+        if (!anchors[end]) [display addObjectsFromArray:ligaturesAtEnd[end]];
     }
 
     return display;
@@ -261,79 +306,125 @@ NSArray<GACharacterGroup *> *GABuildDisplayGroups(NSArray<GACharacterGroup *> *g
 @implementation GAScanDisplaySnapshot
 @end
 
-/// A line break is layout, not a glyph: its character group is kept for text
-/// ranges but hidden from the glyph list.
-static BOOL GAGroupIsLineBreak(GACharacterGroup *group) {
-    return group.text.length == 1 && [group.text characterAtIndex:0] == '\n';
+/// A control attached to supported text can shape it without its own glyph.
+static BOOL GAGroupIsDefaultIgnorable(GACharacterGroup *group) {
+    static NSRegularExpression *pattern;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        pattern = [NSRegularExpression regularExpressionWithPattern:
+            @"\\A\\p{Default_Ignorable_Code_Point}+\\z" options:0 error:NULL];
+    });
+    return [pattern firstMatchInString:group.text options:0 range:NSMakeRange(0, group.text.length)] != nil;
 }
 
-/// A missing glyph is represented by GID 0. Seeds are explicit replacements
-/// and keep their source text; line breaks are layout, not glyphs.
-/// The caller excludes inserted ligatures and validates the source range.
-static BOOL GAGroupIsMissing(GACharacterGroup *group) {
-    if (group.seeded || GAGroupIsLineBreak(group)) {
-        return NO;
-    }
-    GAGlyphVariant *base = group.variants.firstObject;
-    return base.glyphIDs.count > 0 &&
-           base.glyphIDs.firstObject.unsignedShortValue == 0;
-}
-
-/// Builds the sidebar/multi-character snapshot. Missing glyph groups are
-/// omitted from the multi-character text; the sidebar keeps the original text
-/// and the full display list.
-GAScanDisplaySnapshot *GABuildScanDisplaySnapshot(NSString *text, NSArray<GACharacterGroup *> *groups) {
+/// The sidebar keeps the original text. The preview replaces internal missing
+/// spans with layout boundaries so neighboring glyphs cannot shape together.
+GAScanDisplaySnapshot *GABuildScanDisplaySnapshot(NSString *text,
+    NSArray<GACharacterGroup *> *groups, BOOL (^cancelled)(void)) {
     NSMutableString *multiText = [NSMutableString string];
+    NSMutableIndexSet *omissions = [NSMutableIndexSet indexSet];
     NSMutableArray<GACharacterGroup *> *multiGroups = [NSMutableArray array];
     NSMapTable<GACharacterGroup *, GACharacterGroup *> *sources =
         [NSMapTable weakToStrongObjectsMapTable];
-    NSMutableArray<GACharacterGroup *> *layoutGroups = [NSMutableArray array];
-    for (GACharacterGroup *group in groups) {
-        if (group.insertedLigature) continue;
-        GACharacterGroup *previous = layoutGroups.lastObject;
-        NSRange cluster = [text rangeOfComposedCharacterSequenceAtIndex:group.textRange.location];
-        if (!group.seeded && previous && !previous.seeded &&
-            NSMaxRange(previous.textRange) == group.textRange.location &&
-            previous.textRange.location >= cluster.location) {
-            previous.textRange = NSUnionRange(previous.textRange, group.textRange);
-            previous.text = [text substringWithRange:previous.textRange];
-            GAGlyphVariant *base = previous.variants.firstObject;
-            base.glyphIDs = [base.glyphIDs arrayByAddingObjectsFromArray:group.variants.firstObject.glyphIDs];
-        } else {
-            GACharacterGroup *copy = [[GACharacterGroup alloc] init];
-            copy.text = group.text;
-            copy.textRange = group.textRange;
-            copy.seeded = group.seeded;
-            GAGlyphVariant *base = [[GAGlyphVariant alloc] init];
-            base.fontBox = group.variants.firstObject.fontBox;
-            base.glyphIDs = group.variants.firstObject.glyphIDs;
-            copy.variants = @[base];
-            [layoutGroups addObject:copy];
-        }
-    }
     NSUInteger cursor = 0;
-    for (GACharacterGroup *group in layoutGroups) {
+    BOOL previousMissing = NO;
+    BOOL pendingOmission = NO;
+    NSUInteger inspectedCluster = NSNotFound;
+    BOOL clusterHasSupportedText = NO;
+    for (NSUInteger index = 0; index < groups.count; index++) {
+        if (cancelled && cancelled())
+            return nil;
+        GACharacterGroup *group = groups[index];
+        if (group.insertedLigature) continue;
         NSRange range = group.textRange;
         if (range.location == NSNotFound || range.length == 0 ||
             NSMaxRange(range) > text.length || range.location < cursor) {
             continue;
         }
+
+        GACharacterGroup *previousDisplay = multiGroups.lastObject;
+        GACharacterGroup *previousSource = previousDisplay ? [sources objectForKey:previousDisplay] : nil;
+        NSRange cluster = [text rangeOfComposedCharacterSequenceAtIndex:range.location];
+        BOOL canMerge = !group.seeded && previousSource && !previousSource.seeded &&
+            NSMaxRange(previousSource.textRange) == range.location &&
+            previousSource.textRange.location >= cluster.location;
+        GAGlyphVariant *base = group.variants.firstObject;
+        BOOL missing = !group.seeded && [base.glyphIDs containsObject:@0];
+        BOOL layoutControl = !group.seeded && (missing || previousMissing);
+        for (NSUInteger i = range.location; layoutControl && i < NSMaxRange(range); ++i)
+            layoutControl = GAIsTextLayoutControl([text characterAtIndex:i]);
+        if (layoutControl) missing = NO;
+        if (!group.seeded && !layoutControl && !NSEqualRanges(range, cluster) &&
+            (missing || (previousMissing && range.location == cursor)) &&
+            GAGroupIsDefaultIgnorable(group)) {
+            // Keep a control with a surviving component anywhere in its original cluster.
+            if (inspectedCluster != cluster.location) {
+                inspectedCluster = cluster.location;
+                clusterHasSupportedText = previousSource &&
+                    NSIntersectionRange(previousSource.textRange, cluster).length;
+                for (NSUInteger next = index + 1; !clusterHasSupportedText && next < groups.count; next++) {
+                    GACharacterGroup *candidate = groups[next];
+                    if (candidate.insertedLigature) continue;
+                    if (!NSLocationInRange(candidate.textRange.location, cluster)) break;
+                    NSArray<NSNumber *> *glyphs = candidate.variants.firstObject.glyphIDs;
+                    clusterHasSupportedText = candidate.seeded ||
+                        (glyphs.count && ![glyphs containsObject:@0] && !GAGroupIsDefaultIgnorable(candidate));
+                }
+            }
+            missing = !clusterHasSupportedText;
+        }
+
         if (range.location > cursor) {
             [multiText appendString:
                 [text substringWithRange:NSMakeRange(cursor, range.location - cursor)]];
+            pendingOmission = NO;
         }
         cursor = NSMaxRange(range);
-        if (GAGroupIsMissing(group)) {
+        previousMissing = missing;
+        if (missing) {
+            pendingOmission = YES;
             continue;
         }
+
+        BOOL sameCluster = previousSource &&
+            NSIntersectionRange(previousSource.textRange, cluster).length;
+        if (pendingOmission && multiText.length && !sameCluster) {
+            unichar left = [multiText characterAtIndex:multiText.length - 1];
+            unichar right = [text characterAtIndex:range.location];
+            NSCharacterSet *newlines = NSCharacterSet.newlineCharacterSet;
+            if (![newlines characterIsMember:left] && ![newlines characterIsMember:right]) {
+                [omissions addIndex:multiText.length];
+                [multiText appendString:@"\uFFFC"];
+            }
+        }
+        pendingOmission = NO;
         NSString *groupText = [text substringWithRange:range];
-        GACharacterGroup *copy = [[GACharacterGroup alloc] init];
-        copy.text = groupText;
-        copy.textRange = NSMakeRange(multiText.length, groupText.length);
-        copy.variants = group.variants;
-        copy.seeded = group.seeded;
-        [sources setObject:group forKey:copy];
-        [multiGroups addObject:copy];
+        if (canMerge) {
+            previousSource.textRange = NSUnionRange(previousSource.textRange, range);
+            previousSource.text = [previousSource.text stringByAppendingString:groupText];
+            previousDisplay.textRange = NSMakeRange(previousDisplay.textRange.location,
+                previousDisplay.textRange.length + range.length);
+            previousDisplay.text = previousSource.text;
+            GAGlyphVariant *mergedBase = previousSource.variants.firstObject;
+            mergedBase.glyphIDs = [mergedBase.glyphIDs arrayByAddingObjectsFromArray:base.glyphIDs];
+        } else {
+            GACharacterGroup *source = [[GACharacterGroup alloc] init];
+            source.text = groupText;
+            source.textRange = range;
+            source.seeded = group.seeded;
+            GAGlyphVariant *layoutBase = [[GAGlyphVariant alloc] init];
+            layoutBase.fontBox = base.fontBox;
+            layoutBase.glyphIDs = base.glyphIDs;
+            source.variants = @[layoutBase];
+
+            GACharacterGroup *display = [[GACharacterGroup alloc] init];
+            display.text = groupText;
+            display.textRange = NSMakeRange(multiText.length, range.length);
+            display.variants = source.variants;
+            display.seeded = group.seeded;
+            [sources setObject:source forKey:display];
+            [multiGroups addObject:display];
+        }
         [multiText appendString:groupText];
     }
     if (cursor < text.length) {
@@ -344,6 +435,7 @@ GAScanDisplaySnapshot *GABuildScanDisplaySnapshot(NSString *text, NSArray<GAChar
     snapshot.display = groups;
     snapshot.text = text;
     snapshot.multiText = [multiText copy];
+    snapshot.multiOmissions = omissions;
     snapshot.multiGroups = multiGroups;
     snapshot.multiGroupSources = sources;
     return snapshot;
