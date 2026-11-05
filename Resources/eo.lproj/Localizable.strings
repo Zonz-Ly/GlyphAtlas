@@ -1,0 +1,145 @@
+/* Esperanto */
+
+"File" = "Dosiero";
+"Copy to Font Book" = "Kopii al Tipara Libro";
+"Copy to All Users" = "Kopii por ĉiuj uzantoj";
+"Current User…" = "Nuna uzanto…";
+"All Users…" = "Ĉiuj uzantoj…";
+"System Fonts…" = "Sistemaj tiparoj…";
+"Open Recent" = "Malfermi lastatempajn";
+"Recent Folders" = "Lastatempaj…";
+"Clear Menu" = "Malplenigi menuon";
+"Close Window" = "Fermi fenestron";
+"Cut" = "Eltondi";
+"Copy" = "Kopii";
+"Paste" = "Alglui";
+"Delete" = "Forigi";
+"Select All" = "Elekti ĉion";
+"Underline" = "Substreki";
+"Strikethrough" = "Trastreki";
+"View" = "Vido";
+"Window" = "Fenestro";
+"Minimize" = "Minimumigi";
+"Zoom" = "Adapti fenestron";
+"Bring All to Front" = "Antaŭenigi ĉiujn fenestrojn";
+"Help" = "Helpo";
+"Cancel" = "Nuligi";
+"OK" = "Bone";
+"Show All" = "Montri ĉion";
+"Services" = "Servoj";
+"Edit" = "Redakti";
+"Undo" = "Malfari";
+"Redo" = "Refari";
+"Add Glyph" = "Aldoni glifon";
+"Replace Glyph" = "Anstataŭigi glifon";
+"Open" = "Malfermi";
+"Zoom In" = "Pligrandigi";
+"Zoom Out" = "Malpligrandigi";
+"Text Alignment" = "Vicigo de teksto";
+"Left" = "Maldekstren";
+"Center" = "Centrigi";
+"Right" = "Dekstren";
+"Justified" = "Ĝisrandigi ambaŭflanke";
+"Top" = "Supren";
+"Bottom" = "Malsupren";
+"About Glyph Atlas" = "Pri Glyph Atlas";
+"Hide Glyph Atlas" = "Kaŝi Glyph Atlas";
+"Hide Others" = "Kaŝi la aliajn";
+"Quit Glyph Atlas" = "Fini Glyph Atlas";
+"Glyph Atlas Help" = "Helpo pri Glyph Atlas";
+"Open Font From" = "Malfermi tiparon el";
+"No Recent Fonts" = "Neniu lastatempe malfermita tiparo";
+"Single Glyph" = "Unuopa glifo";
+"Multi-Character" = "Pluraj signoj";
+"All Glyphs" = "Ĉiuj glifoj";
+"Show Bounding Box" = "Montri la ĉirkaŭan kadron";
+"Bounding Box Zoom In" = "Pligrandigi la ĉirkaŭan kadron";
+"Bounding Box Zoom Out" = "Malpligrandigi la ĉirkaŭan kadron";
+"Vertical" = "Vertikala skribado";
+"Enter text" = "Enigu tekston";
+"Font Name" = "Nomo de tiparo";
+"Font File" = "Tipardosiero";
+"Untitled Font" = "Sennoma tiparo";
+"Choose Font Style" = "Elekti tiparan stilon";
+"Cannot Open Font" = "Ne eblas malfermi la tiparon";
+"This file does not contain a font that CoreText can read." = "Ĉi tiu dosiero ne enhavas tiparon legeblan per CoreText.";
+"Cannot Read Font" = "Ne eblas legi la tiparon";
+"CoreText could not create this font." = "CoreText ne povis krei ĉi tiun tiparon.";
+"Bounding Box" = "Ĉirkaŭa kadro";
+"Text and alternate glyph list" = "Listo de teksto kaj alternativaj glifoj";
+"Help.01" = "Elektu «Malfermi tiparon el» en la menubreto por malfermi tiparon rekte el tipardosierujo. Vi ankaŭ povas treni tipardosieron sur la bildsimbolon de la programo aŭ en fenestron, en kiu jam estas malfermita tiparo. Vi povas elekti Glyph Atlas kiel la aprioran programon por malfermi tipardosierojn. Vi ankaŭ povas remalfermi lastatempe malfermitajn dosierojn.";
+"Help.02" = "En la menubreto vi povas unuklake kopii la tiparon malfermitan en la nuna fenestro al via propra tipardosierujo. Tenu ⌥ por kopii ĝin al la tipardosierujo por ĉiuj uzantoj.";
+"Help.03" = "Kiam vi malfermas varieblan tiparon, apud la fenestrobutonoj aperas panelo kun ĝiaj parametroj. Trenu la panelon eksteren por teni ĝin malfermita. Elektu nombran valoron kaj ĝustigu ĝin per ↑/↓ aŭ ⇧↑/⇧↓.";
+"Help.04" = "Tajpu unu aŭ plurajn signojn en la flankobreto por vidi ĉiujn rilatajn glifojn. Premu ⌥⏎ por enmeti linifinon. Vi povas dekstre alklaki kaj elekti «Konservita teksto» por konservi la nunan tekston aŭ rapide enigi antaŭe konservitan tekston. Tenu ⌥ dum la menuo estas malfermita por rapide forigi konservitan tekston.";
+"Help.05" = "Duoble alklaku glifon, aŭ elektu ĝin kaj premu ⏎, por anstataŭigi la aprioran glifon kaj vidi ĝiajn alternativojn. Tenu ⇧ dum la ago por aldoni la glifon.";
+"Help.06" = "Uzu ↑/↓ por moviĝi inter glifoj, ⌘↑/⌘↓ por moviĝi inter bazaj glifoj kaj ⌥↑/⌥↓ por salti al la unua aŭ lasta glifo en la listo.";
+"Help.07" = "Premu ⌘C por kopii ĉiujn koditajn signojn de la elektita glifo.";
+"Help.08" = "Metu la musmontrilon sur Unikodan etikedon por vidi la nomon de la signo laŭ la Unikoda normo.";
+"Help.09" = "La apriora vido estas «Ĉiuj glifoj». Dekstre alklaku por ŝanĝi la vidon, aŭ premu ⌘1 por «Unuopa glifo», ⌘2 por «Pluraj signoj» aŭ ⌘3 por «Ĉiuj glifoj».";
+"Help.10" = "En «Pluraj signoj», alklaku glifon por vidi ĝiajn alternativojn. Dekstre alklaku aŭ premu ⌘5 por alterni inter horizontala kaj vertikala skribado. Ankaŭ disponeblas «Vicigo de teksto» kaj «Tipografio». Pliaj opcioj troviĝas en la menuo «Vido».";
+"Help.11" = "En «Ĉiuj glifoj», duoble alklaku glifon por aldoni ĝin al la ekzistanta teksto. Kiam vi alklakas glifon en la flankobreto, ĝi ekbriletas en «Ĉiuj glifoj». Dekstre alklaku por trovi «Filtri laŭ tipara trajto».";
+"Help.12" = "Uzu ⌘+/⌘− aŭ kunigu aŭ disigu du fingrojn sur la tuŝplato por pligrandigi aŭ malpligrandigi la glifojn. En «Pluraj signoj», uzu ⌥⌘+/⌥⌘− aŭ la horizontalan geston por ŝanĝi la marĝenojn. Uzu ⌃⌘+/⌃⌘− aŭ la vertikalan geston por ŝanĝi la interlinian spacon. Premu ⌘0 por restarigi la aprioran grandon.";
+"Help.13" = "La ombro montras la ĉirkaŭan kadron, kun la larĝo kaj alto de la glifo kaj la alto kaj interspaco de la tekstlinioj. Premu ⌘4 por kaŝi ĝin.";
+"Help.14" = "La programo subtenas malhelan reĝimon. Tute plenigita glifo povas blindigi vin, se vi alklakas ĝin. En «Koloroj» en la menubreto vi povas ŝanĝi la kolorojn de la glifoj, la ombro de la ĉirkaŭa kadro kaj la fono. Elektu «Konservi nunan paletron» por konservi la kolorojn. Tenu ⌥ por vidi «Forigi paletrojn».";
+"Help.15" = "Elektu «Uzi kiel apriorajn agordojn» en la menubreto por konservi la nunajn vidon, kolorojn, grandon, aliajn antaŭrigardajn agordojn kaj fenestrograndon. La tipardosieroj, kiujn vi malfermos poste, uzos tiujn agordojn. Tenu ⌥ por elekti «Restarigi apriorajn agordojn».";
+
+/* Variable font controls. */
+"Variable" = "Variebla";
+"Named Instance" = "Nomita variaĵo";
+"Default" = "Apriora";
+"Custom" = "Propra";
+
+
+/* Font Book copy alerts. Conflict buttons follow Finder. */
+"An item named “%@” already exists in Font Book." = "Ero kun la nomo «%@» jam ekzistas en Tipara Libro.";
+"“%@” is already in Font Book." = "«%@» jam estas en Tipara Libro.";
+"Keep Both" = "Konservi ambaŭ";
+"Stop" = "Halti";
+"Replace" = "Anstataŭigi";
+
+/* User-saved plain text. */
+"Saved Text" = "Konservita teksto";
+"Save Current Text" = "Konservi nunan tekston";
+"No Saved Text" = "Neniu konservita teksto";
+
+/* Preview colors and native line spacing. */
+"Colors" = "Koloroj";
+"Delete Palettes" = "Forigi paletrojn";
+"Save Current Palette" = "Konservi nunan paletron";
+"Clear All Saved Palettes" = "Forigi ĉiujn konservitajn paletrojn";
+"No Saved Palettes" = "Neniu konservita paletro";
+"%@: %@" = "%@: %@";
+"%@ (%.0f%%)" = "%@ (%.0f%%)";
+"Follow System" = "Sekvi la sisteman agordon";
+"Glyph…" = "Glifo…";
+"Background…" = "Fono…";
+"Bounding Box…" = "Ĉirkaŭa kadro…";
+"Increase Line Spacing" = "Pligrandigi interlinian spacon";
+"Decrease Line Spacing" = "Malpligrandigi interlinian spacon";
+
+/* Explicit defaults for newly opened font windows. */
+
+/* Saved-text deletion and full screen. */
+"Delete Saved Text" = "Forigi konservitan tekston";
+"Clear All Saved Text" = "Forigi ĉiujn konservitajn tekstojn";
+"Enter Full Screen" = "Eniri plenekranan reĝimon";
+
+/* Native typography and opening settings. */
+"Typography" = "Tipografio";
+"Other" = "Aliaj";
+"No Typography Features" = "Neniu tipografia trajto";
+"Default Size" = "Apriora grando";
+"Use as Defaults" = "Uzi kiel apriorajn agordojn";
+"Restore to Defaults" = "Restarigi apriorajn agordojn";
+"Text Decorations" = "Tekstaj ornamaĵoj";
+"Filter by Feature" = "Filtri laŭ tipara trajto";
+"No Features to Filter" = "Neniu tipara trajto por filtri";
+"No Feature" = "Sen tipara trajto";
+
+"Writing Direction" = "Skribdirekto";
+"Left to Right" = "De maldekstre dekstren";
+"Right to Left" = "De dekstre maldekstren";
+"Outline" = "Konturo";
+
+"Typesetting Language" = "Lingvo de kompostado";
+"No Selectable Languages" = "Neniu elektebla lingvo";

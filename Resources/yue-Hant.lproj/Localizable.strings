@@ -1,0 +1,141 @@
+/* 繁體廣東話，採用香港用詞。 */
+
+"File" = "檔案";
+"Copy to Font Book" = "複製到字體簿";
+"Copy to All Users" = "複製畀所有用戶";
+"Current User…" = "目前用戶⋯";
+"All Users…" = "所有用戶⋯";
+"System Fonts…" = "系統字體⋯";
+"Open Recent" = "開啟最近項目";
+"Recent Folders" = "最近使用⋯";
+"Clear Menu" = "清除選單";
+"Close Window" = "關閉視窗";
+"Cut" = "剪下";
+"Copy" = "複製";
+"Paste" = "貼上";
+"Delete" = "刪除";
+"Select All" = "全選";
+"Underline" = "底線";
+"Strikethrough" = "刪除線";
+"View" = "顯示方式";
+"Window" = "視窗";
+"Minimize" = "縮到最細";
+"Zoom" = "縮放";
+"Bring All to Front" = "將所有視窗移到最前";
+"Help" = "輔助說明";
+"Cancel" = "取消";
+"OK" = "好";
+"Show All" = "顯示全部";
+"Services" = "服務";
+"Edit" = "編輯";
+"Undo" = "還原";
+"Redo" = "重做";
+"Add Glyph" = "加字形";
+"Replace Glyph" = "換字形";
+"Open" = "開啟";
+"Zoom In" = "放大";
+"Zoom Out" = "縮細";
+"Text Alignment" = "文字對齊";
+"Left" = "靠左對齊";
+"Center" = "置中";
+"Right" = "靠右對齊";
+"Justified" = "左右對齊";
+"Top" = "頂部對齊";
+"Bottom" = "底部對齊";
+"About Glyph Atlas" = "關於 Glyph Atlas";
+"Hide Glyph Atlas" = "隱藏 Glyph Atlas";
+"Hide Others" = "隱藏其他";
+"Quit Glyph Atlas" = "結束 Glyph Atlas";
+"Glyph Atlas Help" = "Glyph Atlas 輔助說明";
+"Open Font From" = "開啟字體於";
+"No Recent Fonts" = "冇最近用過嘅字體";
+"Single Glyph" = "單字形";
+"Multi-Character" = "多字元";
+"All Glyphs" = "全部字";
+"Show Bounding Box" = "顯示邊界框";
+"Bounding Box Zoom In" = "放大邊界框";
+"Bounding Box Zoom Out" = "縮細邊界框";
+"Vertical" = "豎排";
+"Enter text" = "打字";
+"Font Name" = "字體名";
+"Font File" = "字體檔案";
+"Untitled Font" = "未有名嘅字體";
+"Choose Font Style" = "揀字體樣式";
+"Cannot Open Font" = "開唔到字體";
+"This file does not contain a font that CoreText can read." = "呢個檔案入面冇 CoreText 讀到嘅字體。";
+"Cannot Read Font" = "讀唔到字體";
+"CoreText could not create this font." = "CoreText 建立唔到呢款字體。";
+"Bounding Box" = "邊界框";
+"Text and alternate glyph list" = "文字同替換字形嘅清單";
+"Help.01" = "喺選單列揀「開啟字體於」，就可以直接喺裝字體嘅資料夾開字體。你亦可以將字體拖去 App 圖像，或者拖入已經開咗字體嘅視窗，又或者將 Glyph Atlas 設做開字體檔案嘅預設 App。最近開過嘅項目都可以再開。";
+"Help.02" = "喺選單列撳一下，就可以將而家個視窗入面開咗嘅字體複製去自己嘅字體資料夾。撳住 ⌥，就會複製去所有用戶共用嘅字體資料夾。";
+"Help.03" = "開可變字體嗰陣，紅綠燈掣隔籬會彈出個調校參數嘅面板。拖佢出嚟就可以一路開住。揀好個數值之後，可以撳 ↑／↓ 或者 ⇧↑／⇧↓ 嚟調校。";
+"Help.04" = "喺側邊欄打一個或者幾個字元，就睇到所有相關字形。撳 ⌥⏎ 可以換行。撳右鍵揀「常用文字」，可以儲起而家嘅文字，或者即刻填返之前儲低嘅文字。想快啲刪走儲低嘅文字，可以喺選單列撳住 ⌥。";
+"Help.05" = "喺字形上面撳兩下，或者揀咗再撳 ⏎，就會換走預設字形，同時顯示佢嘅替換字形。做嗰陣撳住 ⇧，就會加埋呢個字形。";
+"Help.06" = "撳 ↑／↓ 可以喺字形之間上下郁，撳 ⌘↑／⌘↓ 就喺基本字形之間跳。撳 ⌥↑／⌥↓ 可以跳去清單頭一個或者最尾嗰個字形。";
+"Help.07" = "撳 ⌘C，就可以複製揀咗嘅字形對應嘅所有編碼字元。";
+"Help.08" = "將滑鼠指標停喺 Unicode 徽章上面，就睇到 Unicode 標準入面嗰個字元嘅名。";
+"Help.09" = "一開就會見到「全部字」。可以撳右鍵切換，或者撳 ⌘1 去「單字形」、⌘2 去「多字元」、⌘3 返去「全部字」。";
+"Help.10" = "喺「多字元」撳一下字形，就睇到佢嘅替換字形。撳右鍵或者撳 ⌘5，就可以喺橫排同豎排之間切換。「文字對齊」同「字體排印」都喺呢度。選單列嘅「顯示方式」入面仲有其他選項。";
+"Help.11" = "喺「全部字」入面撳兩下字形，就可以加落原有嘅文字。喺側邊欄撳一下字形，嗰個字形就會喺「全部字」度閃一閃。撳右鍵可以搵到「按特性篩選」。";
+"Help.12" = "用 ⌘+／⌘−，或者喺觸控板用兩隻手指合埋或擘開，就可以放大或者縮細字形。喺「多字元」可以用 ⌥⌘+／⌥⌘−，或者喺觸控板橫向合埋或擘開手指嚟調校邊距。用 ⌃⌘+／⌃⌘−，或者喺觸控板直向做同一個手勢，就可以調校行距。撳 ⌘0 就會返到預設大小。";
+"Help.13" = "陰影會顯示邊界框，睇到字形有幾闊幾高，同埋排版嘅行高同行距。撳 ⌘4 就可以收埋陰影。";
+"Help.14" = "有深色模式。撳到實心字形嗰陣要小心，可能會睇到眼都花。喺選單列嘅「顏色」可以改字形、邊界框陰影同背景嘅顏色。調好就揀「儲存目前配色」。撳住 ⌥ 就會見到「刪除配色」。";
+"Help.15" = "喺選單列揀「作為預設值」，就可以記低而家嘅檢視方式、顏色、大小同其他預覽設定，連視窗大小都一齊記低。之後開字體檔案就會用返呢套設定。撳住 ⌥ 可以改揀「還原至預設值」。";
+
+/* 可變字體。 */
+"Variable" = "可變";
+"Named Instance" = "有名嘅樣式";
+"Default" = "預設";
+"Custom" = "自訂";
+
+/* 複製字體嘅提示。 */
+"An item named “%@” already exists in Font Book." = "字體簿入面已經有一個叫「%@」嘅項目。";
+"“%@” is already in Font Book." = "「%@」已經喺字體簿入面。";
+"Keep Both" = "兩個都保留";
+"Stop" = "停止";
+"Replace" = "取代";
+
+/* 儲低嘅文字。 */
+"Saved Text" = "常用文字";
+"Save Current Text" = "儲存目前文字";
+"No Saved Text" = "冇儲低嘅文字";
+
+/* 預覽顏色同行距。 */
+"Colors" = "顏色";
+"Delete Palettes" = "刪除配色";
+"Save Current Palette" = "儲存目前配色";
+"Clear All Saved Palettes" = "刪晒所有儲低嘅配色";
+"No Saved Palettes" = "冇儲低嘅配色";
+"%@: %@" = "%@：%@";
+"%@ (%.0f%%)" = "%@（%.0f%%）";
+"Follow System" = "跟系統設定";
+"Glyph…" = "字形⋯";
+"Background…" = "背景⋯";
+"Bounding Box…" = "邊界框⋯";
+"Increase Line Spacing" = "加大行距";
+"Decrease Line Spacing" = "縮細行距";
+
+"Delete Saved Text" = "刪除常用文字";
+"Clear All Saved Text" = "刪晒所有儲低嘅文字";
+"Enter Full Screen" = "進入全螢幕";
+
+/* 排印同預設。 */
+"Typography" = "字體排印";
+"Other" = "其他";
+"No Typography Features" = "冇字體排印特性";
+"Default Size" = "預設大小";
+"Use as Defaults" = "作為預設值";
+"Restore to Defaults" = "還原至預設值";
+"Text Decorations" = "文字裝飾";
+"Filter by Feature" = "按特性篩選";
+"No Features to Filter" = "冇特性可以篩選";
+"No Feature" = "冇特性";
+
+"Writing Direction" = "書寫方向";
+"Left to Right" = "由左至右";
+"Right to Left" = "由右至左";
+"Outline" = "中空字";
+
+"Typesetting Language" = "排版語言";
+"No Selectable Languages" = "冇語言可以揀";

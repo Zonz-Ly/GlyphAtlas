@@ -23,6 +23,14 @@
         <string>ar</string>
         <string>hi</string>
         <string>ms</string>
+        <string>wuu-Hans</string>
+        <string>yue-Hans</string>
+        <string>yue-Hant</string>
+        <string>bo</string>
+        <string>ug</string>
+        <string>la</string>
+        <string>eo</string>
+        <string>km</string>
     </array>
     <key>CFBundleExecutable</key>
     <string>GlyphAtlas</string>
