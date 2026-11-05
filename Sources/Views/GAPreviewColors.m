@@ -78,7 +78,8 @@ NSColor *GAGlyphForegroundColor(void) {
     return _overrides[@(role)] == nil;
 }
 - (NSColor *)colorForRole:(GAPreviewColorRole)role {
-    if (_overrides[@(role)]) return _overrides[@(role)];
+    NSColor *color = _overrides[@(role)];
+    if (color) return color;
     if (role == GAPreviewColorGlyph) return GAGlyphForegroundColor();
     return role == GAPreviewColorBoundingBox ? GABoundingBoxShadowColor() : GABoundingBoxBackgroundColor();
 }

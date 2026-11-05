@@ -515,14 +515,9 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
                  modifiers:(NSEventModifierFlags)modifiers {
     if (row < 0 || row >= (NSInteger)self.rows.count) return;
     GARowItem *item = self.rows[(NSUInteger)row];
-    if (GAModifiersAre(modifiers, NSEventModifierFlagShift)) {
-        if (self.onGlyphShiftActivated) {
-            self.onGlyphShiftActivated(item.group, item.variant);
-        }
-        return;
-    }
     if (self.onGlyphActivated) {
-        self.onGlyphActivated(item.group, item.variant);
+        self.onGlyphActivated(item.group, item.variant,
+                              GAModifiersAre(modifiers, NSEventModifierFlagShift));
     }
 }
 
@@ -1060,11 +1055,11 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
     [self setGroups:groups sourceText:text rows:rows];
 }
 
-- (void)setGroups:(NSArray<GACharacterGroup *> *)groups {
+- (void)clearGroups {
     self.pendingSelectionGlyphKey = nil;
     self.displayedSourceEdits = nil;
     self.temporaryResolution = nil;
-    [self setGroups:groups sourceText:nil rows:GARowsForGroups(groups, nil)];
+    [self setGroups:@[] sourceText:nil rows:@[]];
 }
 
 - (void)setGroups:(NSArray<GACharacterGroup *> *)groups sourceText:(NSString *)text

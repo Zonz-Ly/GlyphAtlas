@@ -4,7 +4,6 @@
 NS_ASSUME_NONNULL_BEGIN
 
 @interface GAFontFeatureGroup : NSObject
-@property(nonatomic, copy, readonly) NSString *identifier;
 @property(nonatomic, copy, readonly) NSString *name;
 @property(nonatomic, readonly) BOOL exclusive;
 @property(nonatomic, readonly) BOOL booleanChoice;

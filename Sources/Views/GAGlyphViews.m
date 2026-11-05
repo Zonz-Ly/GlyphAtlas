@@ -121,7 +121,6 @@ static NSFont *GABadgeFont(void) {
     GAUnicodeBadgeLabel *label = [self labelWithString:text];
     label->_scalar = scalar;
     label.font = GABadgeFont();
-    label.rowSelected = NO;
     label.alignment = NSTextAlignmentCenter;
     label.lineBreakMode = NSLineBreakByClipping;
     label.accessibilityElement = NO;
@@ -182,7 +181,6 @@ static NSFont *GABadgeFont(void) {
             [_label.trailingAnchor constraintEqualToAnchor:self.trailingAnchor],
             [_label.centerYAnchor constraintEqualToAnchor:self.centerYAnchor],
         ]];
-        self.backgroundStyle = NSBackgroundStyleRaised;
     }
     return self;
 }

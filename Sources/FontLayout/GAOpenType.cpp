@@ -495,14 +495,13 @@ std::vector<LookupStep> OpenType::plan(const Settings &settings, size_t branch) 
     if (!script)
         return result;
     const Language *language = nullptr;
-    for (Tag wanted : {settings.language, Tag(0)}) {
-        for (const auto &l : script->languages)
-            if (l.name == wanted) {
-                language = &l;
-                break;
-            }
-        if (language)
+    for (const auto &candidate : script->languages) {
+        if (candidate.name == settings.language) {
+            language = &candidate;
             break;
+        }
+        if (candidate.name == 0 && !language)
+            language = &candidate;
     }
     if (!language)
         return result;

@@ -4,7 +4,7 @@
 
 namespace ga::layout {
 // Apple lookup tables are also shared by kerx and legacy class mappings.
-std::optional<uint64_t> aatLookup(View table, Glyph glyph, unsigned valueSize = 2);
+std::optional<uint64_t> aatLookup(View table, Glyph glyph);
 struct AATSelector {
     unsigned type = 0, setting = 0;
     friend bool operator==(AATSelector a, AATSelector b) {

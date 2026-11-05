@@ -652,8 +652,8 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
 // A zero-size attachment separates shaping runs without drawing fallback ink.
 static NSTextAttachment *GAOmittedGlyphAttachment(void) {
     NSTextAttachment *attachment = [[NSTextAttachment alloc] init];
-    attachment.image = [[NSImage alloc] initWithSize:NSMakeSize(1, 1)];
-    attachment.bounds = NSZeroRect;
+    // AppKit uses the image size when the attachment bounds are zero.
+    attachment.image = [[NSImage alloc] initWithSize:NSZeroSize];
     return attachment;
 }
 

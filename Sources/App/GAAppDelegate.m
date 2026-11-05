@@ -3,9 +3,7 @@
 #import "Font/GAFontResource.h"
 #import "Font/GAFontFeatures.h"
 #import "Input/GAInput.h"
-#include <errno.h>
 #include <math.h>
-#include <stdio.h>
 #include <sys/stat.h>
 
 static NSString *const GARecentFontPathsKey = @"GAPersistentRecentFontPaths";
@@ -534,8 +532,9 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
 
 - (void)bindSavedItemsInRoot:(NSMenu *)root controller:(GAMainWindowController *)controller {
     if (root == self.trackedSavedItemsRootMenu) return;
-    NSMenuItem *apply = root == self.editMenu ? self.savedTextItem : self.colorsItem;
-    NSMenuItem *alternate = root == self.editMenu ? self.deleteSavedTextItem : self.deletePalettesItem;
+    BOOL isEditMenu = root == self.editMenu;
+    NSMenuItem *apply = isEditMenu ? self.savedTextItem : self.colorsItem;
+    NSMenuItem *alternate = isEditMenu ? self.deleteSavedTextItem : self.deletePalettesItem;
     ((GASavedItemsMenu *)apply.submenu).controller = controller;
     ((GASavedItemsMenu *)alternate.submenu).controller = controller;
     apply.enabled = controller.fontURL != nil;
@@ -1391,7 +1390,8 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
     if (action == @selector(copyToFontBook:)) {
         return controller.fontURL != nil;
     }
-    if (action == @selector(increaseLineSpacing:) || action == @selector(decreaseLineSpacing:))
+    if (action == @selector(increaseLineSpacing:) || action == @selector(decreaseLineSpacing:) ||
+        action == @selector(zoomMetricsIn:) || action == @selector(zoomMetricsOut:))
         return GAViewModeSupportsTextLayout(controller.viewMode);
     if (action == @selector(switchViewMode:)) {
         item.state = controller.viewMode == (GAViewMode)item.tag
@@ -1428,10 +1428,6 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
         item.state = controller.showsMetrics ? NSControlStateValueOn : NSControlStateValueOff;
         return GAViewModeSupportsMetrics(controller.viewMode);
     }
-    if (action == @selector(zoomMetricsIn:) ||
-        action == @selector(zoomMetricsOut:)) {
-        return GAViewModeSupportsTextLayout(controller.viewMode);
-    }
     if (action == @selector(setTextAlignment:)) {
         item.state = controller.textAlignment == (NSTextAlignment)item.tag
             ? NSControlStateValueOn : NSControlStateValueOff;
@@ -1448,38 +1444,21 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
 
 #pragma mark - File and application actions
 
-static mode_t GAFileItemType(NSURL *url, NSError **error) {
-    struct stat item;
-    if (lstat(url.fileSystemRepresentation, &item) == 0)
-        return item.st_mode & S_IFMT;
-    int code = errno;
-    if (code != ENOENT)
-        *error = [NSError errorWithDomain:NSPOSIXErrorDomain code:code userInfo:@{NSURLErrorKey: url}];
-    return 0;
-}
-
-- (NSURL *)resolveFontFileReference:(NSURL *)reference openedURL:(NSURL *)openedURL {
-    NSURL *source = reference.filePathURL;
-    NSError *error = nil;
-    if (source && GAFileItemType(source, &error) == S_IFREG &&
-        [source.fileReferenceURL isEqual:reference]) return source;
-    [NSApp presentError:error ?: [NSError errorWithDomain:NSCocoaErrorDomain code:NSFileReadNoSuchFileError
-                                                 userInfo:@{NSURLErrorKey: openedURL}]];
-    return nil;
-}
-
 - (void)copyToFontBook:(NSMenuItem *)sender {
     GAMainWindowController *controller = self.activeMainWindowController;
     NSURL *fontURL = controller.fontURL;
     if (fontURL == nil)
         return;
     NSURL *reference = controller.fontFileReference;
-    NSURL *source = [self resolveFontFileReference:reference openedURL:fontURL];
-    if (!source) return;
+    NSError *error = nil;
+    NSURL *source = GAResolveFontFileReference(reference, fontURL, &error);
+    if (!source) {
+        [NSApp presentError:error];
+        return;
+    }
     GAFontFolder folder = sender.tag;
     NSURL *directory = GAFontFolderURL(folder);
     NSFileManager *files = [NSFileManager defaultManager];
-    NSError *error = nil;
     NSURLRelationship relationship;
     if (![files createDirectoryAtURL:directory withIntermediateDirectories:YES
                          attributes:nil error:&error] ||
@@ -1499,13 +1478,14 @@ static mode_t GAFileItemType(NSURL *url, NSError **error) {
         return;
     }
     NSURL *destination = [directory URLByAppendingPathComponent:fontURL.lastPathComponent isDirectory:NO];
-    mode_t destinationType = GAFileItemType(destination, &error);
+    mode_t destinationType = GAFontFileItemType(destination, &error);
     if (error) {
         [NSApp presentError:error];
         return;
     }
     if (!destinationType) {
-        [self copyFontWithReference:reference openedURL:fontURL toURL:destination replacing:NO];
+        error = GACopyFontFile(reference, fontURL, destination, NO);
+        if (error) [NSApp presentError:error];
         return;
     }
 
@@ -1541,50 +1521,15 @@ static mode_t GAFileItemType(NSURL *url, NSError **error) {
                 if (extension.length)
                     name = [name stringByAppendingPathExtension:extension];
                 target = [directory URLByAppendingPathComponent:name isDirectory:NO];
-            } while (GAFileItemType(target, &nameError));
+            } while (GAFontFileItemType(target, &nameError));
             if (nameError) {
                 [NSApp presentError:nameError];
                 return;
             }
         }
-        [self copyFontWithReference:reference openedURL:fontURL toURL:target replacing:replace];
+        NSError *copyError = GACopyFontFile(reference, fontURL, target, replace);
+        if (copyError) [NSApp presentError:copyError];
     }];
-}
-
-- (void)copyFontWithReference:(NSURL *)reference openedURL:(NSURL *)openedURL
-                        toURL:(NSURL *)destination replacing:(BOOL)replace {
-    NSURL *source = [self resolveFontFileReference:reference openedURL:openedURL];
-    if (!source) return;
-    NSFileManager *files = [NSFileManager defaultManager];
-    NSError *error = nil;
-    NSURL *temporaryDirectory = [files URLForDirectory:NSItemReplacementDirectory
-                                              inDomain:NSUserDomainMask
-                                     appropriateForURL:destination.URLByDeletingLastPathComponent
-                                                create:YES error:&error];
-    if (temporaryDirectory) {
-        NSURL *copy = [temporaryDirectory URLByAppendingPathComponent:destination.lastPathComponent];
-        if ([files copyItemAtURL:source toURL:copy error:&error]) {
-            // A fresh path URL avoids reusing the identity cached before the copy.
-            NSURL *currentReference = [NSURL fileURLWithPath:source.path].fileReferenceURL;
-            if (GAFileItemType(copy, &error) != S_IFREG || ![currentReference isEqual:reference]) {
-                if (!error)
-                    error = [NSError errorWithDomain:NSCocoaErrorDomain code:NSFileReadNoSuchFileError
-                                            userInfo:@{NSURLErrorKey: openedURL}];
-            } else {
-                int result = replace
-                    ? rename(copy.fileSystemRepresentation, destination.fileSystemRepresentation)
-                    : renamex_np(copy.fileSystemRepresentation, destination.fileSystemRepresentation, RENAME_EXCL);
-                if (result != 0) {
-                    int code = errno;
-                    error = [NSError errorWithDomain:NSPOSIXErrorDomain code:code
-                                            userInfo:@{NSURLErrorKey: destination}];
-                }
-            }
-        }
-        [files removeItemAtURL:temporaryDirectory error:NULL];
-    }
-    if (error)
-        [NSApp presentError:error];
 }
 
 - (void)showHelp:(id)sender {

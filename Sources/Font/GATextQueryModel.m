@@ -4,6 +4,13 @@
 
 #pragma mark - Query state
 
+static NSArray<GACharacterGroup *> *GAProjectScanResult(GAFontDocument *document,
+                                                        GARawScanResult *result, NSString *text,
+                                                        BOOL (^cancelled)(void)) {
+    NSArray<GACharacterGroup *> *groups = GAGroupsForScanResult(text, result);
+    return [document applyRawResult:result groups:groups cancelled:cancelled] ? groups : nil;
+}
+
 @implementation GATextQueryModel {
     GAFontDocument *_document;
     NSString *_text;
@@ -31,8 +38,8 @@
                                              cancelled:cancelled];
     if (!result)
         return NO;
-    NSArray *groups = GAGroupsForScanResult(text, result);
-    if (![_document applyRawResult:result groups:groups cancelled:cancelled])
+    NSArray<GACharacterGroup *> *groups = GAProjectScanResult(_document, result, text, cancelled);
+    if (!groups)
         return NO;
     _text = [text copy];
     _identity = result.incomplete ? nil : identity;
@@ -44,9 +51,7 @@
     _document = document;
     if (_result) {
         _result = [document rebindResult:_result content:_text];
-        NSArray *groups = GAGroupsForScanResult(_text, _result);
-        [document applyRawResult:_result groups:groups cancelled:nil];
-        _groups = groups;
+        _groups = GAProjectScanResult(document, _result, _text, nil);
     }
 }
 @end

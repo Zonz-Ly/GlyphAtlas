@@ -376,8 +376,8 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
            [multiUnicodePattern firstMatchInString:name options:0 range:range] != nil;
 }
 
-- (void)decorateVariant:(GAGlyphVariant *)variant
-          withUnicodeMap:(NSDictionary<NSNumber *, NSArray<NSNumber *> *> *)map {
+- (void)decorateVariant:(GAGlyphVariant *)variant {
+    NSDictionary<NSNumber *, NSArray<NSNumber *> *> *map = self.unicodeMap;
     NSMutableSet<NSNumber *> *scalars = [NSMutableSet set];
     NSMutableArray<NSString *> *glyphNames = [NSMutableArray array];
 
@@ -389,11 +389,10 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
 
         CGGlyph glyph = (CGGlyph)glyphNumber.unsignedShortValue;
         NSString *name = CFBridgingRelease(CTFontCopyNameForGlyph(_font, glyph));
-        if (name.length > 0 && !GAGlyphNameLooksSynthetic(name)) {
-            [glyphNames addObject:name];
-        } else {
-            [glyphNames addObject:[NSString stringWithFormat:@"GID %@", glyphNumber]];
+        if (!name.length || GAGlyphNameLooksSynthetic(name)) {
+            name = [NSString stringWithFormat:@"GID %@", glyphNumber];
         }
+        [glyphNames addObject:name];
     }
 
     NSArray<NSNumber *> *sortedScalars =
@@ -441,7 +440,7 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
     variant.ligature = parent.isLigature;
     variant.fromGlyphSeed = parent.fromGlyphSeed;
     variant.temporary = YES;
-    [self decorateVariant:variant withUnicodeMap:self.unicodeMap];
+    [self decorateVariant:variant];
     GAGlyphResolution *result = [[GAGlyphResolution alloc] init];
     result.parent = parent;
     result.variant = variant;
@@ -573,7 +572,7 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
         if (candidate.ligature) {
             variant.ligature = YES;
         }
-        [self decorateVariant:variant withUnicodeMap:self.unicodeMap];
+        [self decorateVariant:variant];
         if (candidate.isBase && variant.unicodeScalars.count == 0) {
             variant.unicodeScalars = GAScalarsForString(group.text);
         }
@@ -630,7 +629,7 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
         v.positions = [_substitutionEngine positionsForGlyphIDs:v.glyphIDs content:@""];
         [v addFeatureSources:match.sources];
         v.base = match.base;
-        [self decorateVariant:v withUnicodeMap:self.unicodeMap];
+        [self decorateVariant:v];
         [variants addObject:v];
     }
     return [variants copy];

@@ -409,16 +409,19 @@ NSAttributedString *GAFieldTextFromModelText(NSAttributedString *modelText) {
   [super paste:sender];
 }
 
-/// Copy the selection as plain text, restoring the original separators.
+/// Read the selection as plain text, restoring the original separators.
+- (NSString *)modelTextInRange:(NSRange)range {
+  return GAModelTextFromFieldText(
+      [self.textStorage attributedSubstringFromRange:range]).string;
+}
+
 - (void)copy:(id)sender {
   NSRange range = self.selectedRange;
   if (range.length == 0) {
     [super copy:sender];
     return;
   }
-  NSAttributedString *selected =
-      [self.textStorage attributedSubstringFromRange:range];
-  NSString *model = GAModelTextFromFieldText(selected).string;
+  NSString *model = [self modelTextInRange:range];
   NSPasteboard *pasteboard = [NSPasteboard generalPasteboard];
   [pasteboard clearContents];
   [pasteboard setString:model forType:NSPasteboardTypeString];
@@ -448,9 +451,7 @@ NSAttributedString *GAFieldTextFromModelText(NSAttributedString *modelText) {
   if (range.length == 0) {
     return result;
   }
-  NSAttributedString *selected =
-      [self.textStorage attributedSubstringFromRange:range];
-  NSString *model = GAModelTextFromFieldText(selected).string;
+  NSString *model = [self modelTextInRange:range];
   [pboard setString:model forType:NSPasteboardTypeString];
   // Older pasteboard readers ask for the legacy name instead.
   [pboard setString:model forType:@"NSStringPboardType"];

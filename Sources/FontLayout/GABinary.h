@@ -44,7 +44,7 @@ class View {
     explicit operator bool() const {
         return length_ != 0;
     }
-    bool contains(size_t at, size_t count = 1) const {
+    bool contains(size_t at, size_t count) const {
         return at <= length_ && count <= length_ - at;
     }
     void require(size_t at, size_t count) const {

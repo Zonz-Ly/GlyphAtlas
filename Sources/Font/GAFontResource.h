@@ -1,11 +1,19 @@
 #import <Foundation/Foundation.h>
 #import <CoreText/CoreText.h>
 #import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
+#include <sys/types.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
 FOUNDATION_EXPORT NSArray<UTType *> *GAFontContentTypes(void);
 FOUNDATION_EXPORT BOOL GAFontURLIsFont(NSURL *url);
+/// Inspect the directory entry itself, including broken symlinks.
+FOUNDATION_EXPORT mode_t GAFontFileItemType(NSURL *url, NSError * _Nullable *error);
+FOUNDATION_EXPORT NSURL * _Nullable GAResolveFontFileReference(NSURL * _Nullable reference,
+    NSURL *openedURL, NSError * _Nullable *error);
+/// Return the native file error on failure. Stage the copy on the destination volume.
+FOUNDATION_EXPORT NSError * _Nullable GACopyFontFile(NSURL * _Nullable reference,
+    NSURL *openedURL, NSURL *destination, BOOL replace);
 
 @interface GAFontInstance : NSObject
 @property (nonatomic, copy, readonly) NSString *name;

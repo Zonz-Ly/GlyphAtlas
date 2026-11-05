@@ -11,15 +11,15 @@ static uint64_t unsignedValue(View data, size_t at, unsigned size) {
         result = (result << 8) | data.u8(at + i);
     return result;
 }
-std::optional<uint64_t> aatLookup(View table, Glyph glyph, unsigned valueSize) {
+std::optional<uint64_t> aatLookup(View table, Glyph glyph) {
     if (!table || glyph == 0xffff)
         return {};
     unsigned format = table.u16(0);
     if (format == 0) {
-        size_t at = 2 + size_t(glyph) * valueSize;
-        if (!table.contains(at, valueSize))
+        size_t at = 2 + size_t(glyph) * 2;
+        if (!table.contains(at, 2))
             return {};
-        return unsignedValue(table, at, valueSize);
+        return table.u16(at);
     }
     if (format == 8 || format == 10) {
         unsigned size = format == 8 ? 2 : table.u16(2);
@@ -32,7 +32,7 @@ std::optional<uint64_t> aatLookup(View table, Glyph glyph, unsigned valueSize) {
     if (format != 2 && format != 4 && format != 6)
         throw InvalidTable("unknown Apple lookup format");
     unsigned stride = table.u16(2), count = table.u16(4);
-    unsigned required = format == 6 ? 2 + valueSize : format == 4 ? 6 : 4 + valueSize;
+    unsigned required = format == 6 ? 4 : 6;
     if (stride < required)
         throw InvalidTable("short Apple lookup record");
     table.array(12, count, stride);
@@ -45,10 +45,9 @@ std::optional<uint64_t> aatLookup(View table, Glyph glyph, unsigned valueSize) {
         else if (glyph > last)
             lo = mid + 1;
         else if (format == 4)
-            return unsignedValue(table, table.u16(p + 4) + size_t(glyph - first) * valueSize,
-                                 valueSize);
+            return table.u16(table.u16(p + 4) + size_t(glyph - first) * 2);
         else
-            return unsignedValue(table, p + (format == 6 ? 2 : 4), valueSize);
+            return table.u16(p + (format == 6 ? 2 : 4));
     }
     return {};
 }

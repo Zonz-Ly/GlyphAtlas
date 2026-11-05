@@ -372,12 +372,8 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         [weakSelf revealGlyphForVariant:variant quick:quickReveal];
     };
     self.sidebarViewController.onGlyphActivated = ^(GACharacterGroup *group,
-                                                    GAGlyphVariant *variant) {
-        [weakSelf editGlyphVariant:variant inGroup:group insert:NO];
-    };
-    self.sidebarViewController.onGlyphShiftActivated = ^(GACharacterGroup *group,
-                                                         GAGlyphVariant *variant) {
-        [weakSelf editGlyphVariant:variant inGroup:group insert:YES];
+                                                     GAGlyphVariant *variant, BOOL insert) {
+        [weakSelf editGlyphVariant:variant inGroup:group insert:insert];
     };
     self.detailViewController.onAllGlyphDoubleClick = ^(GAAllGlyphEntry *entry) {
         [weakSelf appendAllGlyphEntry:entry];
@@ -986,7 +982,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
                 // The native expansion region can stay cached if the title's bounds do not change.
                 [self.window invalidateCursorRectsForView:self.titleFontNameField];
             }
-            if (!preserve) [self.sidebarViewController setGroups:@[]];
+            if (!preserve) [self.sidebarViewController clearGroups];
             if (selected != nil) {
                 GAGlyphVariant *updated = [document rebindVariant:selected content:self.sidebarViewController.selectedGlyphSourceText];
                 self.lastSelectedVariant = updated;
@@ -1314,7 +1310,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     [self cancelLayoutLookup];
     self.pendingGlyphEdit = nil;
     self.scanSnapshot = nil;
-    [self.sidebarViewController setGroups:@[]];
+    [self.sidebarViewController clearGroups];
     [self.detailViewController setVariant:nil];
     [self.detailViewController setMultiText:@"" groups:@[] omissions:NSIndexSet.indexSet];
 }

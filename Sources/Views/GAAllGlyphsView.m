@@ -42,9 +42,6 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
 
 @implementation GAAllGlyphsGrid
 
-@synthesize entries = _entries;
-@synthesize fontBox = _fontBox;
-
 - (instancetype)initWithFrame:(NSRect)frameRect {
     self = [super initWithFrame:frameRect];
     if (self) {
@@ -294,10 +291,10 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
 }
 
 - (void)mouseDown:(NSEvent *)event {
-    NSPoint point = [self convertPoint:event.locationInWindow fromView:nil];
-    NSInteger index = [self indexAtPoint:point];
-    if (index >= 0 && event.clickCount == 2 && self.onDoubleClick != nil) {
-        self.onDoubleClick(self.entries[(NSUInteger)index]);
+    if (event.clickCount == 2 && self.onDoubleClick != nil) {
+        NSPoint point = [self convertPoint:event.locationInWindow fromView:nil];
+        NSInteger index = [self indexAtPoint:point];
+        if (index >= 0) self.onDoubleClick(self.entries[(NSUInteger)index]);
     }
     [self.window performWindowDragWithEvent:event];
 }

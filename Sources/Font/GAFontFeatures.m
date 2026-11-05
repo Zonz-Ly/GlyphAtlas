@@ -5,7 +5,8 @@
 @property(nonatomic, copy) NSString *name;
 @property(nonatomic) BOOL exclusive;
 @property(nonatomic) BOOL booleanChoice;
-@property(nonatomic, copy) NSDictionary *definition;
+@property(nonatomic, strong, nullable) NSNumber *type;
+@property(nonatomic, copy, nullable) NSString *tag;
 @property(nonatomic, copy) NSArray<NSDictionary *> *selectors;
 @end
 @implementation GAFontFeatureGroup
@@ -43,7 +44,8 @@ static BOOL GASelectorDefault(NSDictionary *selector) {
                                 : [@"ot:" stringByAppendingString:tag];
         NSString *name = definition[(__bridge NSString *)kCTFontFeatureTypeNameKey];
         group.name = name.length ? name : (tag.length ? tag : type.stringValue);
-        group.definition = definition;
+        group.type = type;
+        group.tag = tag;
         group.exclusive = [definition[(__bridge NSString *)kCTFontFeatureTypeExclusiveKey] boolValue];
         NSArray *selectors = definition[(__bridge NSString *)kCTFontFeatureTypeSelectorsKey];
         if (type && !group.exclusive) {
@@ -90,9 +92,10 @@ static BOOL GASelectorDefault(NSDictionary *selector) {
 }
 
 - (BOOL)isSelectorSelected:(NSDictionary *)selector inGroup:(GAFontFeatureGroup *)group {
-    NSNumber *choice = _choices[group.identifier][GASelectorKey(selector)];
+    NSDictionary *choices = _choices[group.identifier];
+    NSNumber *choice = choices[GASelectorKey(selector)];
     if (choice) return choice.boolValue;
-    if ((group.exclusive || group.booleanChoice) && _choices[group.identifier].count) return NO;
+    if ((group.exclusive || group.booleanChoice) && choices.count) return NO;
     return GASelectorDefault(selector);
 }
 
@@ -123,7 +126,7 @@ static BOOL GASelectorDefault(NSDictionary *selector) {
     for (GAFontFeatureGroup *group in self.groups) {
         NSDictionary *choices = _choices[group.identifier];
         if (!choices.count) continue;
-        NSNumber *type = group.definition[(__bridge NSString *)kCTFontFeatureTypeIdentifierKey];
+        NSNumber *type = group.type;
         for (NSDictionary *selector in group.selectors) {
             NSNumber *choice = choices[GASelectorKey(selector)];
             if (!choice) continue;
@@ -133,7 +136,7 @@ static BOOL GASelectorDefault(NSDictionary *selector) {
                     (__bridge NSString *)kCTFontFeatureSelectorIdentifierKey:@(choice.boolValue ? value : (value ^ 1))}];
             } else {
                 NSString *tag = selector[(__bridge NSString *)kCTFontOpenTypeFeatureTag]
-                    ?: group.definition[(__bridge NSString *)kCTFontOpenTypeFeatureTag];
+                    ?: group.tag;
                 [result addObject:@{(__bridge NSString *)kCTFontOpenTypeFeatureTag:tag,
                     (__bridge NSString *)kCTFontOpenTypeFeatureValue:
                         choice.boolValue ? selector[(__bridge NSString *)kCTFontOpenTypeFeatureValue] : @0}];

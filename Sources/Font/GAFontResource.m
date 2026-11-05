@@ -1,4 +1,9 @@
 #import "GAFontResource.h"
+#include <errno.h>
+#include <stdio.h>
+#include <sys/stat.h>
+
+#pragma mark - Font files
 
 NSArray<UTType *> *GAFontContentTypes(void) {
     NSMutableArray<UTType *> *types = [NSMutableArray arrayWithObject:UTTypeFont];
@@ -27,6 +32,64 @@ BOOL GAFontURLIsFont(NSURL *url) {
     return [identifier isEqualToString:@"org.w3c.woff"] ||
            [identifier isEqualToString:@"org.w3c.woff2"];
 }
+
+mode_t GAFontFileItemType(NSURL *url, NSError **error) {
+    struct stat item;
+    if (lstat(url.fileSystemRepresentation, &item) == 0)
+        return item.st_mode & S_IFMT;
+    int code = errno;
+    if (code != ENOENT)
+        *error = [NSError errorWithDomain:NSPOSIXErrorDomain code:code userInfo:@{NSURLErrorKey: url}];
+    return 0;
+}
+
+static NSError *GAUnavailableFontError(NSURL *openedURL) {
+    return [NSError errorWithDomain:NSCocoaErrorDomain code:NSFileReadNoSuchFileError
+                           userInfo:@{NSURLErrorKey: openedURL}];
+}
+
+NSURL *GAResolveFontFileReference(NSURL *reference, NSURL *openedURL, NSError **error) {
+    NSURL *source = reference.filePathURL;
+    if (source && GAFontFileItemType(source, error) == S_IFREG &&
+        [source.fileReferenceURL isEqual:reference]) return source;
+    if (!*error) *error = GAUnavailableFontError(openedURL);
+    return nil;
+}
+
+NSError *GACopyFontFile(NSURL *reference, NSURL *openedURL, NSURL *destination, BOOL replace) {
+    NSError *error = nil;
+    NSURL *source = GAResolveFontFileReference(reference, openedURL, &error);
+    if (!source) return error;
+    NSFileManager *files = [NSFileManager defaultManager];
+    NSURL *temporaryDirectory = [files URLForDirectory:NSItemReplacementDirectory
+                                              inDomain:NSUserDomainMask
+                                     appropriateForURL:destination.URLByDeletingLastPathComponent
+                                                create:YES error:&error];
+    if (temporaryDirectory) {
+        NSURL *copy = [temporaryDirectory URLByAppendingPathComponent:destination.lastPathComponent];
+        if ([files copyItemAtURL:source toURL:copy error:&error]) {
+            // A fresh path URL avoids reusing the identity cached before the copy.
+            NSURL *currentReference = [NSURL fileURLWithPath:source.path].fileReferenceURL;
+            if (GAFontFileItemType(copy, &error) != S_IFREG || ![currentReference isEqual:reference]) {
+                if (!error)
+                    error = GAUnavailableFontError(openedURL);
+            } else {
+                int result = replace
+                    ? rename(copy.fileSystemRepresentation, destination.fileSystemRepresentation)
+                    : renamex_np(copy.fileSystemRepresentation, destination.fileSystemRepresentation, RENAME_EXCL);
+                if (result != 0) {
+                    int code = errno;
+                    error = [NSError errorWithDomain:NSPOSIXErrorDomain code:code
+                                            userInfo:@{NSURLErrorKey: destination}];
+                }
+            }
+        }
+        [files removeItemAtURL:temporaryDirectory error:NULL];
+    }
+    return error;
+}
+
+#pragma mark - Font resources and instances
 
 @interface GAFontInstance ()
 @property (nonatomic, copy, readwrite) NSString *name;

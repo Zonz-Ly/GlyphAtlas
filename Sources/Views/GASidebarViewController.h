@@ -13,10 +13,8 @@ typedef NS_ENUM(NSInteger, GAPendingSelectionScroll) {
 @property (nonatomic, copy, nullable) void (^onTextChanged)(void);
 @property (nonatomic, copy, nullable) void (^onInputUndoRedo)(void);
 @property (nonatomic, copy, nullable) void (^onSelectionChanged)(GAGlyphVariant * _Nullable variant, BOOL quickReveal);
-@property (nonatomic, copy, nullable) void (^onGlyphActivated)(GACharacterGroup *group, GAGlyphVariant *variant);
-/// Shift+Return or Shift+double-click: inserts the activated glyph after its
-/// own source range instead of replacing the glyph already there.
-@property (nonatomic, copy, nullable) void (^onGlyphShiftActivated)(GACharacterGroup *group, GAGlyphVariant *variant);
+/// Shift+Return and Shift+double-click insert after the row's source range.
+@property (nonatomic, copy, nullable) void (^onGlyphActivated)(GACharacterGroup *group, GAGlyphVariant *variant, BOOL insert);
 @property (nonatomic, readonly) NSString *text;
 @property (nonatomic, readonly) NSString *selectedGlyphSourceText;
 @property (nonatomic, readonly) NSAttributedString *attributedText;
@@ -32,7 +30,7 @@ typedef NS_ENUM(NSInteger, GAPendingSelectionScroll) {
 /// Replaces the whole input through its native editor, retaining native undo
 /// and the existing plain-text/newline conversion.
 - (void)replaceInputText:(NSString *)text;
-- (void)setGroups:(NSArray<GACharacterGroup *> *)groups;
+- (void)clearGroups;
 /// Publishes a text/list snapshot, preserving visible rows across source edits.
 /// A selected temporary row is rebound while its source and parent survive.
 - (void)updateGroups:(NSArray<GACharacterGroup *> *)groups
