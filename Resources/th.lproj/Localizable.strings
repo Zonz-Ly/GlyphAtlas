@@ -77,6 +77,8 @@
 "Copy" = "คัดลอก";
 "Top" = "บน";
 "Redo" = "ทำกลับมาใหม่";
+"Add Glyph" = "เพิ่มรูปอักขระ";
+"Replace Glyph" = "แทนที่รูปอักขระ";
 "Open Recent" = "เปิดล่าสุด";
 "Show All" = "แสดงทั้งหมด";
 "Named Instance" = "อินสแตนซ์ที่มีชื่อ";
@@ -128,6 +130,7 @@
 "Restore to Defaults" = "กู้คืนกลับเป็นค่าเริ่มต้น";
 "Text Decorations" = "การตกแต่งข้อความ";
 "Filter by Feature" = "กรองตามคุณสมบัติ";
+"No Features to Filter" = "ไม่มีคุณสมบัติให้กรอง";
 "No Feature" = "ไม่มีคุณสมบัติ";
 "Switch to All Glyphs to enable" = "สลับไปที่ “รูปอักขระทั้งหมด” เพื่อเปิดใช้งาน";
 "Switch to Single Glyph or Multi-Character to enable" = "สลับไปที่ “รูปอักขระเดี่ยว” หรือ “หลายอักขระ” เพื่อเปิดใช้งาน";

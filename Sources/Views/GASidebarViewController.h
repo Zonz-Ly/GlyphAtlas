@@ -11,6 +11,7 @@ typedef NS_ENUM(NSInteger, GAPendingSelectionScroll) {
 @interface GASidebarViewController : NSViewController
 
 @property (nonatomic, copy, nullable) void (^onTextChanged)(void);
+@property (nonatomic, copy, nullable) void (^onInputUndoRedo)(void);
 @property (nonatomic, copy, nullable) void (^onSelectionChanged)(GAGlyphVariant * _Nullable variant);
 @property (nonatomic, copy, nullable) void (^onGlyphActivated)(GACharacterGroup *group, GAGlyphVariant *variant);
 /// Shift+Return or Shift+double-click: inserts the activated glyph after its
@@ -26,6 +27,7 @@ typedef NS_ENUM(NSInteger, GAPendingSelectionScroll) {
 @property (nonatomic, readonly, getter=isInputFocused) BOOL inputFocused;
 
 - (void)setAttributedText:(NSAttributedString *)attributedText;
+- (BOOL)commitGlyphInput:(NSAttributedString *)attributedText actionName:(NSString *)actionName;
 /// Replaces the whole input through its native editor, retaining native undo
 /// and the existing plain-text/newline conversion.
 - (void)replaceInputText:(NSString *)text;
@@ -55,7 +57,8 @@ typedef NS_ENUM(NSInteger, GAPendingSelectionScroll) {
 /// Appends text and optionally marks it as a selection run. Returns the range
 /// of the appended text, or NSMakeRange(NSNotFound, 0) when nothing was added.
 - (NSRange)appendInputString:(NSString *)string
-                   selection:(nullable GAGlyphSelection *)selection;
+                   selection:(nullable GAGlyphSelection *)selection
+                  actionName:(NSString *)actionName;
 /// Returns the custom field editor when \c control is the search field, so
 /// the window can keep line breaks as marked U+23CE characters.
 - (nullable NSTextView *)fieldEditorForControl:(id _Nullable)control;

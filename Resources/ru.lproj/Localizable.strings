@@ -29,6 +29,8 @@
 "Edit" = "Правка";
 "Undo" = "Отменить";
 "Redo" = "Повторить";
+"Add Glyph" = "Добавить глиф";
+"Replace Glyph" = "Заменить глиф";
 "Open" = "Открыть";
 "Zoom In" = "Увеличить";
 "Zoom Out" = "Уменьшить";
@@ -131,6 +133,7 @@
 "Restore to Defaults" = "Восстановить настройки по умолчанию";
 "Text Decorations" = "Оформление текста";
 "Filter by Feature" = "Фильтр по функции";
+"No Features to Filter" = "Нет функций для фильтрации";
 "No Feature" = "Без функции";
 "Switch to All Glyphs to enable" = "Для включения переключитесь на «Все глифы»";
 "Switch to Single Glyph or Multi-Character to enable" = "Для включения переключитесь на «Один глиф» или «Несколько символов»";

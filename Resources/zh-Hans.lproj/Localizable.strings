@@ -30,6 +30,8 @@
 "Edit" = "编辑";
 "Undo" = "撤销";
 "Redo" = "重做";
+"Add Glyph" = "添加字形";
+"Replace Glyph" = "替换字形";
 "Open" = "打开";
 "Zoom In" = "放大";
 "Zoom Out" = "缩小";
@@ -134,6 +136,7 @@
 "Restore to Defaults" = "恢复默认";
 "Text Decorations" = "文字装饰";
 "Filter by Feature" = "筛选特性";
+"No Features to Filter" = "没有可筛选的特性";
 "No Feature" = "无特性";
 "Switch to All Glyphs to enable" = "切换到全部字来启用";
 "Switch to Single Glyph or Multi-Character to enable" = "切换到单字形或多字符来启用";

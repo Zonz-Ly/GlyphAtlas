@@ -29,6 +29,8 @@
 "Edit" = "Édition";
 "Undo" = "Annuler";
 "Redo" = "Rétablir";
+"Add Glyph" = "Ajouter un glyphe";
+"Replace Glyph" = "Remplacer un glyphe";
 "Open" = "Ouvrir";
 "Zoom In" = "Agrandir";
 "Zoom Out" = "Réduire";
@@ -133,6 +135,7 @@
 "Restore to Defaults" = "Restaurer les valeurs par défaut";
 "Text Decorations" = "Décoration du texte";
 "Filter by Feature" = "Filtrer par fonctionnalité";
+"No Features to Filter" = "Aucune fonctionnalité à filtrer";
 "No Feature" = "Sans fonctionnalité";
 "Switch to All Glyphs to enable" = "Passez à « Tous les glyphes » pour activer cette option";
 "Switch to Single Glyph or Multi-Character to enable" = "Passez à « Glyphe unique » ou « Plusieurs caractères » pour activer cette option";

@@ -29,6 +29,8 @@
 "Edit" = "編集";
 "Undo" = "取り消す";
 "Redo" = "やり直す";
+"Add Glyph" = "グリフを追加";
+"Replace Glyph" = "グリフを置き換え";
 "Open" = "開く";
 "Zoom In" = "拡大";
 "Zoom Out" = "縮小";
@@ -133,6 +135,7 @@
 "Restore to Defaults" = "デフォルトに戻す";
 "Text Decorations" = "テキスト装飾";
 "Filter by Feature" = "字形機能で絞り込む";
+"No Features to Filter" = "絞り込みに使える字形機能がありません";
 "No Feature" = "字形機能なし";
 "Switch to All Glyphs to enable" = "有効にするには「すべてのグリフ」に切り替えてください";
 "Switch to Single Glyph or Multi-Character to enable" = "有効にするには「単一グリフ」または「複数文字」に切り替えてください";

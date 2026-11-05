@@ -111,7 +111,8 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
 @property (nonatomic) NSRange lastNotifiedRange;
 @property (nonatomic, strong, nullable) NSLayoutConstraint *searchTopConstraint;
 @property (nonatomic) BOOL suppressTextChangeCallback;
-@property (nonatomic, strong, nullable) GASearchFieldEditor *searchFieldEditor;
+@property (nonatomic) BOOL inputChangedDuringReplay;
+@property (nonatomic, strong) GASearchFieldEditor *searchFieldEditor;
 /// Rebinds the same visual row sequence, including shifted source ranges,
 /// without reloading the table, changing the selected row or scrolling.
 /// Returns NO if the inventory changed or a normal activation is pending.
@@ -179,6 +180,11 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
     searchCell.searchButtonCell = nil;
     searchCell.cancelButtonCell = nil;
     self.searchField.accessibilityLabel = NSLocalizedString(@"Enter text", @"Enter text");
+    self.searchFieldEditor = [[GASearchFieldEditor alloc] initWithFrame:NSZeroRect];
+    self.searchFieldEditor.fieldEditor = YES;
+    self.searchFieldEditor.allowsUndo = YES;
+    [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(recordFieldEdit:)
+        name:NSTextStorageWillProcessEditingNotification object:self.searchFieldEditor.textStorage];
 
     GASidebarTableView *tableView = [[GASidebarTableView alloc] initWithFrame:NSZeroRect];
     tableView.sidebarController = self;
@@ -347,19 +353,11 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
         NSUInteger length = MIN(selection.length, storage.length - location);
         editor.selectedRange = NSMakeRange(location, length);
     }
-    self.suppressTextChangeCallback = NO;
+    self.suppressTextChangeCallback = wasSuppressed;
 }
 
 - (NSAttributedString *)attributedText {
-    NSAttributedString *text = nil;
-    NSTextView *editor = (NSTextView *)self.searchField.currentEditor;
-    if (editor != nil) {
-        text = editor.textStorage;
-    }
-    if (text == nil) {
-        text = self.searchField.attributedStringValue;
-    }
-    return GAModelTextFromFieldText([self plainCopyOfAttributedText:text]);
+    return GAModelTextFromFieldText([self plainCopyOfAttributedText:self.searchFieldEditor.textStorage]);
 }
 
 - (NSString *)text {
@@ -377,24 +375,70 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
 }
 
 - (void)setAttributedText:(NSAttributedString *)attributedText {
-    NSAttributedString *fieldText = GAFieldTextFromModelText(attributedText);
-    NSAttributedString *normalized = [self plainCopyOfAttributedText:fieldText];
+    NSAttributedString *normalized = [self plainCopyOfAttributedText:GAFieldTextFromModelText(attributedText)];
     if (![self.trackedFieldText isEqualToString:normalized.string]) {
         self.displayedSourceEdits = nil;
     }
     NSTextView *editor = (NSTextView *)self.searchField.currentEditor;
     NSRange selection = editor != nil ? editor.selectedRange : NSMakeRange(NSNotFound, 0);
     self.suppressTextChangeCallback = YES;
-    self.searchField.attributedStringValue = normalized;
+    [self.searchFieldEditor.textStorage setAttributedString:normalized];
     if (editor != nil && selection.location != NSNotFound) {
         NSUInteger location = MIN(selection.location, normalized.length);
         NSUInteger length = MIN(selection.length, normalized.length - location);
         editor.selectedRange = NSMakeRange(location, length);
     }
     self.suppressTextChangeCallback = NO;
-    if (editor != nil) {
-        [self prepareFieldEditor];
+    [self syncDetachedInput];
+}
+
+- (void)syncDetachedInput {
+    if (self.searchField.currentEditor == nil) {
+        self.searchField.attributedStringValue = [self.searchFieldEditor.textStorage copy];
     }
+}
+
+- (BOOL)commitGlyphInput:(NSAttributedString *)attributedText actionName:(NSString *)actionName {
+    GASearchFieldEditor *editor = self.searchFieldEditor;
+    if (editor.hasMarkedText) return NO;
+    NSAttributedString *replacement = [self plainCopyOfAttributedText:GAFieldTextFromModelText(attributedText)];
+    NSTextStorage *storage = editor.textStorage;
+    if ([storage isEqualToAttributedString:replacement]) return YES;
+
+    NSRange all = NSMakeRange(0, storage.length);
+    NSRange selection = editor.selectedRange;
+    BOOL changesCharacters = ![storage.string isEqualToString:replacement.string];
+    NSUndoManager *undoManager = editor.undoManager;
+    BOOL registersUndo = undoManager.undoRegistrationEnabled;
+    [editor breakUndoCoalescing];
+    if (registersUndo) [undoManager beginUndoGrouping];
+    self.suppressTextChangeCallback = YES;
+    BOOL applied = [editor shouldChangeTextInRange:all
+                               replacementString:changesCharacters ? replacement.string : nil];
+    if (applied) {
+        if (changesCharacters) {
+            self.displayedSourceEdits = nil;
+            [storage replaceCharactersInRange:all withAttributedString:replacement];
+        } else {
+            [storage beginEditing];
+            [replacement enumerateAttributesInRange:all options:0
+                usingBlock:^(NSDictionary<NSAttributedStringKey, id> *attributes, NSRange range, BOOL *stop) {
+                    (void)stop;
+                    [storage setAttributes:attributes range:range];
+                }];
+            [storage endEditing];
+        }
+        [editor didChangeText];
+        if (self.searchField.currentEditor == editor && selection.location != NSNotFound) {
+            NSUInteger location = MIN(selection.location, storage.length);
+            editor.selectedRange = NSMakeRange(location, MIN(selection.length, storage.length - location));
+        }
+        if (registersUndo) [undoManager setActionName:actionName];
+    }
+    self.suppressTextChangeCallback = NO;
+    if (registersUndo) [undoManager endUndoGrouping];
+    if (applied) [self syncDetachedInput];
+    return applied;
 }
 
 - (void)replaceInputText:(NSString *)text {
@@ -485,7 +529,8 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
 }
 
 - (NSRange)appendInputString:(NSString *)string
-                   selection:(GAGlyphSelection *)selection {
+                   selection:(GAGlyphSelection *)selection
+                  actionName:(NSString *)actionName {
     if (string.length == 0) {
         return NSMakeRange(NSNotFound, 0);
     }
@@ -495,8 +540,7 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
     if (selection != nil) {
         [text addAttribute:GAGlyphSelectionAttributeName value:selection range:range];
     }
-    [self setAttributedText:text];
-    return range;
+    return [self commitGlyphInput:text actionName:actionName] ? range : NSMakeRange(NSNotFound, 0);
 }
 
 - (void)focusInput {
@@ -517,24 +561,40 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
     if (control != self.searchField) {
         return nil;
     }
-    if (self.searchFieldEditor == nil) {
-        GASearchFieldEditor *editor = [[GASearchFieldEditor alloc] initWithFrame:NSZeroRect];
-        editor.fieldEditor = YES;
-        editor.allowsUndo = YES;
-        self.searchFieldEditor = editor;
-        [NSNotificationCenter.defaultCenter addObserver:self
-            selector:@selector(recordFieldEdit:) name:NSTextStorageWillProcessEditingNotification
-            object:editor.textStorage];
+    NSUndoManager *manager = self.searchField.window.undoManager;
+    NSUndoManager *previousManager = self.searchFieldEditor.inputUndoManager;
+    if (manager != previousManager) {
+        NSNotificationCenter *center = NSNotificationCenter.defaultCenter;
+        for (NSNotificationName name in @[NSUndoManagerDidUndoChangeNotification,
+                                           NSUndoManagerDidRedoChangeNotification]) {
+            if (previousManager) [center removeObserver:self name:name object:previousManager];
+            if (manager) [center addObserver:self selector:@selector(didReplayInputEdit:) name:name object:manager];
+        }
+        self.searchFieldEditor.inputUndoManager = manager;
     }
     return self.searchFieldEditor;
 }
 
 - (NSString *)currentFieldText {
-    return self.searchField.currentEditor.string ?: self.searchField.stringValue;
+    return self.searchFieldEditor.string;
+}
+
+- (void)didReplayInputEdit:(NSNotification *)notification {
+    if (!self.inputChangedDuringReplay) return;
+    self.inputChangedDuringReplay = NO;
+    self.displayedSourceEdits = nil;
+    [self syncDetachedInput];
+    [self prepareFieldEditor];
+    if (self.onInputUndoRedo) self.onInputUndoRedo();
 }
 
 - (void)recordFieldEdit:(NSNotification *)notification {
     NSTextStorage *storage = notification.object;
+    NSUndoManager *manager = self.searchFieldEditor.undoManager;
+    if (manager.isUndoing || manager.isRedoing) {
+        self.inputChangedDuringReplay = YES;
+        return;
+    }
     if (!self.displayedSourceEdits || self.suppressTextChangeCallback ||
         self.searchField.currentEditor != self.searchFieldEditor ||
         !(storage.editedMask & NSTextStorageEditedCharacters)) {
@@ -590,7 +650,8 @@ static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
         return;
     }
     NSTextView *editor = (NSTextView *)self.searchField.currentEditor;
-    if (editor != nil && editor.hasMarkedText) {
+    NSUndoManager *manager = self.searchFieldEditor.undoManager;
+    if (editor.hasMarkedText || manager.isUndoing || manager.isRedoing) {
         return;
     }
     [self prepareFieldEditor];

@@ -5,6 +5,7 @@ NS_ASSUME_NONNULL_BEGIN
 @interface GASearchField : NSSearchField
 @end
 @interface GASearchFieldEditor : NSTextView
+@property (nonatomic, weak, nullable) NSUndoManager *inputUndoManager;
 @end
 
 FOUNDATION_EXPORT BOOL GAModifiersAre(NSEventModifierFlags modifiers,

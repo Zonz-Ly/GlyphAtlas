@@ -77,6 +77,8 @@
 "Copy" = "Sao chép";
 "Top" = "Trên";
 "Redo" = "Làm lại";
+"Add Glyph" = "Thêm glyph";
+"Replace Glyph" = "Thay thế glyph";
 "Open Recent" = "Mở Mục gần đây";
 "Show All" = "Hiển thị tất cả";
 "Named Instance" = "Phiên bản có tên";
@@ -128,6 +130,7 @@
 "Restore to Defaults" = "Khôi phục giá trị mặc định";
 "Text Decorations" = "Trang trí văn bản";
 "Filter by Feature" = "Lọc theo tính năng";
+"No Features to Filter" = "Không có tính năng để lọc";
 "No Feature" = "Không có tính năng";
 "Switch to All Glyphs to enable" = "Chuyển sang “Tất cả glyph” để bật";
 "Switch to Single Glyph or Multi-Character to enable" = "Chuyển sang “Một glyph” hoặc “Nhiều ký tự” để bật";

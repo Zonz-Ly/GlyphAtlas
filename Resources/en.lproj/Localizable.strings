@@ -29,6 +29,8 @@
 "Edit" = "Edit";
 "Undo" = "Undo";
 "Redo" = "Redo";
+"Add Glyph" = "Add Glyph";
+"Replace Glyph" = "Replace Glyph";
 "Open" = "Open";
 "Zoom In" = "Zoom In";
 "Zoom Out" = "Zoom Out";
@@ -131,6 +133,7 @@
 "Restore to Defaults" = "Restore to Defaults";
 "Text Decorations" = "Text Decorations";
 "Filter by Feature" = "Filter by Feature";
+"No Features to Filter" = "No Features to Filter";
 "No Feature" = "No Feature";
 "Switch to All Glyphs to enable" = "Switch to All Glyphs to enable";
 "Switch to Single Glyph or Multi-Character to enable" = "Switch to Single Glyph or Multi-Character to enable";

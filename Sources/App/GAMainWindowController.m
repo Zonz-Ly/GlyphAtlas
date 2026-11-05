@@ -346,6 +346,15 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     self.sidebarViewController.onTextChanged = ^{
         [weakSelf scheduleAnalysis];
     };
+    self.sidebarViewController.onInputUndoRedo = ^{
+        GAMainWindowController *controller = weakSelf;
+        controller.pendingGlyphEdit = nil;
+        controller.appendRevealPending = NO;
+        [controller.sidebarViewController selectGlyphKeyAfterNextReload:nil
+                                                             textRange:NSMakeRange(NSNotFound, 0)
+                                                                scroll:GAPendingSelectionScrollGroup];
+        [controller scheduleAnalysis];
+    };
     self.sidebarViewController.onSelectionChanged = ^(GAGlyphVariant *variant) {
         [weakSelf cancelLayoutLookup];
         weakSelf.lastSelectedVariant = variant;
@@ -607,19 +616,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     [self.detailViewController setFeatureSettings:self.fontFeatures.settings ?: @[]];
 }
 
-- (void)registerUndoForGlyphEditFromText:(NSAttributedString *)text {
-    [self.window.undoManager registerUndoWithTarget:self handler:^(GAMainWindowController *target) {
-        [target registerUndoForGlyphEditFromText:target.sidebarViewController.attributedText];
-        target.pendingGlyphEdit = nil;
-        target.appendRevealPending = NO;
-        [target.sidebarViewController selectGlyphKeyAfterNextReload:nil
-                                                           textRange:NSMakeRange(NSNotFound, 0)
-                                                              scroll:GAPendingSelectionScrollGroup];
-        [target.sidebarViewController setAttributedText:text];
-        [target scheduleAnalysis];
-    }];
-}
-
 - (void)appendAllGlyphEntry:(GAAllGlyphEntry *)entry {
     NSNumber *scalar = GAInputScalarForGlyph(entry.unicodeScalars);
     BOOL needsSelection = scalar == nil;
@@ -646,13 +642,12 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
                                                   featureSources:@[]
                                                         ligature:NO];
     }
-    NSAttributedString *before = self.sidebarViewController.attributedText;
     NSRange range = [self.sidebarViewController appendInputString:string
-                                                       selection:selection];
+                                                       selection:selection
+                                                      actionName:NSLocalizedString(@"Add Glyph", @"Undo action for adding a glyph")];
     if (range.location == NSNotFound) {
         return;
     }
-    [self registerUndoForGlyphEditFromText:before];
     self.appendRevealPending = YES;
     [self.sidebarViewController selectGlyphKeyAfterNextReload:entry.glyphID.stringValue
                                                     textRange:range
@@ -1224,12 +1219,15 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
             [attributedText replaceCharactersInRange:range withString:payload];
             range.length = payload.length;
         }
+    }
+    NSString *actionName = insert
+        ? NSLocalizedString(@"Add Glyph", @"Undo action for adding a glyph")
+        : NSLocalizedString(@"Replace Glyph", @"Undo action for replacing a glyph");
+    if (![self.sidebarViewController commitGlyphInput:attributedText actionName:actionName]) return;
+    if (!insert) {
         [self.sidebarViewController selectGlyphKeyAfterNextReload:variant.glyphKey textRange:range
             scroll:GAPendingSelectionScrollSelectedToTopIfNeeded];
     }
-    if (![attributedText isEqualToAttributedString:currentText])
-        [self registerUndoForGlyphEditFromText:currentText];
-    [self.sidebarViewController setAttributedText:attributedText];
     [self scheduleAnalysis];
 }
 

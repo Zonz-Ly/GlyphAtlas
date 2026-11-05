@@ -128,6 +128,10 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
 @property (nonatomic, strong, nullable) NSOpenPanel *openPanel;
 @property (nonatomic, strong, nullable) NSURL *pendingOpenPanelDirectory;
 @property (nonatomic, strong, nullable) NSMenu *recentMenu;
+@property(nonatomic, strong) NSMenu *fileMenu;
+@property(nonatomic, strong) NSMenuItem *openFontItem;
+@property(nonatomic, strong) NSMenu *openFontFoldersMenu;
+@property(nonatomic, strong, nullable) NSTimer *openFontMenuTimer;
 @property(nonatomic, strong) NSMenu *editMenu;
 @property(nonatomic, strong) NSMenu *viewMenu;
 @property(nonatomic, strong) NSUserDefaults *preferences;
@@ -460,7 +464,56 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
 
 #pragma mark - Menu delegate
 
+- (void)updateOpenFontMenuItemForModifierFlags:(NSEventModifierFlags)flags {
+    BOOL optionHeld = (flags & NSEventModifierFlagOption) != 0;
+    NSMenuItem *item = self.openFontItem;
+    if (item.hasSubmenu == optionHeld) return;
+    // Keep the row in place while AppKit is tracking the menu.
+    if (optionHeld) {
+        item.title = self.openFontFoldersMenu.title;
+        item.keyEquivalent = @"";
+        item.target = nil;
+        item.action = NULL;
+        item.submenu = self.openFontFoldersMenu;
+    } else {
+        item.submenu = nil;
+        item.title = [NSLocalizedString(@"Open Font", @"Open font menu command") stringByAppendingString:@"…"];
+        item.target = self;
+        item.action = @selector(openFont:);
+        item.keyEquivalent = @"o";
+    }
+}
+
+- (void)menuWillOpen:(NSMenu *)menu {
+    if (menu != self.fileMenu) return;
+    // Menu tracking consumes modifier events before local event monitors see them.
+    __weak typeof(self) weakSelf = self;
+    self.openFontMenuTimer = [NSTimer timerWithTimeInterval:1.0 / 60.0 repeats:YES
+        block:^(NSTimer *timer) {
+            (void)timer;
+            [weakSelf updateOpenFontMenuItemForModifierFlags:NSEvent.modifierFlags];
+        }];
+    [NSRunLoop.mainRunLoop addTimer:self.openFontMenuTimer forMode:NSEventTrackingRunLoopMode];
+    [NSRunLoop.mainRunLoop addTimer:self.openFontMenuTimer forMode:NSDefaultRunLoopMode];
+}
+
+- (void)menuDidClose:(NSMenu *)menu {
+    if (menu != self.fileMenu) return;
+    [self.openFontMenuTimer invalidate];
+    self.openFontMenuTimer = nil;
+    // Restore the ordinary shortcut after AppKit's closing callback.
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (self.openFontMenuTimer == nil) [self updateOpenFontMenuItemForModifierFlags:0];
+    });
+}
+
 - (void)menuNeedsUpdate:(NSMenu *)menu {
+    if (menu == self.fileMenu) {
+        if (menu.propertiesToUpdate & NSMenuPropertyItemTitle) {
+            [self updateOpenFontMenuItemForModifierFlags:NSEvent.modifierFlags];
+        }
+        return;
+    }
     if (menu == self.editMenu) {
         // Keep the command attached to the window that opened the Edit menu;
         // ending menu tracking or another field editor can change keyWindow.
@@ -623,20 +676,20 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
                                         keyEquivalent:@""];
     NSMenu *fileMenu = [[NSMenu alloc] initWithTitle:NSLocalizedString(@"File", @"File")];
     fileItem.submenu = fileMenu;
+    self.fileMenu = fileMenu;
+    fileMenu.delegate = self;
 
     NSString *openTitle = NSLocalizedString(@"Open Font", @"Open font menu command");
     NSMenuItem *open = [fileMenu
         addItemWithTitle:[openTitle stringByAppendingString:@"…"]
                   action:@selector(openFont:)
-           keyEquivalent:@""];
+           keyEquivalent:@"o"];
     open.target = self;
+    self.openFontItem = open;
 
     NSString *openFromTitle = NSLocalizedString(@"Open Font From", @"Open font folder submenu");
-    NSMenuItem *openFromFolder = [fileMenu addItemWithTitle:openFromTitle action:nil keyEquivalent:@""];
-    openFromFolder.alternate = YES;
-    openFromFolder.keyEquivalentModifierMask = NSEventModifierFlagOption;
     NSMenu *fontFolders = [[NSMenu alloc] initWithTitle:openFromTitle];
-    openFromFolder.submenu = fontFolders;
+    self.openFontFoldersMenu = fontFolders;
     NSArray<NSString *> *folderTitles = @[
         NSLocalizedString(@"Current User", @"Font Book installation location"),
         NSLocalizedString(@"All Users", @"Font Book installation location"),
@@ -649,15 +702,11 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
         item.tag = folder;
     }
 
-    // AppKit clears a submenu's key equivalent. Keep the visible pair matched
-    // and route the shortcuts through separate menu items.
-    for (NSString *key in @[@"o", @"n"]) {
-        NSMenuItem *shortcut = [open copy];
-        shortcut.keyEquivalent = key;
-        shortcut.hidden = YES;
-        shortcut.allowsKeyEquivalentWhenHidden = YES;
-        [fileMenu addItem:shortcut];
-    }
+    NSMenuItem *shortcut = [open copy];
+    shortcut.keyEquivalent = @"n";
+    shortcut.hidden = YES;
+    shortcut.allowsKeyEquivalentWhenHidden = YES;
+    [fileMenu addItem:shortcut];
 
     NSMenuItem *recentItem = [fileMenu addItemWithTitle:NSLocalizedString(@"Open Recent", @"Open Recent")
                                                  action:nil
@@ -1043,6 +1092,13 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
     [menu removeAllItems];
     if (!controller.fontURL || controller.viewMode != GAViewModeAllGlyphs)
         return;
+    NSArray<NSString *> *tags = controller.allGlyphFeatureTags;
+    if (!tags.count) {
+        NSMenuItem *empty = [menu addItemWithTitle:NSLocalizedString(@"No Features to Filter", @"Empty glyph filter menu")
+            action:nil keyEquivalent:@""];
+        empty.enabled = NO;
+        return;
+    }
     NSMenuItem *all = [menu addItemWithTitle:NSLocalizedString(@"All Glyphs", @"All Glyphs")
                                     action:@selector(chooseGlyphFeatureFilter:) keyEquivalent:@""];
     all.target = self;
@@ -1053,8 +1109,7 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
     unfeatured.representedObject = @"";
     unfeatured.state = [controller.allGlyphFeatureTag isEqualToString:@""]
         ? NSControlStateValueOn : NSControlStateValueOff;
-    NSArray<NSString *> *tags = controller.allGlyphFeatureTags;
-    if (tags.count) [menu addItem:NSMenuItem.separatorItem];
+    [menu addItem:NSMenuItem.separatorItem];
     for (NSString *tag in tags) {
         NSMenuItem *item = [menu addItemWithTitle:tag action:@selector(chooseGlyphFeatureFilter:)
                                   keyEquivalent:@""];
@@ -1141,9 +1196,15 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
 #pragma mark - Active window
 
 - (GAMainWindowController *)activeMainWindowController {
-    NSWindowController *controller = NSApp.keyWindow.windowController;
+    NSWindow *keyWindow = NSApp.keyWindow;
+    NSWindowController *controller = keyWindow.windowController;
     if ([controller isKindOfClass:GAMainWindowController.class]) {
         return (GAMainWindowController *)controller;
+    }
+    // The modeless chooser can be key while a font window remains main.
+    if (self.openPanel &&
+        (!keyWindow || keyWindow == self.openPanel || keyWindow.sheetParent == self.openPanel)) {
+        return nil;
     }
     controller = NSApp.mainWindow.windowController;
     if ([controller isKindOfClass:GAMainWindowController.class]) return (GAMainWindowController *)controller;

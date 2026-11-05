@@ -29,6 +29,8 @@
 "Edit" = "Editar";
 "Undo" = "Desfazer";
 "Redo" = "Refazer";
+"Add Glyph" = "Adicionar Glifo";
+"Replace Glyph" = "Substituir Glifo";
 "Open" = "Abrir";
 "Zoom In" = "Ampliar";
 "Zoom Out" = "Reduzir";
@@ -131,6 +133,7 @@
 "Restore to Defaults" = "Restaurar aos Padrões";
 "Text Decorations" = "Decoração do Texto";
 "Filter by Feature" = "Filtrar por recurso";
+"No Features to Filter" = "Nenhum recurso para filtrar";
 "No Feature" = "Sem recurso";
 "Switch to All Glyphs to enable" = "Alterne para “Todos os Glifos” para ativar";
 "Switch to Single Glyph or Multi-Character to enable" = "Alterne para “Glifo Único” ou “Vários Caracteres” para ativar";

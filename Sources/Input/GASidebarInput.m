@@ -138,7 +138,15 @@ NSAttributedString *GAFieldTextFromModelText(NSAttributedString *modelText) {
 /// Converts newlines before the single-line field editor can turn them into
 /// spaces. A newline is inserted as a marked U+23CE, so the field stays one
 /// line tall and the character can be told apart from a literal U+23CE.
+@interface GASearchFieldEditor ()
+@property (nonatomic) BOOL transitioningFieldEditor;
+@end
+
 @implementation GASearchFieldEditor
+
+- (NSUndoManager *)undoManager {
+  return self.transitioningFieldEditor ? nil : self.inputUndoManager;
+}
 
 - (void)updateFontPanel {
   // This plain-text input does not synchronize the shared font and color panels.
@@ -269,6 +277,37 @@ static const CGFloat GASearchFieldTextInset = 9.0;
 @end
 
 @implementation GASearchFieldCell
+
+// AppKit clears and refills the editor during focus changes. Keep that
+// housekeeping out of the undo history for the retained text storage.
+- (void)editWithFrame:(NSRect)rect inView:(NSView *)view editor:(NSText *)editor
+             delegate:(id)delegate event:(NSEvent *)event {
+  GASearchFieldEditor *input = (GASearchFieldEditor *)editor;
+  BOOL wasTransitioning = input.transitioningFieldEditor;
+  input.transitioningFieldEditor = YES;
+  [super editWithFrame:rect inView:view editor:editor delegate:delegate event:event];
+  input.transitioningFieldEditor = wasTransitioning;
+}
+
+- (void)selectWithFrame:(NSRect)rect inView:(NSView *)view editor:(NSText *)editor
+              delegate:(id)delegate start:(NSInteger)start length:(NSInteger)length {
+  GASearchFieldEditor *input = (GASearchFieldEditor *)editor;
+  BOOL wasTransitioning = input.transitioningFieldEditor;
+  input.transitioningFieldEditor = YES;
+  [super selectWithFrame:rect inView:view editor:editor delegate:delegate start:start length:length];
+  input.transitioningFieldEditor = wasTransitioning;
+}
+
+- (void)endEditing:(NSText *)editor {
+  GASearchFieldEditor *input = (GASearchFieldEditor *)editor;
+  NSTextStorage *storage = input.textStorage;
+  NSAttributedString *text = [storage copy];
+  BOOL wasTransitioning = input.transitioningFieldEditor;
+  input.transitioningFieldEditor = YES;
+  [super endEditing:editor];
+  [storage setAttributedString:text];
+  input.transitioningFieldEditor = wasTransitioning;
+}
 
 - (NSRect)rectByInsettingTextEdges:(NSRect)rect bounds:(NSRect)bounds {
   CGFloat inset = GAUsesMacOS26Layout() ? 12.0 : GASearchFieldTextInset;

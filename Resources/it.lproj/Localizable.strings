@@ -29,6 +29,8 @@
 "Edit" = "Modifica";
 "Undo" = "Annulla";
 "Redo" = "Ripristina";
+"Add Glyph" = "Aggiungi glifo";
+"Replace Glyph" = "Sostituisci glifo";
 "Open" = "Apri";
 "Zoom In" = "Ingrandisci";
 "Zoom Out" = "Riduci";
@@ -131,6 +133,7 @@
 "Restore to Defaults" = "Ripristina default";
 "Text Decorations" = "Decorazioni del testo";
 "Filter by Feature" = "Filtra per funzione";
+"No Features to Filter" = "Nessuna funzione per il filtro";
 "No Feature" = "Senza funzione";
 "Switch to All Glyphs to enable" = "Passa a «Tutti i glifi» per attivare questa opzione";
 "Switch to Single Glyph or Multi-Character to enable" = "Passa a «Glifo singolo» o «Più caratteri» per attivare questa opzione";
