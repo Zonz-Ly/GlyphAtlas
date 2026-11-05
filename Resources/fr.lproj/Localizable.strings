@@ -1,13 +1,13 @@
 /* Standard commands follow macOS terminology. App-specific text and Help are translated here. */
 
 "File" = "Fichier";
-"Copy to Font Book" = "Copier vers Livre des polices";
+"Copy to Font Book" = "Copier dans le Livre des polices";
 "Copy to All Users" = "Copier pour tous les utilisateurs";
-"Current User" = "Utilisateur actif";
-"All Users" = "Tous les utilisateurs";
-"System Fonts" = "Polices système";
+"Current User…" = "Utilisateur actif…";
+"All Users…" = "Tous les utilisateurs…";
+"System Fonts…" = "Polices système…";
 "Open Recent" = "Ouvrir l’élément récent";
-"Recent Folders" = "Dossiers récents…";
+"Recent Folders" = "Récents…";
 "Clear Menu" = "Effacer le menu";
 "Close Window" = "Fermer la fenêtre";
 "Cut" = "Couper";

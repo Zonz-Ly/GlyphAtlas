@@ -3,11 +3,11 @@
 "File" = "File";
 "Copy to Font Book" = "Copy to Font Book";
 "Copy to All Users" = "Copy to All Users";
-"Current User" = "Current User";
-"All Users" = "All Users";
-"System Fonts" = "System Fonts";
+"Current User…" = "Current User…";
+"All Users…" = "All Users…";
+"System Fonts…" = "System Fonts…";
 "Open Recent" = "Open Recent";
-"Recent Folders" = "Recent Folders…";
+"Recent Folders" = "Recents…";
 "Clear Menu" = "Clear Menu";
 "Close Window" = "Close Window";
 "Cut" = "Cut";
@@ -108,6 +108,8 @@
 "Save Current Palette" = "Save Current Palette";
 "Clear All Saved Palettes" = "Clear All Saved Palettes";
 "No Saved Palettes" = "No Saved Palettes";
+"%@: %@" = "%@: %@";
+"%@ (%.0f%%)" = "%@ (%.0f%%)";
 "Follow System" = "Follow System";
 "Glyph…" = "Glyph…";
 "Background…" = "Background…";

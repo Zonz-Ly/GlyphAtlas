@@ -3,11 +3,11 @@
 "File" = "Ablage";
 "Copy to Font Book" = "In die Schriftsammlung kopieren";
 "Copy to All Users" = "Für alle Benutzer:innen kopieren";
-"Current User" = "Aktuelle:r Benutzer:in";
-"All Users" = "Alle Benutzer:innen";
-"System Fonts" = "Systemschriften";
+"Current User…" = "Aktuelle:r Benutzer:in …";
+"All Users…" = "Alle Benutzer:innen …";
+"System Fonts…" = "Systemschriften …";
 "Open Recent" = "Benutzte Dokumente";
-"Recent Folders" = "Benutzte Ordner …";
+"Recent Folders" = "Zuletzt benutzt …";
 "Clear Menu" = "Einträge löschen";
 "Close Window" = "Fenster schließen";
 "Cut" = "Ausschneiden";
@@ -70,7 +70,7 @@
 "Help.01" = "Wähle in der Menüleiste „Schrift aus Ordner öffnen“, um eine Schrift direkt aus einem Schriftordner zu öffnen. Du kannst die Schrift auch auf das App-Symbol oder in ein Fenster mit einer geöffneten Schrift ziehen oder Glyph Atlas als Standard-App für Schriftdateien festlegen. Zuletzt geöffnete Dateien sind ebenfalls verfügbar.";
 "Help.02" = "Über die Menüleiste kannst du die im aktuellen Fenster geöffnete Schrift mit einem Klick in deinen Benutzerordner für Schriften kopieren. Halte ⌥ gedrückt, um die Schrift in den Schriftenordner für alle Benutzer:innen zu kopieren.";
 "Help.03" = "Beim Öffnen einer variablen Schrift erscheint neben den Fenstersteuerungen ein Variationsfenster. Ziehe es heraus, damit es geöffnet bleibt. Wähle einen Zahlenwert aus und passe ihn mit ↑/↓ oder ⇧↑/⇧↓ an.";
-"Help.04" = "Gib ein oder mehrere Zeichen in der Seitenleiste ein, um alle zugehörigen Glyphen zu sehen. Mit ⌥⏎ fügst du einen Zeilenumbruch ein. Per Rechtsklick findest du auch „Gespeicherte Texte“, um den aktuellen Text zu speichern oder zuvor gespeicherte Texte schnell einzufügen. Halte in der Menüleiste ⌥ gedrückt, um gespeicherte Texte schnell zu löschen.";
+"Help.04" = "Gib ein oder mehrere Zeichen in der Seitenleiste ein, um alle zugehörigen Glyphen zu sehen. Mit ⌥⏎ fügst du einen Zeilenumbruch ein. Per Rechtsklick findest du auch „Gesicherte Texte“, um den aktuellen Text zu sichern oder zuvor gesicherte Texte schnell einzufügen. Halte in der Menüleiste ⌥ gedrückt, um gesicherte Texte schnell zu löschen.";
 "Help.05" = "Doppelklicke auf eine Glyphe oder wähle sie aus und drücke Return, um die Standardglyphe zu ersetzen und die Alternativen dieser Glyphe anzuzeigen. Halte dabei die Umschalttaste gedrückt, um die Glyphe hinzuzufügen.";
 "Help.06" = "Mit ↑/↓ wechselst du zwischen Glyphen, mit ⌘↑/⌘↓ zwischen Basisglyphen. Mit ⌥↑/⌥↓ springst du zur ersten oder letzten Glyphe der Liste.";
 "Help.07" = "Mit ⌘C kopierst du alle codierten Zeichen der ausgewählten Glyphe.";
@@ -98,9 +98,9 @@
 "Replace" = "Ersetzen";
 
 /* User-saved plain text. */
-"Saved Text" = "Gespeicherte Texte";
+"Saved Text" = "Gesicherte Texte";
 "Save Current Text" = "Aktuellen Text sichern";
-"No Saved Text" = "Keine gespeicherten Texte";
+"No Saved Text" = "Keine gesicherten Texte";
 
 /* Preview colors and native line spacing. */
 "Colors" = "Farben";
@@ -108,22 +108,24 @@
 "Save Current Palette" = "Aktuelle Farbpalette sichern";
 "Clear All Saved Palettes" = "Alle gesicherten Farbpaletten löschen";
 "No Saved Palettes" = "Keine gesicherten Farbpaletten";
+"%@: %@" = "%@: %@";
+"%@ (%.0f%%)" = "%@ (%.0f%%)";
 "Follow System" = "Systemeinstellung verwenden";
-"Glyph…" = "Glyphe…";
-"Background…" = "Hintergrund…";
-"Bounding Box…" = "Begrenzungsrahmen…";
+"Glyph…" = "Glyphe …";
+"Background…" = "Hintergrund …";
+"Bounding Box…" = "Begrenzungsrahmen …";
 "Increase Line Spacing" = "Zeilenabstand vergrößern";
 "Decrease Line Spacing" = "Zeilenabstand verkleinern";
 
 /* Explicit defaults for newly opened font windows. */
 
 /* Saved-text deletion and full screen. */
-"Delete Saved Text" = "Gespeicherte Texte löschen";
-"Clear All Saved Text" = "Alle gespeicherten Texte löschen";
-"Enter Full Screen" = "Vollbild ein";
+"Delete Saved Text" = "Gesicherte Texte löschen";
+"Clear All Saved Text" = "Alle gesicherten Texte löschen";
+"Enter Full Screen" = "Vollbildmodus";
 
 /* Native typography and opening settings. */
-"Typography" = "Typografie ";
+"Typography" = "Typografie";
 "Other" = "Sonstige";
 "No Typography Features" = "Keine Typografiefunktionen";
 "Default Size" = "Standardgröße";
@@ -137,7 +139,7 @@
 "Writing Direction" = "Schreibrichtung";
 "Left to Right" = "Von links nach rechts";
 "Right to Left" = "Von rechts nach links";
-"Outline" = "Kontur";
+"Outline" = "Konturschrift";
 
 "Typesetting Language" = "Sprache für den Schriftsatz";
 "No Selectable Languages" = "Keine Sprachen zur Auswahl";

@@ -1,13 +1,13 @@
 /* Standard commands follow macOS terminology. App-specific text and Help are translated here. */
 
 "File" = "Archivo";
-"Copy to Font Book" = "Copiar a Catálogo Tipográfico";
+"Copy to Font Book" = "Copiar al Catálogo Tipográfico";
 "Copy to All Users" = "Copiar para todos los usuarios";
-"Current User" = "Usuario actual";
-"All Users" = "Todos los usuarios";
-"System Fonts" = "Tipos de letra del sistema";
+"Current User…" = "Usuario actual…";
+"All Users…" = "Todos los usuarios…";
+"System Fonts…" = "Tipos de letra del sistema…";
 "Open Recent" = "Abrir recientes";
-"Recent Folders" = "Carpetas recientes…";
+"Recent Folders" = "Recientes…";
 "Clear Menu" = "Vaciar menú";
 "Close Window" = "Cerrar ventana";
 "Cut" = "Cortar";
@@ -36,10 +36,10 @@
 "Zoom In" = "Acercar";
 "Zoom Out" = "Alejar";
 "Text Alignment" = "Alineación del texto";
-"Left" = "alinear a la izquierda";
-"Center" = "centrar";
-"Right" = "alinear a la derecha";
-"Justified" = "justificar";
+"Left" = "Alinear a la izquierda";
+"Center" = "Centrar";
+"Right" = "Alinear a la derecha";
+"Justified" = "Justificar";
 "Top" = "Alinear por arriba";
 "Bottom" = "Alinear por abajo";
 "About Glyph Atlas" = "Acerca de Glyph Atlas";
@@ -81,7 +81,7 @@
 "Help.12" = "Usa ⌘+/⌘− o un gesto de pellizco en el trackpad para ampliar o reducir los glifos. En Varios caracteres, usa ⌥⌘+/⌥⌘− o un pellizco horizontal para aumentar o reducir los márgenes, y ⌃⌘+/⌃⌘− o un pellizco vertical para aumentar o reducir el interlineado. Pulsa ⌘0 para restaurar el tamaño por omisión.";
 "Help.13" = "La sombra muestra el cuadro delimitador, con la anchura y altura del glifo, además de la altura y el espacio entre líneas de la composición. Pulsa ⌘4 para ocultarlo.";
 "Help.14" = "Se admite el modo oscuro. Pero ten cuidado: hacer clic en un glifo sólido puede deslumbrarte. Puedes cambiar los colores del glifo, de la sombra del cuadro delimitador y del fondo en Colores, en la barra de menús. Elige «Guardar paleta actual» para guardar los colores que has ajustado. Mantén pulsada ⌥ para ver «Eliminar paletas».";
-"Help.15" = "Elige Usar por omisión en la barra de menús para guardar la vista, los colores, el tamaño y otros ajustes de previsualización actuales junto con el tamaño de la ventana. Los archivos de fuentes que abras después usarán estos ajustes. Mantén pulsada ⌥ para elegir Restaurar ajustes por omisión.";
+"Help.15" = "Elige Usar por omisión en la barra de menús para guardar la vista, los colores, el tamaño y otros ajustes de previsualización actuales junto con el tamaño de la ventana. Los archivos de tipos de letra que abras después usarán estos ajustes. Mantén pulsada ⌥ para elegir Restaurar ajustes por omisión.";
 
 /* Variable font controls. */
 "Variable" = "Variable";
@@ -108,6 +108,8 @@
 "Save Current Palette" = "Guardar paleta actual";
 "Clear All Saved Palettes" = "Vaciar la lista de paletas guardadas";
 "No Saved Palettes" = "No hay paletas guardadas";
+"%@: %@" = "%@: %@";
+"%@ (%.0f%%)" = "%@ (%.0f%%)";
 "Follow System" = "Seguir al sistema";
 "Glyph…" = "Glifo…";
 "Background…" = "Fondo…";
@@ -120,7 +122,7 @@
 /* Saved-text deletion and full screen. */
 "Delete Saved Text" = "Eliminar textos guardados";
 "Clear All Saved Text" = "Vaciar la lista de textos guardados";
-"Enter Full Screen" = "Ver a pantalla completa";
+"Enter Full Screen" = "Usar pantalla completa";
 
 /* Native typography and opening settings. */
 "Typography" = "Tipografía";

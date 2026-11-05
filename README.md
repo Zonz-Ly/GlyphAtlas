@@ -13,7 +13,7 @@ A native macOS font and alternate-glyph inspector. Type text to see every altern
 ## Support
 
 - .ttf .otf .ttc .otc .woff .woff2 .dfont
-- English, Chinese, Japanese, Korean, German, French, Spanish, Italian, Brazilian Portuguese, Russian, Vietnamese, Thai.
+- English, Chinese, Japanese, Korean, German, French, Spanish, Italian, Brazilian Portuguese, Russian, Vietnamese, Thai, Arabic, Hindi, Malay.
 
 ## Build
 
@@ -76,7 +76,7 @@ The default build uses the current machine's architecture. Use a flag to select 
 ## 支持
 
 - .ttf .otf .ttc .otc .woff .woff2 .dfont
-- 中文、日文、韓文、英文、德文、法文、西班牙文、義大利文、巴西葡萄牙文、俄文、越南文、泰文。
+- 中文、日文、韓文、英文、德文、法文、西班牙文、義大利文、巴西葡萄牙文、俄文、越南文、泰文、阿拉伯語、印地語、馬來語。
 
 ## 開啟
 

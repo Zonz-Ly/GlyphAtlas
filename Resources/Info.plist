@@ -20,6 +20,9 @@
         <string>ru</string>
         <string>vi</string>
         <string>th</string>
+        <string>ar</string>
+        <string>hi</string>
+        <string>ms</string>
     </array>
     <key>CFBundleExecutable</key>
     <string>GlyphAtlas</string>

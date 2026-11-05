@@ -3,11 +3,11 @@
 "File" = "Arquivo";
 "Copy to Font Book" = "Copiar para o Catálogo de Fontes";
 "Copy to All Users" = "Copiar para Todos os Usuários";
-"Current User" = "Usuário Atual";
-"All Users" = "Todos os Usuários";
-"System Fonts" = "Fontes do Sistema";
+"Current User…" = "Usuário Atual…";
+"All Users…" = "Todos os Usuários…";
+"System Fonts…" = "Fontes do Sistema…";
 "Open Recent" = "Abrir Recente";
-"Recent Folders" = "Pastas recentes…";
+"Recent Folders" = "Recentes…";
 "Clear Menu" = "Limpar Menu";
 "Close Window" = "Fechar Janela";
 "Cut" = "Cortar";
@@ -36,9 +36,9 @@
 "Zoom In" = "Ampliar";
 "Zoom Out" = "Reduzir";
 "Text Alignment" = "Alinhamento do Texto";
-"Left" = "Alinhar à Esquerda";
+"Left" = "Alinhar à esquerda";
 "Center" = "Centralizar";
-"Right" = "Alinhar à Direita";
+"Right" = "Alinhar à direita";
 "Justified" = "Justificar";
 "Top" = "Alinhar acima";
 "Bottom" = "Alinhar abaixo";
@@ -108,6 +108,8 @@
 "Save Current Palette" = "Salvar Paleta Atual";
 "Clear All Saved Palettes" = "Limpar Todas as Paletas Salvas";
 "No Saved Palettes" = "Nenhuma paleta salva";
+"%@: %@" = "%@: %@";
+"%@ (%.0f%%)" = "%@ (%.0f%%)";
 "Follow System" = "Seguir o Sistema";
 "Glyph…" = "Glifo…";
 "Background…" = "Fundo…";

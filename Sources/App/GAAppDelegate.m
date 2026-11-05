@@ -693,12 +693,12 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
     [fontFolders addItem:shortcut];
 
     NSArray<NSString *> *folderTitles = @[
-        NSLocalizedString(@"Current User", @"Font Book installation location"),
-        NSLocalizedString(@"All Users", @"Font Book installation location"),
-        NSLocalizedString(@"System Fonts", @"Fonts included in macOS"),
+        NSLocalizedString(@"Current User…", @"Open the current user's Fonts folder"),
+        NSLocalizedString(@"All Users…", @"Open the shared Fonts folder"),
+        NSLocalizedString(@"System Fonts…", @"Open the macOS system Fonts folder"),
     ];
     for (GAFontFolder folder = GAFontFolderCurrentUser; folder <= GAFontFolderSystem; folder++) {
-        NSMenuItem *item = [fontFolders addItemWithTitle:[folderTitles[folder] stringByAppendingString:@"…"]
+        NSMenuItem *item = [fontFolders addItemWithTitle:folderTitles[folder]
             action:@selector(openFontFromFolder:) keyEquivalent:@""];
         item.target = self;
         item.tag = folder;

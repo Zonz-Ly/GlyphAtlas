@@ -1,0 +1,145 @@
+/* Standard commands follow macOS terminology. App-specific text and Help are translated here. */
+
+"File" = "Fail";
+"Copy to Font Book" = "Salin ke Buku Fon";
+"Copy to All Users" = "Salin untuk Semua Pengguna";
+"Current User…" = "Pengguna Semasa…";
+"All Users…" = "Semua Pengguna…";
+"System Fonts…" = "Fon Sistem…";
+"Open Recent" = "Buka Terbaharu";
+"Recent Folders" = "Terbaru…";
+"Clear Menu" = "Kosongkan Menu";
+"Close Window" = "Tutup Tetingkap";
+"Cut" = "Potong";
+"Copy" = "Salin";
+"Paste" = "Tampal";
+"Delete" = "Padam";
+"Select All" = "Pilih Semua";
+"Underline" = "Garis Bawah";
+"Strikethrough" = "Garis Potong";
+"View" = "Paparan";
+"Window" = "Tetingkap";
+"Minimize" = "Minimumkan";
+"Zoom" = "Zum";
+"Bring All to Front" = "Hantar Semua ke Depan Sekali";
+"Help" = "Bantuan";
+"Cancel" = "Batal";
+"OK" = "OK";
+"Show All" = "Tunjukkan Semua";
+"Services" = "Perkhidmatan";
+"Edit" = "Edit";
+"Undo" = "Buat Asal";
+"Redo" = "Buat Semula";
+"Add Glyph" = "Tambah Glif";
+"Replace Glyph" = "Ganti Glif";
+"Open" = "Buka";
+"Zoom In" = "Zum Masuk";
+"Zoom Out" = "Zum Keluar";
+"Text Alignment" = "Penjajaran Teks";
+"Left" = "Jajar kiri";
+"Center" = "Tengah";
+"Right" = "Jajar kanan";
+"Justified" = "Jajarkan";
+"Top" = "Jajar atas";
+"Bottom" = "Jajar bawah";
+"About Glyph Atlas" = "Perihal Glyph Atlas";
+"Hide Glyph Atlas" = "Sembunyikan Glyph Atlas";
+"Hide Others" = "Sembunyikan App Lain";
+"Quit Glyph Atlas" = "Keluar Glyph Atlas";
+"Glyph Atlas Help" = "Bantuan Glyph Atlas";
+"Open Font From" = "Buka Fon dari";
+"No Recent Fonts" = "Tiada Fon Terbaharu";
+"Single Glyph" = "Glif Tunggal";
+"Multi-Character" = "Berbilang Aksara";
+"All Glyphs" = "Semua Glif";
+"Show Bounding Box" = "Tunjukkan Kotak Sempadan";
+"Bounding Box Zoom In" = "Besarkan Kotak Sempadan";
+"Bounding Box Zoom Out" = "Kecilkan Kotak Sempadan";
+"Vertical" = "Tulisan Menegak";
+"Enter text" = "Masukkan teks";
+"Font Name" = "Nama fon";
+"Font File" = "Fail Fon";
+"Untitled Font" = "Fon Tidak Bertajuk";
+"Choose Font Style" = "Pilih Gaya Fon";
+"Cannot Open Font" = "Tidak Dapat Membuka Fon";
+"This file does not contain a font that CoreText can read." = "Fail ini tidak mengandungi fon yang dapat dibaca oleh CoreText.";
+"Cannot Read Font" = "Tidak Dapat Membaca Fon";
+"CoreText could not create this font." = "CoreText tidak dapat mencipta fon ini.";
+"Bounding Box" = "Kotak Sempadan";
+"Text and alternate glyph list" = "Senarai teks dan glif alternatif";
+"Help.01" = "Gunakan “Buka Fon dari” dalam bar menu untuk membuka fon terus daripada folder fon. Anda juga boleh menyeret fail fon ke ikon app atau ke tetingkap yang sudah membuka fon, atau menetapkan Glyph Atlas sebagai app lalai untuk membuka fail fon. Item yang dibuka baru-baru ini boleh dibuka semula.";
+"Help.02" = "Gunakan bar menu untuk menyalin fon yang dibuka dalam tetingkap semasa ke folder fon pengguna anda dengan satu klik. Tekan dan tahan ⌥ untuk menyalinnya ke folder fon semua pengguna.";
+"Help.03" = "Apabila anda membuka fon boleh ubah, panel variasi muncul di sebelah kawalan tetingkap. Seret panel keluar supaya ia kekal terbuka. Pilih nilai angka dan gunakan ↑/↓ atau ⇧↑/⇧↓ untuk melaraskannya.";
+"Help.04" = "Taip satu aksara atau lebih dalam bar sisi untuk melihat semua glif yang berkaitan. Gunakan ⌥⏎ untuk menyisipkan pemisah baris. Anda juga boleh klik sekunder dan pilih “Teks Disimpan” untuk menyimpan teks semasa atau memasukkan semula teks yang pernah disimpan dengan cepat. Tekan dan tahan ⌥ dalam bar menu untuk memadam teks yang disimpan dengan cepat.";
+"Help.05" = "Klik dua kali pada glif, atau pilih glif itu dan tekan ⏎, untuk menggantikan glif lalai dan melihat glif alternatifnya. Tekan dan tahan ⇧ semasa berbuat demikian untuk menambah glif tersebut.";
+"Help.06" = "Gunakan ↑/↓ untuk bergerak antara glif, ⌘↑/⌘↓ untuk bergerak antara glif asas, dan ⌥↑/⌥↓ untuk melompat ke glif pertama atau terakhir dalam senarai.";
+"Help.07" = "Gunakan ⌘C untuk menyalin semua aksara berkod bagi glif yang dipilih.";
+"Help.08" = "Letakkan penuding di atas lencana Unicode untuk melihat nama aksara yang ditakrifkan oleh piawaian Unicode.";
+"Help.09" = "“Semua Glif” ialah paparan lalai. Klik sekunder untuk menukar paparan, atau tekan ⌘1 untuk “Glif Tunggal”, ⌘2 untuk “Berbilang Aksara” atau ⌘3 untuk “Semua Glif”.";
+"Help.10" = "Dalam “Berbilang Aksara”, klik glif untuk melihat alternatifnya. Klik sekunder atau tekan ⌘5 untuk bertukar antara tulisan mendatar dengan tulisan menegak. “Penjajaran Teks” dan “Tipografi” juga tersedia di sini. Menu “Paparan” dalam bar menu menyediakan lebih banyak pilihan.";
+"Help.11" = "Dalam “Semua Glif”, klik dua kali pada glif untuk menambahkannya pada teks sedia ada. Apabila anda mengklik glif dalam bar sisi, glif itu berkelip dalam “Semua Glif”. Klik sekunder untuk mencari “Tapis mengikut Ciri”.";
+"Help.12" = "Gunakan ⌘+/⌘− atau cubit pada trackpad untuk membesarkan atau mengecilkan glif. Dalam “Berbilang Aksara”, gunakan ⌥⌘+/⌥⌘− atau gerak isyarat cubit mendatar untuk menambah atau mengurangkan jidar, dan ⌃⌘+/⌃⌘− atau gerak isyarat cubit menegak untuk menambah atau mengurangkan jarak baris. Tekan ⌘0 untuk memulihkan saiz lalai.";
+"Help.13" = "Bayang menunjukkan kotak sempadan, termasuk lebar dan tinggi glif serta tinggi dan jarak baris dalam tata letak teks. Tekan ⌘4 untuk menyembunyikannya.";
+"Help.14" = "Mod Gelap disokong. Berhati-hati apabila mengklik glif yang dipenuhi warna kerana cahayanya mungkin menyilaukan. Anda boleh menukar warna glif, bayang kotak sempadan dan latar belakang melalui “Warna” dalam bar menu. Pilih “Simpan Palet Semasa” untuk menyimpan warna anda. Tekan dan tahan ⌥ untuk melihat “Padam Palet”.";
+"Help.15" = "Pilih “Gunakan sebagai Lalai” dalam bar menu untuk menyimpan paparan, warna, saiz dan seting pratonton semasa yang lain, serta saiz tetingkap. Fail fon yang dibuka kemudian akan menggunakan seting ini. Tekan dan tahan ⌥ untuk memilih “Pulihkan ke Lalai”.";
+
+/* Variable font controls. */
+"Variable" = "Boleh Ubah";
+"Named Instance" = "Tika Bernama";
+"Default" = "Lalai";
+"Custom" = "Tersuai";
+
+
+/* Font Book copy alerts. Conflict buttons follow Finder. */
+"An item named “%@” already exists in Font Book." = "Item bernama “%@” sudah wujud dalam Buku Fon.";
+"“%@” is already in Font Book." = "“%@” sudah ada dalam Buku Fon.";
+"Keep Both" = "Simpan Kedua-dua";
+"Stop" = "Henti";
+"Replace" = "Ganti";
+
+/* User-saved plain text. */
+"Saved Text" = "Teks Disimpan";
+"Save Current Text" = "Simpan Teks Semasa";
+"No Saved Text" = "Tiada Teks Disimpan";
+
+/* Preview colors and native line spacing. */
+"Colors" = "Warna";
+"Delete Palettes" = "Padam Palet";
+"Save Current Palette" = "Simpan Palet Semasa";
+"Clear All Saved Palettes" = "Kosongkan Semua Palet Disimpan";
+"No Saved Palettes" = "Tiada Palet Disimpan";
+"%@: %@" = "%@: %@";
+"%@ (%.0f%%)" = "%@ (%.0f%%)";
+"Follow System" = "Ikut Seting Sistem";
+"Glyph…" = "Glif…";
+"Background…" = "Latar Belakang…";
+"Bounding Box…" = "Kotak Sempadan…";
+"Increase Line Spacing" = "Tambah Jarak Baris";
+"Decrease Line Spacing" = "Kurangkan Jarak Baris";
+
+/* Explicit defaults for newly opened font windows. */
+
+/* Saved-text deletion and full screen. */
+"Delete Saved Text" = "Padam Teks Disimpan";
+"Clear All Saved Text" = "Kosongkan Semua Teks Disimpan";
+"Enter Full Screen" = "Masuk Skrin Penuh";
+
+/* Native typography and opening settings. */
+"Typography" = "Tipografi";
+"Other" = "Lain-lain";
+"No Typography Features" = "Tiada ciri tipografi";
+"Default Size" = "Saiz Lalai";
+"Use as Defaults" = "Gunakan sebagai Lalai";
+"Restore to Defaults" = "Pulihkan ke Lalai";
+"Text Decorations" = "Hiasan Teks";
+"Filter by Feature" = "Tapis mengikut Ciri";
+"No Features to Filter" = "Tiada ciri untuk ditapis";
+"No Feature" = "Tiada Ciri";
+
+"Writing Direction" = "Arah Tulisan";
+"Left to Right" = "Kiri ke kanan";
+"Right to Left" = "Kanan ke kiri";
+"Outline" = "Garis Kasar";
+
+"Typesetting Language" = "Bahasa Pengaturan Huruf";
+"No Selectable Languages" = "Tiada bahasa untuk dipilih";
