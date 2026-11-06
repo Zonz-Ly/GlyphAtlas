@@ -3,9 +3,9 @@
 "File" = "文件";
 "Copy to Font Book" = "拷贝到字体册";
 "Copy to All Users" = "拷贝拨所有用户用";
-"Current User…" = "自家个字体…";
-"All Users…" = "大家用个字体…";
-"System Fonts…" = "系统字体…";
+"Current User…" = "自家…";
+"All Users…" = "大家…";
+"System Fonts…" = "系统内置…";
 "Open Recent" = "开最近用过个字体";
 "Recent Folders" = "最近用过…";
 "Clear Menu" = "清空菜单";
@@ -47,7 +47,7 @@
 "Hide Others" = "别个 App 藏起来";
 "Quit Glyph Atlas" = "退出 Glyph Atlas";
 "Glyph Atlas Help" = "Glyph Atlas 帮助";
-"Open Font From" = "辣文件夹里向开字体";
+"Open Font From" = "辣啥地方开字体";
 "No Recent Fonts" = "呒没最近用过个字体";
 "Single Glyph" = "单字形";
 "Multi-Character" = "多字";
@@ -67,7 +67,7 @@
 "CoreText could not create this font." = "CoreText 建勿起搿个字体。";
 "Bounding Box" = "边界框";
 "Text and alternate glyph list" = "文字搭替换字形个清单";
-"Help.01" = "辣菜单栏里向拣「辣文件夹里向开字体」，就好直接到装字体个文件夹里向开。侬也好拿字体拖到 App 图标浪，或者拖到已经开了字体个窗口浪。侬还好拿 Glyph Atlas 设成平常开字体文件用个 App。最近开过个字体也好再开。";
+"Help.01" = "辣菜单栏里向拣「辣啥地方开字体」，就好直接到装字体个文件夹里向开。侬也好拿字体拖到 App 图标浪，或者拖到已经开了字体个窗口浪。侬还好拿 Glyph Atlas 设成平常开字体文件用个 App。最近开过个字体也好再开。";
 "Help.02" = "辣菜单栏点一下，就好拿搿个窗口里向开辣海个字体拷贝到自家个字体文件夹。揿牢 ⌥，就改拷贝到大家用个字体文件夹。";
 "Help.03" = "开可变字体个辰光，红绿灯旁边会出来一个调参数个面板。拿伊拖出来，就一直开辣海。拣好一个数值，揿 ↑／↓ 或者 ⇧↑／⇧↓ 来调。";
 "Help.04" = "辣侧边栏里向打进一个字或者几个字，就看得到搭搿眼字有关系个字形。揿 ⌥⏎ 好换行。点右键，拣「常用文字」，好存好现在个文字，也好快点调出前头存过个文字。要删脱存过个文字，辣菜单栏揿牢 ⌥ 就好。";

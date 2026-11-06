@@ -5,7 +5,7 @@
 "Copy to All Users" = "Für alle Benutzer:innen kopieren";
 "Current User…" = "Aktuelle:r Benutzer:in …";
 "All Users…" = "Alle Benutzer:innen …";
-"System Fonts…" = "Systemschriften …";
+"System Fonts…" = "Integriert …";
 "Open Recent" = "Benutzte Dokumente";
 "Recent Folders" = "Zuletzt benutzt …";
 "Clear Menu" = "Einträge löschen";
@@ -47,7 +47,7 @@
 "Hide Others" = "Andere ausblenden";
 "Quit Glyph Atlas" = "Glyph Atlas beenden";
 "Glyph Atlas Help" = "Glyph Atlas-Hilfe";
-"Open Font From" = "Schrift aus Ordner öffnen";
+"Open Font From" = "Schrift öffnen aus";
 "No Recent Fonts" = "Keine zuletzt benutzten Schriften";
 "Single Glyph" = "Einzelne Glyphe";
 "Multi-Character" = "Mehrere Zeichen";
@@ -67,7 +67,7 @@
 "CoreText could not create this font." = "CoreText konnte diese Schrift nicht erstellen.";
 "Bounding Box" = "Begrenzungsrahmen";
 "Text and alternate glyph list" = "Liste der Zeichen und alternativen Glyphen";
-"Help.01" = "Wähle in der Menüleiste „Schrift aus Ordner öffnen“, um eine Schrift direkt aus einem Schriftordner zu öffnen. Du kannst die Schrift auch auf das App-Symbol oder in ein Fenster mit einer geöffneten Schrift ziehen oder Glyph Atlas als Standard-App für Schriftdateien festlegen. Zuletzt geöffnete Dateien sind ebenfalls verfügbar.";
+"Help.01" = "Wähle in der Menüleiste „Schrift öffnen aus“, um eine Schrift direkt aus einem Schriftordner zu öffnen. Du kannst die Schrift auch auf das App-Symbol oder in ein Fenster mit einer geöffneten Schrift ziehen oder Glyph Atlas als Standard-App für Schriftdateien festlegen. Zuletzt geöffnete Dateien sind ebenfalls verfügbar.";
 "Help.02" = "Über die Menüleiste kannst du die im aktuellen Fenster geöffnete Schrift mit einem Klick in deinen Benutzerordner für Schriften kopieren. Halte ⌥ gedrückt, um die Schrift in den Schriftenordner für alle Benutzer:innen zu kopieren.";
 "Help.03" = "Beim Öffnen einer variablen Schrift erscheint neben den Fenstersteuerungen ein Variationsfenster. Ziehe es heraus, damit es geöffnet bleibt. Wähle einen Zahlenwert aus und passe ihn mit ↑/↓ oder ⇧↑/⇧↓ an.";
 "Help.04" = "Gib ein oder mehrere Zeichen in der Seitenleiste ein, um alle zugehörigen Glyphen zu sehen. Mit ⌥⏎ fügst du einen Zeilenumbruch ein. Per Rechtsklick findest du auch „Gesicherte Texte“, um den aktuellen Text zu sichern oder zuvor gesicherte Texte schnell einzufügen. Halte in der Menüleiste ⌥ gedrückt, um gesicherte Texte schnell zu löschen.";

@@ -5,7 +5,7 @@
 "Copy to All Users" = "拷贝畀所有用户";
 "Current User…" = "当前用户…";
 "All Users…" = "所有用户…";
-"System Fonts…" = "系统字体…";
+"System Fonts…" = "系统内置…";
 "Open Recent" = "打开最近使用";
 "Recent Folders" = "最近使用…";
 "Clear Menu" = "清除菜单";
@@ -47,7 +47,7 @@
 "Hide Others" = "隐藏其他";
 "Quit Glyph Atlas" = "退出 Glyph Atlas";
 "Glyph Atlas Help" = "Glyph Atlas 帮助";
-"Open Font From" = "拣位置打开字体";
+"Open Font From" = "喺边度打开字体";
 "No Recent Fonts" = "冇最近用过嘅字体";
 "Single Glyph" = "单字形";
 "Multi-Character" = "多字符";
@@ -67,7 +67,7 @@
 "CoreText could not create this font." = "CoreText 建立唔到呢款字体。";
 "Bounding Box" = "边界框";
 "Text and alternate glyph list" = "文字同替换字形嘅列表";
-"Help.01" = "喺菜单栏拣「拣位置打开字体」，就可以直接喺装字体嘅文件夹入边打开字体。你亦可以拖字体去 App 图标，或者拖入已经打开咗字体嘅窗口，仲可以将 Glyph Atlas 设做打开字体文件嘅默认 App。最近打开过嘅项目都可以再开。";
+"Help.01" = "喺菜单栏拣「喺边度打开字体」，就可以直接喺装字体嘅文件夹入边打开字体。你亦可以拖字体去 App 图标，或者拖入已经打开咗字体嘅窗口，仲可以将 Glyph Atlas 设做打开字体文件嘅默认 App。最近打开过嘅项目都可以再开。";
 "Help.02" = "喺菜单栏点一下，就可以将而家个窗口入边开咗嘅字体拷贝去自己嘅字体文件夹。按住 ⌥，就会拷贝去所有用户共用嘅字体文件夹。";
 "Help.03" = "开可变字体嗰阵，窗口嗰排红绿灯按钮隔篱会弹出调参数嘅面板。拖佢出嚟就可以一直开住。拣好数值之后，可以按 ↑／↓ 或者 ⇧↑／⇧↓ 嚟调。";
 "Help.04" = "喺侧边栏打一个或者几个字符，就睇到所有相关字形。按 ⌥⏎ 可以换行。点右键拣「常用文本」，可以存低而家嘅文本，或者即刻填返之前存过嘅文本。想快啲删走存低嘅文本，可以喺菜单栏按住 ⌥。";

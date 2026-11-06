@@ -6,7 +6,7 @@
 "Copy to All Users" = "拷贝到所有用户";
 "Current User…" = "当前用户…";
 "All Users…" = "所有用户…";
-"System Fonts…" = "系统字体…";
+"System Fonts…" = "系统内置…";
 "Open Recent" = "打开最近使用";
 "Recent Folders" = "最近使用…";
 "Clear Menu" = "清除菜单";
@@ -48,7 +48,7 @@
 "Hide Others" = "隐藏其他";
 "Quit Glyph Atlas" = "退出 Glyph Atlas";
 "Glyph Atlas Help" = "Glyph Atlas 帮助";
-"Open Font From" = "从以下位置打开字体";
+"Open Font From" = "打开字体于";
 "No Recent Fonts" = "没有最近使用的字体";
 "Single Glyph" = "单字形";
 "Multi-Character" = "多字符";
