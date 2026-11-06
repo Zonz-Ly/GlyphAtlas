@@ -14,7 +14,7 @@ A native macOS font and alternate-glyph inspector. Type text to see every altern
 ## Support
 
 - .ttf .otf .ttc .otc .woff .woff2 .dfont
-- Chinese (Mandarin, Cantonese, Shanghainese), Tibetan, Uyghur, Japanese, Korean, English, German, French, Spanish, Italian, Brazilian Portuguese, Russian, Vietnamese, Thai, Arabic, Hindi, Malay, Khmer, Latin, Esperanto.
+- Chinese (Mandarin, Cantonese, Shanghainese, Changsha Xiang, and Teochew, in Simplified and Traditional scripts), Tibetan, Uyghur, Japanese, Korean, English, German, French, Spanish, Italian, Brazilian Portuguese, Russian, Vietnamese, Thai, Arabic, Hindi, Malay, Khmer, Latin, Esperanto.
 
 ## Build
 
@@ -39,7 +39,7 @@ The default build uses the current machine's architecture. Use a flag to select 
 
 ## Usage
 
-- Use “Open Font From” in the menu bar to open a font directly from a Fonts folder. You can also drag a font onto the app icon or onto a window with a font already open, or set Glyph Atlas as the default app for opening font files. Recently opened items are supported.
+- Use “Open At” in the menu bar to open a font directly from a Fonts folder. You can also drag a font onto the app icon or onto a window with a font already open, or set Glyph Atlas as the default app for opening font files. Recently opened items are supported.
 - Use the menu bar to copy the font open in the current window to your user Fonts folder in one click. Hold `⌥` to copy it to the Fonts folder for all users.
 - When you open a variable font, a variation panel appears beside the window controls. Drag it out to keep it open. Select a numeric value and use `↑`/`↓` or `⇧↑`/`⇧↓` to adjust it.
 - Type one or more characters in the sidebar to see all associated glyphs. Use `⌥⏎` to insert a line break. You can also right-click and choose “Saved Text” to save the current text or quickly enter text you’ve saved before. Hold `⌥` in the menu bar to quickly delete saved text.
@@ -47,19 +47,19 @@ The default build uses the current machine's architecture. Use a flag to select 
 - Use `↑`/`↓` to move between glyphs, `⌘↑`/`⌘↓` to move between base glyphs, and `⌥↑`/`⌥↓` to jump to the first or last glyph in the list.
 - Use `⌘C` to copy all encoded characters of the selected glyph.
 - Hover over a Unicode badge to see the character name defined by the Unicode standard.
-- All Glyphs is the default. Right-click to switch views, or press `⌘1` for Single Glyph, `⌘2` for Multi-Character, or `⌘3` for All Glyphs.
-- In Multi-Character, click a glyph to view its alternates. Right-click or press `⌘5` to switch between horizontal and vertical writing. Text alignment and Typography are here too. The View menu in the menu bar has more options.
-- In All Glyphs, double-click a glyph to add it to the existing text. Clicking a glyph in the sidebar makes it blink in All Glyphs. Right-click to find Filter by Feature.
-- Use `⌘+`/`⌘−` to zoom the glyphs, or pinch on the trackpad. In Multi-Character, use `⌥⌘+`/`⌥⌘−` or a horizontal pinch to increase or decrease the margins, and `⌃⌘+`/`⌃⌘−` or a vertical pinch to increase or decrease line spacing. Press `⌘0` to restore the default size.
-- The shadow shows the bounding box, including the glyph's width and height and the layout's line height and leading; press `⌘4` to hide it.
+- Glyph Grid is the default. Right-click to switch views, or press `⌘1` for Single Glyph, `⌘2` for Characters, or `⌘3` for Glyph Grid.
+- In the Characters view, click a glyph to view its alternates. Choose Vertical Layout from the shortcut menu or press `⌘5` to switch between horizontal and vertical writing. Text alignment and Typography are here too. The View menu in the menu bar has more options.
+- In Glyph Grid, double-click a glyph to add it to the existing text. Clicking a glyph in the sidebar makes it blink in Glyph Grid. Right-click to find Filter by Feature.
+- Use `⌘+`/`⌘−` to make text bigger or smaller, or pinch on the trackpad. In the Characters view, use `⌥⌘+`/`⌥⌘−` or a horizontal pinch to increase or decrease the margins, and `⌃⌘+`/`⌃⌘−` or a vertical pinch to increase or decrease leading. Press `⌘0` to restore the default size.
+- The shadow shows the bounding box, including the glyph's width and height and the layout's line height and leading. Press `⌘4` to toggle Bounding Box.
 - Dark mode is supported. Watch out when clicking a solid glyph, as it can dazzle you. You can change the glyph, bounding box shadow, and background colors under Colors in the menu bar. Choose Save Current Palette to keep your colors. Hold `⌥` to find Delete Palettes.
-- Choose Use as Defaults in the menu bar to save the current view, colors, size, other preview settings, and window size. Font files you open later will use these settings. Hold `⌥` to choose Restore to Defaults instead.
+- Choose Use as Defaults in the menu bar to save the current view, colors, size, other preview settings, and window size. Font files you open later will use these settings. Hold `⌥` to choose Restore Default instead.
 
 ## Limitations
 
-- The sidebar and the All Glyphs filter use in-house GSUB and AAT parsers. They follow the font's own tables, so their results can differ from CoreText's processed results.
+- The sidebar and the Glyph Grid filter use in-house GSUB and AAT parsers. They follow the font's own tables, so their results can differ from CoreText's processed results.
 - Glyph names come from CoreText. When CoreText returns no usable name, the app shows `GID`.
 - Glyph width comes from CoreText's horizontal advance.
-- Glyph height comes from CoreText's vertical advance when `vmtx` is present. Otherwise it uses `sTypoAscender + sTypoDescender`. If those are unavailable, or in Multi-Character, it uses CoreText `ascent + descent`.
-- The system TextView provides Multi-Character layout and metrics, reflecting how macOS actually typesets the text. The app filters missing glyphs out of the preview because TextView has no option to turn off font fallback.
+- Glyph height comes from CoreText's vertical advance when `vmtx` is present. Otherwise it uses `sTypoAscender + sTypoDescender`. If those are unavailable, or in the Characters view, it uses CoreText `ascent + descent`.
+- The system TextView provides layout and metrics for the Characters view, reflecting how macOS actually typesets the text. The app filters missing glyphs out of the preview because TextView has no option to turn off font fallback.
 - Trackpad pinch gestures may occasionally get stuck due to a longstanding macOS issue. Here’s hoping Apple fixes it.

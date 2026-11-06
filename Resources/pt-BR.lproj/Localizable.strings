@@ -7,9 +7,9 @@
 "All Users…" = "Todos os Usuários…";
 "System Fonts…" = "Integradas…";
 "Open Recent" = "Abrir Recente";
-"Recent Folders" = "Recentes…";
+"Recent Location…" = "Última Localização…";
 "Clear Menu" = "Limpar Menu";
-"Close Window" = "Fechar Janela";
+"Close" = "Fechar";
 "Cut" = "Cortar";
 "Copy" = "Copiar";
 "Paste" = "Colar";
@@ -33,8 +33,8 @@
 "Add Glyph" = "Adicionar Glifo";
 "Replace Glyph" = "Substituir Glifo";
 "Open" = "Abrir";
-"Zoom In" = "Ampliar";
-"Zoom Out" = "Reduzir";
+"Make Text Bigger" = "Tornar o Texto Maior";
+"Make Text Smaller" = "Tornar o Texto Menor";
 "Text Alignment" = "Alinhamento do Texto";
 "Left" = "Alinhar à esquerda";
 "Center" = "Centralizar";
@@ -47,15 +47,15 @@
 "Hide Others" = "Ocultar Outros";
 "Quit Glyph Atlas" = "Encerrar Glyph Atlas";
 "Glyph Atlas Help" = "Ajuda do Glyph Atlas";
-"Open Font From" = "Abrir Fonte de";
+"Open At" = "Abrir em";
 "No Recent Fonts" = "Nenhuma Fonte Recente";
 "Single Glyph" = "Glifo Único";
-"Multi-Character" = "Vários Caracteres";
+"Characters" = "Caracteres";
+"Glyph Grid" = "Grade de Glifos";
 "All Glyphs" = "Todos os Glifos";
-"Show Bounding Box" = "Mostrar Caixa Delimitadora";
-"Bounding Box Zoom In" = "Ampliar Caixa Delimitadora";
-"Bounding Box Zoom Out" = "Reduzir Caixa Delimitadora";
-"Vertical" = "Vertical";
+"Expand Bounding Box" = "Ampliar Caixa Delimitadora";
+"Shrink Bounding Box" = "Reduzir Caixa Delimitadora";
+"Vertical Layout" = "Layout Vertical";
 "Enter text" = "Digite o texto";
 "Font Name" = "Nome da Fonte";
 "Font File" = "Arquivo de Fonte";
@@ -67,7 +67,7 @@
 "CoreText could not create this font." = "O CoreText não pôde criar esta fonte.";
 "Bounding Box" = "Caixa Delimitadora";
 "Text and alternate glyph list" = "Lista de texto e glifos alternativos";
-"Help.01" = "Use “Abrir Fonte de” na barra de menus para abrir uma fonte diretamente de uma pasta de fontes. Você também pode arrastar a fonte para o ícone do app ou para uma janela que já tenha uma fonte aberta, ou definir o Glyph Atlas como app padrão para abrir arquivos de fontes. É possível reabrir arquivos recentes.";
+"Help.01" = "Use “Abrir em” na barra de menus para abrir uma fonte diretamente de uma pasta de fontes. Você também pode arrastar a fonte para o ícone do app ou para uma janela que já tenha uma fonte aberta, ou definir o Glyph Atlas como app padrão para abrir arquivos de fontes. É possível reabrir arquivos recentes.";
 "Help.02" = "Na barra de menus, copie com um clique a fonte aberta na janela atual para a pasta de fontes do seu usuário. Mantenha ⌥ pressionado para copiar a fonte para a pasta de fontes de todos os usuários.";
 "Help.03" = "Ao abrir uma fonte variável, um painel de variações aparece ao lado dos controles da janela. Arraste-o para fora para mantê-lo aberto. Selecione um valor numérico e ajuste-o com ↑/↓ ou ⇧↑/⇧↓.";
 "Help.04" = "Digite um ou mais caracteres na barra lateral para ver todos os glifos associados. Use ⌥⏎ para inserir uma quebra de linha. Você também pode clicar com o botão direito e escolher “Textos salvos” para salvar o texto atual ou inserir rapidamente um texto salvo antes. Mantenha ⌥ pressionado na barra de menus para apagar rapidamente os textos salvos.";
@@ -75,11 +75,11 @@
 "Help.06" = "Use ↑/↓ para navegar entre glifos, ⌘↑/⌘↓ entre glifos de base e ⌥↑/⌥↓ para ir ao primeiro ou ao último glifo da lista.";
 "Help.07" = "Use ⌘C para copiar todos os caracteres codificados do glifo selecionado.";
 "Help.08" = "Mantenha o cursor sobre uma etiqueta Unicode para ver o nome do caractere definido pelo padrão Unicode.";
-"Help.09" = "A visualização padrão é “Todos os Glifos”. Alterne com um clique secundário ou use ⌘1 para “Glifo Único”, ⌘2 para “Vários Caracteres” e ⌘3 para “Todos os Glifos”.";
-"Help.10" = "Em Vários Caracteres, clique em um glifo para ver suas alternativas. A escrita vertical é compatível; clique com o botão direito ou pressione ⌘5 para alterná-la. O alinhamento do texto e Tipografia também estão aqui. O menu Visualizar na barra de menus tem mais opções.";
-"Help.11" = "Em “Todos os Glifos”, clique duas vezes em um glifo para adicioná-lo ao texto existente. Clicar em um glifo na barra lateral também o faz piscar na visualização completa. Clique com o botão direito para encontrar “Filtrar por recurso”.";
-"Help.12" = "Use ⌘+/⌘− ou o gesto de pinça no trackpad para ampliar ou reduzir os glifos. Em Vários Caracteres, use ⌥⌘+/⌥⌘− ou uma pinça horizontal para aumentar ou diminuir as margens, e ⌃⌘+/⌃⌘− ou uma pinça vertical para aumentar ou diminuir o espaçamento entre linhas. Pressione ⌘0 para restaurar o tamanho padrão.";
-"Help.13" = "A sombra indica a caixa delimitadora, incluindo a largura e a altura do glifo, a altura das linhas e o espaçamento da composição. Pressione ⌘4 para ocultá-la.";
+"Help.09" = "A visualização padrão é “Grade de Glifos”. Alterne com um clique secundário ou use ⌘1 para “Glifo Único”, ⌘2 para “Caracteres” e ⌘3 para “Grade de Glifos”.";
+"Help.10" = "Em Caracteres, clique em um glifo para ver suas alternativas. A escrita vertical é compatível; clique com o botão direito ou pressione ⌘5 para alterná-la. O alinhamento do texto e Tipografia também estão aqui. O menu Visualizar na barra de menus tem mais opções.";
+"Help.11" = "Em “Grade de Glifos”, clique duas vezes em um glifo para adicioná-lo ao texto existente. Clicar em um glifo na barra lateral também o faz piscar na visualização completa. Clique com o botão direito para encontrar “Filtrar por recurso”.";
+"Help.12" = "Use ⌘+/⌘− ou o gesto de pinça no trackpad para ampliar ou reduzir o texto. Em Caracteres, use ⌥⌘+/⌥⌘− ou uma pinça horizontal para aumentar ou diminuir as margens, e ⌃⌘+/⌃⌘− ou uma pinça vertical para aumentar ou diminuir o espaçamento entre linhas. Pressione ⌘0 para restaurar o tamanho padrão.";
+"Help.13" = "A sombra indica a caixa delimitadora, incluindo a largura e a altura do glifo, a altura das linhas e o espaçamento entre linhas da composição. Pressione ⌘4 para ocultá-la.";
 "Help.14" = "O Modo Escuro é compatível. Mas cuidado: clicar em um glifo sólido pode ofuscar seus olhos. Você pode mudar as cores do glifo, da sombra da caixa delimitadora e do fundo em Cores, na barra de menus. Escolha “Salvar Paleta Atual” para guardar as cores ajustadas. Mantenha ⌥ pressionado para ver “Apagar Paletas”.";
 "Help.15" = "Escolha Usar como Padrão na barra de menus para salvar a visualização, as cores, o tamanho e os demais ajustes atuais, junto com o tamanho da janela. Os arquivos de fontes abertos depois usarão esses ajustes. Mantenha ⌥ pressionado para escolher Restaurar aos Padrões.";
 
@@ -102,7 +102,7 @@
 "Save Current Text" = "Salvar texto atual";
 "No Saved Text" = "Nenhum texto salvo";
 
-/* Preview colors and native line spacing. */
+/* Preview colors and native leading. */
 "Colors" = "Cores";
 "Delete Palettes" = "Apagar Paletas";
 "Save Current Palette" = "Salvar Paleta Atual";
@@ -114,8 +114,8 @@
 "Glyph…" = "Glifo…";
 "Background…" = "Fundo…";
 "Bounding Box…" = "Caixa Delimitadora…";
-"Increase Line Spacing" = "Aumentar Espaçamento entre Linhas";
-"Decrease Line Spacing" = "Diminuir Espaçamento entre Linhas";
+"Increase Leading" = "Aumentar Espaçamento entre Linhas";
+"Decrease Leading" = "Diminuir Espaçamento entre Linhas";
 
 /* Explicit defaults for newly opened font windows. */
 
@@ -127,10 +127,10 @@
 /* Native typography and opening settings. */
 "Typography" = "Tipografia";
 "Other" = "Outros";
-"No Typography Features" = "Sem recursos tipográficos";
+"No Typographic Features" = "Sem recursos tipográficos";
 "Default Size" = "Tamanho Padrão";
 "Use as Defaults" = "Usar como Padrão";
-"Restore to Defaults" = "Restaurar aos Padrões";
+"Restore Default" = "Restaurar aos Padrões";
 "Text Decorations" = "Decoração do Texto";
 "Filter by Feature" = "Filtrar por recurso";
 "No Features to Filter" = "Nenhum recurso para filtrar";

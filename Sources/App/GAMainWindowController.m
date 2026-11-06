@@ -795,7 +795,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     NSAlert *alert = [[NSAlert alloc] init];
     alert.messageText = NSLocalizedString(@"Choose Font Style", @"Choose Font Style");
     alert.informativeText = [NSString localizedStringWithFormat:
-        NSLocalizedString(@"“%@” contains %lu fonts.", @"Font collection choice"),
+        NSLocalizedString(@"“%@” contains %lu styles.", @"Number of styles in the font collection"),
         url.lastPathComponent, (unsigned long)resources.count];
     [alert addButtonWithTitle:NSLocalizedString(@"Open", @"Open")];
     [alert addButtonWithTitle:NSLocalizedString(@"Cancel", @"Cancel")];

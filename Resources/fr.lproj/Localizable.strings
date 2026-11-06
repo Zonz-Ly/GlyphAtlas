@@ -7,9 +7,9 @@
 "All Users…" = "Tous les utilisateurs…";
 "System Fonts…" = "Intégrées…";
 "Open Recent" = "Ouvrir l’élément récent";
-"Recent Folders" = "Récents…";
+"Recent Location…" = "Dernier emplacement…";
 "Clear Menu" = "Effacer le menu";
-"Close Window" = "Fermer la fenêtre";
+"Close" = "Fermer";
 "Cut" = "Couper";
 "Copy" = "Copier";
 "Paste" = "Coller";
@@ -33,8 +33,8 @@
 "Add Glyph" = "Ajouter un glyphe";
 "Replace Glyph" = "Remplacer un glyphe";
 "Open" = "Ouvrir";
-"Zoom In" = "Agrandir";
-"Zoom Out" = "Réduire";
+"Make Text Bigger" = "Agrandir le texte";
+"Make Text Smaller" = "Réduire le texte";
 "Text Alignment" = "Alignement du texte";
 "Left" = "Aligner à gauche";
 "Center" = "Centrer";
@@ -47,15 +47,15 @@
 "Hide Others" = "Masquer les autres";
 "Quit Glyph Atlas" = "Quitter Glyph Atlas";
 "Glyph Atlas Help" = "Aide Glyph Atlas";
-"Open Font From" = "Ouvrir une police depuis";
+"Open At" = "Ouvrir depuis";
 "No Recent Fonts" = "Aucune police récente";
 "Single Glyph" = "Glyphe unique";
-"Multi-Character" = "Plusieurs caractères";
+"Characters" = "Caractères";
+"Glyph Grid" = "Grille de glyphes";
 "All Glyphs" = "Tous les glyphes";
-"Show Bounding Box" = "Afficher le cadre englobant";
-"Bounding Box Zoom In" = "Agrandir le cadre englobant";
-"Bounding Box Zoom Out" = "Réduire le cadre englobant";
-"Vertical" = "Vertical";
+"Expand Bounding Box" = "Agrandir le cadre englobant";
+"Shrink Bounding Box" = "Réduire le cadre englobant";
+"Vertical Layout" = "Présentation verticale";
 "Enter text" = "Saisir du texte";
 "Font Name" = "Nom de la police";
 "Font File" = "Fichier de police";
@@ -67,7 +67,7 @@
 "CoreText could not create this font." = "CoreText n’a pas pu créer cette police.";
 "Bounding Box" = "Cadre englobant";
 "Text and alternate glyph list" = "Liste du texte et des glyphes alternatifs";
-"Help.01" = "Choisissez « Ouvrir une police depuis » dans la barre des menus pour ouvrir une police directement depuis un dossier de polices. Vous pouvez aussi faire glisser la police sur l’icône de l’app ou sur une fenêtre où une police est déjà ouverte, ou définir Glyph Atlas comme app par défaut pour ouvrir les fichiers de polices. Vous pouvez rouvrir les fichiers récents.";
+"Help.01" = "Choisissez « Ouvrir depuis » dans la barre des menus pour ouvrir une police directement depuis un dossier de polices. Vous pouvez aussi faire glisser la police sur l’icône de l’app ou sur une fenêtre où une police est déjà ouverte, ou définir Glyph Atlas comme app par défaut pour ouvrir les fichiers de polices. Vous pouvez rouvrir les fichiers récents.";
 "Help.02" = "Depuis la barre des menus, copiez en un clic la police ouverte dans la fenêtre actuelle vers votre dossier de polices utilisateur. Maintenez la touche ⌥ pour copier la police dans le dossier de polices de tous les utilisateurs.";
 "Help.03" = "À l’ouverture d’une police variable, un panneau de variation apparaît près des boutons de la fenêtre. Détachez-le en le faisant glisser pour le garder ouvert. Sélectionnez une valeur numérique et ajustez-la avec ↑/↓ ou ⇧↑/⇧↓.";
 "Help.04" = "Saisissez un ou plusieurs caractères dans la barre latérale pour voir tous les glyphes associés. Utilisez ⌥⏎ pour insérer un saut de ligne. Vous pouvez aussi faire un clic droit et choisir « Textes enregistrés » pour enregistrer le texte actuel ou insérer rapidement un texte déjà enregistré. Maintenez ⌥ dans la barre des menus pour supprimer rapidement les textes enregistrés.";
@@ -75,10 +75,10 @@
 "Help.06" = "Utilisez ↑/↓ pour passer d’un glyphe à l’autre, ⌘↑/⌘↓ pour passer d’un glyphe de base à l’autre et ⌥↑/⌥↓ pour atteindre le premier ou le dernier glyphe de la liste.";
 "Help.07" = "Utilisez ⌘C pour copier tous les caractères encodés du glyphe sélectionné.";
 "Help.08" = "Survolez une étiquette Unicode pour voir le nom du caractère défini par la norme Unicode.";
-"Help.09" = "« Tous les glyphes » est la vue par défaut. Changez de vue par un clic droit, ou utilisez ⌘1 pour « Glyphe unique », ⌘2 pour « Plusieurs caractères » et ⌘3 pour « Tous les glyphes ».";
-"Help.10" = "Dans Plusieurs caractères, cliquez sur un glyphe pour voir ses variantes. L’écriture verticale est prise en charge ; faites un clic droit ou appuyez sur ⌘5 pour la changer. L’alignement du texte et Typographie se trouvent aussi ici. Le menu Présentation de la barre des menus propose d’autres options.";
-"Help.11" = "Dans « Tous les glyphes », cliquez deux fois sur un glyphe pour l’ajouter au texte existant. Cliquer sur un glyphe dans la barre latérale le fait également clignoter dans la vue d’ensemble. Faites un clic droit pour accéder à « Filtrer par fonctionnalité ».";
-"Help.12" = "Utilisez ⌘+/⌘− ou un pincement sur le trackpad pour agrandir ou réduire les glyphes. Dans Plusieurs caractères, utilisez ⌥⌘+/⌥⌘− ou un pincement horizontal pour augmenter ou réduire les marges, et ⌃⌘+/⌃⌘− ou un pincement vertical pour augmenter ou réduire l’interligne. Appuyez sur ⌘0 pour rétablir la taille par défaut.";
+"Help.09" = "« Grille de glyphes » est la vue par défaut. Changez de vue par un clic droit, ou utilisez ⌘1 pour « Glyphe unique », ⌘2 pour « Caractères » et ⌘3 pour « Grille de glyphes ».";
+"Help.10" = "Dans la vue « Caractères », cliquez sur un glyphe pour voir ses variantes. L’écriture verticale est prise en charge ; faites un clic droit ou appuyez sur ⌘5 pour la changer. L’alignement du texte et Typographie se trouvent aussi ici. Le menu Présentation de la barre des menus propose d’autres options.";
+"Help.11" = "Dans « Grille de glyphes », cliquez deux fois sur un glyphe pour l’ajouter au texte existant. Cliquer sur un glyphe dans la barre latérale le fait également clignoter dans la vue d’ensemble. Faites un clic droit pour accéder à « Filtrer par fonctionnalité ».";
+"Help.12" = "Utilisez ⌘+/⌘− ou un pincement sur le trackpad pour agrandir ou réduire le texte. Dans la vue « Caractères », utilisez ⌥⌘+/⌥⌘− ou un pincement horizontal pour augmenter ou réduire les marges, et ⌃⌘+/⌃⌘− ou un pincement vertical pour augmenter ou réduire l’interligne. Appuyez sur ⌘0 pour rétablir la taille par défaut.";
 "Help.13" = "L’ombre indique le cadre englobant, avec la largeur et la hauteur du glyphe ainsi que la hauteur de ligne et l’interligne de la composition. Appuyez sur ⌘4 pour le masquer.";
 "Help.14" = "Le mode sombre est pris en charge. Mais attention : cliquer sur un glyphe plein peut vous éblouir. Vous pouvez changer la couleur des glyphes, de l’ombre du cadre englobant et de l’arrière-plan dans Couleurs, dans la barre des menus. Choisissez « Enregistrer la palette actuelle » pour conserver vos couleurs. Maintenez la touche ⌥ pour afficher « Supprimer des palettes ».";
 "Help.15" = "Choisissez Utiliser comme valeurs par défaut dans la barre des menus pour enregistrer la vue, les couleurs, la taille et les autres réglages d’aperçu actuels, ainsi que la taille de la fenêtre. Les fichiers de polices ouverts ensuite utiliseront ces réglages. Maintenez ⌥ pour choisir Restaurer les valeurs par défaut.";
@@ -102,7 +102,7 @@
 "Save Current Text" = "Enregistrer le texte actuel";
 "No Saved Text" = "Aucun texte enregistré";
 
-/* Preview colors and native line spacing. */
+/* Preview colors and native leading. */
 "Colors" = "Couleurs";
 "Delete Palettes" = "Supprimer des palettes";
 "Save Current Palette" = "Enregistrer la palette actuelle";
@@ -114,8 +114,8 @@
 "Glyph…" = "Glyphe…";
 "Background…" = "Arrière-plan…";
 "Bounding Box…" = "Cadre englobant…";
-"Increase Line Spacing" = "Augmenter l’interligne";
-"Decrease Line Spacing" = "Réduire l’interligne";
+"Increase Leading" = "Augmenter l’interligne";
+"Decrease Leading" = "Réduire l’interligne";
 
 /* Explicit defaults for newly opened font windows. */
 
@@ -127,10 +127,10 @@
 /* Native typography and opening settings. */
 "Typography" = "Typographie";
 "Other" = "Autres";
-"No Typography Features" = "Aucune fonction typographique";
+"No Typographic Features" = "Aucune fonction typographique";
 "Default Size" = "Taille par défaut";
 "Use as Defaults" = "Utiliser comme valeurs par défaut";
-"Restore to Defaults" = "Restaurer les valeurs par défaut";
+"Restore Default" = "Restaurer les valeurs par défaut";
 "Text Decorations" = "Décoration du texte";
 "Filter by Feature" = "Filtrer par fonctionnalité";
 "No Features to Filter" = "Aucune fonctionnalité à filtrer";

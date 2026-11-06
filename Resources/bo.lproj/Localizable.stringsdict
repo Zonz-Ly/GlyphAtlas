@@ -2,18 +2,18 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>“%@” contains %lu fonts.</key>
+	<key>“%@” contains %lu styles.</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>
-		<string>«%1$@» ནང་ %2$#@fonts@ ཡོད།</string>
-		<key>fonts</key>
+		<string>«%1$@» ནང་ %2$#@styles@ ཡོད།</string>
+		<key>styles</key>
 		<dict>
 			<key>NSStringFormatSpecTypeKey</key>
 			<string>NSStringPluralRuleType</string>
 			<key>NSStringFormatValueTypeKey</key>
 			<string>lu</string>
 			<key>other</key>
-			<string>ཡིག་གཟུགས་ %lu</string>
+			<string>རྣམ་པ་ %lu</string>
 		</dict>
 	</dict>
 </dict>

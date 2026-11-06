@@ -2,24 +2,24 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>“%@” contains %lu fonts.</key>
+	<key>“%@” contains %lu styles.</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>
-		<string>«%1$@» содержит %2$#@fonts@.</string>
-		<key>fonts</key>
+		<string>«%1$@» содержит %2$#@styles@.</string>
+		<key>styles</key>
 		<dict>
 			<key>NSStringFormatSpecTypeKey</key>
 			<string>NSStringPluralRuleType</string>
 			<key>NSStringFormatValueTypeKey</key>
 			<string>lu</string>
 			<key>one</key>
-			<string>%lu шрифт</string>
+			<string>%lu начертание</string>
 			<key>few</key>
-			<string>%lu шрифта</string>
+			<string>%lu начертания</string>
 			<key>many</key>
-			<string>%lu шрифтов</string>
+			<string>%lu начертаний</string>
 			<key>other</key>
-			<string>%lu шрифта</string>
+			<string>%lu начертания</string>
 		</dict>
 	</dict>
 </dict>

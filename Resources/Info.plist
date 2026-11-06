@@ -24,8 +24,13 @@
         <string>hi</string>
         <string>ms</string>
         <string>wuu-Hans</string>
+        <string>wuu-Hant</string>
         <string>yue-Hans</string>
         <string>yue-Hant</string>
+        <string>hsn-Hans</string>
+        <string>hsn-Hant</string>
+        <string>nan-Hans</string>
+        <string>nan-Hant</string>
         <string>bo</string>
         <string>ug</string>
         <string>la</string>

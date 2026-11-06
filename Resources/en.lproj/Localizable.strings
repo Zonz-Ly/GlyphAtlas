@@ -7,9 +7,9 @@
 "All Users…" = "All Users…";
 "System Fonts…" = "Built-in…";
 "Open Recent" = "Open Recent";
-"Recent Folders" = "Recents…";
+"Recent Location…" = "Recent Location…";
 "Clear Menu" = "Clear Menu";
-"Close Window" = "Close Window";
+"Close" = "Close";
 "Cut" = "Cut";
 "Copy" = "Copy";
 "Paste" = "Paste";
@@ -33,8 +33,8 @@
 "Add Glyph" = "Add Glyph";
 "Replace Glyph" = "Replace Glyph";
 "Open" = "Open";
-"Zoom In" = "Zoom In";
-"Zoom Out" = "Zoom Out";
+"Make Text Bigger" = "Make Text Bigger";
+"Make Text Smaller" = "Make Text Smaller";
 "Text Alignment" = "Text Alignment";
 "Left" = "Left";
 "Center" = "Center";
@@ -47,15 +47,15 @@
 "Hide Others" = "Hide Others";
 "Quit Glyph Atlas" = "Quit Glyph Atlas";
 "Glyph Atlas Help" = "Glyph Atlas Help";
-"Open Font From" = "Open Font From";
+"Open At" = "Open At";
 "No Recent Fonts" = "No Recent Fonts";
 "Single Glyph" = "Single Glyph";
-"Multi-Character" = "Multi-Character";
+"Characters" = "Characters";
+"Glyph Grid" = "Glyph Grid";
 "All Glyphs" = "All Glyphs";
-"Show Bounding Box" = "Show Bounding Box";
-"Bounding Box Zoom In" = "Bounding Box Zoom In";
-"Bounding Box Zoom Out" = "Bounding Box Zoom Out";
-"Vertical" = "Vertical";
+"Expand Bounding Box" = "Expand Bounding Box";
+"Shrink Bounding Box" = "Shrink Bounding Box";
+"Vertical Layout" = "Vertical Layout";
 "Enter text" = "Enter text";
 "Font Name" = "Font Name";
 "Font File" = "Font File";
@@ -67,7 +67,7 @@
 "CoreText could not create this font." = "CoreText could not create this font.";
 "Bounding Box" = "Bounding Box";
 "Text and alternate glyph list" = "Text and alternate glyph list";
-"Help.01" = "Use “Open Font From” in the menu bar to open a font directly from a Fonts folder. You can also drag a font onto the app icon or onto a window with a font already open, or set Glyph Atlas as the default app for opening font files. Recently opened items are supported.";
+"Help.01" = "Use “Open At” in the menu bar to open a font directly from a Fonts folder. You can also drag a font onto the app icon or onto a window with a font already open, or set Glyph Atlas as the default app for opening font files. Recently opened items are supported.";
 "Help.02" = "Use the menu bar to copy the font open in the current window to your user Fonts folder in one click. Hold ⌥ to copy it to the Fonts folder for all users.";
 "Help.03" = "When you open a variable font, a variation panel appears beside the window controls. Drag it out to keep it open. Select a numeric value and use ↑/↓ or ⇧↑/⇧↓ to adjust it.";
 "Help.04" = "Type one or more characters in the sidebar to see all associated glyphs. Use ⌥⏎ to insert a line break. You can also right-click and choose “Saved Text” to save the current text or quickly enter text you’ve saved before. Hold ⌥ in the menu bar to quickly delete saved text.";
@@ -75,13 +75,13 @@
 "Help.06" = "Use ↑/↓ to move between glyphs, ⌘↑/⌘↓ to move between base glyphs, and ⌥↑/⌥↓ to jump to the first or last glyph in the list.";
 "Help.07" = "Use ⌘C to copy all encoded characters of the selected glyph.";
 "Help.08" = "Hover over a Unicode badge to see the character name defined by the Unicode standard.";
-"Help.09" = "All Glyphs is the default. Right-click to switch views, or press ⌘1 for Single Glyph, ⌘2 for Multi-Character, or ⌘3 for All Glyphs.";
-"Help.10" = "In Multi-Character, click a glyph to view its alternates. Right-click or press ⌘5 to switch between horizontal and vertical writing. Text alignment and Typography are here too. The View menu in the menu bar has more options.";
-"Help.11" = "In All Glyphs, double-click a glyph to add it to the existing text. Clicking a glyph in the sidebar makes it blink in All Glyphs. Right-click to find Filter by Feature.";
-"Help.12" = "Use ⌘+/⌘− to zoom the glyphs, or pinch on the trackpad. In Multi-Character, use ⌥⌘+/⌥⌘− or a horizontal pinch to increase or decrease the margins, and ⌃⌘+/⌃⌘− or a vertical pinch to increase or decrease line spacing. Press ⌘0 to restore the default size.";
-"Help.13" = "The shadow shows the bounding box, including the glyph's width and height and the layout's line height and leading; press ⌘4 to hide it.";
+"Help.09" = "Glyph Grid is the default. Right-click to switch views, or press ⌘1 for Single Glyph, ⌘2 for Characters, or ⌘3 for Glyph Grid.";
+"Help.10" = "In the Characters view, click a glyph to view its alternates. Choose Vertical Layout from the shortcut menu or press ⌘5 to switch between horizontal and vertical writing. Text alignment and Typography are here too. The View menu in the menu bar has more options.";
+"Help.11" = "In Glyph Grid, double-click a glyph to add it to the existing text. Clicking a glyph in the sidebar makes it blink in Glyph Grid. Right-click to find Filter by Feature.";
+"Help.12" = "Use ⌘+/⌘− to make text bigger or smaller, or pinch on the trackpad. In the Characters view, use ⌥⌘+/⌥⌘− or a horizontal pinch to increase or decrease the margins, and ⌃⌘+/⌃⌘− or a vertical pinch to increase or decrease leading. Press ⌘0 to restore the default size.";
+"Help.13" = "The shadow shows the bounding box, including the glyph's width and height and the layout's line height and leading. Press ⌘4 to toggle Bounding Box.";
 "Help.14" = "Dark mode is supported. Watch out when clicking a solid glyph, as it can dazzle you. You can change the glyph, bounding box shadow, and background colors under Colors in the menu bar. Choose Save Current Palette to keep your colors. Hold ⌥ to find Delete Palettes.";
-"Help.15" = "Choose Use as Defaults in the menu bar to save the current view, colors, size, other preview settings, and window size. Font files you open later will use these settings. Hold ⌥ to choose Restore to Defaults instead.";
+"Help.15" = "Choose Use as Defaults in the menu bar to save the current view, colors, size, other preview settings, and window size. Font files you open later will use these settings. Hold ⌥ to choose Restore Default instead.";
 
 /* Variable font controls. */
 "Variable" = "Variable";
@@ -102,7 +102,7 @@
 "Save Current Text" = "Save Current Text";
 "No Saved Text" = "No Saved Text";
 
-/* Preview colors and native line spacing. */
+/* Preview colors and native leading. */
 "Colors" = "Colors";
 "Delete Palettes" = "Delete Palettes";
 "Save Current Palette" = "Save Current Palette";
@@ -114,8 +114,8 @@
 "Glyph…" = "Glyph…";
 "Background…" = "Background…";
 "Bounding Box…" = "Bounding Box…";
-"Increase Line Spacing" = "Increase Line Spacing";
-"Decrease Line Spacing" = "Decrease Line Spacing";
+"Increase Leading" = "Increase Leading";
+"Decrease Leading" = "Decrease Leading";
 
 /* Explicit defaults for newly opened font windows. */
 
@@ -127,10 +127,10 @@
 /* Native typography and opening settings. */
 "Typography" = "Typography";
 "Other" = "Other";
-"No Typography Features" = "No Typography Features";
+"No Typographic Features" = "No Typographic Features";
 "Default Size" = "Default Size";
 "Use as Defaults" = "Use as Defaults";
-"Restore to Defaults" = "Restore to Defaults";
+"Restore Default" = "Restore Default";
 "Text Decorations" = "Text Decorations";
 "Filter by Feature" = "Filter by Feature";
 "No Features to Filter" = "No Features to Filter";

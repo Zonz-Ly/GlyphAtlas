@@ -7,9 +7,9 @@
 "All Users…" = "Semua Pengguna…";
 "System Fonts…" = "Terbina Dalam…";
 "Open Recent" = "Buka Terbaharu";
-"Recent Folders" = "Terbaru…";
+"Recent Location…" = "Lokasi Terakhir…";
 "Clear Menu" = "Kosongkan Menu";
-"Close Window" = "Tutup Tetingkap";
+"Close" = "Tutup";
 "Cut" = "Potong";
 "Copy" = "Salin";
 "Paste" = "Tampal";
@@ -33,8 +33,8 @@
 "Add Glyph" = "Tambah Glif";
 "Replace Glyph" = "Ganti Glif";
 "Open" = "Buka";
-"Zoom In" = "Zum Masuk";
-"Zoom Out" = "Zum Keluar";
+"Make Text Bigger" = "Jadikan Teks Lebih Besar";
+"Make Text Smaller" = "Jadikan Teks Lebih Kecil";
 "Text Alignment" = "Penjajaran Teks";
 "Left" = "Jajar kiri";
 "Center" = "Tengah";
@@ -47,15 +47,15 @@
 "Hide Others" = "Sembunyikan App Lain";
 "Quit Glyph Atlas" = "Keluar Glyph Atlas";
 "Glyph Atlas Help" = "Bantuan Glyph Atlas";
-"Open Font From" = "Buka Fon dari";
+"Open At" = "Buka dari";
 "No Recent Fonts" = "Tiada Fon Terbaharu";
 "Single Glyph" = "Glif Tunggal";
-"Multi-Character" = "Berbilang Aksara";
+"Characters" = "Aksara";
+"Glyph Grid" = "Grid Glif";
 "All Glyphs" = "Semua Glif";
-"Show Bounding Box" = "Tunjukkan Kotak Sempadan";
-"Bounding Box Zoom In" = "Besarkan Kotak Sempadan";
-"Bounding Box Zoom Out" = "Kecilkan Kotak Sempadan";
-"Vertical" = "Tulisan Menegak";
+"Expand Bounding Box" = "Besarkan Kotak Sempadan";
+"Shrink Bounding Box" = "Kecilkan Kotak Sempadan";
+"Vertical Layout" = "Tataletak Menegak";
 "Enter text" = "Masukkan teks";
 "Font Name" = "Nama fon";
 "Font File" = "Fail Fon";
@@ -67,7 +67,7 @@
 "CoreText could not create this font." = "CoreText tidak dapat mencipta fon ini.";
 "Bounding Box" = "Kotak Sempadan";
 "Text and alternate glyph list" = "Senarai teks dan glif alternatif";
-"Help.01" = "Gunakan “Buka Fon dari” dalam bar menu untuk membuka fon terus daripada folder fon. Anda juga boleh menyeret fail fon ke ikon app atau ke tetingkap yang sudah membuka fon, atau menetapkan Glyph Atlas sebagai app lalai untuk membuka fail fon. Item yang dibuka baru-baru ini boleh dibuka semula.";
+"Help.01" = "Gunakan “Buka dari” dalam bar menu untuk membuka fon terus daripada folder fon. Anda juga boleh menyeret fail fon ke ikon app atau ke tetingkap yang sudah membuka fon, atau menetapkan Glyph Atlas sebagai app lalai untuk membuka fail fon. Item yang dibuka baru-baru ini boleh dibuka semula.";
 "Help.02" = "Gunakan bar menu untuk menyalin fon yang dibuka dalam tetingkap semasa ke folder fon pengguna anda dengan satu klik. Tekan dan tahan ⌥ untuk menyalinnya ke folder fon semua pengguna.";
 "Help.03" = "Apabila anda membuka fon boleh ubah, panel variasi muncul di sebelah kawalan tetingkap. Seret panel keluar supaya ia kekal terbuka. Pilih nilai angka dan gunakan ↑/↓ atau ⇧↑/⇧↓ untuk melaraskannya.";
 "Help.04" = "Taip satu aksara atau lebih dalam bar sisi untuk melihat semua glif yang berkaitan. Gunakan ⌥⏎ untuk menyisipkan pemisah baris. Anda juga boleh klik sekunder dan pilih “Teks Disimpan” untuk menyimpan teks semasa atau memasukkan semula teks yang pernah disimpan dengan cepat. Tekan dan tahan ⌥ dalam bar menu untuk memadam teks yang disimpan dengan cepat.";
@@ -75,11 +75,11 @@
 "Help.06" = "Gunakan ↑/↓ untuk bergerak antara glif, ⌘↑/⌘↓ untuk bergerak antara glif asas, dan ⌥↑/⌥↓ untuk melompat ke glif pertama atau terakhir dalam senarai.";
 "Help.07" = "Gunakan ⌘C untuk menyalin semua aksara berkod bagi glif yang dipilih.";
 "Help.08" = "Letakkan penuding di atas lencana Unicode untuk melihat nama aksara yang ditakrifkan oleh piawaian Unicode.";
-"Help.09" = "“Semua Glif” ialah paparan lalai. Klik sekunder untuk menukar paparan, atau tekan ⌘1 untuk “Glif Tunggal”, ⌘2 untuk “Berbilang Aksara” atau ⌘3 untuk “Semua Glif”.";
-"Help.10" = "Dalam “Berbilang Aksara”, klik glif untuk melihat alternatifnya. Klik sekunder atau tekan ⌘5 untuk bertukar antara tulisan mendatar dengan tulisan menegak. “Penjajaran Teks” dan “Tipografi” juga tersedia di sini. Menu “Paparan” dalam bar menu menyediakan lebih banyak pilihan.";
-"Help.11" = "Dalam “Semua Glif”, klik dua kali pada glif untuk menambahkannya pada teks sedia ada. Apabila anda mengklik glif dalam bar sisi, glif itu berkelip dalam “Semua Glif”. Klik sekunder untuk mencari “Tapis mengikut Ciri”.";
-"Help.12" = "Gunakan ⌘+/⌘− atau cubit pada trackpad untuk membesarkan atau mengecilkan glif. Dalam “Berbilang Aksara”, gunakan ⌥⌘+/⌥⌘− atau gerak isyarat cubit mendatar untuk menambah atau mengurangkan jidar, dan ⌃⌘+/⌃⌘− atau gerak isyarat cubit menegak untuk menambah atau mengurangkan jarak baris. Tekan ⌘0 untuk memulihkan saiz lalai.";
-"Help.13" = "Bayang menunjukkan kotak sempadan, termasuk lebar dan tinggi glif serta tinggi dan jarak baris dalam tata letak teks. Tekan ⌘4 untuk menyembunyikannya.";
+"Help.09" = "“Grid Glif” ialah paparan lalai. Klik sekunder untuk menukar paparan, atau tekan ⌘1 untuk “Glif Tunggal”, ⌘2 untuk “Aksara” atau ⌘3 untuk “Grid Glif”.";
+"Help.10" = "Dalam “Aksara”, klik glif untuk melihat alternatifnya. Klik sekunder atau tekan ⌘5 untuk bertukar antara tulisan mendatar dengan tulisan menegak. “Penjajaran Teks” dan “Tipografi” juga tersedia di sini. Menu “Paparan” dalam bar menu menyediakan lebih banyak pilihan.";
+"Help.11" = "Dalam “Grid Glif”, klik dua kali pada glif untuk menambahkannya pada teks sedia ada. Apabila anda mengklik glif dalam bar sisi, glif itu berkelip dalam “Grid Glif”. Klik sekunder untuk mencari “Tapis mengikut Ciri”.";
+"Help.12" = "Gunakan ⌘+/⌘− atau cubit pada trackpad untuk membesarkan atau mengecilkan teks. Dalam “Aksara”, gunakan ⌥⌘+/⌥⌘− atau gerak isyarat cubit mendatar untuk menambah atau mengurangkan jidar, dan ⌃⌘+/⌃⌘− atau gerak isyarat cubit menegak untuk menambah atau mengurangkan jarak baris. Tekan ⌘0 untuk memulihkan saiz lalai.";
+"Help.13" = "Bayang menunjukkan kotak sempadan, termasuk lebar dan tinggi glif serta tinggi dan jarak baris dalam tataletak teks. Tekan ⌘4 untuk menyembunyikannya.";
 "Help.14" = "Mod Gelap disokong. Berhati-hati apabila mengklik glif yang dipenuhi warna kerana cahayanya mungkin menyilaukan. Anda boleh menukar warna glif, bayang kotak sempadan dan latar belakang melalui “Warna” dalam bar menu. Pilih “Simpan Palet Semasa” untuk menyimpan warna anda. Tekan dan tahan ⌥ untuk melihat “Padam Palet”.";
 "Help.15" = "Pilih “Gunakan sebagai Lalai” dalam bar menu untuk menyimpan paparan, warna, saiz dan seting pratonton semasa yang lain, serta saiz tetingkap. Fail fon yang dibuka kemudian akan menggunakan seting ini. Tekan dan tahan ⌥ untuk memilih “Pulihkan ke Lalai”.";
 
@@ -102,7 +102,7 @@
 "Save Current Text" = "Simpan Teks Semasa";
 "No Saved Text" = "Tiada Teks Disimpan";
 
-/* Preview colors and native line spacing. */
+/* Preview colors and native leading. */
 "Colors" = "Warna";
 "Delete Palettes" = "Padam Palet";
 "Save Current Palette" = "Simpan Palet Semasa";
@@ -114,8 +114,8 @@
 "Glyph…" = "Glif…";
 "Background…" = "Latar Belakang…";
 "Bounding Box…" = "Kotak Sempadan…";
-"Increase Line Spacing" = "Tambah Jarak Baris";
-"Decrease Line Spacing" = "Kurangkan Jarak Baris";
+"Increase Leading" = "Tambah Jarak Baris";
+"Decrease Leading" = "Kurangkan Jarak Baris";
 
 /* Explicit defaults for newly opened font windows. */
 
@@ -127,10 +127,10 @@
 /* Native typography and opening settings. */
 "Typography" = "Tipografi";
 "Other" = "Lain-lain";
-"No Typography Features" = "Tiada ciri tipografi";
+"No Typographic Features" = "Tiada ciri tipografi";
 "Default Size" = "Saiz Lalai";
 "Use as Defaults" = "Gunakan sebagai Lalai";
-"Restore to Defaults" = "Pulihkan ke Lalai";
+"Restore Default" = "Pulihkan ke Lalai";
 "Text Decorations" = "Hiasan Teks";
 "Filter by Feature" = "Tapis mengikut Ciri";
 "No Features to Filter" = "Tiada ciri untuk ditapis";

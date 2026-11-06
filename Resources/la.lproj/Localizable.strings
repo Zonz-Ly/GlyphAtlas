@@ -7,9 +7,9 @@
 "All Users…" = "Omnes utentes…";
 "System Fonts…" = "Insiti…";
 "Open Recent" = "Recentia aperire";
-"Recent Folders" = "Recentia…";
+"Recent Location…" = "Locus nuper adhibitus…";
 "Clear Menu" = "Indicem vacuare";
-"Close Window" = "Fenestram claudere";
+"Close" = "Claudere";
 "Cut" = "Excidere";
 "Copy" = "Copiare";
 "Paste" = "Inserere";
@@ -33,8 +33,8 @@
 "Add Glyph" = "Formam addere";
 "Replace Glyph" = "Formam substituere";
 "Open" = "Aperire";
-"Zoom In" = "Amplificare";
-"Zoom Out" = "Minuere";
+"Make Text Bigger" = "Textum amplificare";
+"Make Text Smaller" = "Textum minuere";
 "Text Alignment" = "Aptatio textus";
 "Left" = "Ad sinistram";
 "Center" = "In medio";
@@ -47,15 +47,15 @@
 "Hide Others" = "Alia celare";
 "Quit Glyph Atlas" = "Glyph Atlas claudere";
 "Glyph Atlas Help" = "Auxilium Glyph Atlas";
-"Open Font From" = "Typum aperire ex";
+"Open At" = "Aperire ex loco";
 "No Recent Fonts" = "Nullus typus nuper apertus";
 "Single Glyph" = "Forma singula";
-"Multi-Character" = "Plura signa";
+"Characters" = "Signa";
+"Glyph Grid" = "Craticula formarum";
 "All Glyphs" = "Omnes formae";
-"Show Bounding Box" = "Rectangulum circumiacens ostendere";
-"Bounding Box Zoom In" = "Rectangulum circumiacens amplificare";
-"Bounding Box Zoom Out" = "Rectangulum circumiacens minuere";
-"Vertical" = "Scriptura verticalis";
+"Expand Bounding Box" = "Rectangulum circumiacens amplificare";
+"Shrink Bounding Box" = "Rectangulum circumiacens minuere";
+"Vertical Layout" = "Dispositio verticalis";
 "Enter text" = "Textum insere";
 "Font Name" = "Nomen typi";
 "Font File" = "Fasciculus typi";
@@ -67,7 +67,7 @@
 "CoreText could not create this font." = "CoreText hunc typum creare non potuit.";
 "Bounding Box" = "Rectangulum circumiacens";
 "Text and alternate glyph list" = "Index textus et formarum alternativarum";
-"Help.01" = "In serie indicum elige «Typum aperire ex» ut typum e directorio typorum directe aperias. Potes etiam fasciculum ad iconem programmatis vel in fenestram trahere in qua typus iam apertus est. Glyph Atlas designare potes ut programma praefinitum ad fasciculos typorum aperiendos. Fasciculi nuper aperti iterum aperiri possunt.";
+"Help.01" = "In serie indicum elige «Aperire ex loco» ut typum e directorio typorum directe aperias. Potes etiam fasciculum ad iconem programmatis vel in fenestram trahere in qua typus iam apertus est. Glyph Atlas designare potes ut programma praefinitum ad fasciculos typorum aperiendos. Fasciculi nuper aperti iterum aperiri possunt.";
 "Help.02" = "Ex serie indicum uno ictu typum in fenestra praesenti apertum in directorium typorum tuum copia. Clavem ⌥ tene ut typum in directorium omnibus utentibus commune copies.";
 "Help.03" = "Cum typum variabilem aperis, tabula parametrorum iuxta globulos fenestrae apparet. Tabulam extra trahe ut aperta maneat. Valorem numericum elige eumque clavibus ↑/↓ vel ⇧↑/⇧↓ compone.";
 "Help.04" = "Unum vel plura signa in tabula laterali insere ut omnes formas pertinentes videas. Clavibus ⌥⏎ lineam novam incipe. Dextro muris globulo preme et «Textus servatus» elige ut textum praesentem serves aut textum antea servatum celeriter inseras. Dum index apertus est, ⌥ tene ut textum servatum celeriter deleas.";
@@ -75,17 +75,17 @@
 "Help.06" = "Clavibus ↑/↓ inter formas, ⌘↑/⌘↓ inter formas principales moveare. Clavibus ⌥↑/⌥↓ ad primam vel ultimam indicis formam sali.";
 "Help.07" = "Claves ⌘C preme ut omnia signa codice definita formae selectae copies.";
 "Help.08" = "Indicem muris super notam Unicode siste ut nomen signi a norma Unicode definitum videas.";
-"Help.09" = "Initio «Omnes formae» ostenduntur. Dextro muris globulo prospectum muta aut ⌘1 pro «Forma singula», ⌘2 pro «Plura signa» vel ⌘3 pro «Omnes formae» preme.";
-"Help.10" = "In prospectu «Plura signa» formam preme ut formas alternativas videas. Dextro muris globulo aut ⌘5 preme ut inter scripturam horizontalem et verticalem alternes. Ibi etiam «Aptatio textus» et «Typographia» adsunt. In indice «Prospectus» plura eligere potes.";
-"Help.11" = "In prospectu «Omnes formae» formam bis preme ut eam textui iam inscripto addas. Formam in tabula laterali preme ut in prospectu «Omnes formae» micet. Dextro muris globulo preme ut «Secundum proprietatem seligere» invenias.";
-"Help.12" = "Clavibus ⌘+/⌘− vel duobus digitis in tabula tactili contractis aut diductis formas amplifica vel minue. In «Plura signa» clavibus ⌥⌘+/⌥⌘− vel gestu horizontali margines muta. Clavibus ⌃⌘+/⌃⌘− vel gestu verticali intervallum linearum muta. Claves ⌘0 preme ut ad magnitudinem praefinitam redeas.";
+"Help.09" = "Initio «Craticula formarum» ostenduntur. Dextro muris globulo prospectum muta aut ⌘1 pro «Forma singula», ⌘2 pro «Signa» vel ⌘3 pro «Craticula formarum» preme.";
+"Help.10" = "In prospectu «Signa» formam preme ut formas alternativas videas. Dextro muris globulo aut ⌘5 preme ut inter scripturam horizontalem et verticalem alternes. Ibi etiam «Aptatio textus» et «Typographia» adsunt. In indice «Prospectus» plura eligere potes.";
+"Help.11" = "In prospectu «Craticula formarum» formam bis preme ut eam textui iam inscripto addas. Formam in tabula laterali preme ut in prospectu «Craticula formarum» micet. Dextro muris globulo preme ut «Secundum proprietatem seligere» invenias.";
+"Help.12" = "Clavibus ⌘+/⌘− vel duobus digitis in tabula tactili contractis aut diductis textum amplifica vel minue. In «Signa» clavibus ⌥⌘+/⌥⌘− vel gestu horizontali margines muta. Clavibus ⌃⌘+/⌃⌘− vel gestu verticali intervallum linearum muta. Claves ⌘0 preme ut ad magnitudinem praefinitam redeas.";
 "Help.13" = "Umbra rectangulum circumiacens indicat, quod latitudinem altitudinemque formae ac linearum altitudinem et intervallum complectitur. Claves ⌘4 preme ut illud celes.";
 "Help.14" = "Modus obscurus adhiberi potest. Cave ne forma pigmento impleta te perstringat cum eam premis. In «Colores» colorem formae, umbrae rectanguli circumiacentis et fundi mutare potes. Elige «Tabulam colorum praesentem servare» ut colores serves. Clavem ⌥ tene ut «Tabulas colorum delere» appareat.";
 "Help.15" = "In serie indicum elige «Pro praefinitis adhibere» ut prospectum praesentem, colores, magnitudinem, alias optiones praevisionis et magnitudinem fenestrae serves. Fasciculi typorum postea aperti his optionibus utentur. Clavem ⌥ tene ut «Praefinita restituere» eligas.";
 
 /* Variable font controls. */
 "Variable" = "Variabilis";
-"Named Instance" = "Variatio nominata";
+"Named Instance" = "Exemplar nominatum";
 "Default" = "Praefinitum";
 "Custom" = "Proprium";
 
@@ -102,7 +102,7 @@
 "Save Current Text" = "Textum praesentem servare";
 "No Saved Text" = "Nullus textus servatus";
 
-/* Preview colors and native line spacing. */
+/* Preview colors and native leading. */
 "Colors" = "Colores";
 "Delete Palettes" = "Tabulas colorum delere";
 "Save Current Palette" = "Tabulam colorum praesentem servare";
@@ -114,8 +114,8 @@
 "Glyph…" = "Forma…";
 "Background…" = "Fundus…";
 "Bounding Box…" = "Rectangulum circumiacens…";
-"Increase Line Spacing" = "Intervallum linearum augere";
-"Decrease Line Spacing" = "Intervallum linearum minuere";
+"Increase Leading" = "Intervallum linearum augere";
+"Decrease Leading" = "Intervallum linearum minuere";
 
 /* Explicit defaults for newly opened font windows. */
 
@@ -127,10 +127,10 @@
 /* Native typography and opening settings. */
 "Typography" = "Typographia";
 "Other" = "Alia";
-"No Typography Features" = "Nulla proprietas typographica";
+"No Typographic Features" = "Nulla proprietas typographica";
 "Default Size" = "Magnitudo praefinita";
 "Use as Defaults" = "Pro praefinitis adhibere";
-"Restore to Defaults" = "Praefinita restituere";
+"Restore Default" = "Praefinita restituere";
 "Text Decorations" = "Ornamenta textus";
 "Filter by Feature" = "Secundum proprietatem seligere";
 "No Features to Filter" = "Nulla proprietas ad seligendum";

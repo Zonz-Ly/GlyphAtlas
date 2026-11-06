@@ -677,13 +677,13 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
     NSMenu *fileMenu = [[NSMenu alloc] initWithTitle:NSLocalizedString(@"File", @"File")];
     fileItem.submenu = fileMenu;
 
-    NSString *openFromTitle = NSLocalizedString(@"Open Font From", @"Open font folder submenu");
+    NSString *openFromTitle = NSLocalizedString(@"Open At", @"Open font folder submenu");
     NSMenuItem *openFrom = [fileMenu addItemWithTitle:openFromTitle action:nil keyEquivalent:@""];
     NSMenu *fontFolders = [[NSMenu alloc] initWithTitle:openFromTitle];
     openFrom.submenu = fontFolders;
 
     NSMenuItem *recentFolders = [fontFolders
-        addItemWithTitle:NSLocalizedString(@"Recent Folders", @"Open panel at its recent folder")
+        addItemWithTitle:NSLocalizedString(@"Recent Location…", @"Open panel at its recent folder")
                   action:@selector(openFont:) keyEquivalent:@"o"];
     recentFolders.target = self;
     NSMenuItem *shortcut = [recentFolders copy];
@@ -730,7 +730,7 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
 
     [fileMenu addItem:[NSMenuItem separatorItem]];
 
-    [fileMenu addItemWithTitle:NSLocalizedString(@"Close Window", @"Close Window")
+    [fileMenu addItemWithTitle:NSLocalizedString(@"Close", @"Close the current window")
                         action:@selector(performClose:)
                  keyEquivalent:@"w"];
 
@@ -878,7 +878,9 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
     NSMenu *menu = [[(includeZoom ? NSMenu.class : GAContextViewMenu.class) alloc]
         initWithTitle:NSLocalizedString(@"View", @"View")];
     // Menu order is also the shortcut order: Single ⌘1, Multi ⌘2, All ⌘3.
-    NSArray<NSString *> *modeTitles = @[NSLocalizedString(@"Single Glyph", @"Single Glyph"), NSLocalizedString(@"Multi-Character", @"Multi-Character"), NSLocalizedString(@"All Glyphs", @"All Glyphs")];
+    NSArray<NSString *> *modeTitles = @[NSLocalizedString(@"Single Glyph", @"Single Glyph view"),
+                                       NSLocalizedString(@"Characters", @"Characters view"),
+                                       NSLocalizedString(@"Glyph Grid", @"Glyph Grid view")];
     NSArray<NSNumber *> *modeTags = @[@(GAViewModeSingleGlyph),
                                       @(GAViewModeMultiCharacter),
                                       @(GAViewModeAllGlyphs)];
@@ -896,7 +898,7 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
         [menu addItem:NSMenuItem.separatorItem];
     }
 
-    NSMenuItem *metrics = [menu addItemWithTitle:NSLocalizedString(@"Show Bounding Box", @"Show Bounding Box")
+    NSMenuItem *metrics = [menu addItemWithTitle:NSLocalizedString(@"Bounding Box", @"Toggle the bounding box")
                                           action:@selector(toggleShowMetrics:)
                                    keyEquivalent:@"4"];
     metrics.target = self;
@@ -917,35 +919,35 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
         return menu;
     }
 
-    NSMenuItem *zoomIn = [menu addItemWithTitle:NSLocalizedString(@"Zoom In", @"Zoom In")
+    NSMenuItem *zoomIn = [menu addItemWithTitle:NSLocalizedString(@"Make Text Bigger", @"Increase the preview text size")
                                          action:@selector(zoomIn:)
                                   keyEquivalent:@"+"];
     zoomIn.target = self;
-    NSMenuItem *metricsZoomIn = [menu addItemWithTitle:NSLocalizedString(@"Bounding Box Zoom In", @"Bounding Box Zoom In")
+    NSMenuItem *metricsZoomIn = [menu addItemWithTitle:NSLocalizedString(@"Expand Bounding Box", @"Expand the preview bounding box")
                                                 action:@selector(zoomMetricsIn:)
                                          keyEquivalent:@"+"];
     metricsZoomIn.target = self;
     metricsZoomIn.keyEquivalentModifierMask =
         NSEventModifierFlagCommand | NSEventModifierFlagOption;
     metricsZoomIn.alternate = YES;
-    NSMenuItem *spacingIn = [menu addItemWithTitle:NSLocalizedString(@"Increase Line Spacing", @"Increase preview line spacing")
+    NSMenuItem *spacingIn = [menu addItemWithTitle:NSLocalizedString(@"Increase Leading", @"Increase preview leading")
         action:@selector(increaseLineSpacing:) keyEquivalent:@"+"];
     spacingIn.target = self;
     spacingIn.keyEquivalentModifierMask = NSEventModifierFlagCommand | NSEventModifierFlagControl;
     spacingIn.alternate = YES;
 
-    NSMenuItem *zoomOut = [menu addItemWithTitle:NSLocalizedString(@"Zoom Out", @"Zoom Out")
+    NSMenuItem *zoomOut = [menu addItemWithTitle:NSLocalizedString(@"Make Text Smaller", @"Decrease the preview text size")
                                           action:@selector(zoomOut:)
                                    keyEquivalent:@"-"];
     zoomOut.target = self;
-    NSMenuItem *metricsZoomOut = [menu addItemWithTitle:NSLocalizedString(@"Bounding Box Zoom Out", @"Bounding Box Zoom Out")
+    NSMenuItem *metricsZoomOut = [menu addItemWithTitle:NSLocalizedString(@"Shrink Bounding Box", @"Shrink the preview bounding box")
                                                  action:@selector(zoomMetricsOut:)
                                           keyEquivalent:@"-"];
     metricsZoomOut.target = self;
     metricsZoomOut.keyEquivalentModifierMask =
         NSEventModifierFlagCommand | NSEventModifierFlagOption;
     metricsZoomOut.alternate = YES;
-    NSMenuItem *spacingOut = [menu addItemWithTitle:NSLocalizedString(@"Decrease Line Spacing", @"Decrease preview line spacing")
+    NSMenuItem *spacingOut = [menu addItemWithTitle:NSLocalizedString(@"Decrease Leading", @"Decrease preview leading")
         action:@selector(decreaseLineSpacing:) keyEquivalent:@"-"];
     spacingOut.target = self;
     spacingOut.keyEquivalentModifierMask = NSEventModifierFlagCommand | NSEventModifierFlagControl;
@@ -961,7 +963,7 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
     NSMenuItem *opening = [menu addItemWithTitle:NSLocalizedString(@"Use as Defaults", @"Save a snapshot for future font windows")
         action:@selector(saveOpeningSettings:) keyEquivalent:@""];
     opening.target = self;
-    NSMenuItem *restoreOpening = [menu addItemWithTitle:NSLocalizedString(@"Restore to Defaults", @"Restore factory settings for future font windows")
+    NSMenuItem *restoreOpening = [menu addItemWithTitle:NSLocalizedString(@"Restore Default", @"Restore factory settings for future font windows")
         action:@selector(restoreOpeningSettings:) keyEquivalent:@""];
     restoreOpening.target = self;
     restoreOpening.alternate = YES;
@@ -975,7 +977,7 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
 
 - (void)addViewAlignmentItemsToMenu:(NSMenu *)menu {
     NSMenuItem *verticalItem = [menu
-        addItemWithTitle:NSLocalizedString(@"Vertical", @"Vertical")
+        addItemWithTitle:NSLocalizedString(@"Vertical Layout", @"Toggle vertical text layout")
                   action:@selector(toggleWritingDirection:)
            keyEquivalent:@"5"];
     verticalItem.target = self;
@@ -1053,7 +1055,7 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
 }
 
 - (void)addGlyphFeatureFilterToMenu:(NSMenu *)menu {
-    NSString *title = NSLocalizedString(@"Filter by Feature", @"All Glyphs feature output filter");
+    NSString *title = NSLocalizedString(@"Filter by Feature", @"Glyph Grid feature output filter");
     NSMenuItem *item = [menu addItemWithTitle:title action:nil keyEquivalent:@""];
     item.identifier = @"GlyphFeatureFilter";
     GAGlyphFeatureFilterMenu *choices = [[GAGlyphFeatureFilterMenu alloc] initWithTitle:title];
@@ -1075,7 +1077,7 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
         empty.enabled = NO;
         return;
     }
-    NSMenuItem *all = [menu addItemWithTitle:NSLocalizedString(@"All Glyphs", @"All Glyphs")
+    NSMenuItem *all = [menu addItemWithTitle:NSLocalizedString(@"All Glyphs", @"Show every glyph without filtering")
                                     action:@selector(chooseGlyphFeatureFilter:) keyEquivalent:@""];
     all.target = self;
     all.state = controller.allGlyphFeatureTag ? NSControlStateValueOff : NSControlStateValueOn;
@@ -1333,7 +1335,7 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
     [menu removeAllItems];
     GAFontFeatures *features = menu.controller.fontFeatures;
     if (!features.groups.count) {
-        NSMenuItem *empty = [menu addItemWithTitle:NSLocalizedString(@"No Typography Features", @"Empty native feature catalogue")
+        NSMenuItem *empty = [menu addItemWithTitle:NSLocalizedString(@"No Typographic Features", @"Empty native feature catalogue")
             action:nil keyEquivalent:@""];
         empty.enabled = NO;
     } else {

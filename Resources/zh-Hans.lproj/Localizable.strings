@@ -8,9 +8,9 @@
 "All Users…" = "所有用户…";
 "System Fonts…" = "系统内置…";
 "Open Recent" = "打开最近使用";
-"Recent Folders" = "最近使用…";
+"Recent Location…" = "最近使用…";
 "Clear Menu" = "清除菜单";
-"Close Window" = "关闭窗口";
+"Close" = "关闭";
 "Cut" = "剪切";
 "Copy" = "拷贝";
 "Paste" = "粘贴";
@@ -34,8 +34,8 @@
 "Add Glyph" = "添加字形";
 "Replace Glyph" = "替换字形";
 "Open" = "打开";
-"Zoom In" = "放大";
-"Zoom Out" = "缩小";
+"Make Text Bigger" = "放大文字";
+"Make Text Smaller" = "缩小文字";
 "Text Alignment" = "文本对齐";
 "Left" = "左对齐";
 "Center" = "居中";
@@ -48,15 +48,15 @@
 "Hide Others" = "隐藏其他";
 "Quit Glyph Atlas" = "退出 Glyph Atlas";
 "Glyph Atlas Help" = "Glyph Atlas 帮助";
-"Open Font From" = "打开字体于";
+"Open At" = "打开字体于";
 "No Recent Fonts" = "没有最近使用的字体";
 "Single Glyph" = "单字形";
-"Multi-Character" = "多字符";
+"Characters" = "多字符";
+"Glyph Grid" = "字形表";
 "All Glyphs" = "全部字";
-"Show Bounding Box" = "显示边界框";
-"Bounding Box Zoom In" = "放大边界框";
-"Bounding Box Zoom Out" = "缩小边界框";
-"Vertical" = "竖排";
+"Expand Bounding Box" = "放大边界框";
+"Shrink Bounding Box" = "缩小边界框";
+"Vertical Layout" = "竖排";
 "Enter text" = "输入文本";
 "Font Name" = "字体名称";
 "Font File" = "字体文件";
@@ -68,7 +68,7 @@
 "CoreText could not create this font." = "CoreText 无法创建此字体。";
 "Bounding Box" = "边界框";
 "Text and alternate glyph list" = "文本与替换字形列表";
-"Help.01" = "在菜单栏中可以选择快速在字体安装文件夹中打开字体，也可以把字体拖到 app 图标或已打开的字体窗口上来打开字体，更欢迎把本 app 设置为默认打开方式。支持最近打开的项目。";
+"Help.01" = "在菜单栏选择「打开字体于」，可以快速在字体安装文件夹中打开字体，也可以把字体拖到 app 图标或已打开的字体窗口上来打开字体，更欢迎把本 app 设置为默认打开方式。支持最近打开的项目。";
 "Help.02" = "在菜单栏中可以把当前窗口的字体一键拷贝到用户字体文件夹。按住 ⌥ 可以改拷贝到所有用户的字体文件夹。";
 "Help.03" = "打开可变字体时，在红绿灯旁边会有一个可变参数设置面板，还可以拖出来固定。选中数字后还可以按 ↑／↓ 或 ⇧↑／⇧↓ 调整数值。";
 "Help.04" = "在侧边栏中输入单个或多个字符来查看所有关联字形，可以用 ⌥⏎ 换行，还可以点右键找到「常用文本」，记住当前文本或快速输入之前记住的文本。也可以在菜单栏中按住 ⌥ 来快速删除。";
@@ -76,17 +76,17 @@
 "Help.06" = "使用方向键 ↑／↓ 选择上下字形，使用 ⌘↑／⌘↓ 选择上下默认字形，使用 ⌥↑／⌥↓ 选择字形列表中的第一个和最后一个字形。";
 "Help.07" = "使用 ⌘C 拷贝选中字形的所有编码字符。";
 "Help.08" = "鼠标在 Unicode 上静置时显示该 Unicode 标准规定的字符名称。";
-"Help.09" = "默认打开全部字，可以点右键切换或使用 ⌘1 单字形、⌘2 多字符、⌘3 全部字。";
+"Help.09" = "默认打开字形表，可以点右键切换或使用 ⌘1 单字形、⌘2 多字符、⌘3 字形表。";
 "Help.10" = "在多字符中点一下字形就能查看替换字。支持竖排，点右键或使用 ⌘5 切换，文本对齐和字体排印也在这里。菜单栏「显示」中还有更多选项。";
-"Help.11" = "在全部字中点两下字形可以添加到已有文字中，在侧边栏中点一下字形还会在全部字中闪一闪。点右键可以找到「筛选特性」。";
-"Help.12" = "用 ⌘+／⌘− 来放大或缩小字形，也可以使用触控板捏合。在多字符中还可以用 ⌥⌘+／⌥⌘− 或横着捏合触控板来放大或缩小边距、用 ⌃⌘+／⌃⌘− 或竖着捏合触控板来增加或减少行距。按 ⌘0 恢复默认大小。";
+"Help.11" = "在字形表中点两下字形可以添加到已有文字中，在侧边栏中点一下字形还会在字形表中闪一闪。点右键可以找到「筛选特性」。";
+"Help.12" = "用 ⌘+／⌘− 来放大或缩小文字，也可以使用触控板捏合。在多字符中还可以用 ⌥⌘+／⌥⌘− 或横着捏合触控板来放大或缩小边距、用 ⌃⌘+／⌃⌘− 或竖着捏合触控板来增加或减少行距。按 ⌘0 恢复默认大小。";
 "Help.13" = "用阴影表示边界框，包括字形宽度高度和排版行高行距，可以用 ⌘4 隐藏。";
 "Help.14" = "有做深色模式，但要小心点到实心字形会眼瞎瞎喔。在菜单栏的「颜色」里可以改字形、边界框阴影和背景的颜色。调好的颜色可以点「保存当前配色」，按住 ⌥ 可以删除配色。";
 "Help.15" = "在菜单栏点「用作默认」，可以记住当前的视图、颜色、大小等预览设置和窗口大小，以后每次都以当前选择来打开字体文件。按住 ⌥ 可以改点「恢复默认」。";
 
 /* Variable font controls. */
 "Variable" = "可变";
-"Named Instance" = "命名实例";
+"Named Instance" = "具名实例";
 "Default" = "默认";
 "Custom" = "自定";
 
@@ -103,7 +103,7 @@
 "Save Current Text" = "保存当前文本";
 "No Saved Text" = "没有已保存的文本";
 
-/* Preview colors and native line spacing. */
+/* Preview colors and native leading. */
 "Colors" = "颜色";
 "Delete Palettes" = "删除配色";
 "Save Current Palette" = "保存当前配色";
@@ -115,8 +115,8 @@
 "Glyph…" = "字形…";
 "Background…" = "背景…";
 "Bounding Box…" = "边界框…";
-"Increase Line Spacing" = "增大行距";
-"Decrease Line Spacing" = "减小行距";
+"Increase Leading" = "增大行距";
+"Decrease Leading" = "减小行距";
 
 /* Explicit defaults for newly opened font windows. */
 
@@ -128,10 +128,10 @@
 /* Native typography and opening settings. */
 "Typography" = "字体排印";
 "Other" = "其他";
-"No Typography Features" = "没有字体排印特性";
+"No Typographic Features" = "没有字体排印特性";
 "Default Size" = "默认大小";
 "Use as Defaults" = "用作默认";
-"Restore to Defaults" = "恢复默认";
+"Restore Default" = "恢复默认";
 "Text Decorations" = "文字装饰";
 "Filter by Feature" = "筛选特性";
 "No Features to Filter" = "没有可筛选的特性";

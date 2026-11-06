@@ -2,11 +2,11 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>“%@” contains %lu fonts.</key>
+	<key>“%@” contains %lu styles.</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>
-		<string>In «%1$@» numerus typorum est %2$#@fonts@.</string>
-		<key>fonts</key>
+		<string>In «%1$@» numerus specierum est %2$#@styles@.</string>
+		<key>styles</key>
 		<dict>
 			<key>NSStringFormatSpecTypeKey</key>
 			<string>NSStringPluralRuleType</string>
