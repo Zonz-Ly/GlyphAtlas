@@ -3,13 +3,14 @@ set -euo pipefail
 
 CREATE_ZIP=false
 ARCHS=""
+COMMAND_NAME="If Won't Open Drag this into Terminal.command"
 usage() {
   echo "Usage: bash build.sh [-a | -x | -u] [-z]"
   echo "  Default  Build the current machine's architecture"
   echo "  -a       Build arm64"
   echo "  -x       Build x86_64"
   echo "  -u       Build universal (arm64 + x86_64)"
-  echo "  -z       Also create dist/Glyph Atlas.zip"
+  echo "  -z       Also create dist/Glyph Atlas.zip with $COMMAND_NAME"
 }
 
 for ARG in "$@"; do
@@ -110,7 +111,23 @@ xattr -cr "$APP" 2>/dev/null || true
 
 echo "Done: $APP"
 if "$CREATE_ZIP"; then
+  COMMAND="$DIST/$COMMAND_NAME"
+  rm -f "$COMMAND"
+  cat > "$COMMAND" <<'SCRIPT'
+#!/bin/bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+/usr/bin/xattr -rc "$SCRIPT_DIR/Glyph Atlas.app"
+echo "Extended attributes cleared. You can now open Glyph Atlas.app."
+SCRIPT
+  chmod +x "$COMMAND"
+  PACKAGE="$BUILD/package"
+  rm -rf "$PACKAGE"
+  mkdir -p "$PACKAGE"
+  ditto --norsrc --noextattr "$APP" "$PACKAGE/Glyph Atlas.app"
+  cp "$COMMAND" "$PACKAGE/"
   rm -f "$ZIP"
-  ditto -c -k --keepParent --norsrc --noextattr "$APP" "$ZIP"
+  ditto -c -k --norsrc --noextattr "$PACKAGE" "$ZIP"
   echo "Archive: $ZIP"
 fi

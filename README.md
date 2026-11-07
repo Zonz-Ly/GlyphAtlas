@@ -14,7 +14,7 @@ A native macOS font and alternate-glyph inspector. Type text to see every altern
 ## Support
 
 - .ttf .otf .ttc .otc .woff .woff2 .dfont
-- Chinese (Mandarin, Changsha Xiang, Teochew, Cantonese, Shanghainese), Tibetan, Uyghur, Japanese, Korean, English, German, French, Spanish, Italian, Brazilian Portuguese, Russian, Vietnamese, Thai, Arabic, Hindi, Malay, Khmer, Latin, Esperanto.
+- Chinese (Mandarin, Changsha Xiang, Teochew, Cantonese, Shanghainese), Tibetan, Uyghur, Japanese, Korean, English, German, French, Spanish, Italian, Brazilian Portuguese, Russian, Vietnamese, Thai, Arabic, Hindi, Malay, Khmer, Latin, Esperanto, Klingon.
 
 ## Build
 
@@ -34,8 +34,7 @@ The default build uses the current machine's architecture. Use a flag to select 
 
 ## Opening the app
 
-- Extract the app from the ZIP created by the build script or downloaded from [Releases](https://github.com/Zonz-Ly/GlyphAtlas/releases).
-- If macOS blocks the app from opening, open the built-in Terminal app, type `xattr -rc`, then **a space**, and drag the app into the window. Check that the app's file path has appeared, press Return, then open the app.
+- If macOS blocks the app from opening, open Terminal, drag `If Won't Open Drag this into Terminal.command` into the Terminal window, and press `⏎`. Then open the app.
 
 ## Usage
 
