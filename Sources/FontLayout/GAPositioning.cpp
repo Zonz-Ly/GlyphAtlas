@@ -61,6 +61,7 @@ class Positioning {
     Buffer &buffer_;
     Budget budget_;
     std::map<size_t, Attachment> attachments_;
+    std::vector<Point> pens_;
     std::set<std::pair<unsigned, size_t>> active_;
     std::optional<size_t> next(size_t at, const Lookup &lookup) const {
         for (size_t i = at + 1; i < buffer_.size(); i++)
@@ -278,17 +279,15 @@ class Positioning {
         return result;
     }
     Point pen(size_t index) const {
+        if (!settings_.rtl)
+            return pens_[index];
         Point p;
-        if (settings_.rtl)
-            for (size_t i = index + 1; i < buffer_.size(); i++) {
-                p.x += buffer_[i].xAdvance;
-                p.y += buffer_[i].yAdvance;
-            }
-        else
-            for (size_t i = 0; i < index; i++) {
-                p.x += buffer_[i].xAdvance;
-                p.y += buffer_[i].yAdvance;
-            }
+        // Each RTL suffix originally sums forwards. Retain that order rather
+        // than changing floating-point results with a backwards suffix sum.
+        for (size_t i = index + 1; i < buffer_.size(); i++) {
+            p.x += buffer_[i].xAdvance;
+            p.y += buffer_[i].yAdvance;
+        }
         return p;
     }
     void resolve(size_t index, std::set<size_t> &path, std::set<size_t> &done) {
@@ -342,8 +341,23 @@ class Positioning {
             }
         std::set<size_t> done, path;
         std::vector<size_t> keys;
-        for (const auto &entry : attachments_)
+        size_t penCount = 0;
+        for (const auto &entry : attachments_) {
             keys.push_back(entry.first);
+            if (!entry.second.cursive)
+                penCount = std::max(penCount, std::max(entry.first, entry.second.parent) + 1);
+        }
+        // Advances are final; resolve changes offsets only. Stop at the last
+        // required pen so a lone early mark does not scan the remaining text.
+        if (!settings_.rtl && penCount) {
+            pens_.reserve(penCount);
+            Point p;
+            for (size_t i = 0; i < penCount; i++) {
+                pens_.push_back(p);
+                p.x += buffer_[i].xAdvance;
+                p.y += buffer_[i].yAdvance;
+            }
+        }
         for (size_t index : keys)
             resolve(index, path, done);
     }
