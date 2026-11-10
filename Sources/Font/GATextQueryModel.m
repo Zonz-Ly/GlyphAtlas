@@ -85,18 +85,6 @@ static GACharacterGroup *DisplayCopy(GACharacterGroup *group) {
     return copy;
 }
 
-static BOOL IntersectsSelection(NSRange range, NSArray<GAGlyphSelectionRun *> *runs) {
-    if (range.location == NSNotFound || range.length == 0) {
-        return NO;
-    }
-    for (GAGlyphSelectionRun *run in runs) {
-        if (NSIntersectionRange(range, run.range).length > 0) {
-            return YES;
-        }
-    }
-    return NO;
-}
-
 static GACharacterGroup *SelectionGroup(GAGlyphSelectionRun *run, GAFontDocument *document,
                                         BOOL (^cancelled)(void)) {
     GAGlyphSelection *selection = run.selection;
@@ -136,11 +124,51 @@ static NSUInteger GASourceEndpointCount(const NSUInteger *points, NSUInteger cou
     return first;
 }
 
+static BOOL IntersectsSelection(NSRange range, NSArray<GAGlyphSelectionRun *> *runs,
+                                  const NSUInteger *starts, const NSUInteger *ends,
+                                  NSUInteger count) {
+    if (range.location == NSNotFound || range.length == 0) return NO;
+    if (starts && NSMaxRange(range) >= range.location)
+        return GASourceEndpointCount(starts, count, NSMaxRange(range), NO) >
+               GASourceEndpointCount(ends, count, range.location, YES);
+    for (GAGlyphSelectionRun *run in runs)
+        if (NSIntersectionRange(range, run.range).length > 0) return YES;
+    return NO;
+}
+
+static void GAMergeSelectionCandidate(GAGlyphVariant *candidate, NSMutableArray *variants,
+                                       GAFontDocument *document, NSString *text) {
+    for (GAGlyphVariant *existing in variants)
+        if ([existing.glyphIDs isEqual:candidate.glyphIDs]) {
+            [existing addFeatureSources:candidate.featureSources];
+            return;
+        }
+    GAGlyphVariant *copy = [document rebindVariant:candidate content:text];
+    copy.base = NO;
+    [variants addObject:copy];
+}
+
 NSArray<GACharacterGroup *> *GABuildDisplayGroups(NSArray<GACharacterGroup *> *groups,
                                                   NSString *text,
                                                   NSArray<GAGlyphSelectionRun *> *selections,
                                                   GAFontDocument *document,
                                                   BOOL (^cancelled)(void)) {
+    BOOL indexSelections = groups.count >= 256 && selections.count >= 8;
+    NSMutableDictionary<NSValue *, NSMutableArray<GAGlyphVariant *> *> *seedCandidates =
+        indexSelections ? [NSMutableDictionary dictionary] : nil;
+    if (indexSelections) {
+        for (GACharacterGroup *source in groups) {
+            if (cancelled && cancelled()) return nil;
+            for (GAGlyphVariant *candidate in source.variants) {
+                if (cancelled && cancelled()) return nil;
+                if (!candidate.fromGlyphSeed || candidate.isLigature ||
+                    !NSIntersectionRange(source.textRange, candidate.sourceTextRange).length) continue;
+                NSValue *key = [NSValue valueWithRange:candidate.sourceTextRange];
+                if (!seedCandidates[key]) seedCandidates[key] = [NSMutableArray array];
+                [seedCandidates[key] addObject:candidate];
+            }
+        }
+    }
     NSMutableArray<GAGlyphSelectionRun *> *validSelections = [NSMutableArray array];
     NSMutableArray<GACharacterGroup *> *selectionGroups = [NSMutableArray array];
     for (GAGlyphSelectionRun *run in selections) {
@@ -149,36 +177,54 @@ NSArray<GACharacterGroup *> *GABuildDisplayGroups(NSArray<GACharacterGroup *> *g
         GACharacterGroup *selectionGroup = SelectionGroup(run, document, cancelled);
         if (selectionGroup != nil) {
             NSMutableArray *variants = [selectionGroup.variants mutableCopy];
-            for (GACharacterGroup *source in groups) {
-                if (cancelled && cancelled())
-                    return nil;
+            if (indexSelections) {
+                for (GAGlyphVariant *candidate in seedCandidates[[NSValue valueWithRange:run.range]]) {
+                    if (cancelled && cancelled()) return nil;
+                    GAMergeSelectionCandidate(candidate, variants, document, selectionGroup.text);
+                }
+            } else for (GACharacterGroup *source in groups) {
+                if (cancelled && cancelled()) return nil;
                 if (!NSIntersectionRange(source.textRange, run.range).length) continue;
                 for (GAGlyphVariant *candidate in source.variants) {
-                    if (cancelled && cancelled())
-                        return nil;
-                    if (!candidate.fromGlyphSeed || candidate.isLigature ||
-                        !NSEqualRanges(candidate.sourceTextRange, run.range))
-                        continue;
-                    GAGlyphVariant *existing = nil;
-                    for (GAGlyphVariant *v in variants)
-                        if ([v.glyphIDs isEqual:candidate.glyphIDs]) {
-                            existing = v;
-                            break;
-                        }
-                    if (existing) {
-                        [existing addFeatureSources:candidate.featureSources];
-                        continue;
-                    }
-                    GAGlyphVariant *copy = [document rebindVariant:candidate
-                                                           content:selectionGroup.text];
-                    copy.base = NO;
-                    [variants addObject:copy];
+                    if (cancelled && cancelled()) return nil;
+                    if (candidate.fromGlyphSeed && !candidate.isLigature &&
+                        NSEqualRanges(candidate.sourceTextRange, run.range))
+                        GAMergeSelectionCandidate(candidate, variants, document, selectionGroup.text);
                 }
             }
             selectionGroup.variants = variants;
             [validSelections addObject:run];
             [selectionGroups addObject:selectionGroup];
         }
+    }
+
+    NSMutableDictionary<NSValue *, NSMutableArray<GAGlyphSelectionRun *> *> *selectedRanges =
+        indexSelections ? [NSMutableDictionary dictionary] : nil;
+    NSMutableData *selectionStarts = indexSelections
+        ? [NSMutableData dataWithLength:validSelections.count * sizeof(NSUInteger)] : nil;
+    NSMutableData *selectionEnds = indexSelections
+        ? [NSMutableData dataWithLength:validSelections.count * sizeof(NSUInteger)] : nil;
+    NSUInteger *selectedStarts = selectionStarts.mutableBytes, *selectedEnds = selectionEnds.mutableBytes;
+    NSUInteger selectedCount = 0;
+    BOOL validEndpoints = indexSelections;
+    if (indexSelections) for (GAGlyphSelectionRun *run in validSelections) {
+        NSValue *key = [NSValue valueWithRange:run.range];
+        if (!selectedRanges[key]) selectedRanges[key] = [NSMutableArray array];
+        [selectedRanges[key] addObject:run];
+        NSRange range = run.range;
+        if (!range.length) continue;
+        if (range.location == NSNotFound || NSMaxRange(range) < range.location) {
+            validEndpoints = NO;
+            continue;
+        }
+        selectedStarts[selectedCount] = range.location;
+        selectedEnds[selectedCount++] = NSMaxRange(range);
+    }
+    if (validEndpoints) {
+        qsort(selectedStarts, selectedCount, sizeof(NSUInteger), GACompareSourceEndpoints);
+        qsort(selectedEnds, selectedCount, sizeof(NSUInteger), GACompareSourceEndpoints);
+    } else {
+        selectedStarts = selectedEnds = NULL;
     }
 
     NSMutableArray<GAGlyphVariant *> *ligatureVariants = [NSMutableArray array];
@@ -192,7 +238,9 @@ NSArray<GACharacterGroup *> *GABuildDisplayGroups(NSArray<GACharacterGroup *> *g
                 variant.sourceTextRange.location <= text.length &&
                 variant.sourceTextRange.length <= text.length - variant.sourceTextRange.location) {
                 BOOL sameAsInput = NO;
-                for (GAGlyphSelectionRun *run in validSelections)
+                NSArray *matchingSelections = indexSelections
+                    ? selectedRanges[[NSValue valueWithRange:variant.sourceTextRange]] : validSelections;
+                for (GAGlyphSelectionRun *run in matchingSelections)
                     if (NSEqualRanges(run.range, variant.sourceTextRange) &&
                         [run.selection.glyphIDs isEqual:variant.glyphIDs]) {
                         sameAsInput = YES;
@@ -213,7 +261,8 @@ NSArray<GACharacterGroup *> *GABuildDisplayGroups(NSArray<GACharacterGroup *> *g
         if (cancelled && cancelled())
             return nil;
         if (([group.text isEqualToString:@"\n"]) ||
-            IntersectsSelection(group.textRange, validSelections)) {
+            IntersectsSelection(group.textRange, validSelections,
+                                selectedStarts, selectedEnds, selectedCount)) {
             continue;
         }
         [sourceGroups addObject:DisplayCopy(group)];
