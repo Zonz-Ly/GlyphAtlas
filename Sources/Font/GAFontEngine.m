@@ -558,21 +558,68 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
     return cancelled && cancelled() ? nil : result;
 }
 
+static NSNumber *GAVariantBucket(NSArray<NSNumber *> *glyphs, BOOL ligature, NSRange range) {
+    NSUInteger hash = glyphs.count;
+    for (NSNumber *glyph in glyphs)
+        hash = (hash * 31) ^ glyph.hash;
+    hash = (hash * 31) ^ ligature;
+    if (ligature) {
+        hash = (hash * 31) ^ range.location;
+        hash = (hash * 31) ^ range.length;
+    }
+    return @(hash);
+}
+
+static void GAPublishVariantBuilders(NSMapTable *builders) {
+    for (GACharacterGroup *group in builders.keyEnumerator)
+        group.variants = [builders objectForKey:group];
+}
+
 - (BOOL)applyRawResult:(GARawScanResult *)result
                 groups:(NSArray<GACharacterGroup *> *)groups
              cancelled:(BOOL (^)(void))cancelled {
+    NSMapTable<GACharacterGroup *, NSMutableArray<GAGlyphVariant *> *> *builders = nil;
+    NSMapTable<GACharacterGroup *, NSMutableDictionary *> *indices = nil;
     for (GAScanCandidate *candidate in result.candidates) {
-        if (cancelled && cancelled())
+        if (cancelled && cancelled()) {
+            GAPublishVariantBuilders(builders);
             return NO;
+        }
         NSUInteger target = candidate.targetGroupIndex;
         if (target >= groups.count) {
             continue;
         }
         GACharacterGroup *group = groups[target];
-        NSMutableArray<GAGlyphVariant *> *variants =
-            [group.variants mutableCopy];
+        // Small groups are cheaper to scan directly. Index only groups that
+        // would otherwise keep copying and comparing a growing candidate list.
+        BOOL indexed = group.variants.count >= 32;
+        NSMutableArray<GAGlyphVariant *> *variants = indexed
+            ? [builders objectForKey:group] : nil;
+        NSMutableDictionary<NSNumber *, NSMutableArray<GAGlyphVariant *> *> *buckets =
+            [indices objectForKey:group];
+        if (!variants) {
+            variants = [group.variants mutableCopy];
+            if (indexed) {
+                if (!builders) {
+                    builders = [NSMapTable strongToStrongObjectsMapTable];
+                    indices = [NSMapTable strongToStrongObjectsMapTable];
+                }
+                buckets = [NSMutableDictionary dictionary];
+                for (GAGlyphVariant *variant in variants) {
+                    NSNumber *key = GAVariantBucket(variant.glyphIDs, variant.isLigature,
+                                                   variant.sourceTextRange);
+                    if (!buckets[key]) buckets[key] = [NSMutableArray array];
+                    [buckets[key] addObject:variant];
+                }
+                [builders setObject:variants forKey:group];
+                [indices setObject:buckets forKey:group];
+            }
+        }
+        NSNumber *key = indexed ? GAVariantBucket(candidate.glyphIDs, candidate.isLigature,
+                                                 candidate.sourceRange) : nil;
         GAGlyphVariant *existing = nil;
-        for (GAGlyphVariant *variant in variants) {
+        // A bucket narrows the search; full identity still decides equality.
+        for (GAGlyphVariant *variant in indexed ? buckets[key] : variants) {
             if (![variant.glyphIDs isEqualToArray:candidate.glyphIDs] ||
                 variant.isLigature != candidate.isLigature)
                 continue;
@@ -605,8 +652,14 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
             variant.unicodeScalars = GAScalarsForString(group.text);
         }
         [variants addObject:variant];
-        group.variants = variants;
+        if (indexed) {
+            if (!buckets[key]) buckets[key] = [NSMutableArray array];
+            [buckets[key] addObject:variant];
+        } else {
+            group.variants = variants;
+        }
     }
+    GAPublishVariantBuilders(builders);
     return !cancelled || !cancelled();
 }
 
