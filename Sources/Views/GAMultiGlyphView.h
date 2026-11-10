@@ -11,8 +11,8 @@ NS_ASSUME_NONNULL_BEGIN
 /// scroll/zoom geometry.
 @interface GAMultiGlyphView : NSView
 @property(nonatomic, strong) GAPreviewColors *previewColors;
-/// Additional spacing as a multiple of the displayed font's ascent + descent + leading.
-@property(nonatomic) CGFloat lineSpacingAdjustment;
+/// Native paragraph line-height multiplier; 1.0 uses the natural line height.
+@property(nonatomic) CGFloat lineHeightMultiple;
 @property(nonatomic) CGFloat textScale;
 - (void)refreshPreviewColors;
 @property (nonatomic, strong, nullable) GAFontDocument *document;
@@ -32,8 +32,11 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic) BOOL struckThrough;
 @property(nonatomic) BOOL outlined;
 - (void)resetLayoutScale;
-/// Visible size of the enclosing scroll view; drives wrapping and margins.
+/// Viewport including the area beneath the toolbar; drives wrapping and margins.
 @property (nonatomic) NSSize viewportSize;
+/// Height of the toolbar over the scroll view.
+@property (nonatomic) CGFloat toolbarTopInset;
+@property (nonatomic, readonly) NSRect pageRect;
 /// Size needed to show the whole page plus its margins.
 @property (nonatomic, readonly) NSSize documentSize;
 /// Called when the text layout changes the required document size.

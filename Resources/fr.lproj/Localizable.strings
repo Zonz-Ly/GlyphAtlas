@@ -1,62 +1,36 @@
 /* Standard commands follow macOS terminology. App-specific text and Help are translated here. */
 
-"File" = "Fichier";
-"Copy to Font Book" = "Copier dans le Livre des polices";
-"Copy to All Users" = "Copier pour tous les utilisateurs";
-"Current User…" = "Utilisateur actif…";
-"All Users…" = "Tous les utilisateurs…";
-"System Fonts…" = "Intégrées…";
-"Open Recent" = "Ouvrir l’élément récent";
-"Recent Location…" = "Dernier emplacement…";
-"Clear Menu" = "Effacer le menu";
-"Close" = "Fermer";
-"Cut" = "Couper";
-"Copy" = "Copier";
-"Paste" = "Coller";
-"Delete" = "Supprimer";
-"Select All" = "Tout sélectionner";
-"Underline" = "Souligné";
-"Strikethrough" = "Barré";
-"View" = "Présentation";
+/* Application and window commands. */
+"About Glyph Atlas" = "À propos de Glyph Atlas";
+"Hide Glyph Atlas" = "Masquer Glyph Atlas";
+"Hide Others" = "Masquer les autres";
+"Show All" = "Tout afficher";
+"Quit Glyph Atlas" = "Quitter Glyph Atlas";
+"Services" = "Services";
 "Window" = "Fenêtre";
 "Minimize" = "Minimiser";
 "Zoom" = "Réduire/agrandir";
 "Bring All to Front" = "Tout ramener au premier plan";
+"Enter Full Screen" = "Activer le mode plein écran";
 "Help" = "Aide";
+"Glyph Atlas Help" = "Aide Glyph Atlas";
 "Cancel" = "Annuler";
 "OK" = "OK";
-"Show All" = "Tout afficher";
-"Services" = "Services";
-"Edit" = "Édition";
-"Undo" = "Annuler";
-"Redo" = "Rétablir";
-"Add Glyph" = "Ajouter un glyphe";
-"Replace Glyph" = "Remplacer un glyphe";
+
+/* File and font operations. */
+"File" = "Fichier";
 "Open" = "Ouvrir";
-"Make Text Bigger" = "Agrandir le texte";
-"Make Text Smaller" = "Réduire le texte";
-"Text Alignment" = "Alignement du texte";
-"Left" = "Aligner à gauche";
-"Center" = "Centrer";
-"Right" = "Aligner à droite";
-"Justified" = "Justifier";
-"Top" = "Aligner sur le sommet";
-"Bottom" = "Aligner sur le bas";
-"About Glyph Atlas" = "À propos de Glyph Atlas";
-"Hide Glyph Atlas" = "Masquer Glyph Atlas";
-"Hide Others" = "Masquer les autres";
-"Quit Glyph Atlas" = "Quitter Glyph Atlas";
-"Glyph Atlas Help" = "Aide Glyph Atlas";
 "Open At" = "Ouvrir depuis";
+"Current User…" = "Utilisateur actif…";
+"All Users…" = "Tous les utilisateurs…";
+"System Fonts…" = "Intégrées…";
+"Recent Location…" = "Dernier emplacement…";
+"Open Recent" = "Ouvrir l’élément récent";
 "No Recent Fonts" = "Aucune police récente";
-"Single Glyph" = "Glyphe unique";
-"Characters" = "Caractères";
-"Glyph Grid" = "Grille de glyphes";
-"All Glyphs" = "Tous les glyphes";
-"Expand Bounding Box" = "Agrandir le cadre englobant";
-"Shrink Bounding Box" = "Réduire le cadre englobant";
-"Vertical Layout" = "Présentation verticale";
-"Enter text" = "Saisir du texte";
+"Clear Menu" = "Effacer le menu";
+"Close" = "Fermer";
+"Copy to Font Book" = "Copier dans le Livre des polices";
+"Copy to All Users" = "Copier pour tous les utilisateurs";
 "Font Name" = "Nom de la police";
 "Font File" = "Fichier de police";
 "Untitled Font" = "Police sans titre";
@@ -65,8 +39,99 @@
 "This file does not contain a font that CoreText can read." = "Ce fichier ne contient aucune police lisible par CoreText.";
 "Cannot Read Font" = "Impossible de lire la police";
 "CoreText could not create this font." = "CoreText n’a pas pu créer cette police.";
-"Bounding Box" = "Cadre englobant";
+"An item named “%@” already exists in Font Book." = "Un élément nommé « %@ » existe déjà dans le Livre des polices.";
+"“%@” is already in Font Book." = "« %@ » se trouve déjà dans le Livre des polices.";
+"Keep Both" = "Garder les deux";
+"Stop" = "Arrêter";
+"Replace" = "Remplacer";
+
+/* Editing and saved text. */
+"Edit" = "Édition";
+"Undo" = "Annuler";
+"Redo" = "Rétablir";
+"Cut" = "Couper";
+"Copy" = "Copier";
+"Paste" = "Coller";
+"Delete" = "Supprimer";
+"Select All" = "Tout sélectionner";
+"Enter text" = "Saisir du texte";
+"Saved Text" = "Textes enregistrés";
+"Save Current Text" = "Enregistrer le texte actuel";
+"No Saved Text" = "Aucun texte enregistré";
+"Delete Saved Text" = "Supprimer des textes enregistrés";
+"Clear All Saved Text" = "Effacer tous les textes enregistrés";
+
+/* Views and glyphs. */
+"View" = "Présentation";
+"Show Sidebar" = "Afficher la barre latérale";
+"Hide Sidebar" = "Masquer la barre latérale";
+"Single Glyph" = "Glyphe unique";
+"Characters" = "Caractères";
+"Glyph Grid" = "Grille de glyphes";
+"All Glyphs" = "Tous les glyphes";
+"Add Glyph" = "Ajouter un glyphe";
+"Replace Glyph" = "Remplacer un glyphe";
 "Text and alternate glyph list" = "Liste du texte et des glyphes alternatifs";
+"Filter by Feature" = "Filtrer par fonctionnalité";
+"No Features to Filter" = "Aucune fonctionnalité à filtrer";
+"No Feature" = "Sans fonctionnalité";
+
+/* Text layout and typography. */
+"Make Text Bigger" = "Agrandir le texte";
+"Make Text Smaller" = "Réduire le texte";
+"Increase Leading" = "Augmenter l’interligne";
+"Decrease Leading" = "Réduire l’interligne";
+"Default Size" = "Taille par défaut";
+"Text Alignment" = "Alignement du texte";
+"Left" = "Aligner à gauche";
+"Center" = "Centrer";
+"Right" = "Aligner à droite";
+"Justified" = "Justifier";
+"Top" = "Aligner sur le sommet";
+"Bottom" = "Aligner sur le bas";
+"Vertical Layout" = "Présentation verticale";
+"Writing Direction" = "Sens d’écriture";
+"Left to Right" = "De gauche à droite";
+"Right to Left" = "De droite à gauche";
+"Text Decorations" = "Décoration du texte";
+"Underline" = "Souligné";
+"Strikethrough" = "Barré";
+"Outline" = "Contour";
+"Typography" = "Typographie";
+"No Typographic Features" = "Aucune fonction typographique";
+"Typesetting Language" = "Langue de composition";
+"No Selectable Languages" = "Aucune langue disponible";
+"Other" = "Autres";
+
+/* Bounding box and colors. */
+"Bounding Box" = "Cadre englobant";
+"Show Bounding Box" = "Afficher le cadre englobant";
+"Hide Bounding Box" = "Masquer le cadre englobant";
+"Expand Bounding Box" = "Agrandir le cadre englobant";
+"Shrink Bounding Box" = "Réduire le cadre englobant";
+"Colors" = "Couleurs";
+"Glyph…" = "Glyphe…";
+"Background…" = "Arrière-plan…";
+"Bounding Box…" = "Cadre englobant…";
+"Follow System" = "Suivre le système";
+"Save Current Palette" = "Enregistrer la palette actuelle";
+"Delete Palettes" = "Supprimer des palettes";
+"Clear All Saved Palettes" = "Effacer toutes les palettes enregistrées";
+"No Saved Palettes" = "Aucune palette enregistrée";
+
+/* Variable fonts and defaults. */
+"Variable" = "Variable";
+"Named Instance" = "Instance nommée";
+"Default" = "Par défaut";
+"Custom" = "Personnalisé";
+"Use as Defaults" = "Utiliser comme valeurs par défaut";
+"Restore Default" = "Restaurer les valeurs par défaut";
+
+/* Format strings. */
+"%@: %@" = "%@ : %@";
+"%@ (%.0f%%)" = "%@ (%.0f %%)";
+
+/* Help. */
 "Help.01" = "Choisissez « Ouvrir depuis » dans la barre des menus pour ouvrir une police directement depuis un dossier de polices. Vous pouvez aussi faire glisser la police sur l’icône de l’app ou sur une fenêtre où une police est déjà ouverte, ou définir Glyph Atlas comme app par défaut pour ouvrir les fichiers de polices. Vous pouvez rouvrir les fichiers récents.";
 "Help.02" = "Depuis la barre des menus, copiez en un clic la police ouverte dans la fenêtre actuelle vers votre dossier de polices utilisateur. Maintenez la touche ⌥ pour copier la police dans le dossier de polices de tous les utilisateurs.";
 "Help.03" = "À l’ouverture d’une police variable, un panneau de variation apparaît près des boutons de la fenêtre. Détachez-le en le faisant glisser pour le garder ouvert. Sélectionnez une valeur numérique et ajustez-la avec ↑/↓ ou ⇧↑/⇧↓.";
@@ -82,64 +147,3 @@
 "Help.13" = "L’ombre indique le cadre englobant, avec la largeur et la hauteur du glyphe ainsi que la hauteur de ligne et l’interligne de la composition. Appuyez sur ⌘4 pour le masquer.";
 "Help.14" = "Le mode sombre est pris en charge. Mais attention : cliquer sur un glyphe plein peut vous éblouir. Vous pouvez changer la couleur des glyphes, de l’ombre du cadre englobant et de l’arrière-plan dans Couleurs, dans la barre des menus. Choisissez « Enregistrer la palette actuelle » pour conserver vos couleurs. Maintenez la touche ⌥ pour afficher « Supprimer des palettes ».";
 "Help.15" = "Choisissez Utiliser comme valeurs par défaut dans la barre des menus pour enregistrer la vue, les couleurs, la taille et les autres réglages d’aperçu actuels, ainsi que la taille de la fenêtre. Les fichiers de polices ouverts ensuite utiliseront ces réglages. Maintenez ⌥ pour choisir Restaurer les valeurs par défaut.";
-
-/* Variable font controls. */
-"Variable" = "Variable";
-"Named Instance" = "Instance nommée";
-"Default" = "Par défaut";
-"Custom" = "Personnalisé";
-
-
-/* Font Book copy alerts. Conflict buttons follow Finder. */
-"An item named “%@” already exists in Font Book." = "Un élément nommé « %@ » existe déjà dans le Livre des polices.";
-"“%@” is already in Font Book." = "« %@ » se trouve déjà dans le Livre des polices.";
-"Keep Both" = "Garder les deux";
-"Stop" = "Arrêter";
-"Replace" = "Remplacer";
-
-/* User-saved plain text. */
-"Saved Text" = "Textes enregistrés";
-"Save Current Text" = "Enregistrer le texte actuel";
-"No Saved Text" = "Aucun texte enregistré";
-
-/* Preview colors and native leading. */
-"Colors" = "Couleurs";
-"Delete Palettes" = "Supprimer des palettes";
-"Save Current Palette" = "Enregistrer la palette actuelle";
-"Clear All Saved Palettes" = "Effacer toutes les palettes enregistrées";
-"No Saved Palettes" = "Aucune palette enregistrée";
-"%@: %@" = "%@ : %@";
-"%@ (%.0f%%)" = "%@ (%.0f %%)";
-"Follow System" = "Suivre le système";
-"Glyph…" = "Glyphe…";
-"Background…" = "Arrière-plan…";
-"Bounding Box…" = "Cadre englobant…";
-"Increase Leading" = "Augmenter l’interligne";
-"Decrease Leading" = "Réduire l’interligne";
-
-/* Explicit defaults for newly opened font windows. */
-
-/* Saved-text deletion and full screen. */
-"Delete Saved Text" = "Supprimer des textes enregistrés";
-"Clear All Saved Text" = "Effacer tous les textes enregistrés";
-"Enter Full Screen" = "Activer le mode plein écran";
-
-/* Native typography and opening settings. */
-"Typography" = "Typographie";
-"Other" = "Autres";
-"No Typographic Features" = "Aucune fonction typographique";
-"Default Size" = "Taille par défaut";
-"Use as Defaults" = "Utiliser comme valeurs par défaut";
-"Restore Default" = "Restaurer les valeurs par défaut";
-"Text Decorations" = "Décoration du texte";
-"Filter by Feature" = "Filtrer par fonctionnalité";
-"No Features to Filter" = "Aucune fonctionnalité à filtrer";
-"No Feature" = "Sans fonctionnalité";
-
-"Writing Direction" = "Sens d’écriture";
-"Left to Right" = "De gauche à droite";
-"Right to Left" = "De droite à gauche";
-"Outline" = "Contour";
-
-"Typesetting Language" = "Langue de composition";
-"No Selectable Languages" = "Aucune langue disponible";

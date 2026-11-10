@@ -1,63 +1,37 @@
 /* Standard commands follow macOS terminology. App-specific text and Help are translated here. */
 /* Help follows README.md 使用; Klingon localization based on KLI / Computer Terms conventions. */
 
-"File" = "De'";
-"Copy to Font Book" = "QIn paqDaq rIH";
-"Copy to All Users" = "Hoch lo'wI'pu'vaD rIH";
-"Current User…" = "DaH lo'wI'…";
-"All Users…" = "Hoch lo'wI'pu'…";
-"System Fonts…" = "pat pIqaD…";
-"Open Recent" = "poch poSmoH";
-"Recent Location…" = "poch Daq…";
-"Clear Menu" = "tetlh chImmoH";
-"Close" = "SoQmoH";
-"Cut" = "Qol";
-"Copy" = "rIH";
-"Paste" = "jol";
-"Delete" = "Qaw'";
-"Select All" = "Hoch wIv";
-"Underline" = "bIng tlhegh";
-"Strikethrough" = "qIlmeH tlhegh";
-"View" = "nuqneH";
+/* Application and window commands. */
+"About Glyph Atlas" = "Glyph Atlas qech";
+"Hide Glyph Atlas" = "Glyph Atlas So'";
+"Hide Others" = "latlh So'";
+"Show All" = "Hoch 'agh";
+"Quit Glyph Atlas" = "Glyph Atlas mev";
+"Services" = "QaH SeH";
 "Window" = "jIHHom";
 "Minimize" = "machmoH";
 "Zoom" = "ghor";
 "Bring All to Front" = "Hoch retlhDaq tlhej";
+"Enter Full Screen" = "naQ jIHHom 'el";
 "Help" = "QaH";
+"Glyph Atlas Help" = "Glyph Atlas QaH";
 "Cancel" = "qIl";
 "OK" = "lu'";
-"Show All" = "Hoch 'agh";
-"Services" = "QaH SeH";
-"Edit" = "choH";
-"Undo" = "vangHa'";
-"Redo" = "vangqa'";
-"Add Glyph" = "Degh chel";
-"Replace Glyph" = "Degh tlhej";
+
+/* File and font operations. */
+"File" = "De'";
 "Open" = "poSmoH";
-"Make Text Bigger" = "ghItlh tInmoH";
-"Make Text Smaller" = "ghItlh machmoH";
-"Text Alignment" = "ghItlh per";
-"Left" = "poS";
-"Center" = "qam";
-"Right" = "nIH";
-"Justified" = "perlu'";
-"Top" = "Dung";
-"Bottom" = "bIng";
-"About Glyph Atlas" = "Glyph Atlas qech";
-"Hide Glyph Atlas" = "Glyph Atlas So'";
-"Hide Others" = "latlh So'";
-"Quit Glyph Atlas" = "Glyph Atlas mev";
-"Glyph Atlas Help" = "Glyph Atlas QaH";
 "Open At" = "Daq poSmoH";
+"Current User…" = "DaH lo'wI'…";
+"All Users…" = "Hoch lo'wI'pu'…";
+"System Fonts…" = "pat pIqaD…";
+"Recent Location…" = "poch Daq…";
+"Open Recent" = "poch poSmoH";
 "No Recent Fonts" = "poch pIqaD tu'lu'be'";
-"Single Glyph" = "wa' Degh";
-"Characters" = "mu'tlheghmey";
-"Glyph Grid" = "Degh tetlh";
-"All Glyphs" = "Hoch Deghmey";
-"Expand Bounding Box" = "veH paq tInmoH";
-"Shrink Bounding Box" = "veH paq machmoH";
-"Vertical Layout" = "Sen per";
-"Enter text" = "ghItlh yIchel";
+"Clear Menu" = "tetlh chImmoH";
+"Close" = "SoQmoH";
+"Copy to Font Book" = "QIn paqDaq rIH";
+"Copy to All Users" = "Hoch lo'wI'pu'vaD rIH";
 "Font Name" = "pIqaD pong";
 "Font File" = "pIqaD De'";
 "Untitled Font" = "pIqaD Hutlh pong";
@@ -66,8 +40,99 @@
 "This file does not contain a font that CoreText can read." = "CoreText laDlaHbogh pIqaD De'vam ngaSbe'.";
 "Cannot Read Font" = "pIqaD laDlaHbe'";
 "CoreText could not create this font." = "CoreText pIqaDvam chenmoHlaHbe'.";
-"Bounding Box" = "veH paq";
+"An item named “%@” already exists in Font Book." = "“%@” pong Degh pIqaD paqDaq tu'lu'.";
+"“%@” is already in Font Book." = "“%@” pIqaD paqDaq tu'lu'.";
+"Keep Both" = "cha' pol";
+"Stop" = "yev";
+"Replace" = "tlhej";
+
+/* Editing and saved text. */
+"Edit" = "choH";
+"Undo" = "vangHa'";
+"Redo" = "vangqa'";
+"Cut" = "Qol";
+"Copy" = "rIH";
+"Paste" = "jol";
+"Delete" = "Qaw'";
+"Select All" = "Hoch wIv";
+"Enter text" = "ghItlh yIchel";
+"Saved Text" = "polta'bogh ghItlh";
+"Save Current Text" = "DaH ghItlh pol";
+"No Saved Text" = "polta'bogh ghItlh tu'lu'be'";
+"Delete Saved Text" = "polta'bogh ghItlh Qaw'";
+"Clear All Saved Text" = "polta'bogh ghItlh Hoch chImmoH";
+
+/* Views and glyphs. */
+"View" = "nuqneH";
+"Show Sidebar" = "retlh 'ang";
+"Hide Sidebar" = "retlh So'";
+"Single Glyph" = "wa' Degh";
+"Characters" = "mu'tlheghmey";
+"Glyph Grid" = "Degh tetlh";
+"All Glyphs" = "Hoch Deghmey";
+"Add Glyph" = "Degh chel";
+"Replace Glyph" = "Degh tlhej";
 "Text and alternate glyph list" = "ghItlh 'ej latlh Degh tetlh";
+"Filter by Feature" = "SeH wIv";
+"No Features to Filter" = "wIvlaHbogh SeH tu'lu'be'";
+"No Feature" = "SeH Hutlh";
+
+/* Text layout and typography. */
+"Make Text Bigger" = "ghItlh tInmoH";
+"Make Text Smaller" = "ghItlh machmoH";
+"Increase Leading" = "tlhegh tInmoH";
+"Decrease Leading" = "tlhegh machmoH";
+"Default Size" = "motlh 'ab";
+"Text Alignment" = "ghItlh per";
+"Left" = "poS";
+"Center" = "qam";
+"Right" = "nIH";
+"Justified" = "perlu'";
+"Top" = "Dung";
+"Bottom" = "bIng";
+"Vertical Layout" = "Sen per";
+"Writing Direction" = "ghItlh per";
+"Left to Right" = "poSvo' nIH";
+"Right to Left" = "nIHvo' poS";
+"Text Decorations" = "ghItlh 'och";
+"Underline" = "bIng tlhegh";
+"Strikethrough" = "qIlmeH tlhegh";
+"Outline" = "Hur tlhegh";
+"Typography" = "pIqaD SeH";
+"No Typographic Features" = "pIqaD SeH tu'lu'be'";
+"Typesetting Language" = "per Hol";
+"No Selectable Languages" = "wIvlaHbogh Hol tu'lu'be'";
+"Other" = "latlh";
+
+/* Bounding box and colors. */
+"Bounding Box" = "veH paq";
+"Show Bounding Box" = "veH paq 'ang";
+"Hide Bounding Box" = "veH paq So'";
+"Expand Bounding Box" = "veH paq tInmoH";
+"Shrink Bounding Box" = "veH paq machmoH";
+"Colors" = "rItlh";
+"Glyph…" = "Degh…";
+"Background…" = "qIb…";
+"Bounding Box…" = "veH paq…";
+"Follow System" = "pat tlhej";
+"Save Current Palette" = "DaH rItlh tetlh pol";
+"Delete Palettes" = "rItlh tetlh Qaw'";
+"Clear All Saved Palettes" = "polta'bogh rItlh Hoch tetlh chImmoH";
+"No Saved Palettes" = "polta'bogh rItlh tetlh tu'lu'be'";
+
+/* Variable fonts and defaults. */
+"Variable" = "choHlaHbogh";
+"Named Instance" = "pong ghantoH";
+"Default" = "motlh";
+"Custom" = "wIv";
+"Use as Defaults" = "motlh yIlo'";
+"Restore Default" = "motlh chu'";
+
+/* Format strings. */
+"%@: %@" = "%@：%@";
+"%@ (%.0f%%)" = "%@（%.0f%%）";
+
+/* Help. */
 "Help.01" = "De'wI' tetlhDaq «Daq poSmoH» wIv, pIqaD ngeHmey poSmoHlaH, pagh pIqaD Degh app 'och pagh poSmoHta'bogh pIqaD jIHHomDaq qeng 'e' laH. appvam laDlaHbogh mIw wa'DIch chenmoH 'e' tIv. pochlIj De' tetlh ngaS.";
 "Help.02" = "De'wI' tetlhDaq DaH jIHHom pIqaD wa' vIp rIHlaH. ⌥ yIlo' Hoch lo'wI'pu' pIqaD vIp rIHmeH.";
 "Help.03" = "pIqaD choHlaHbogh poSmoHDI', qul Doq 'ej qul SuD bIngDaq pIqaD choHbogh pat tu'lu', 'ej pe'laH. mI' wIvDI', ↑/↓ pagh ⇧↑/⇧↓ yIlo' mI' choHmeH.";
@@ -83,64 +148,3 @@
 "Help.13" = "'eng 'agh veH paq, Degh 'ab 'ej 'ab per tlhegh ngaS. ⌘4 yIlo' So'meH.";
 "Help.14" = "Hurgh mIwmey ngaS, 'ach Degh rur qIbmey 'elDI' mIn DuQ. De'wI' tetlh «rItlh» Degh, veH paq 'eng 'ej qIb rItlh choHlaH. rItlh choHta'bogh «rItlh pol» yIlo' polmeH, ⌥ yIlo' Qaw'meH.";
 "Help.15" = "De'wI' tetlh «motlh yIlo'» yIlo', DaH nuqneH, rItlh, 'ab je qaw, 'ej pIqaD De' poSmoHDI' Hoch poH yIlo'. ⌥ yIlo' «motlh chu'» yIlo'meH.";
-
-/* Variable font controls. */
-"Variable" = "choHlaHbogh";
-"Named Instance" = "pong ghantoH";
-"Default" = "motlh";
-"Custom" = "wIv";
-
-
-/* Font Book copy alerts. Conflict buttons follow Finder. */
-"An item named “%@” already exists in Font Book." = "“%@” pong Degh pIqaD paqDaq tu'lu'.";
-"“%@” is already in Font Book." = "“%@” pIqaD paqDaq tu'lu'.";
-"Keep Both" = "cha' pol";
-"Stop" = "yev";
-"Replace" = "tlhej";
-
-/* User-saved plain text. */
-"Saved Text" = "polta'bogh ghItlh";
-"Save Current Text" = "DaH ghItlh pol";
-"No Saved Text" = "polta'bogh ghItlh tu'lu'be'";
-
-/* Preview colors and native leading. */
-"Colors" = "rItlh";
-"Delete Palettes" = "rItlh tetlh Qaw'";
-"Save Current Palette" = "DaH rItlh tetlh pol";
-"Clear All Saved Palettes" = "polta'bogh rItlh Hoch tetlh chImmoH";
-"No Saved Palettes" = "polta'bogh rItlh tetlh tu'lu'be'";
-"%@: %@" = "%@：%@";
-"%@ (%.0f%%)" = "%@（%.0f%%）";
-"Follow System" = "pat tlhej";
-"Glyph…" = "Degh…";
-"Background…" = "qIb…";
-"Bounding Box…" = "veH paq…";
-"Increase Leading" = "tlhegh tInmoH";
-"Decrease Leading" = "tlhegh machmoH";
-
-/* Explicit defaults for newly opened font windows. */
-
-/* Saved-text deletion and full screen. */
-"Delete Saved Text" = "polta'bogh ghItlh Qaw'";
-"Clear All Saved Text" = "polta'bogh ghItlh Hoch chImmoH";
-"Enter Full Screen" = "naQ jIHHom 'el";
-
-/* Native typography and opening settings. */
-"Typography" = "pIqaD SeH";
-"Other" = "latlh";
-"No Typographic Features" = "pIqaD SeH tu'lu'be'";
-"Default Size" = "motlh 'ab";
-"Use as Defaults" = "motlh yIlo'";
-"Restore Default" = "motlh chu'";
-"Text Decorations" = "ghItlh 'och";
-"Filter by Feature" = "SeH wIv";
-"No Features to Filter" = "wIvlaHbogh SeH tu'lu'be'";
-"No Feature" = "SeH Hutlh";
-
-"Writing Direction" = "ghItlh per";
-"Left to Right" = "poSvo' nIH";
-"Right to Left" = "nIHvo' poS";
-"Outline" = "Hur tlhegh";
-
-"Typesetting Language" = "per Hol";
-"No Selectable Languages" = "wIvlaHbogh Hol tu'lu'be'";

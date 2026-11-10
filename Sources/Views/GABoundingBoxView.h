@@ -27,6 +27,9 @@ CGFloat GAClampSideInsetFraction(CGFloat fraction);
 /// Page fraction (1 - 2 * inset) for a pinch, 1:1 with the gesture.
 CGFloat GABoundingBoxPageFractionForMagnification(CGFloat startPage, CGFloat magnification);
 
+/// Range of allowed clip view origins, including content insets.
+FOUNDATION_EXPORT NSRect GAScrollPositionLimits(NSScrollView *scrollView);
+
 /// Applies a geometry change while preserving both scrollbar positions.
 /// A missing scroll view or an axis without a scroll range is treated as centered.
 FOUNDATION_EXPORT void GAPreserveScrollPosition(NSScrollView * _Nullable scrollView,
@@ -35,6 +38,7 @@ FOUNDATION_EXPORT void GAPreserveScrollPosition(NSScrollView * _Nullable scrollV
 @interface GABoundingBoxView : NSView
 @property(nonatomic, strong) GAPreviewColors *previewColors;
 @property (nonatomic, strong, nullable) GAGlyphVariant *variant;
+@property (nonatomic) BOOL constrainsPageAtToolbar;
 /// Fraction of the view width/height used as page inset. Default: two
 /// zoom-outs from a full page.
 @property (nonatomic) CGFloat sideInsetFraction;

@@ -1,11 +1,23 @@
 #import "GAAllGlyphsView.h"
 #import "GABoundingBoxView.h"
 
-static const CGFloat GAAllGlyphsSideMargin = 14.0;
+static const CGFloat GAAllGlyphsSideMargin = 16.0;
 static const CGFloat GAAllGlyphsVerticalMargin = 18.0;
-static const CGFloat GAAllGlyphsGap = 8.0;
+static const CGFloat GAAllGlyphsHorizontalGap = 6.0;
+static const CGFloat GAAllGlyphsVerticalGap = 8.0;
 static const CGFloat GAAllGlyphsBaseCell = 44.0;
 static const CGFloat GAAllGlyphsGlyphRatio = 0.85;
+static const CGFloat GAAllGlyphsInkOutset = 2.0;
+
+/// Drawing-space ink bounds, including the antialiased fringe.
+static NSRect GAAllGlyphsInkRect(GAGlyphPage page, CGPoint origin, CGFloat unitScale) {
+    NSRect ink = NSMakeRect(origin.x + CGRectGetMinX(page.ink) * unitScale,
+                           origin.y - CGRectGetMaxY(page.ink) * unitScale,
+                           CGRectGetWidth(page.ink) * unitScale,
+                           CGRectGetHeight(page.ink) * unitScale);
+    return NSInsetRect(ink, -GAAllGlyphsInkOutset, -GAAllGlyphsInkOutset);
+}
+
 /// Ten zoom-outs and ten zoom-ins from the default cell: `1 / 1.12^10` to
 /// `1.12^10`.
 static CGFloat GAAllGlyphsClampScale(CGFloat scale) {
@@ -28,7 +40,7 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
 @property (nonatomic, strong) NSMutableData *pageMetricsValid;
 @property (nonatomic) CGFloat cellScale;
 @property (nonatomic) NSUInteger columns;
-/// Top spacing before the first row; full screen uses titlebar clearance.
+/// Top spacing before the first row.
 @property (nonatomic) CGFloat topInset;
 @property (nonatomic) NSUInteger highlightIndex;
 @property (nonatomic) CGFloat highlightAlpha;
@@ -94,15 +106,16 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
     }
     CGFloat cell = self.cellSide;
     CGFloat usable = MAX(cell, width - 2 * GAAllGlyphsSideMargin);
-    self.columns = MAX(1, (NSUInteger)floor((usable + GAAllGlyphsGap) /
-                                           (cell + GAAllGlyphsGap)));
+    self.columns = MAX(1, (NSUInteger)floor((usable + GAAllGlyphsHorizontalGap) /
+                                           (cell + GAAllGlyphsHorizontalGap)));
     NSUInteger rows = self.entries.count == 0
         ? 0
         : (self.entries.count + self.columns - 1) / self.columns;
     CGFloat height = self.topInset + GAAllGlyphsVerticalMargin + rows * cell +
-        MAX(0, (NSInteger)rows - 1) * GAAllGlyphsGap;
+        MAX(0, (NSInteger)rows - 1) * GAAllGlyphsVerticalGap;
     NSScrollView *scrollView = self.enclosingScrollView;
-    CGFloat minimum = scrollView != nil ? scrollView.contentSize.height : 0;
+    NSEdgeInsets insets = scrollView.contentInsets;
+    CGFloat minimum = scrollView.contentSize.height - insets.top - insets.bottom;
     CGFloat target = MAX(height, minimum);
     NSSize current = self.frame.size;
     if (fabs(current.width - width) > 0.5 || fabs(current.height - target) > 0.5) {
@@ -111,18 +124,19 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
     [self setNeedsDisplay:YES];
 }
 
-- (CGFloat)contentLeft {
-    CGFloat cell = self.cellSide;
-    CGFloat used = self.columns * cell +
-        MAX(0, (NSInteger)self.columns - 1) * GAAllGlyphsGap;
-    return MAX(GAAllGlyphsSideMargin, (NSWidth(self.bounds) - used) * 0.5);
+- (CGFloat)horizontalExtraSpacing {
+    // Preserve the base margins and gaps; each outer edge gets two extra shares.
+    CGFloat used = 2 * GAAllGlyphsSideMargin + self.columns * self.cellSide +
+        (self.columns - 1) * GAAllGlyphsHorizontalGap;
+    return MAX(0, (NSWidth(self.bounds) - used) / (self.columns + 3));
 }
 
 - (NSRect)rectForIndex:(NSUInteger)index {
     CGFloat cell = self.cellSide;
-    CGFloat stride = cell + GAAllGlyphsGap;
-    return NSMakeRect([self contentLeft] + (index % self.columns) * stride,
-                      self.topInset + (index / self.columns) * stride,
+    CGFloat extra = self.horizontalExtraSpacing;
+    return NSMakeRect(GAAllGlyphsSideMargin + 2 * extra +
+                          (index % self.columns) * (cell + GAAllGlyphsHorizontalGap + extra),
+                      self.topInset + (index / self.columns) * (cell + GAAllGlyphsVerticalGap),
                       cell, cell);
 }
 
@@ -162,28 +176,26 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
     CGPoint origin = [self glyphOriginForIndex:index page:page unitScale:unitScale];
     // Match the drawing transform, including the flipped Y axis. Only the
     // actual ink and its antialiased fringe need repainting, not the cell.
-    NSRect ink = NSMakeRect(origin.x + CGRectGetMinX(page.ink) * unitScale,
-                             origin.y - CGRectGetMaxY(page.ink) * unitScale,
-                             CGRectGetWidth(page.ink) * unitScale,
-                             CGRectGetHeight(page.ink) * unitScale);
-    return NSInsetRect(ink, -2.0, -2.0);
+    return GAAllGlyphsInkRect(page, origin, unitScale);
 }
 
 - (NSInteger)indexAtPoint:(NSPoint)point {
     CGFloat cell = self.cellSide;
-    CGFloat stride = cell + GAAllGlyphsGap;
-    CGFloat x = point.x - [self contentLeft];
+    CGFloat extra = self.horizontalExtraSpacing;
+    CGFloat horizontalStride = cell + GAAllGlyphsHorizontalGap + extra;
+    CGFloat verticalStride = cell + GAAllGlyphsVerticalGap;
+    CGFloat x = point.x - GAAllGlyphsSideMargin - 2 * extra;
     CGFloat y = point.y - self.topInset;
     if (x < 0 || y < 0) {
         return -1;
     }
-    NSUInteger column = (NSUInteger)floor(x / stride);
-    NSUInteger row = (NSUInteger)floor(y / stride);
+    NSUInteger column = (NSUInteger)floor(x / horizontalStride);
+    NSUInteger row = (NSUInteger)floor(y / verticalStride);
     if (column >= self.columns) {
         return -1;
     }
     // The gap between cells is dead space, not part of the neighbouring cell.
-    if (x - column * stride > cell || y - row * stride > cell) {
+    if (x - column * horizontalStride > cell || y - row * verticalStride > cell) {
         return -1;
     }
     NSUInteger index = row * self.columns + column;
@@ -209,12 +221,22 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
         index = low;
     }
     NSRect row = [self rectForIndex:index];
-    if (NSIntersectsRect(row, self.visibleRect)) {
+    if (NSIntersectsRect(row, [self unobscuredVisibleRect])) {
         [self scrollRectToVisible:NSInsetRect(row, -4, -4)];
     } else {
         [self centerRow:row];
     }
     [self flashIndex:index quick:quick];
+}
+
+- (NSRect)unobscuredVisibleRect {
+    NSClipView *clip = self.enclosingScrollView.contentView;
+    if (!clip) return self.visibleRect;
+    NSRect viewport = [self convertRect:clip.bounds fromView:clip];
+    NSEdgeInsets insets = clip.contentInsets;
+    viewport.origin.y += insets.top;
+    viewport.size.height = MAX(0, NSHeight(viewport) - insets.top - insets.bottom);
+    return NSIntersectionRect(self.visibleRect, viewport);
 }
 
 /// A row that is completely outside the viewport is centred vertically, so a
@@ -228,10 +250,8 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
     }
     NSClipView *clipView = scrollView.contentView;
     NSRect viewport = clipView.bounds;
-    CGFloat y = NSMidY(row) - NSHeight(viewport) * 0.5;
-    CGFloat maximum = MAX(0, NSHeight(self.bounds) - NSHeight(viewport));
-    y = MIN(MAX(0, y), maximum);
-    [clipView scrollToPoint:NSMakePoint(NSMinX(viewport), y)];
+    viewport.origin.y += NSMidY(row) - NSMidY([self unobscuredVisibleRect]);
+    [clipView scrollToPoint:[clipView constrainBoundsRect:viewport].origin];
     [scrollView reflectScrolledClipView:clipView];
 }
 
@@ -315,18 +335,34 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
     CGFloat upem = CTFontGetUnitsPerEm(font);
     CGFloat unitScale = cell * GAAllGlyphsGlyphRatio / upem;
     CGFloat glyphScale = cell * GAAllGlyphsGlyphRatio / GAFontShapingSize;
-    NSRect visible = self.visibleRect;
-    CGFloat stride = cell + GAAllGlyphsGap;
+    NSRect drawingRect = NSIntersectionRect(dirtyRect, self.bounds);
+    CGFloat stride = cell + GAAllGlyphsVerticalGap;
     CGFloat contentTop = self.topInset;
-    NSUInteger firstRow = NSMinY(visible) <= contentTop
-        ? 0 : (NSUInteger)MAX(0.0, floor((NSMinY(visible) - contentTop) / stride));
-    NSUInteger lastRow = (NSUInteger)MAX(0.0, floor((NSMaxY(visible) - contentTop) / stride));
+    // A glyph can paint beyond its row. Include every row whose font bounds
+    // can reach the dirty area, including the antialiased fringe.
+    GAGlyphPage referencePage = [self pageForIndex:0];
+    CGPoint referenceOrigin = [self glyphOriginForIndex:0 page:referencePage unitScale:unitScale];
+    CGRect fontBounds = CTFontGetBoundingBox(font);
+    CGFloat inkTop = referenceOrigin.y - contentTop - CGRectGetMaxY(fontBounds) * glyphScale - GAAllGlyphsInkOutset;
+    CGFloat inkBottom = referenceOrigin.y - contentTop - CGRectGetMinY(fontBounds) * glyphScale + GAAllGlyphsInkOutset;
+    NSUInteger firstRow = (NSUInteger)MAX(0.0,
+        floor((NSMinY(drawingRect) - contentTop - inkBottom) / stride));
+    NSUInteger lastRow = (NSUInteger)MAX(0.0,
+        floor((NSMaxY(drawingRect) - contentTop - inkTop) / stride));
     NSUInteger firstIndex = MIN(self.entries.count, firstRow * self.columns);
     NSUInteger lastIndex = MIN(self.entries.count, (lastRow + 1) * self.columns);
     NSColor *glyphColor = [self.previewColors colorForRole:GAPreviewColorGlyph];
     CGContextRef context = NSGraphicsContext.currentContext.CGContext;
 
     for (NSUInteger index = firstIndex; index < lastIndex; index++) {
+        GAGlyphPage page = [self pageForIndex:index];
+        if (CGRectIsEmpty(page.ink)) {
+            continue;
+        }
+        CGPoint origin = [self glyphOriginForIndex:index page:page unitScale:unitScale];
+        if (!NSIntersectsRect(GAAllGlyphsInkRect(page, origin, unitScale), drawingRect)) {
+            continue;
+        }
         BOOL highlighted = index == self.highlightIndex && self.highlightAlpha > 0;
         if (highlighted) {
             // Tint the glyph itself; the fade blends it back to the glyph colour.
@@ -338,12 +374,7 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
             CGContextSetFillColorWithColor(context, glyphColor.CGColor);
         }
         GAAllGlyphEntry *entry = self.entries[index];
-        GAGlyphPage page = [self pageForIndex:index];
-        if (CGRectIsEmpty(page.ink)) {
-            continue;
-        }
         CGGlyph glyph = (CGGlyph)entry.glyphID.unsignedShortValue;
-        CGPoint origin = [self glyphOriginForIndex:index page:page unitScale:unitScale];
         CGContextSaveGState(context);
         CGContextTranslateCTM(context, origin.x, origin.y);
         CGContextScaleCTM(context, glyphScale, -glyphScale);
@@ -355,10 +386,10 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
 @end
 
 @interface GAAllGlyphsView ()
-@property (nonatomic, strong) NSScrollView *scrollView;
 @property (nonatomic, strong) GAAllGlyphsGrid *grid;
 @property (nonatomic, strong) NSArray<GAAllGlyphEntry *> *inventory;
 @property (nonatomic) CGFloat magnificationStartScale;
+@property (nonatomic) BOOL scrollsUnderToolbar;
 @end
 
 @implementation GAAllGlyphsView
@@ -450,11 +481,24 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
     });
 }
 
+- (void)setScrollsUnderToolbar:(BOOL)enabled {
+    GAPreserveScrollPosition(self.scrollView, ^{
+        self->_scrollsUnderToolbar = enabled;
+        self.needsLayout = YES;
+        [self layoutSubtreeIfNeeded];
+    });
+}
+
 - (void)layout {
+    BOOL usesToolbarClearance = self.scrollsUnderToolbar ||
+        (self.window.styleMask & NSWindowStyleMaskFullScreen);
+    if (self.scrollView.automaticallyAdjustsContentInsets != usesToolbarClearance) {
+        self.scrollView.automaticallyAdjustsContentInsets = usesToolbarClearance;
+        if (!usesToolbarClearance) self.scrollView.contentInsets = NSEdgeInsetsZero;
+        [self.scrollView tile];
+    }
     [super layout];
-    // Full screen uses the titlebar clearance directly instead of the margin.
-    self.grid.topInset = (self.window.styleMask & NSWindowStyleMaskFullScreen)
-        ? self.safeAreaInsets.top : GAAllGlyphsVerticalMargin;
+    self.grid.topInset = usesToolbarClearance ? 0 : GAAllGlyphsVerticalMargin;
     [self.grid updateLayoutForWidth:NSWidth(self.bounds)];
 }
 
@@ -464,7 +508,7 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
 
 - (BOOL)containsGlyphAtWindowPoint:(NSPoint)point {
     point = [self.grid convertPoint:point fromView:nil];
-    return NSMouseInRect(point, self.grid.visibleRect, self.grid.isFlipped) &&
+    return NSMouseInRect(point, [self.grid unobscuredVisibleRect], self.grid.isFlipped) &&
            [self.grid indexAtPoint:point] >= 0;
 }
 

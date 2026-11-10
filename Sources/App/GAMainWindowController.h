@@ -12,6 +12,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, readonly) NSString *inputText;
 - (void)replaceInputText:(NSString *)text;
 @property (nonatomic, readonly) GAViewMode viewMode;
+@property (nonatomic, readonly, getter=isSidebarHidden) BOOL sidebarHidden;
 @property (nonatomic, copy, readonly) NSArray<NSString *> *allGlyphFeatureTags;
 @property (nonatomic, copy, readonly, nullable) NSString *allGlyphFeatureTag;
 /// Nil shows the full grid. An empty tag shows glyphs without feature outputs.
@@ -22,12 +23,13 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, strong, readonly, nullable) GAFontFeatures *fontFeatures;
 - (void)loadFontAtURL:(NSURL *)url;
 - (void)setViewMode:(GAViewMode)viewMode;
+- (void)toggleSidebar;
 - (void)toggleShowsMetrics;
 - (void)zoomIn;
 - (void)zoomOut;
 - (void)zoomMetricsIn;
 - (void)zoomMetricsOut;
-- (void)adjustLineSpacing:(NSInteger)steps;
+- (void)adjustLineHeight:(NSInteger)steps;
 @property(nonatomic, readonly) GAPreviewColors *previewColors;
 - (void)applyPreviewColorRepresentation:(NSDictionary<NSString *, NSData *> *)representation;
 - (void)setPreviewColor:(NSColor *)color forRole:(GAPreviewColorRole)role;

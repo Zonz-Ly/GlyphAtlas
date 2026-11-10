@@ -1,63 +1,37 @@
 /* Standard commands follow macOS terminology. App-specific text and Help are translated here. */
 /* Help follows README.md 使用; Traditional Chinese is verbatim, Simplified Chinese is converted. */
 
-"File" = "檔案";
-"Copy to Font Book" = "複製到字體簿";
-"Copy to All Users" = "複製到所有用户";
-"Current User…" = "目前用户⋯";
-"All Users…" = "所有用户⋯";
-"System Fonts…" = "系統內建⋯";
-"Open Recent" = "開啟最近項目";
-"Recent Location…" = "最近使用⋯";
-"Clear Menu" = "清除選單";
-"Close" = "關閉";
-"Cut" = "剪下";
-"Copy" = "複製";
-"Paste" = "貼上";
-"Delete" = "刪除";
-"Select All" = "全選";
-"Underline" = "底線";
-"Strikethrough" = "刪除線";
-"View" = "顯示方式";
+/* Application and window commands. */
+"About Glyph Atlas" = "關於 Glyph Atlas";
+"Hide Glyph Atlas" = "隱藏 Glyph Atlas";
+"Hide Others" = "隱藏其他";
+"Show All" = "顯示全部";
+"Quit Glyph Atlas" = "結束 Glyph Atlas";
+"Services" = "服務";
 "Window" = "視窗";
 "Minimize" = "縮到最細";
 "Zoom" = "縮放";
 "Bring All to Front" = "將所有視窗移到最前";
+"Enter Full Screen" = "進入全螢幕";
 "Help" = "輔助説明";
+"Glyph Atlas Help" = "Glyph Atlas 輔助説明";
 "Cancel" = "取消";
 "OK" = "好";
-"Show All" = "顯示全部";
-"Services" = "服務";
-"Edit" = "編輯";
-"Undo" = "還原";
-"Redo" = "重做";
-"Add Glyph" = "加入字形";
-"Replace Glyph" = "替換字形";
+
+/* File and font operations. */
+"File" = "檔案";
 "Open" = "開啟";
-"Make Text Bigger" = "放大文字";
-"Make Text Smaller" = "縮小文字";
-"Text Alignment" = "文字對齊";
-"Left" = "靠左對齊";
-"Center" = "置中";
-"Right" = "靠右對齊";
-"Justified" = "左右對齊";
-"Top" = "頂部對齊";
-"Bottom" = "底部對齊";
-"About Glyph Atlas" = "關於 Glyph Atlas";
-"Hide Glyph Atlas" = "隱藏 Glyph Atlas";
-"Hide Others" = "隱藏其他";
-"Quit Glyph Atlas" = "結束 Glyph Atlas";
-"Glyph Atlas Help" = "Glyph Atlas 輔助説明";
 "Open At" = "開啟字體於";
+"Current User…" = "目前用户⋯";
+"All Users…" = "所有用户⋯";
+"System Fonts…" = "系統內建⋯";
+"Recent Location…" = "最近使用⋯";
+"Open Recent" = "開啟最近項目";
 "No Recent Fonts" = "沒有最近使用的字體";
-"Single Glyph" = "單字形";
-"Characters" = "多字元";
-"Glyph Grid" = "字形表";
-"All Glyphs" = "全部字";
-"Expand Bounding Box" = "放大邊界框";
-"Shrink Bounding Box" = "縮小邊界框";
-"Vertical Layout" = "豎排";
-"Enter text" = "輸入文字";
+"Clear Menu" = "清除選單";
+"Close" = "關閉";
+"Copy to Font Book" = "複製到字體簿";
+"Copy to All Users" = "複製到所有用户";
 "Font Name" = "字體名稱";
 "Font File" = "字體檔案";
 "Untitled Font" = "未命名字體";
@@ -66,8 +40,99 @@
 "This file does not contain a font that CoreText can read." = "此檔案不包含 CoreText 可以讀取的字體。";
 "Cannot Read Font" = "無法讀取字體";
 "CoreText could not create this font." = "CoreText 無法建立此字體。";
-"Bounding Box" = "邊界框";
+"An item named “%@” already exists in Font Book." = "字體簿中已經存在名為「%@」的項目。";
+"“%@” is already in Font Book." = "「%@」已位於字體簿中。";
+"Keep Both" = "兩者皆保留";
+"Stop" = "停止";
+"Replace" = "取代";
+
+/* Editing and saved text. */
+"Edit" = "編輯";
+"Undo" = "還原";
+"Redo" = "重做";
+"Cut" = "剪下";
+"Copy" = "複製";
+"Paste" = "貼上";
+"Delete" = "刪除";
+"Select All" = "全選";
+"Enter text" = "輸入文字";
+"Saved Text" = "常用文字";
+"Save Current Text" = "儲存目前文字";
+"No Saved Text" = "沒有已儲存的文字";
+"Delete Saved Text" = "刪除常用文字";
+"Clear All Saved Text" = "清除所有已儲存的文字";
+
+/* Views and glyphs. */
+"View" = "顯示方式";
+"Show Sidebar" = "顯示側邊欄";
+"Hide Sidebar" = "隱藏側邊欄";
+"Single Glyph" = "單字形";
+"Characters" = "多字元";
+"Glyph Grid" = "字形表";
+"All Glyphs" = "全部字";
+"Add Glyph" = "加入字形";
+"Replace Glyph" = "替換字形";
 "Text and alternate glyph list" = "文字與替換字形列表";
+"Filter by Feature" = "篩選特性";
+"No Features to Filter" = "沒有可篩選的特性";
+"No Feature" = "無特性";
+
+/* Text layout and typography. */
+"Make Text Bigger" = "放大文字";
+"Make Text Smaller" = "縮小文字";
+"Increase Leading" = "增加行距";
+"Decrease Leading" = "減少行距";
+"Default Size" = "預設大小";
+"Text Alignment" = "文字對齊";
+"Left" = "靠左對齊";
+"Center" = "置中";
+"Right" = "靠右對齊";
+"Justified" = "左右對齊";
+"Top" = "頂部對齊";
+"Bottom" = "底部對齊";
+"Vertical Layout" = "豎排";
+"Writing Direction" = "書寫方向";
+"Left to Right" = "由左至右";
+"Right to Left" = "由右至左";
+"Text Decorations" = "文字裝飾";
+"Underline" = "底線";
+"Strikethrough" = "刪除線";
+"Outline" = "中空字";
+"Typography" = "字體排印";
+"No Typographic Features" = "沒有字體排印特性";
+"Typesetting Language" = "排版語言";
+"No Selectable Languages" = "沒有可選語言";
+"Other" = "其他";
+
+/* Bounding box and colors. */
+"Bounding Box" = "邊界框";
+"Show Bounding Box" = "顯示邊界框";
+"Hide Bounding Box" = "隱藏邊界框";
+"Expand Bounding Box" = "放大邊界框";
+"Shrink Bounding Box" = "縮小邊界框";
+"Colors" = "顏色";
+"Glyph…" = "字形⋯";
+"Background…" = "背景⋯";
+"Bounding Box…" = "邊界框⋯";
+"Follow System" = "跟隨系統";
+"Save Current Palette" = "儲存目前配色";
+"Delete Palettes" = "刪除配色";
+"Clear All Saved Palettes" = "清除所有已儲存的配色";
+"No Saved Palettes" = "沒有已儲存的配色";
+
+/* Variable fonts and defaults. */
+"Variable" = "可變";
+"Named Instance" = "具名實例";
+"Default" = "預設";
+"Custom" = "自訂";
+"Use as Defaults" = "作為預設值";
+"Restore Default" = "還原預設值";
+
+/* Format strings. */
+"%@: %@" = "%@：%@";
+"%@ (%.0f%%)" = "%@（%.0f%%）";
+
+/* Help. */
 "Help.01" = "在選單列選擇「開啟字體於」，可以快速在字體安裝資料夾中開啟字體，也可以把字體拖到 app 圖標或已開啟的字體視窗上來開啟字體，更歡迎把本 app 設定為預設開啟方式。支援最近開啟的項目。";
 "Help.02" = "在選單列中可以把當前視窗的字體一鍵複製到用户字體資料夾。按住 ⌥ 可以改複製到所有用户的字體資料夾。";
 "Help.03" = "開啟可變字體時，在紅綠燈旁邊會有一個可變參數設定面板，還可以拖出來固定。選取數字後還可以按 ↑／↓ 或 ⇧↑／⇧↓ 調整數值。";
@@ -83,64 +148,3 @@
 "Help.13" = "用陰影表示邊界框，包括字形寬度高度和排版行高行距，可以用 ⌘4 隱藏。";
 "Help.14" = "有做深色模式，但要小心點到實心字形會眼瞎瞎喔。在選單列的「顏色」裡可以改字形、邊界框陰影和背景的顏色。調好的顏色可以點「儲存目前配色」，按住 ⌥ 可以刪除配色。";
 "Help.15" = "在選單列點「作為預設值」，可以記住目前的視圖、顏色、大小等預覽設定和視窗大小，以後每次都以當前選擇來開啟字體檔案。按住 ⌥ 可以改點「還原預設值」。";
-
-/* Variable font controls. */
-"Variable" = "可變";
-"Named Instance" = "具名實例";
-"Default" = "預設";
-"Custom" = "自訂";
-
-
-/* Font Book copy alerts. Conflict buttons follow Finder. */
-"An item named “%@” already exists in Font Book." = "字體簿中已經存在名為「%@」的項目。";
-"“%@” is already in Font Book." = "「%@」已位於字體簿中。";
-"Keep Both" = "兩者皆保留";
-"Stop" = "停止";
-"Replace" = "取代";
-
-/* User-saved plain text. */
-"Saved Text" = "常用文字";
-"Save Current Text" = "儲存目前文字";
-"No Saved Text" = "沒有已儲存的文字";
-
-/* Preview colors and native leading. */
-"Colors" = "顏色";
-"Delete Palettes" = "刪除配色";
-"Save Current Palette" = "儲存目前配色";
-"Clear All Saved Palettes" = "清除所有已儲存的配色";
-"No Saved Palettes" = "沒有已儲存的配色";
-"%@: %@" = "%@：%@";
-"%@ (%.0f%%)" = "%@（%.0f%%）";
-"Follow System" = "跟隨系統";
-"Glyph…" = "字形⋯";
-"Background…" = "背景⋯";
-"Bounding Box…" = "邊界框⋯";
-"Increase Leading" = "增加行距";
-"Decrease Leading" = "減少行距";
-
-/* Explicit defaults for newly opened font windows. */
-
-/* Saved-text deletion and full screen. */
-"Delete Saved Text" = "刪除常用文字";
-"Clear All Saved Text" = "清除所有已儲存的文字";
-"Enter Full Screen" = "進入全螢幕";
-
-/* Native typography and opening settings. */
-"Typography" = "字體排印";
-"Other" = "其他";
-"No Typographic Features" = "沒有字體排印特性";
-"Default Size" = "預設大小";
-"Use as Defaults" = "作為預設值";
-"Restore Default" = "還原預設值";
-"Text Decorations" = "文字裝飾";
-"Filter by Feature" = "篩選特性";
-"No Features to Filter" = "沒有可篩選的特性";
-"No Feature" = "無特性";
-
-"Writing Direction" = "書寫方向";
-"Left to Right" = "由左至右";
-"Right to Left" = "由右至左";
-"Outline" = "中空字";
-
-"Typesetting Language" = "排版語言";
-"No Selectable Languages" = "沒有可選語言";

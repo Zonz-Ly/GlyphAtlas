@@ -1,62 +1,36 @@
 /* ئۇيغۇرچە */
 
-"File" = "ھۆججەت";
-"Copy to Font Book" = "خەت نۇسخىلىرى كىتابىغا كۆچۈرۈش";
-"Copy to All Users" = "بارلىق ئىشلەتكۈچىلەر ئۈچۈن كۆچۈرۈش";
-"Current User…" = "نۆۋەتتىكى ئىشلەتكۈچى…";
-"All Users…" = "بارلىق ئىشلەتكۈچىلەر…";
-"System Fonts…" = "سىستېمىغا سىڭدۈرۈلگەن…";
-"Open Recent" = "يېقىندا ئىشلىتىلگەننى ئېچىش";
-"Recent Location…" = "يېقىندا ئىشلىتىلگەن ئورۇن…";
-"Clear Menu" = "تىزىملىكنى تازىلاش";
-"Close" = "تاقاش";
-"Cut" = "كېسىش";
-"Copy" = "كۆچۈرۈش";
-"Paste" = "چاپلاش";
-"Delete" = "ئۆچۈرۈش";
-"Select All" = "ھەممىنى تاللاش";
-"Underline" = "ئاستىغا سىزىش";
-"Strikethrough" = "ئۈستىدىن سىزىش";
-"View" = "كۆرۈنۈش";
+/* Application and window commands. */
+"About Glyph Atlas" = "Glyph Atlas ھەققىدە";
+"Hide Glyph Atlas" = "Glyph Atlas نى يوشۇرۇش";
+"Hide Others" = "باشقىلارنى يوشۇرۇش";
+"Show All" = "ھەممىنى كۆرسىتىش";
+"Quit Glyph Atlas" = "Glyph Atlas تىن چېكىنىش";
+"Services" = "مۇلازىمەتلەر";
 "Window" = "كۆزنەك";
 "Minimize" = "كىچىكلىتىش";
 "Zoom" = "كۆزنەك چوڭلۇقىنى تەڭشەش";
 "Bring All to Front" = "بارلىق كۆزنەكنى ئالدىغا چىقىرىش";
+"Enter Full Screen" = "پۈتۈن ئېكراندا كۆرسىتىش";
 "Help" = "ياردەم";
+"Glyph Atlas Help" = "Glyph Atlas ياردىمى";
 "Cancel" = "بىكار قىلىش";
 "OK" = "ماقۇل";
-"Show All" = "ھەممىنى كۆرسىتىش";
-"Services" = "مۇلازىمەتلەر";
-"Edit" = "تەھرىرلەش";
-"Undo" = "يېنىۋېلىش";
-"Redo" = "قايتا قىلىش";
-"Add Glyph" = "ھەرپ شەكلىنى قوشۇش";
-"Replace Glyph" = "ھەرپ شەكلىنى ئالماشتۇرۇش";
+
+/* File and font operations. */
+"File" = "ھۆججەت";
 "Open" = "ئېچىش";
-"Make Text Bigger" = "تېكىستنى چوڭايتىش";
-"Make Text Smaller" = "تېكىستنى كىچىكلىتىش";
-"Text Alignment" = "تېكىستنى توغرىلاش";
-"Left" = "سولغا توغرىلاش";
-"Center" = "ئوتتۇرىغا توغرىلاش";
-"Right" = "ئوڭغا توغرىلاش";
-"Justified" = "ئىككى يانغا توغرىلاش";
-"Top" = "ئۈستىگە توغرىلاش";
-"Bottom" = "ئاستىغا توغرىلاش";
-"About Glyph Atlas" = "Glyph Atlas ھەققىدە";
-"Hide Glyph Atlas" = "Glyph Atlas نى يوشۇرۇش";
-"Hide Others" = "باشقىلارنى يوشۇرۇش";
-"Quit Glyph Atlas" = "Glyph Atlas تىن چېكىنىش";
-"Glyph Atlas Help" = "Glyph Atlas ياردىمى";
 "Open At" = "ئورۇندىن ئېچىش";
+"Current User…" = "نۆۋەتتىكى ئىشلەتكۈچى…";
+"All Users…" = "بارلىق ئىشلەتكۈچىلەر…";
+"System Fonts…" = "سىستېمىغا سىڭدۈرۈلگەن…";
+"Recent Location…" = "يېقىندا ئىشلىتىلگەن ئورۇن…";
+"Open Recent" = "يېقىندا ئىشلىتىلگەننى ئېچىش";
 "No Recent Fonts" = "يېقىندا ئېچىلغان خەت نۇسخىسى يوق";
-"Single Glyph" = "بىر ھەرپ شەكلى";
-"Characters" = "ھەرپلەر";
-"Glyph Grid" = "ھەرپ شەكىللىرى تورى";
-"All Glyphs" = "بارلىق ھەرپ شەكىللىرى";
-"Expand Bounding Box" = "چەگرا رامكىسىنى چوڭايتىش";
-"Shrink Bounding Box" = "چەگرا رامكىسىنى كىچىكلىتىش";
-"Vertical Layout" = "تىك ئورۇنلاشتۇرۇش";
-"Enter text" = "تېكىست كىرگۈزۈڭ";
+"Clear Menu" = "تىزىملىكنى تازىلاش";
+"Close" = "تاقاش";
+"Copy to Font Book" = "خەت نۇسخىلىرى كىتابىغا كۆچۈرۈش";
+"Copy to All Users" = "بارلىق ئىشلەتكۈچىلەر ئۈچۈن كۆچۈرۈش";
 "Font Name" = "خەت نۇسخىسىنىڭ نامى";
 "Font File" = "خەت نۇسخىسى ھۆججىتى";
 "Untitled Font" = "نامسىز خەت نۇسخىسى";
@@ -65,8 +39,99 @@
 "This file does not contain a font that CoreText can read." = "بۇ ھۆججەتتە CoreText ئوقۇيالايدىغان خەت نۇسخىسى يوق.";
 "Cannot Read Font" = "خەت نۇسخىسىنى ئوقۇغىلى بولمىدى";
 "CoreText could not create this font." = "CoreText بۇ خەت نۇسخىسىنى قۇرالمىدى.";
-"Bounding Box" = "چەگرا رامكىسى";
+"An item named “%@” already exists in Font Book." = "خەت نۇسخىلىرى كىتابىدا «\U2068%@\U2069» ناملىق تۈر بار.";
+"“%@” is already in Font Book." = "«\U2068%@\U2069» خەت نۇسخىلىرى كىتابىدا بار.";
+"Keep Both" = "ئىككىسىنى ساقلاش";
+"Stop" = "توختىتىش";
+"Replace" = "ئالماشتۇرۇش";
+
+/* Editing and saved text. */
+"Edit" = "تەھرىرلەش";
+"Undo" = "يېنىۋېلىش";
+"Redo" = "قايتا قىلىش";
+"Cut" = "كېسىش";
+"Copy" = "كۆچۈرۈش";
+"Paste" = "چاپلاش";
+"Delete" = "ئۆچۈرۈش";
+"Select All" = "ھەممىنى تاللاش";
+"Enter text" = "تېكىست كىرگۈزۈڭ";
+"Saved Text" = "ساقلانغان تېكىست";
+"Save Current Text" = "ھازىرقى تېكىستنى ساقلاش";
+"No Saved Text" = "ساقلانغان تېكىست يوق";
+"Delete Saved Text" = "ساقلانغان تېكىستنى ئۆچۈرۈش";
+"Clear All Saved Text" = "ساقلانغان بارلىق تېكىستنى ئۆچۈرۈش";
+
+/* Views and glyphs. */
+"View" = "كۆرۈنۈش";
+"Show Sidebar" = "يانبالداقنى كۆرسەت";
+"Hide Sidebar" = "يانبالداقنى يوشۇر";
+"Single Glyph" = "بىر ھەرپ شەكلى";
+"Characters" = "ھەرپلەر";
+"Glyph Grid" = "ھەرپ شەكىللىرى تورى";
+"All Glyphs" = "بارلىق ھەرپ شەكىللىرى";
+"Add Glyph" = "ھەرپ شەكلىنى قوشۇش";
+"Replace Glyph" = "ھەرپ شەكلىنى ئالماشتۇرۇش";
 "Text and alternate glyph list" = "تېكىست ۋە ئالمىشىدىغان ھەرپ شەكىللىرى تىزىملىكى";
+"Filter by Feature" = "خەت نۇسخىسى خاسلىقى بويىچە سۈزۈش";
+"No Features to Filter" = "سۈزۈشكە بولىدىغان خاسلىق يوق";
+"No Feature" = "خاسلىقى يوق";
+
+/* Text layout and typography. */
+"Make Text Bigger" = "تېكىستنى چوڭايتىش";
+"Make Text Smaller" = "تېكىستنى كىچىكلىتىش";
+"Increase Leading" = "قۇر ئارىلىقىنى چوڭايتىش";
+"Decrease Leading" = "قۇر ئارىلىقىنى كىچىكلىتىش";
+"Default Size" = "كۆڭۈلدىكى چوڭلۇق";
+"Text Alignment" = "تېكىستنى توغرىلاش";
+"Left" = "سولغا توغرىلاش";
+"Center" = "ئوتتۇرىغا توغرىلاش";
+"Right" = "ئوڭغا توغرىلاش";
+"Justified" = "ئىككى يانغا توغرىلاش";
+"Top" = "ئۈستىگە توغرىلاش";
+"Bottom" = "ئاستىغا توغرىلاش";
+"Vertical Layout" = "تىك ئورۇنلاشتۇرۇش";
+"Writing Direction" = "يېزىش يۆنىلىشى";
+"Left to Right" = "سولدىن ئوڭغا";
+"Right to Left" = "ئوڭدىن سولغا";
+"Text Decorations" = "تېكىست بېزىكى";
+"Underline" = "ئاستىغا سىزىش";
+"Strikethrough" = "ئۈستىدىن سىزىش";
+"Outline" = "سىرتقى سىزىق";
+"Typography" = "خەت تىزىش";
+"No Typographic Features" = "خەت تىزىش خاسلىقى يوق";
+"Typesetting Language" = "خەت تىزىش تىلى";
+"No Selectable Languages" = "تاللىغىلى بولىدىغان تىل يوق";
+"Other" = "باشقىلار";
+
+/* Bounding box and colors. */
+"Bounding Box" = "چەگرا رامكىسى";
+"Show Bounding Box" = "چەگرا رامكىسىنى كۆرسەت";
+"Hide Bounding Box" = "چەگرا رامكىسىنى يوشۇر";
+"Expand Bounding Box" = "چەگرا رامكىسىنى چوڭايتىش";
+"Shrink Bounding Box" = "چەگرا رامكىسىنى كىچىكلىتىش";
+"Colors" = "رەڭلەر";
+"Glyph…" = "ھەرپ شەكلى…";
+"Background…" = "تەگلىك…";
+"Bounding Box…" = "چەگرا رامكىسى…";
+"Follow System" = "سىستېما تەڭشىكىگە ئەگىشىش";
+"Save Current Palette" = "ھازىرقى رەڭ تاختىسىنى ساقلاش";
+"Delete Palettes" = "رەڭ تاختىلىرىنى ئۆچۈرۈش";
+"Clear All Saved Palettes" = "ساقلانغان بارلىق رەڭ تاختىلىرىنى ئۆچۈرۈش";
+"No Saved Palettes" = "ساقلانغان رەڭ تاختىسى يوق";
+
+/* Variable fonts and defaults. */
+"Variable" = "ئۆزگىرىشچان";
+"Named Instance" = "ناملىق ۋارىيانت";
+"Default" = "كۆڭۈلدىكى";
+"Custom" = "ئىختىيارى";
+"Use as Defaults" = "كۆڭۈلدىكى تەڭشەك قىلىش";
+"Restore Default" = "كۆڭۈلدىكى تەڭشەكنى ئەسلىگە كەلتۈرۈش";
+
+/* Format strings. */
+"%@: %@" = "%@: \U2068%@\U2069";
+"%@ (%.0f%%)" = "%@ (\U2066%.0f%%\U2069)";
+
+/* Help. */
 "Help.01" = "تىزىملىك بالدىقىدىن «ئورۇندىن ئېچىش» نى تاللاپ، خەت نۇسخىسىنى شۇ قىسقۇچتىن بىۋاسىتە ئېچىڭ. خەت نۇسخىسى ھۆججىتىنى ئەپنىڭ سىنبەلگىسىگە ياكى خەت نۇسخىسى ئاللىقاچان ئېچىلغان كۆزنەككە سۆرەپمۇ ئاچالايسىز. Glyph Atlas نى خەت نۇسخىسى ھۆججەتلىرىنى ئاچىدىغان كۆڭۈلدىكى ئەپ قىلىپ تەڭشىسىڭىزمۇ بولىدۇ. يېقىندا ئېچىلغان ھۆججەتلەرنى قايتا ئاچقىلى بولىدۇ.";
 "Help.02" = "تىزىملىك بالدىقىدىن بىر چېكىپ، نۆۋەتتىكى كۆزنەكتە ئېچىلغان خەت نۇسخىسىنى ئۆزىڭىزنىڭ خەت نۇسخىلىرى قىسقۇچىغا كۆچۈرەلەيسىز. بارلىق ئىشلەتكۈچىلەرنىڭ ئورتاق قىسقۇچىغا كۆچۈرۈش ئۈچۈن \U2066⌥\U2069 نى بېسىپ تۇرۇڭ.";
 "Help.03" = "ئۆزگىرىشچان خەت نۇسخىسىنى ئاچسىڭىز، كۆزنەك كۇنۇپكىلىرىنىڭ يېنىدا تەڭشەش تاختىسى كۆرۈنىدۇ. ئۇنى ئوچۇق قالدۇرۇش ئۈچۈن سىرتقا سۆرەڭ. سان قىممىتىنى تاللاپ، \U2066↑/↓\U2069 ياكى \U2066⇧↑/⇧↓\U2069 بىلەن تەڭشەڭ.";
@@ -82,64 +147,3 @@
 "Help.13" = "سايە چەگرا رامكىسىنى كۆرسىتىدۇ. ئۇنىڭدا ھەرپ شەكلىنىڭ كەڭلىكى، ئېگىزلىكى، شۇنداقلا قۇرنىڭ ئېگىزلىكى ۋە قۇر ئارىلىقى كۆرۈنىدۇ. سايىنى يوشۇرۇش ئۈچۈن \U2066⌘4\U2069 نى بېسىڭ.";
 "Help.14" = "قاراڭغۇ ھالەتنى ئىشلەتكىلى بولىدۇ. ئىچى تولدۇرۇلغان ھەرپ شەكلىنى چەككەندە يورۇقلۇقى كۆزىڭىزنى قاماشتۇرۇشى مۇمكىن. تىزىملىك بالدىقىدىكى «رەڭلەر» دىن ھەرپ شەكلى، چەگرا رامكىسى سايىسى ۋە تەگلىك رەڭلىرىنى ئۆزگەرتەلەيسىز. رەڭلەرنى ساقلاش ئۈچۈن «ھازىرقى رەڭ تاختىسىنى ساقلاش» نى تاللاڭ. «رەڭ تاختىلىرىنى ئۆچۈرۈش» نى كۆرۈش ئۈچۈن \U2066⌥\U2069 نى بېسىپ تۇرۇڭ.";
 "Help.15" = "ھازىرقى كۆرۈنۈش، رەڭلەر، چوڭلۇق، باشقا ئالدىن كۆرۈش تەڭشەكلىرى ۋە كۆزنەك چوڭلۇقىنى ساقلاش ئۈچۈن تىزىملىك بالدىقىدىن «كۆڭۈلدىكى تەڭشەك قىلىش» نى تاللاڭ. كېيىن ئېچىلغان خەت نۇسخىلىرى بۇ تەڭشەكلەرنى ئىشلىتىدۇ. «كۆڭۈلدىكى تەڭشەكنى ئەسلىگە كەلتۈرۈش» نى تاللاش ئۈچۈن \U2066⌥\U2069 نى بېسىپ تۇرۇڭ.";
-
-/* Variable font controls. */
-"Variable" = "ئۆزگىرىشچان";
-"Named Instance" = "ناملىق ۋارىيانت";
-"Default" = "كۆڭۈلدىكى";
-"Custom" = "ئىختىيارى";
-
-
-/* Font Book copy alerts. Conflict buttons follow Finder. */
-"An item named “%@” already exists in Font Book." = "خەت نۇسخىلىرى كىتابىدا «\U2068%@\U2069» ناملىق تۈر بار.";
-"“%@” is already in Font Book." = "«\U2068%@\U2069» خەت نۇسخىلىرى كىتابىدا بار.";
-"Keep Both" = "ئىككىسىنى ساقلاش";
-"Stop" = "توختىتىش";
-"Replace" = "ئالماشتۇرۇش";
-
-/* User-saved plain text. */
-"Saved Text" = "ساقلانغان تېكىست";
-"Save Current Text" = "ھازىرقى تېكىستنى ساقلاش";
-"No Saved Text" = "ساقلانغان تېكىست يوق";
-
-/* Preview colors and native leading. */
-"Colors" = "رەڭلەر";
-"Delete Palettes" = "رەڭ تاختىلىرىنى ئۆچۈرۈش";
-"Save Current Palette" = "ھازىرقى رەڭ تاختىسىنى ساقلاش";
-"Clear All Saved Palettes" = "ساقلانغان بارلىق رەڭ تاختىلىرىنى ئۆچۈرۈش";
-"No Saved Palettes" = "ساقلانغان رەڭ تاختىسى يوق";
-"%@: %@" = "%@: \U2068%@\U2069";
-"%@ (%.0f%%)" = "%@ (\U2066%.0f%%\U2069)";
-"Follow System" = "سىستېما تەڭشىكىگە ئەگىشىش";
-"Glyph…" = "ھەرپ شەكلى…";
-"Background…" = "تەگلىك…";
-"Bounding Box…" = "چەگرا رامكىسى…";
-"Increase Leading" = "قۇر ئارىلىقىنى چوڭايتىش";
-"Decrease Leading" = "قۇر ئارىلىقىنى كىچىكلىتىش";
-
-/* Explicit defaults for newly opened font windows. */
-
-/* Saved-text deletion and full screen. */
-"Delete Saved Text" = "ساقلانغان تېكىستنى ئۆچۈرۈش";
-"Clear All Saved Text" = "ساقلانغان بارلىق تېكىستنى ئۆچۈرۈش";
-"Enter Full Screen" = "پۈتۈن ئېكراندا كۆرسىتىش";
-
-/* Native typography and opening settings. */
-"Typography" = "خەت تىزىش";
-"Other" = "باشقىلار";
-"No Typographic Features" = "خەت تىزىش خاسلىقى يوق";
-"Default Size" = "كۆڭۈلدىكى چوڭلۇق";
-"Use as Defaults" = "كۆڭۈلدىكى تەڭشەك قىلىش";
-"Restore Default" = "كۆڭۈلدىكى تەڭشەكنى ئەسلىگە كەلتۈرۈش";
-"Text Decorations" = "تېكىست بېزىكى";
-"Filter by Feature" = "خەت نۇسخىسى خاسلىقى بويىچە سۈزۈش";
-"No Features to Filter" = "سۈزۈشكە بولىدىغان خاسلىق يوق";
-"No Feature" = "خاسلىقى يوق";
-
-"Writing Direction" = "يېزىش يۆنىلىشى";
-"Left to Right" = "سولدىن ئوڭغا";
-"Right to Left" = "ئوڭدىن سولغا";
-"Outline" = "سىرتقى سىزىق";
-
-"Typesetting Language" = "خەت تىزىش تىلى";
-"No Selectable Languages" = "تاللىغىلى بولىدىغان تىل يوق";

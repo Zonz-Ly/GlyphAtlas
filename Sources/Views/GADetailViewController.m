@@ -3,6 +3,7 @@
 #import "GAAllGlyphsView.h"
 #import "GAMultiGlyphView.h"
 #import "App/GAAppDelegate.h"
+#import <math.h>
 
 @interface GADetailContainerView : NSView
 @property (nonatomic, copy, nullable) void (^resizeHandler)(void (^changes)(void));
@@ -61,8 +62,7 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.previewColors = [[GAPreviewColors alloc] init];
-    if (GAUsesMacOS26Layout())
-        ((GADetailContainerView *)self.view).previewColors = self.previewColors;
+    ((GADetailContainerView *)self.view).previewColors = self.previewColors;
 
     self.boundingBoxView = [[GABoundingBoxView alloc] initWithFrame:NSZeroRect];
     self.boundingBoxView.translatesAutoresizingMaskIntoConstraints = NO;
@@ -83,6 +83,15 @@
 
     self.multiView = [[GAMultiGlyphView alloc] initWithFrame:NSMakeRect(0, 0, 900, 760)];
     self.multiScrollView.documentView = self.multiView;
+    NSNotificationCenter *notifications = NSNotificationCenter.defaultCenter;
+    for (NSScrollView *scrollView in @[self.allGlyphsView.scrollView, self.multiScrollView]) {
+        [notifications addObserver:self selector:@selector(scrollGeometryDidChange:)
+                              name:NSViewBoundsDidChangeNotification object:scrollView.contentView];
+        [notifications addObserver:self selector:@selector(scrollGeometryDidChange:)
+                              name:NSViewFrameDidChangeNotification object:scrollView.documentView];
+        scrollView.contentView.postsBoundsChangedNotifications = YES;
+        scrollView.documentView.postsFrameChangedNotifications = YES;
+    }
     self.boundingBoxView.previewColors = self.previewColors;
     self.multiView.previewColors = self.previewColors;
     [self.allGlyphsView applyPreviewColors:self.previewColors];
@@ -91,6 +100,10 @@
     // fills that region; glyph geometry stays in the unobscured right pane.
     NSLayoutXAxisAnchor *contentLeading = GAUsesMacOS26Layout()
         ? self.view.safeAreaLayoutGuide.leadingAnchor : self.view.leadingAnchor;
+    [NSLayoutConstraint activateConstraints:@[
+        [self.view.trailingAnchor constraintGreaterThanOrEqualToAnchor:contentLeading constant:300],
+        [self.view.heightAnchor constraintGreaterThanOrEqualToConstant:300],
+    ]];
     for (NSView *view in @[self.boundingBoxView, self.allGlyphsView, self.multiScrollView]) {
         [NSLayoutConstraint activateConstraints:@[
             [view.leadingAnchor constraintEqualToAnchor:contentLeading],
@@ -144,9 +157,54 @@
 
 #pragma mark - Layout
 
+- (void)scrollGeometryDidChange:(NSNotification *)notification {
+    [self updateToolbarAppearance];
+}
+
+- (void)updateToolbarAppearance {
+    NSScrollView *scrollView = nil;
+    if (self.viewMode == GAViewModeAllGlyphs) scrollView = self.allGlyphsView.scrollView;
+    if (self.viewMode == GAViewModeMultiCharacter) scrollView = self.multiScrollView;
+
+    BOOL overlapsToolbar = NO;
+    if (scrollView.automaticallyAdjustsContentInsets) {
+        NSClipView *clip = scrollView.contentView;
+        NSRect limits = GAScrollPositionLimits(scrollView);
+        BOOL scrollsVertically = scrollView.hasVerticalScroller && NSHeight(limits) > 0.5;
+        if (scrollsVertically) {
+            CGFloat currentY = NSMinY([clip constrainBoundsRect:clip.bounds]);
+            CGFloat distance = clip.isFlipped ? currentY - NSMinY(limits) : NSMaxY(limits) - currentY;
+            if (scrollView == self.multiScrollView) {
+                CGFloat visibleHeight = self.multiView.viewportSize.height - self.multiView.toolbarTopInset;
+                distance = NSMaxY(self.multiView.pageRect) - currentY - visibleHeight;
+            }
+            overlapsToolbar = distance > 0.5;
+        }
+    }
+    NSWindow *window = self.view.window;
+    BOOL transparent = !overlapsToolbar;
+    NSTitlebarSeparatorStyle style = overlapsToolbar
+        ? NSTitlebarSeparatorStyleAutomatic : NSTitlebarSeparatorStyleNone;
+    if (window.titlebarAppearsTransparent != transparent) window.titlebarAppearsTransparent = transparent;
+    if (window.titlebarSeparatorStyle != style) window.titlebarSeparatorStyle = style;
+}
+
+- (void)setUsesToolbarSafeArea:(BOOL)enabled {
+    self.boundingBoxView.constrainsPageAtToolbar = enabled;
+    [self.allGlyphsView setScrollsUnderToolbar:enabled];
+    GAPreserveScrollPosition(self.multiScrollView, ^{
+        self.multiScrollView.automaticallyAdjustsContentInsets = enabled;
+        if (!enabled) self.multiScrollView.contentInsets = NSEdgeInsetsZero;
+        [self.multiScrollView tile];
+        [self updateMultiLayout];
+    });
+    [self updateToolbarAppearance];
+}
+
 - (void)viewDidLayout {
     [super viewDidLayout];
     [self updateMultiLayout];
+    [self updateToolbarAppearance];
 }
 
 - (void)updateMultiLayout {
@@ -154,10 +212,14 @@
         return;
     }
     NSSize viewport = self.multiScrollView.contentSize;
+    NSEdgeInsets insets = self.multiScrollView.contentInsets;
+    viewport.width -= insets.left + insets.right;
+    viewport.height -= insets.bottom;
     if (viewport.width < 1 || viewport.height < 1) {
         return;
     }
     self.updatingMultiLayout = YES;
+    self.multiView.toolbarTopInset = insets.top;
     self.multiView.viewportSize = viewport;
     NSSize size = self.multiView.documentSize;
     if (fabs(NSWidth(self.multiView.frame) - size.width) > 0.5 ||
@@ -180,6 +242,7 @@
     self.allGlyphsView.hidden = self.viewMode != GAViewModeAllGlyphs;
     self.multiScrollView.hidden = self.viewMode != GAViewModeMultiCharacter;
     [self updateMultiLayout];
+    [self updateToolbarAppearance];
 }
 
 #pragma mark - Shared display state
@@ -192,10 +255,8 @@
 }
 
 - (void)refreshPreviewColors {
-    if (GAUsesMacOS26Layout()) {
-        ((GADetailContainerView *)self.view).previewColors = self.previewColors;
-        self.view.needsDisplay = YES;
-    }
+    ((GADetailContainerView *)self.view).previewColors = self.previewColors;
+    self.view.needsDisplay = YES;
     self.multiScrollView.backgroundColor =
         [self.previewColors colorForRole:GAPreviewColorBackground];
     [self.boundingBoxView setNeedsDisplay:YES];
@@ -203,8 +264,8 @@
     [self.multiView refreshPreviewColors];
 }
 
-- (void)adjustLineSpacing:(NSInteger)steps {
-    self.multiView.lineSpacingAdjustment += steps * 0.1;
+- (void)adjustLineHeight:(NSInteger)steps {
+    self.multiView.lineHeightMultiple *= pow(GAGlyphZoomStep, steps * 0.5);
 }
 
 - (void)setVariant:(GAGlyphVariant *)variant {
@@ -299,12 +360,11 @@
 #pragma mark - Multi-character view
 
 - (void)scrollMultiToPoint:(NSPoint)point {
-    NSSize viewport = self.multiScrollView.contentSize;
-    NSSize document = self.multiView.frame.size;
-    point.x = MIN(MAX(0.0, point.x), MAX(0.0, document.width - viewport.width));
-    point.y = MIN(MAX(0.0, point.y), MAX(0.0, document.height - viewport.height));
-    [self.multiScrollView.contentView scrollToPoint:point];
-    [self.multiScrollView reflectScrolledClipView:self.multiScrollView.contentView];
+    NSClipView *clip = self.multiScrollView.contentView;
+    NSRect bounds = clip.bounds;
+    bounds.origin = point;
+    [clip scrollToPoint:[clip constrainBoundsRect:bounds].origin];
+    [self.multiScrollView reflectScrolledClipView:clip];
 }
 
 - (void)setMultiText:(NSString *)text groups:(NSArray<GACharacterGroup *> *)groups
@@ -337,7 +397,7 @@
     return @{@"colors":self.previewColors.representation,
         @"boxInset":@(self.boundingBoxInsetFraction),
         @"textScale":@(self.multiView.textScale),
-        @"lineSpacing":@(self.multiView.lineSpacingAdjustment),
+        @"lineHeightMultiple":@(self.multiView.lineHeightMultiple),
         @"cellScale":@(self.allGlyphsView.cellScale)};
 }
 
@@ -346,7 +406,7 @@
     if ([settings[@"colors"] count]) [self applyPreviewColorRepresentation:settings[@"colors"]];
     if (settings[@"boxInset"]) self.boundingBoxInsetFraction = [settings[@"boxInset"] doubleValue];
     if (settings[@"textScale"]) self.multiView.textScale = [settings[@"textScale"] doubleValue];
-    if (settings[@"lineSpacing"]) self.multiView.lineSpacingAdjustment = [settings[@"lineSpacing"] doubleValue];
+    if (settings[@"lineHeightMultiple"]) self.multiView.lineHeightMultiple = [settings[@"lineHeightMultiple"] doubleValue];
     if (settings[@"cellScale"]) self.allGlyphsView.cellScale = [settings[@"cellScale"] doubleValue];
 }
 

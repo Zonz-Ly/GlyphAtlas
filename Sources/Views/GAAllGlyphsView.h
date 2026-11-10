@@ -6,6 +6,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface GAAllGlyphsView : NSView
 @property(nonatomic) CGFloat cellScale;
+@property (nonatomic, strong, readonly) NSScrollView *scrollView;
+- (void)setScrollsUnderToolbar:(BOOL)enabled;
 - (void)applyPreviewColors:(GAPreviewColors *)colors;
 @property (nonatomic, strong, nullable) GAFontDocument *document;
 - (void)setVisibleGlyphIDs:(nullable NSIndexSet *)glyphIDs;

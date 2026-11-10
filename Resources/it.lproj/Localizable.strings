@@ -1,62 +1,36 @@
 /* Standard commands follow macOS terminology. App-specific text and Help are translated here. */
 
-"File" = "File";
-"Copy to Font Book" = "Copia in Libro Font";
-"Copy to All Users" = "Copia per tutti gli utenti";
-"Current User…" = "Utente attuale…";
-"All Users…" = "Tutti gli utenti…";
-"System Fonts…" = "Integrati…";
-"Open Recent" = "Apri recenti";
-"Recent Location…" = "Ultima posizione…";
-"Clear Menu" = "Cancella menu";
-"Close" = "Chiudi";
-"Cut" = "Taglia";
-"Copy" = "Copia";
-"Paste" = "Incolla";
-"Delete" = "Elimina";
-"Select All" = "Seleziona tutto";
-"Underline" = "Sottolineato";
-"Strikethrough" = "Barrato";
-"View" = "Vista";
+/* Application and window commands. */
+"About Glyph Atlas" = "Informazioni su Glyph Atlas";
+"Hide Glyph Atlas" = "Nascondi Glyph Atlas";
+"Hide Others" = "Nascondi altre";
+"Show All" = "Mostra tutte";
+"Quit Glyph Atlas" = "Esci da Glyph Atlas";
+"Services" = "Servizi";
 "Window" = "Finestra";
 "Minimize" = "Contrai";
 "Zoom" = "Ridimensiona";
 "Bring All to Front" = "Porta tutto in primo piano";
+"Enter Full Screen" = "Attiva modalità a tutto schermo";
 "Help" = "Aiuto";
+"Glyph Atlas Help" = "Aiuto Glyph Atlas";
 "Cancel" = "Annulla";
 "OK" = "OK";
-"Show All" = "Mostra tutte";
-"Services" = "Servizi";
-"Edit" = "Modifica";
-"Undo" = "Annulla";
-"Redo" = "Ripristina";
-"Add Glyph" = "Aggiungi glifo";
-"Replace Glyph" = "Sostituisci glifo";
+
+/* File and font operations. */
+"File" = "File";
 "Open" = "Apri";
-"Make Text Bigger" = "Ingrandisci testo";
-"Make Text Smaller" = "Riduci testo";
-"Text Alignment" = "Allineamento testo";
-"Left" = "Allinea a sinistra";
-"Center" = "Centra";
-"Right" = "Allinea a destra";
-"Justified" = "Giustifica";
-"Top" = "Allinea in alto";
-"Bottom" = "Allinea in basso";
-"About Glyph Atlas" = "Informazioni su Glyph Atlas";
-"Hide Glyph Atlas" = "Nascondi Glyph Atlas";
-"Hide Others" = "Nascondi altre";
-"Quit Glyph Atlas" = "Esci da Glyph Atlas";
-"Glyph Atlas Help" = "Aiuto Glyph Atlas";
 "Open At" = "Apri da";
+"Current User…" = "Utente attuale…";
+"All Users…" = "Tutti gli utenti…";
+"System Fonts…" = "Integrati…";
+"Recent Location…" = "Ultima posizione…";
+"Open Recent" = "Apri recenti";
 "No Recent Fonts" = "Nessun font recente";
-"Single Glyph" = "Glifo singolo";
-"Characters" = "Caratteri";
-"Glyph Grid" = "Griglia di glifi";
-"All Glyphs" = "Tutti i glifi";
-"Expand Bounding Box" = "Ingrandisci riquadro di delimitazione";
-"Shrink Bounding Box" = "Riduci riquadro di delimitazione";
-"Vertical Layout" = "Layout verticale";
-"Enter text" = "Inserisci testo";
+"Clear Menu" = "Cancella menu";
+"Close" = "Chiudi";
+"Copy to Font Book" = "Copia in Libro Font";
+"Copy to All Users" = "Copia per tutti gli utenti";
 "Font Name" = "Nome del font";
 "Font File" = "File di font";
 "Untitled Font" = "Font senza titolo";
@@ -65,8 +39,99 @@
 "This file does not contain a font that CoreText can read." = "Questo file non contiene un font leggibile da CoreText.";
 "Cannot Read Font" = "Impossibile leggere il font";
 "CoreText could not create this font." = "CoreText non ha potuto creare questo font.";
-"Bounding Box" = "Riquadro di delimitazione";
+"An item named “%@” already exists in Font Book." = "In Libro Font esiste già un elemento chiamato “%@”.";
+"“%@” is already in Font Book." = "“%@” è già presente in Libro Font.";
+"Keep Both" = "Mantieni entrambi";
+"Stop" = "Interrompi";
+"Replace" = "Sostituisci";
+
+/* Editing and saved text. */
+"Edit" = "Modifica";
+"Undo" = "Annulla";
+"Redo" = "Ripristina";
+"Cut" = "Taglia";
+"Copy" = "Copia";
+"Paste" = "Incolla";
+"Delete" = "Elimina";
+"Select All" = "Seleziona tutto";
+"Enter text" = "Inserisci testo";
+"Saved Text" = "Testi salvati";
+"Save Current Text" = "Salva il testo attuale";
+"No Saved Text" = "Nessun testo salvato";
+"Delete Saved Text" = "Elimina testi salvati";
+"Clear All Saved Text" = "Cancella tutti i testi salvati";
+
+/* Views and glyphs. */
+"View" = "Vista";
+"Show Sidebar" = "Mostra la barra laterale";
+"Hide Sidebar" = "Nascondi la barra laterale";
+"Single Glyph" = "Glifo singolo";
+"Characters" = "Caratteri";
+"Glyph Grid" = "Griglia di glifi";
+"All Glyphs" = "Tutti i glifi";
+"Add Glyph" = "Aggiungi glifo";
+"Replace Glyph" = "Sostituisci glifo";
 "Text and alternate glyph list" = "Elenco di testo e glifi alternativi";
+"Filter by Feature" = "Filtra per funzione";
+"No Features to Filter" = "Nessuna funzione per il filtro";
+"No Feature" = "Senza funzione";
+
+/* Text layout and typography. */
+"Make Text Bigger" = "Ingrandisci testo";
+"Make Text Smaller" = "Riduci testo";
+"Increase Leading" = "Aumenta interlinea";
+"Decrease Leading" = "Riduci interlinea";
+"Default Size" = "Dimensioni di default";
+"Text Alignment" = "Allineamento testo";
+"Left" = "Allinea a sinistra";
+"Center" = "Centra";
+"Right" = "Allinea a destra";
+"Justified" = "Giustifica";
+"Top" = "Allinea in alto";
+"Bottom" = "Allinea in basso";
+"Vertical Layout" = "Layout verticale";
+"Writing Direction" = "Direzione di scrittura";
+"Left to Right" = "Da sinistra a destra";
+"Right to Left" = "Da destra a sinistra";
+"Text Decorations" = "Decorazioni del testo";
+"Underline" = "Sottolineato";
+"Strikethrough" = "Barrato";
+"Outline" = "Bordato";
+"Typography" = "Tipografia";
+"No Typographic Features" = "Nessuna funzione tipografica";
+"Typesetting Language" = "Lingua di composizione";
+"No Selectable Languages" = "Nessuna lingua selezionabile";
+"Other" = "Altre";
+
+/* Bounding box and colors. */
+"Bounding Box" = "Riquadro di delimitazione";
+"Show Bounding Box" = "Mostra il riquadro di delimitazione";
+"Hide Bounding Box" = "Nascondi il riquadro di delimitazione";
+"Expand Bounding Box" = "Ingrandisci riquadro di delimitazione";
+"Shrink Bounding Box" = "Riduci riquadro di delimitazione";
+"Colors" = "Colori";
+"Glyph…" = "Glifo…";
+"Background…" = "Sfondo…";
+"Bounding Box…" = "Riquadro di delimitazione…";
+"Follow System" = "Segui il sistema";
+"Save Current Palette" = "Salva palette attuale";
+"Delete Palettes" = "Elimina palette";
+"Clear All Saved Palettes" = "Cancella tutte le palette salvate";
+"No Saved Palettes" = "Nessuna palette salvata";
+
+/* Variable fonts and defaults. */
+"Variable" = "Variabile";
+"Named Instance" = "Istanza con nome";
+"Default" = "Default";
+"Custom" = "Personalizzato";
+"Use as Defaults" = "Usa come default";
+"Restore Default" = "Ripristina default";
+
+/* Format strings. */
+"%@: %@" = "%@: %@";
+"%@ (%.0f%%)" = "%@ (%.0f%%)";
+
+/* Help. */
 "Help.01" = "Scegli “Apri da” nella barra dei menu per aprire un font direttamente da una cartella di font. Puoi anche trascinarlo sull’icona dell’app o su una finestra in cui è già aperto un font, oppure impostare Glyph Atlas come app predefinita per aprire i file dei font. Puoi riaprire anche i file recenti.";
 "Help.02" = "Dalla barra dei menu puoi copiare con un clic il font aperto nella finestra attuale nella tua cartella dei font. Tieni premuto ⌥ per copiare il font nella cartella dei font di tutti gli utenti.";
 "Help.03" = "Quando apri un font variabile, accanto ai controlli della finestra appare un pannello delle variazioni. Trascinalo all’esterno per tenerlo aperto. Seleziona un valore numerico e regolalo con ↑/↓ oppure ⇧↑/⇧↓.";
@@ -82,64 +147,3 @@
 "Help.13" = "L’ombra indica il riquadro di delimitazione, comprese la larghezza e l’altezza del glifo, l’altezza delle righe e l’interlinea della composizione. Premi ⌘4 per nasconderlo.";
 "Help.14" = "È supportata la modalità scura. Ma attenzione: facendo clic su un glifo pieno potresti rimanere abbagliato. Puoi cambiare i colori del glifo, dell’ombra del riquadro e dello sfondo in Colori, nella barra dei menu. Scegli “Salva palette attuale” per conservare i colori. Tieni premuto ⌥ per visualizzare “Elimina palette”.";
 "Help.15" = "Scegli Usa come default nella barra dei menu per salvare la vista, i colori, le dimensioni e le altre impostazioni di anteprima attuali, insieme alle dimensioni della finestra. I file di font aperti in seguito useranno queste impostazioni. Tieni premuto ⌥ per scegliere Ripristina default.";
-
-/* Variable font controls. */
-"Variable" = "Variabile";
-"Named Instance" = "Istanza con nome";
-"Default" = "Default";
-"Custom" = "Personalizzato";
-
-
-/* Font Book copy alerts. Conflict buttons follow Finder. */
-"An item named “%@” already exists in Font Book." = "In Libro Font esiste già un elemento chiamato “%@”.";
-"“%@” is already in Font Book." = "“%@” è già presente in Libro Font.";
-"Keep Both" = "Mantieni entrambi";
-"Stop" = "Interrompi";
-"Replace" = "Sostituisci";
-
-/* User-saved plain text. */
-"Saved Text" = "Testi salvati";
-"Save Current Text" = "Salva il testo attuale";
-"No Saved Text" = "Nessun testo salvato";
-
-/* Preview colors and native leading. */
-"Colors" = "Colori";
-"Delete Palettes" = "Elimina palette";
-"Save Current Palette" = "Salva palette attuale";
-"Clear All Saved Palettes" = "Cancella tutte le palette salvate";
-"No Saved Palettes" = "Nessuna palette salvata";
-"%@: %@" = "%@: %@";
-"%@ (%.0f%%)" = "%@ (%.0f%%)";
-"Follow System" = "Segui il sistema";
-"Glyph…" = "Glifo…";
-"Background…" = "Sfondo…";
-"Bounding Box…" = "Riquadro di delimitazione…";
-"Increase Leading" = "Aumenta interlinea";
-"Decrease Leading" = "Riduci interlinea";
-
-/* Explicit defaults for newly opened font windows. */
-
-/* Saved-text deletion and full screen. */
-"Delete Saved Text" = "Elimina testi salvati";
-"Clear All Saved Text" = "Cancella tutti i testi salvati";
-"Enter Full Screen" = "Attiva modalità a tutto schermo";
-
-/* Native typography and opening settings. */
-"Typography" = "Tipografia";
-"Other" = "Altre";
-"No Typographic Features" = "Nessuna funzione tipografica";
-"Default Size" = "Dimensioni di default";
-"Use as Defaults" = "Usa come default";
-"Restore Default" = "Ripristina default";
-"Text Decorations" = "Decorazioni del testo";
-"Filter by Feature" = "Filtra per funzione";
-"No Features to Filter" = "Nessuna funzione per il filtro";
-"No Feature" = "Senza funzione";
-
-"Writing Direction" = "Direzione di scrittura";
-"Left to Right" = "Da sinistra a destra";
-"Right to Left" = "Da destra a sinistra";
-"Outline" = "Bordato";
-
-"Typesetting Language" = "Lingua di composizione";
-"No Selectable Languages" = "Nessuna lingua selezionabile";

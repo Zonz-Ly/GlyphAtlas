@@ -16,6 +16,10 @@ FOUNDATION_EXPORT BOOL GAEndInputEditingOutsideWindow(NSWindow *window);
 
 /// Input-only widgets, kept independent of the sidebar list controller.
 @interface GASearchField : NSSearchField
+@property (nonatomic) BOOL usesUniformIdleTextColor;
+@property (nonatomic, copy, nullable) void (^onFieldEditorFocus)(void);
+/// Updates the idle display without changing the retained field editor storage.
+- (void)setIdleAttributedStringValue:(NSAttributedString *)text;
 @end
 @interface GASearchFieldEditor : NSTextView
 @property (nonatomic, weak, nullable) NSUndoManager *inputUndoManager;

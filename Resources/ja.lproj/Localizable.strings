@@ -1,62 +1,36 @@
 /* Standard commands follow macOS terminology. App-specific text and Help are translated here. */
 
-"File" = "ファイル";
-"Copy to Font Book" = "Font Bookにコピー";
-"Copy to All Users" = "すべてのユーザにコピー";
-"Current User…" = "現在のユーザ…";
-"All Users…" = "すべてのユーザ…";
-"System Fonts…" = "システム内蔵…";
-"Open Recent" = "最近使った項目を開く";
-"Recent Location…" = "最近使った場所…";
-"Clear Menu" = "メニューを消去";
-"Close" = "閉じる";
-"Cut" = "カット";
-"Copy" = "コピー";
-"Paste" = "ペースト";
-"Delete" = "削除";
-"Select All" = "すべてを選択";
-"Underline" = "アンダーライン";
-"Strikethrough" = "取り消し線";
-"View" = "表示";
+/* Application and window commands. */
+"About Glyph Atlas" = "Glyph Atlas について";
+"Hide Glyph Atlas" = "Glyph Atlas を非表示";
+"Hide Others" = "ほかを非表示";
+"Show All" = "すべてを表示";
+"Quit Glyph Atlas" = "Glyph Atlas を終了";
+"Services" = "サービス";
 "Window" = "ウインドウ";
 "Minimize" = "しまう";
 "Zoom" = "拡大/縮小";
 "Bring All to Front" = "すべてを手前に移動";
+"Enter Full Screen" = "フルスクリーンにする";
 "Help" = "ヘルプ";
+"Glyph Atlas Help" = "Glyph Atlas ヘルプ";
 "Cancel" = "キャンセル";
 "OK" = "OK";
-"Show All" = "すべてを表示";
-"Services" = "サービス";
-"Edit" = "編集";
-"Undo" = "取り消す";
-"Redo" = "やり直す";
-"Add Glyph" = "グリフを追加";
-"Replace Glyph" = "グリフを置き換え";
+
+/* File and font operations. */
+"File" = "ファイル";
 "Open" = "開く";
-"Make Text Bigger" = "文字を拡大";
-"Make Text Smaller" = "文字を縮小";
-"Text Alignment" = "テキストの配置";
-"Left" = "左揃え";
-"Center" = "中央揃え";
-"Right" = "右揃え";
-"Justified" = "両端揃え";
-"Top" = "上揃え";
-"Bottom" = "下揃え";
-"About Glyph Atlas" = "Glyph Atlas について";
-"Hide Glyph Atlas" = "Glyph Atlas を非表示";
-"Hide Others" = "ほかを非表示";
-"Quit Glyph Atlas" = "Glyph Atlas を終了";
-"Glyph Atlas Help" = "Glyph Atlas ヘルプ";
 "Open At" = "開く場所";
+"Current User…" = "現在のユーザ…";
+"All Users…" = "すべてのユーザ…";
+"System Fonts…" = "システム内蔵…";
+"Recent Location…" = "最近使った場所…";
+"Open Recent" = "最近使った項目を開く";
 "No Recent Fonts" = "最近使ったフォントはありません";
-"Single Glyph" = "単一グリフ";
-"Characters" = "文字";
-"Glyph Grid" = "グリフ一覧";
-"All Glyphs" = "すべてのグリフ";
-"Expand Bounding Box" = "バウンディングボックスを拡大";
-"Shrink Bounding Box" = "バウンディングボックスを縮小";
-"Vertical Layout" = "縦書き";
-"Enter text" = "テキストを入力";
+"Clear Menu" = "メニューを消去";
+"Close" = "閉じる";
+"Copy to Font Book" = "Font Bookにコピー";
+"Copy to All Users" = "すべてのユーザにコピー";
 "Font Name" = "フォント名";
 "Font File" = "フォントファイル";
 "Untitled Font" = "名称未設定のフォント";
@@ -65,8 +39,99 @@
 "This file does not contain a font that CoreText can read." = "このファイルには CoreText で読み込めるフォントが含まれていません。";
 "Cannot Read Font" = "フォントを読み込めません";
 "CoreText could not create this font." = "CoreText でこのフォントを作成できませんでした。";
-"Bounding Box" = "バウンディングボックス";
+"An item named “%@” already exists in Font Book." = "Font Bookに“%@”という項目がすでにあります。";
+"“%@” is already in Font Book." = "“%@”はすでにFont Bookにあります。";
+"Keep Both" = "両方とも残す";
+"Stop" = "中止";
+"Replace" = "置き換える";
+
+/* Editing and saved text. */
+"Edit" = "編集";
+"Undo" = "取り消す";
+"Redo" = "やり直す";
+"Cut" = "カット";
+"Copy" = "コピー";
+"Paste" = "ペースト";
+"Delete" = "削除";
+"Select All" = "すべてを選択";
+"Enter text" = "テキストを入力";
+"Saved Text" = "保存したテキスト";
+"Save Current Text" = "現在のテキストを保存";
+"No Saved Text" = "保存したテキストはありません";
+"Delete Saved Text" = "保存したテキストを削除";
+"Clear All Saved Text" = "保存したテキストをすべて消去";
+
+/* Views and glyphs. */
+"View" = "表示";
+"Show Sidebar" = "サイドバーを表示";
+"Hide Sidebar" = "サイドバーを非表示";
+"Single Glyph" = "単一グリフ";
+"Characters" = "文字";
+"Glyph Grid" = "グリフ一覧";
+"All Glyphs" = "すべてのグリフ";
+"Add Glyph" = "グリフを追加";
+"Replace Glyph" = "グリフを置き換え";
 "Text and alternate glyph list" = "テキストと代替グリフのリスト";
+"Filter by Feature" = "字形機能で絞り込む";
+"No Features to Filter" = "絞り込みに使える字形機能がありません";
+"No Feature" = "字形機能なし";
+
+/* Text layout and typography. */
+"Make Text Bigger" = "文字を拡大";
+"Make Text Smaller" = "文字を縮小";
+"Increase Leading" = "行間を広げる";
+"Decrease Leading" = "行間を狭める";
+"Default Size" = "デフォルトのサイズ";
+"Text Alignment" = "テキストの配置";
+"Left" = "左揃え";
+"Center" = "中央揃え";
+"Right" = "右揃え";
+"Justified" = "両端揃え";
+"Top" = "上揃え";
+"Bottom" = "下揃え";
+"Vertical Layout" = "縦書き";
+"Writing Direction" = "書字方向";
+"Left to Right" = "左から右";
+"Right to Left" = "右から左";
+"Text Decorations" = "テキスト装飾";
+"Underline" = "アンダーライン";
+"Strikethrough" = "取り消し線";
+"Outline" = "アウトライン";
+"Typography" = "タイポグラフィ";
+"No Typographic Features" = "タイポグラフィ機能なし";
+"Typesetting Language" = "組版言語";
+"No Selectable Languages" = "選択できる言語がありません";
+"Other" = "その他";
+
+/* Bounding box and colors. */
+"Bounding Box" = "バウンディングボックス";
+"Show Bounding Box" = "バウンディングボックスを表示";
+"Hide Bounding Box" = "バウンディングボックスを非表示";
+"Expand Bounding Box" = "バウンディングボックスを拡大";
+"Shrink Bounding Box" = "バウンディングボックスを縮小";
+"Colors" = "カラー";
+"Glyph…" = "グリフ…";
+"Background…" = "背景…";
+"Bounding Box…" = "バウンディングボックス…";
+"Follow System" = "システムに合わせる";
+"Save Current Palette" = "現在の配色を保存";
+"Delete Palettes" = "配色を削除";
+"Clear All Saved Palettes" = "保存した配色をすべて消去";
+"No Saved Palettes" = "保存した配色はありません";
+
+/* Variable fonts and defaults. */
+"Variable" = "可変";
+"Named Instance" = "名前付きインスタンス";
+"Default" = "デフォルト";
+"Custom" = "カスタム";
+"Use as Defaults" = "デフォルトとして使用";
+"Restore Default" = "デフォルトに戻す";
+
+/* Format strings. */
+"%@: %@" = "%@：%@";
+"%@ (%.0f%%)" = "%@（%.0f%%）";
+
+/* Help. */
 "Help.01" = "メニューバーの「開く場所」を選ぶと、フォントのインストール先フォルダからフォントを直接開けます。フォントファイルをアプリのアイコンや、フォントを表示中のウインドウにドラッグして開くこともできます。フォントファイルを開くデフォルトのアプリに Glyph Atlas を設定でき、最近開いたファイルも開き直せます。";
 "Help.02" = "メニューバーから、現在のウインドウで開いているフォントをワンクリックでユーザのフォントフォルダにコピーできます。⌥ を押しながら選ぶと、すべてのユーザのフォントフォルダにコピーできます。";
 "Help.03" = "可変フォントを開くと、ウインドウの操作ボタンの横にバリエーションパネルが表示されます。ドラッグして切り離すと、開いたままにできます。数値を選択し、↑／↓ または ⇧↑／⇧↓ で調整できます。";
@@ -82,64 +147,3 @@
 "Help.13" = "影はバウンディングボックスを表し、グリフの幅と高さ、組版の行の高さと行間を含みます。⌘4 で非表示にできます。";
 "Help.14" = "ダークモードにも対応しています。ただし、塗りつぶされたグリフをクリックすると、まぶしさに驚くかもしれません。メニューバーの「カラー」で、グリフ、バウンディングボックスの影、背景の色を変更できます。「現在の配色を保存」を選ぶと設定した色を保存できます。⌥ を押すと「配色を削除」が表示されます。";
 "Help.15" = "メニューバーの「デフォルトとして使用」を選ぶと、現在の表示、色、大きさなどのプレビュー設定とウインドウの大きさを保存できます。以後開くフォントファイルには、この設定が使われます。⌥ を押すと「デフォルトに戻す」を選べます。";
-
-/* Variable font controls. */
-"Variable" = "可変";
-"Named Instance" = "名前付きインスタンス";
-"Default" = "デフォルト";
-"Custom" = "カスタム";
-
-
-/* Font Book copy alerts. Conflict buttons follow Finder. */
-"An item named “%@” already exists in Font Book." = "Font Bookに“%@”という項目がすでにあります。";
-"“%@” is already in Font Book." = "“%@”はすでにFont Bookにあります。";
-"Keep Both" = "両方とも残す";
-"Stop" = "中止";
-"Replace" = "置き換える";
-
-/* User-saved plain text. */
-"Saved Text" = "保存したテキスト";
-"Save Current Text" = "現在のテキストを保存";
-"No Saved Text" = "保存したテキストはありません";
-
-/* Preview colors and native leading. */
-"Colors" = "カラー";
-"Delete Palettes" = "配色を削除";
-"Save Current Palette" = "現在の配色を保存";
-"Clear All Saved Palettes" = "保存した配色をすべて消去";
-"No Saved Palettes" = "保存した配色はありません";
-"%@: %@" = "%@：%@";
-"%@ (%.0f%%)" = "%@（%.0f%%）";
-"Follow System" = "システムに合わせる";
-"Glyph…" = "グリフ…";
-"Background…" = "背景…";
-"Bounding Box…" = "バウンディングボックス…";
-"Increase Leading" = "行間を広げる";
-"Decrease Leading" = "行間を狭める";
-
-/* Explicit defaults for newly opened font windows. */
-
-/* Saved-text deletion and full screen. */
-"Delete Saved Text" = "保存したテキストを削除";
-"Clear All Saved Text" = "保存したテキストをすべて消去";
-"Enter Full Screen" = "フルスクリーンにする";
-
-/* Native typography and opening settings. */
-"Typography" = "タイポグラフィ";
-"Other" = "その他";
-"No Typographic Features" = "タイポグラフィ機能なし";
-"Default Size" = "デフォルトのサイズ";
-"Use as Defaults" = "デフォルトとして使用";
-"Restore Default" = "デフォルトに戻す";
-"Text Decorations" = "テキスト装飾";
-"Filter by Feature" = "字形機能で絞り込む";
-"No Features to Filter" = "絞り込みに使える字形機能がありません";
-"No Feature" = "字形機能なし";
-
-"Writing Direction" = "書字方向";
-"Left to Right" = "左から右";
-"Right to Left" = "右から左";
-"Outline" = "アウトライン";
-
-"Typesetting Language" = "組版言語";
-"No Selectable Languages" = "選択できる言語がありません";

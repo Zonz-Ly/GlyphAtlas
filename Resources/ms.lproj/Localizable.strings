@@ -1,62 +1,36 @@
 /* Standard commands follow macOS terminology. App-specific text and Help are translated here. */
 
-"File" = "Fail";
-"Copy to Font Book" = "Salin ke Buku Fon";
-"Copy to All Users" = "Salin untuk Semua Pengguna";
-"Current User…" = "Pengguna Semasa…";
-"All Users…" = "Semua Pengguna…";
-"System Fonts…" = "Terbina Dalam…";
-"Open Recent" = "Buka Terbaharu";
-"Recent Location…" = "Lokasi Terakhir…";
-"Clear Menu" = "Kosongkan Menu";
-"Close" = "Tutup";
-"Cut" = "Potong";
-"Copy" = "Salin";
-"Paste" = "Tampal";
-"Delete" = "Padam";
-"Select All" = "Pilih Semua";
-"Underline" = "Garis Bawah";
-"Strikethrough" = "Garis Potong";
-"View" = "Paparan";
+/* Application and window commands. */
+"About Glyph Atlas" = "Perihal Glyph Atlas";
+"Hide Glyph Atlas" = "Sembunyikan Glyph Atlas";
+"Hide Others" = "Sembunyikan App Lain";
+"Show All" = "Tunjukkan Semua";
+"Quit Glyph Atlas" = "Keluar Glyph Atlas";
+"Services" = "Perkhidmatan";
 "Window" = "Tetingkap";
 "Minimize" = "Minimumkan";
 "Zoom" = "Zum";
 "Bring All to Front" = "Hantar Semua ke Depan Sekali";
+"Enter Full Screen" = "Masuk Skrin Penuh";
 "Help" = "Bantuan";
+"Glyph Atlas Help" = "Bantuan Glyph Atlas";
 "Cancel" = "Batal";
 "OK" = "OK";
-"Show All" = "Tunjukkan Semua";
-"Services" = "Perkhidmatan";
-"Edit" = "Edit";
-"Undo" = "Buat Asal";
-"Redo" = "Buat Semula";
-"Add Glyph" = "Tambah Glif";
-"Replace Glyph" = "Ganti Glif";
+
+/* File and font operations. */
+"File" = "Fail";
 "Open" = "Buka";
-"Make Text Bigger" = "Jadikan Teks Lebih Besar";
-"Make Text Smaller" = "Jadikan Teks Lebih Kecil";
-"Text Alignment" = "Penjajaran Teks";
-"Left" = "Jajar kiri";
-"Center" = "Tengah";
-"Right" = "Jajar kanan";
-"Justified" = "Jajarkan";
-"Top" = "Jajar atas";
-"Bottom" = "Jajar bawah";
-"About Glyph Atlas" = "Perihal Glyph Atlas";
-"Hide Glyph Atlas" = "Sembunyikan Glyph Atlas";
-"Hide Others" = "Sembunyikan App Lain";
-"Quit Glyph Atlas" = "Keluar Glyph Atlas";
-"Glyph Atlas Help" = "Bantuan Glyph Atlas";
 "Open At" = "Buka dari";
+"Current User…" = "Pengguna Semasa…";
+"All Users…" = "Semua Pengguna…";
+"System Fonts…" = "Terbina Dalam…";
+"Recent Location…" = "Lokasi Terakhir…";
+"Open Recent" = "Buka Terbaharu";
 "No Recent Fonts" = "Tiada Fon Terbaharu";
-"Single Glyph" = "Glif Tunggal";
-"Characters" = "Aksara";
-"Glyph Grid" = "Grid Glif";
-"All Glyphs" = "Semua Glif";
-"Expand Bounding Box" = "Besarkan Kotak Sempadan";
-"Shrink Bounding Box" = "Kecilkan Kotak Sempadan";
-"Vertical Layout" = "Tataletak Menegak";
-"Enter text" = "Masukkan teks";
+"Clear Menu" = "Kosongkan Menu";
+"Close" = "Tutup";
+"Copy to Font Book" = "Salin ke Buku Fon";
+"Copy to All Users" = "Salin untuk Semua Pengguna";
 "Font Name" = "Nama fon";
 "Font File" = "Fail Fon";
 "Untitled Font" = "Fon Tidak Bertajuk";
@@ -65,8 +39,99 @@
 "This file does not contain a font that CoreText can read." = "Fail ini tidak mengandungi fon yang dapat dibaca oleh CoreText.";
 "Cannot Read Font" = "Tidak Dapat Membaca Fon";
 "CoreText could not create this font." = "CoreText tidak dapat mencipta fon ini.";
-"Bounding Box" = "Kotak Sempadan";
+"An item named “%@” already exists in Font Book." = "Item bernama “%@” sudah wujud dalam Buku Fon.";
+"“%@” is already in Font Book." = "“%@” sudah ada dalam Buku Fon.";
+"Keep Both" = "Simpan Kedua-dua";
+"Stop" = "Henti";
+"Replace" = "Ganti";
+
+/* Editing and saved text. */
+"Edit" = "Edit";
+"Undo" = "Buat Asal";
+"Redo" = "Buat Semula";
+"Cut" = "Potong";
+"Copy" = "Salin";
+"Paste" = "Tampal";
+"Delete" = "Padam";
+"Select All" = "Pilih Semua";
+"Enter text" = "Masukkan teks";
+"Saved Text" = "Teks Disimpan";
+"Save Current Text" = "Simpan Teks Semasa";
+"No Saved Text" = "Tiada Teks Disimpan";
+"Delete Saved Text" = "Padam Teks Disimpan";
+"Clear All Saved Text" = "Kosongkan Semua Teks Disimpan";
+
+/* Views and glyphs. */
+"View" = "Paparan";
+"Show Sidebar" = "Tunjukkan Bar Sisi";
+"Hide Sidebar" = "Sembunyikan Bar Sisi";
+"Single Glyph" = "Glif Tunggal";
+"Characters" = "Aksara";
+"Glyph Grid" = "Grid Glif";
+"All Glyphs" = "Semua Glif";
+"Add Glyph" = "Tambah Glif";
+"Replace Glyph" = "Ganti Glif";
 "Text and alternate glyph list" = "Senarai teks dan glif alternatif";
+"Filter by Feature" = "Tapis mengikut Ciri";
+"No Features to Filter" = "Tiada ciri untuk ditapis";
+"No Feature" = "Tiada Ciri";
+
+/* Text layout and typography. */
+"Make Text Bigger" = "Jadikan Teks Lebih Besar";
+"Make Text Smaller" = "Jadikan Teks Lebih Kecil";
+"Increase Leading" = "Tambah Jarak Baris";
+"Decrease Leading" = "Kurangkan Jarak Baris";
+"Default Size" = "Saiz Lalai";
+"Text Alignment" = "Penjajaran Teks";
+"Left" = "Jajar kiri";
+"Center" = "Tengah";
+"Right" = "Jajar kanan";
+"Justified" = "Jajarkan";
+"Top" = "Jajar atas";
+"Bottom" = "Jajar bawah";
+"Vertical Layout" = "Tataletak Menegak";
+"Writing Direction" = "Arah Tulisan";
+"Left to Right" = "Kiri ke kanan";
+"Right to Left" = "Kanan ke kiri";
+"Text Decorations" = "Hiasan Teks";
+"Underline" = "Garis Bawah";
+"Strikethrough" = "Garis Potong";
+"Outline" = "Garis Kasar";
+"Typography" = "Tipografi";
+"No Typographic Features" = "Tiada ciri tipografi";
+"Typesetting Language" = "Bahasa Pengaturan Huruf";
+"No Selectable Languages" = "Tiada bahasa untuk dipilih";
+"Other" = "Lain-lain";
+
+/* Bounding box and colors. */
+"Bounding Box" = "Kotak Sempadan";
+"Show Bounding Box" = "Tunjukkan Kotak Sempadan";
+"Hide Bounding Box" = "Sembunyikan Kotak Sempadan";
+"Expand Bounding Box" = "Besarkan Kotak Sempadan";
+"Shrink Bounding Box" = "Kecilkan Kotak Sempadan";
+"Colors" = "Warna";
+"Glyph…" = "Glif…";
+"Background…" = "Latar Belakang…";
+"Bounding Box…" = "Kotak Sempadan…";
+"Follow System" = "Ikut Seting Sistem";
+"Save Current Palette" = "Simpan Palet Semasa";
+"Delete Palettes" = "Padam Palet";
+"Clear All Saved Palettes" = "Kosongkan Semua Palet Disimpan";
+"No Saved Palettes" = "Tiada Palet Disimpan";
+
+/* Variable fonts and defaults. */
+"Variable" = "Boleh Ubah";
+"Named Instance" = "Tika Bernama";
+"Default" = "Lalai";
+"Custom" = "Tersuai";
+"Use as Defaults" = "Gunakan sebagai Lalai";
+"Restore Default" = "Pulihkan ke Lalai";
+
+/* Format strings. */
+"%@: %@" = "%@: %@";
+"%@ (%.0f%%)" = "%@ (%.0f%%)";
+
+/* Help. */
 "Help.01" = "Gunakan “Buka dari” dalam bar menu untuk membuka fon terus daripada folder fon. Anda juga boleh menyeret fail fon ke ikon app atau ke tetingkap yang sudah membuka fon, atau menetapkan Glyph Atlas sebagai app lalai untuk membuka fail fon. Item yang dibuka baru-baru ini boleh dibuka semula.";
 "Help.02" = "Gunakan bar menu untuk menyalin fon yang dibuka dalam tetingkap semasa ke folder fon pengguna anda dengan satu klik. Tekan dan tahan ⌥ untuk menyalinnya ke folder fon semua pengguna.";
 "Help.03" = "Apabila anda membuka fon boleh ubah, panel variasi muncul di sebelah kawalan tetingkap. Seret panel keluar supaya ia kekal terbuka. Pilih nilai angka dan gunakan ↑/↓ atau ⇧↑/⇧↓ untuk melaraskannya.";
@@ -82,64 +147,3 @@
 "Help.13" = "Bayang menunjukkan kotak sempadan, termasuk lebar dan tinggi glif serta tinggi dan jarak baris dalam tataletak teks. Tekan ⌘4 untuk menyembunyikannya.";
 "Help.14" = "Mod Gelap disokong. Berhati-hati apabila mengklik glif yang dipenuhi warna kerana cahayanya mungkin menyilaukan. Anda boleh menukar warna glif, bayang kotak sempadan dan latar belakang melalui “Warna” dalam bar menu. Pilih “Simpan Palet Semasa” untuk menyimpan warna anda. Tekan dan tahan ⌥ untuk melihat “Padam Palet”.";
 "Help.15" = "Pilih “Gunakan sebagai Lalai” dalam bar menu untuk menyimpan paparan, warna, saiz dan seting pratonton semasa yang lain, serta saiz tetingkap. Fail fon yang dibuka kemudian akan menggunakan seting ini. Tekan dan tahan ⌥ untuk memilih “Pulihkan ke Lalai”.";
-
-/* Variable font controls. */
-"Variable" = "Boleh Ubah";
-"Named Instance" = "Tika Bernama";
-"Default" = "Lalai";
-"Custom" = "Tersuai";
-
-
-/* Font Book copy alerts. Conflict buttons follow Finder. */
-"An item named “%@” already exists in Font Book." = "Item bernama “%@” sudah wujud dalam Buku Fon.";
-"“%@” is already in Font Book." = "“%@” sudah ada dalam Buku Fon.";
-"Keep Both" = "Simpan Kedua-dua";
-"Stop" = "Henti";
-"Replace" = "Ganti";
-
-/* User-saved plain text. */
-"Saved Text" = "Teks Disimpan";
-"Save Current Text" = "Simpan Teks Semasa";
-"No Saved Text" = "Tiada Teks Disimpan";
-
-/* Preview colors and native leading. */
-"Colors" = "Warna";
-"Delete Palettes" = "Padam Palet";
-"Save Current Palette" = "Simpan Palet Semasa";
-"Clear All Saved Palettes" = "Kosongkan Semua Palet Disimpan";
-"No Saved Palettes" = "Tiada Palet Disimpan";
-"%@: %@" = "%@: %@";
-"%@ (%.0f%%)" = "%@ (%.0f%%)";
-"Follow System" = "Ikut Seting Sistem";
-"Glyph…" = "Glif…";
-"Background…" = "Latar Belakang…";
-"Bounding Box…" = "Kotak Sempadan…";
-"Increase Leading" = "Tambah Jarak Baris";
-"Decrease Leading" = "Kurangkan Jarak Baris";
-
-/* Explicit defaults for newly opened font windows. */
-
-/* Saved-text deletion and full screen. */
-"Delete Saved Text" = "Padam Teks Disimpan";
-"Clear All Saved Text" = "Kosongkan Semua Teks Disimpan";
-"Enter Full Screen" = "Masuk Skrin Penuh";
-
-/* Native typography and opening settings. */
-"Typography" = "Tipografi";
-"Other" = "Lain-lain";
-"No Typographic Features" = "Tiada ciri tipografi";
-"Default Size" = "Saiz Lalai";
-"Use as Defaults" = "Gunakan sebagai Lalai";
-"Restore Default" = "Pulihkan ke Lalai";
-"Text Decorations" = "Hiasan Teks";
-"Filter by Feature" = "Tapis mengikut Ciri";
-"No Features to Filter" = "Tiada ciri untuk ditapis";
-"No Feature" = "Tiada Ciri";
-
-"Writing Direction" = "Arah Tulisan";
-"Left to Right" = "Kiri ke kanan";
-"Right to Left" = "Kanan ke kiri";
-"Outline" = "Garis Kasar";
-
-"Typesetting Language" = "Bahasa Pengaturan Huruf";
-"No Selectable Languages" = "Tiada bahasa untuk dipilih";

@@ -464,6 +464,10 @@ NSAttributedString *GAFieldTextFromModelText(NSAttributedString *modelText) {
 /// 9 pt on the existing layout, 12 pt inside Tahoe's capsule.
 static const CGFloat GASearchFieldTextInset = 9.0;
 
+@interface GASearchField ()
+- (void)fieldEditorDidGainFocus;
+@end
+
 @interface GASearchFieldCell : NSSearchFieldCell
 @end
 
@@ -477,7 +481,7 @@ static const CGFloat GASearchFieldTextInset = 9.0;
   BOOL wasTransitioning = input.transitioningFieldEditor;
   input.transitioningFieldEditor = YES;
   [super editWithFrame:rect inView:view editor:editor delegate:delegate event:event];
-  if (view.window.firstResponder == editor) GAInputEditingDidBegin();
+  if (view.window.firstResponder == editor) [(GASearchField *)view fieldEditorDidGainFocus];
   input.transitioningFieldEditor = wasTransitioning;
 }
 
@@ -487,7 +491,7 @@ static const CGFloat GASearchFieldTextInset = 9.0;
   BOOL wasTransitioning = input.transitioningFieldEditor;
   input.transitioningFieldEditor = YES;
   [super selectWithFrame:rect inView:view editor:editor delegate:delegate start:start length:length];
-  if (view.window.firstResponder == editor) GAInputEditingDidBegin();
+  if (view.window.firstResponder == editor) [(GASearchField *)view fieldEditorDidGainFocus];
   input.transitioningFieldEditor = wasTransitioning;
 }
 
@@ -501,6 +505,8 @@ static const CGFloat GASearchFieldTextInset = 9.0;
   GAInputEditingDidEnd();
   [storage setAttributedString:text];
   input.transitioningFieldEditor = wasTransitioning;
+  GASearchField *field = (GASearchField *)self.controlView;
+  if (field.usesUniformIdleTextColor) [field setIdleAttributedStringValue:text];
 }
 
 - (NSRect)rectByInsettingTextEdges:(NSRect)rect bounds:(NSRect)bounds {
@@ -532,6 +538,21 @@ static const CGFloat GASearchFieldTextInset = 9.0;
 
 + (Class)cellClass {
   return [GASearchFieldCell class];
+}
+
+- (void)fieldEditorDidGainFocus {
+  GAInputEditingDidBegin();
+  if (self.onFieldEditorFocus) self.onFieldEditorFocus();
+}
+
+- (void)setIdleAttributedStringValue:(NSAttributedString *)text {
+  if (self.usesUniformIdleTextColor) {
+    NSMutableAttributedString *display = [text mutableCopy];
+    [display removeAttribute:NSForegroundColorAttributeName range:NSMakeRange(0, display.length)];
+    self.attributedStringValue = display;
+  } else {
+    self.attributedStringValue = text;
+  }
 }
 
 @end

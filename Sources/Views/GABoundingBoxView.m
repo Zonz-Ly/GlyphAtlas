@@ -78,7 +78,7 @@ NSRect GAInsetRectByFraction(NSRect rect, CGFloat fraction) {
 
 // Ask the clip view for its actual limits, including any content insets.
 // The views use custom content sizing rather than NSScrollView magnification.
-static NSRect GAScrollPositionLimits(NSScrollView *scrollView) {
+NSRect GAScrollPositionLimits(NSScrollView *scrollView) {
     NSClipView *clip = scrollView.contentView;
     NSRect document = scrollView.documentView.frame;
     NSRect proposed = clip.bounds;
@@ -102,23 +102,19 @@ static NSPoint GACaptureScrollPosition(NSScrollView *scrollView) {
                            ? MIN(1, MAX(0, (NSMinY(bounds) - NSMinY(limits)) / NSHeight(limits))) : 0.5);
 }
 
-static void GARestoreScrollPosition(NSScrollView *scrollView, NSPoint position) {
+void GAPreserveScrollPosition(NSScrollView *scrollView, void (^changes)(void)) {
+    NSPoint position = GACaptureScrollPosition(scrollView);
+    changes();
     if (scrollView.documentView == nil) return;
     [scrollView layoutSubtreeIfNeeded];
     NSClipView *clip = scrollView.contentView;
     if (NSWidth(clip.bounds) <= 0 || NSHeight(clip.bounds) <= 0) return;
     NSRect limits = GAScrollPositionLimits(scrollView);
     NSRect proposed = clip.bounds;
-    proposed.origin = NSMakePoint(NSMinX(limits) + MIN(1, MAX(0, position.x)) * NSWidth(limits),
-                                  NSMinY(limits) + MIN(1, MAX(0, position.y)) * NSHeight(limits));
+    proposed.origin = NSMakePoint(NSMinX(limits) + position.x * NSWidth(limits),
+                                  NSMinY(limits) + position.y * NSHeight(limits));
     [clip scrollToPoint:[clip constrainBoundsRect:proposed].origin];
     [scrollView reflectScrolledClipView:clip];
-}
-
-void GAPreserveScrollPosition(NSScrollView *scrollView, void (^changes)(void)) {
-    NSPoint position = GACaptureScrollPosition(scrollView);
-    changes();
-    GARestoreScrollPosition(scrollView, position);
 }
 
 void GADrawPage(NSRect page, NSAppearance *appearance, GAPreviewColors *colors) {
@@ -203,6 +199,12 @@ void GADrawPage(NSRect page, NSAppearance *appearance, GAPreviewColors *colors) 
     [self setNeedsDisplay:YES];
 }
 
+- (void)setConstrainsPageAtToolbar:(BOOL)constrainsPageAtToolbar {
+    if (_constrainsPageAtToolbar == constrainsPageAtToolbar) return;
+    _constrainsPageAtToolbar = constrainsPageAtToolbar;
+    self.needsDisplay = YES;
+}
+
 - (void)handleMagnification:(NSMagnificationGestureRecognizer *)recognizer {
     if (recognizer.state == NSGestureRecognizerStateBegan) {
         self.magnificationStartPage = 1.0 - 2.0 * self.sideInsetFraction;
@@ -269,6 +271,15 @@ void GADrawPage(NSRect page, NSAppearance *appearance, GAPreviewColors *colors) 
     glyphLimit = NSInsetRect(glyphLimit, GABoundingBoxBoundaryMargin,
                              GABoundingBoxBoundaryMargin);
 
+    NSRect pageLimit = contentRect;
+    if (self.constrainsPageAtToolbar && self.safeAreaInsets.top > 0) {
+        CGFloat toolbarBottom = NSMaxY(self.bounds) - self.safeAreaInsets.top;
+        pageLimit.size.height = MIN(NSMaxY(contentRect), toolbarBottom) - NSMinY(pageLimit);
+        glyphLimit.size.height = MIN(NSMaxY(glyphLimit), toolbarBottom) - NSMinY(glyphLimit);
+        if (NSHeight(pageLimit) <= 0) return;
+        scale = MIN(scale, NSHeight(pageLimit) / MAX(heightUnits, 0.001));
+    }
+
     BOOL (^translationForScale)(CGFloat, CGFloat *, CGFloat *) =
         ^BOOL(CGFloat candidateScale, CGFloat *outX, CGFloat *outY) {
         CGFloat candidatePageWidth = widthUnits * candidateScale;
@@ -278,12 +289,11 @@ void GADrawPage(NSRect page, NSAppearance *appearance, GAPreviewColors *colors) 
         NSRect candidatePage = NSMakeRect(candidatePageX, candidatePageY,
                                           candidatePageWidth, candidatePageHeight);
 
-        // The page stays inside the current content inset; the ink may use the
-        // full main view, so the two constraints produce a shared shift range.
-        CGFloat minX = NSMinX(contentRect) - NSMinX(candidatePage);
-        CGFloat maxX = NSMaxX(contentRect) - NSMaxX(candidatePage);
-        CGFloat minY = NSMinY(contentRect) - NSMinY(candidatePage);
-        CGFloat maxY = NSMaxY(contentRect) - NSMaxY(candidatePage);
+        // The page and the ink can have different limits.
+        CGFloat minX = NSMinX(pageLimit) - NSMinX(candidatePage);
+        CGFloat maxX = NSMaxX(pageLimit) - NSMaxX(candidatePage);
+        CGFloat minY = NSMinY(pageLimit) - NSMinY(candidatePage);
+        CGFloat maxY = NSMaxY(pageLimit) - NSMaxY(candidatePage);
 
         if (hasInk) {
             NSRect candidateInk = NSMakeRect(
@@ -325,7 +335,7 @@ void GADrawPage(NSRect page, NSAppearance *appearance, GAPreviewColors *colors) 
             CGRectGetWidth(ink),
             NSMinX(glyphLimit), NSMaxX(glyphLimit)));
         constrainedScale = MIN(constrainedScale, GAMaxScaleForAxis(
-            heightUnits, NSMinY(contentRect), NSMaxY(contentRect),
+            heightUnits, NSMinY(pageLimit), NSMaxY(pageLimit),
             baselineUnits + CGRectGetMinY(ink),
             CGRectGetHeight(ink),
             NSMinY(glyphLimit), NSMaxY(glyphLimit)));
@@ -349,24 +359,21 @@ void GADrawPage(NSRect page, NSAppearance *appearance, GAPreviewColors *colors) 
     NSRect page = NSMakeRect(pageX, pageY, pageWidth, pageHeight);
     CGFloat glyphScale = scale * shapeToUnits;
 
+    CGContextRef context = NSGraphicsContext.currentContext.CGContext;
+    CGContextSaveGState(context);
     if (self.showsMetrics) {
         GADrawPage(page, self.effectiveAppearance, self.previewColors);
     }
 
-    NSUInteger count = variant.glyphIDs.count;
-    if (count == 0) {
-        return;
+    if (variant.glyphIDs.count != 0) {
+        // The page keeps its metric size; the baseline comes from the font metrics.
+        CGContextTranslateCTM(context, pageX, pageY + baselineUnits * scale);
+        CGContextScaleCTM(context, glyphScale, glyphScale);
+        CGContextSetTextMatrix(context, CGAffineTransformIdentity);
+        CGContextSetFillColorWithColor(context,
+            [self.previewColors colorForRole:GAPreviewColorGlyph].CGColor);
+        GADrawGlyphVariant(variant, context);
     }
-
-    CGContextRef context = NSGraphicsContext.currentContext.CGContext;
-    CGContextSaveGState(context);
-    // The page keeps its metric size; the baseline comes from the font metrics.
-    CGContextTranslateCTM(context, pageX, pageY + baselineUnits * scale);
-    CGContextScaleCTM(context, glyphScale, glyphScale);
-    CGContextSetTextMatrix(context, CGAffineTransformIdentity);
-    CGContextSetFillColorWithColor(context,
-        [self.previewColors colorForRole:GAPreviewColorGlyph].CGColor);
-    GADrawGlyphVariant(variant, context);
     CGContextRestoreGState(context);
 }
 

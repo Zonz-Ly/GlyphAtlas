@@ -1,62 +1,36 @@
 /* Standard commands follow macOS terminology. App-specific text and Help are translated here. */
 
-"File" = "ملف";
-"Copy to Font Book" = "نسخ إلى دفتر الخطوط";
-"Copy to All Users" = "نسخ لكل المستخدمين";
-"Current User…" = "المستخدم الحالي…";
-"All Users…" = "كل المستخدمين…";
-"System Fonts…" = "المضمّنة…";
-"Open Recent" = "فتح العناصر الأخيرة";
-"Recent Location…" = "الموقع الأخير…";
-"Clear Menu" = "مسح القائمة";
-"Close" = "إغلاق";
-"Cut" = "قص";
-"Copy" = "نسخ";
-"Paste" = "لصق";
-"Delete" = "حذف";
-"Select All" = "تحديد الكل";
-"Underline" = "تسطير";
-"Strikethrough" = "يتوسطه خط";
-"View" = "عرض";
+/* Application and window commands. */
+"About Glyph Atlas" = "حول Glyph Atlas";
+"Hide Glyph Atlas" = "إخفاء Glyph Atlas";
+"Hide Others" = "إخفاء التطبيقات الأخرى";
+"Show All" = "إظهار الكل";
+"Quit Glyph Atlas" = "إنهاء Glyph Atlas";
+"Services" = "خدمات";
 "Window" = "نافذة";
 "Minimize" = "تصغير";
 "Zoom" = "تكبير/تصغير";
 "Bring All to Front" = "إحضار الكل إلى الأمام";
+"Enter Full Screen" = "الدخول إلى وضع ملء الشاشة";
 "Help" = "مساعدة";
+"Glyph Atlas Help" = "مساعدة Glyph Atlas";
 "Cancel" = "إلغاء";
 "OK" = "موافق";
-"Show All" = "إظهار الكل";
-"Services" = "خدمات";
-"Edit" = "تعديل";
-"Undo" = "تراجع";
-"Redo" = "إعادة";
-"Add Glyph" = "إضافة صورة حرف";
-"Replace Glyph" = "استبدال صورة حرف";
+
+/* File and font operations. */
+"File" = "ملف";
 "Open" = "فتح";
-"Make Text Bigger" = "تكبير النص";
-"Make Text Smaller" = "تصغير النص";
-"Text Alignment" = "محاذاة النص";
-"Left" = "محاذاة إلى اليسار";
-"Center" = "وسط";
-"Right" = "محاذاة إلى اليمين";
-"Justified" = "ضبط كلي";
-"Top" = "محاذاة إلى أعلى";
-"Bottom" = "محاذاة إلى أسفل";
-"About Glyph Atlas" = "حول Glyph Atlas";
-"Hide Glyph Atlas" = "إخفاء Glyph Atlas";
-"Hide Others" = "إخفاء التطبيقات الأخرى";
-"Quit Glyph Atlas" = "إنهاء Glyph Atlas";
-"Glyph Atlas Help" = "مساعدة Glyph Atlas";
 "Open At" = "فتح من موقع";
+"Current User…" = "المستخدم الحالي…";
+"All Users…" = "كل المستخدمين…";
+"System Fonts…" = "المضمّنة…";
+"Recent Location…" = "الموقع الأخير…";
+"Open Recent" = "فتح العناصر الأخيرة";
 "No Recent Fonts" = "لا توجد خطوط مستخدمة حديثًا";
-"Single Glyph" = "صورة حرف واحدة";
-"Characters" = "الأحرف";
-"Glyph Grid" = "شبكة صور الحروف";
-"All Glyphs" = "كل صور الحروف";
-"Expand Bounding Box" = "تكبير الإطار المحيط";
-"Shrink Bounding Box" = "تصغير الإطار المحيط";
-"Vertical Layout" = "تخطيط رأسي";
-"Enter text" = "أدخل النص";
+"Clear Menu" = "مسح القائمة";
+"Close" = "إغلاق";
+"Copy to Font Book" = "نسخ إلى دفتر الخطوط";
+"Copy to All Users" = "نسخ لكل المستخدمين";
 "Font Name" = "اسم الخط";
 "Font File" = "ملف خط";
 "Untitled Font" = "خط بلا عنوان";
@@ -65,8 +39,99 @@
 "This file does not contain a font that CoreText can read." = "لا يحتوي هذا الملف على خط يمكن لـ CoreText قراءته.";
 "Cannot Read Font" = "تعذرت قراءة الخط";
 "CoreText could not create this font." = "تعذر على CoreText إنشاء هذا الخط.";
-"Bounding Box" = "الإطار المحيط";
+"An item named “%@” already exists in Font Book." = "يوجد بالفعل عنصر باسم «\U2068%@\U2069» في دفتر الخطوط.";
+"“%@” is already in Font Book." = "«\U2068%@\U2069» موجود بالفعل في دفتر الخطوط.";
+"Keep Both" = "الاحتفاظ بالاثنين معًا";
+"Stop" = "إيقاف";
+"Replace" = "استبدال";
+
+/* Editing and saved text. */
+"Edit" = "تعديل";
+"Undo" = "تراجع";
+"Redo" = "إعادة";
+"Cut" = "قص";
+"Copy" = "نسخ";
+"Paste" = "لصق";
+"Delete" = "حذف";
+"Select All" = "تحديد الكل";
+"Enter text" = "أدخل النص";
+"Saved Text" = "النصوص المحفوظة";
+"Save Current Text" = "حفظ النص الحالي";
+"No Saved Text" = "لا توجد نصوص محفوظة";
+"Delete Saved Text" = "حذف النصوص المحفوظة";
+"Clear All Saved Text" = "مسح كل النصوص المحفوظة";
+
+/* Views and glyphs. */
+"View" = "عرض";
+"Show Sidebar" = "إظهار الشريط الجانبي";
+"Hide Sidebar" = "إخفاء الشريط الجانبي";
+"Single Glyph" = "صورة حرف واحدة";
+"Characters" = "الأحرف";
+"Glyph Grid" = "شبكة صور الحروف";
+"All Glyphs" = "كل صور الحروف";
+"Add Glyph" = "إضافة صورة حرف";
+"Replace Glyph" = "استبدال صورة حرف";
 "Text and alternate glyph list" = "قائمة النص وصور الحروف البديلة";
+"Filter by Feature" = "تصفية حسب ميزة الخط";
+"No Features to Filter" = "لا توجد ميزات للتصفية";
+"No Feature" = "بلا ميزة";
+
+/* Text layout and typography. */
+"Make Text Bigger" = "تكبير النص";
+"Make Text Smaller" = "تصغير النص";
+"Increase Leading" = "زيادة تباعد الأسطر";
+"Decrease Leading" = "تقليل تباعد الأسطر";
+"Default Size" = "الحجم الافتراضي";
+"Text Alignment" = "محاذاة النص";
+"Left" = "محاذاة إلى اليسار";
+"Center" = "وسط";
+"Right" = "محاذاة إلى اليمين";
+"Justified" = "ضبط كلي";
+"Top" = "محاذاة إلى أعلى";
+"Bottom" = "محاذاة إلى أسفل";
+"Vertical Layout" = "تخطيط رأسي";
+"Writing Direction" = "اتجاه الكتابة";
+"Left to Right" = "من اليسار إلى اليمين";
+"Right to Left" = "من اليمين إلى اليسار";
+"Text Decorations" = "زخارف النص";
+"Underline" = "تسطير";
+"Strikethrough" = "يتوسطه خط";
+"Outline" = "تخطيط";
+"Typography" = "أسلوب الطباعة";
+"No Typographic Features" = "لا توجد ميزات طباعية";
+"Typesetting Language" = "لغة التنضيد";
+"No Selectable Languages" = "لا توجد لغات للاختيار منها";
+"Other" = "أخرى";
+
+/* Bounding box and colors. */
+"Bounding Box" = "الإطار المحيط";
+"Show Bounding Box" = "إظهار الإطار المحيط";
+"Hide Bounding Box" = "إخفاء الإطار المحيط";
+"Expand Bounding Box" = "تكبير الإطار المحيط";
+"Shrink Bounding Box" = "تصغير الإطار المحيط";
+"Colors" = "الألوان";
+"Glyph…" = "صورة حرف…";
+"Background…" = "الخلفية…";
+"Bounding Box…" = "الإطار المحيط…";
+"Follow System" = "اتباع إعدادات النظام";
+"Save Current Palette" = "حفظ لوحة الألوان الحالية";
+"Delete Palettes" = "حذف لوحات الألوان";
+"Clear All Saved Palettes" = "مسح كل لوحات الألوان المحفوظة";
+"No Saved Palettes" = "لا توجد لوحات ألوان محفوظة";
+
+/* Variable fonts and defaults. */
+"Variable" = "متغير";
+"Named Instance" = "مثيل مسمّى";
+"Default" = "افتراضي";
+"Custom" = "مخصص";
+"Use as Defaults" = "استخدام كإعدادات افتراضية";
+"Restore Default" = "استعادة إلى الإعدادات الافتراضية";
+
+/* Format strings. */
+"%@: %@" = "%@: \U2068%@\U2069";
+"%@ (%.0f%%)" = "%@ (\U2066%.0f%%\U2069)";
+
+/* Help. */
 "Help.01" = "استخدم «فتح من موقع» في شريط القائمة لفتح خط مباشرة من أحد مجلدات الخطوط. يمكنك أيضًا سحب ملف الخط إلى أيقونة التطبيق أو إلى نافذة فيها خط مفتوح، أو تعيين Glyph Atlas تطبيقًا افتراضيًا لفتح ملفات الخطوط. يمكنك إعادة فتح العناصر الأخيرة.";
 "Help.02" = "من شريط القائمة، يمكنك نسخ الخط المفتوح في النافذة الحالية بنقرة واحدة إلى مجلد الخطوط الخاص بك. اضغط مطولًا على \U2066⌥\U2069 لنسخه إلى مجلد الخطوط الخاص بكل المستخدمين.";
 "Help.03" = "عند فتح خط متغير، تظهر لوحة التنويعات بجوار أزرار التحكم في النافذة. اسحبها إلى الخارج لإبقائها مفتوحة. حدد قيمة رقمية واضبطها باستخدام \U2066↑/↓\U2069 أو \U2066⇧↑/⇧↓\U2069.";
@@ -82,64 +147,3 @@
 "Help.13" = "يُظهر الظل الإطار المحيط، بما فيه عرض صورة الحرف وارتفاعها، وارتفاع السطر وتباعد الأسطر في التنضيد. اضغط على \U2066⌘4\U2069 لإخفائه.";
 "Help.14" = "يدعم التطبيق النمط الداكن. انتبه، فقد يبهرك سطوع صورة حرف مصمتة عند النقر عليها. يمكنك تغيير لون صورة الحرف وظل الإطار المحيط والخلفية ضمن «الألوان» في شريط القائمة. اختر «حفظ لوحة الألوان الحالية» للاحتفاظ بالألوان. اضغط مطولًا على \U2066⌥\U2069 لإظهار «حذف لوحات الألوان».";
 "Help.15" = "اختر «استخدام كإعدادات افتراضية» في شريط القائمة لحفظ العرض والألوان والحجم وإعدادات المعاينة الأخرى، بالإضافة إلى حجم النافذة. تستخدم ملفات الخطوط التي تفتحها لاحقًا هذه الإعدادات. اضغط مطولًا على \U2066⌥\U2069 لاختيار «استعادة إلى الإعدادات الافتراضية».";
-
-/* Variable font controls. */
-"Variable" = "متغير";
-"Named Instance" = "مثيل مسمّى";
-"Default" = "افتراضي";
-"Custom" = "مخصص";
-
-
-/* Font Book copy alerts. Conflict buttons follow Finder. */
-"An item named “%@” already exists in Font Book." = "يوجد بالفعل عنصر باسم «\U2068%@\U2069» في دفتر الخطوط.";
-"“%@” is already in Font Book." = "«\U2068%@\U2069» موجود بالفعل في دفتر الخطوط.";
-"Keep Both" = "الاحتفاظ بالاثنين معًا";
-"Stop" = "إيقاف";
-"Replace" = "استبدال";
-
-/* User-saved plain text. */
-"Saved Text" = "النصوص المحفوظة";
-"Save Current Text" = "حفظ النص الحالي";
-"No Saved Text" = "لا توجد نصوص محفوظة";
-
-/* Preview colors and native leading. */
-"Colors" = "الألوان";
-"Delete Palettes" = "حذف لوحات الألوان";
-"Save Current Palette" = "حفظ لوحة الألوان الحالية";
-"Clear All Saved Palettes" = "مسح كل لوحات الألوان المحفوظة";
-"No Saved Palettes" = "لا توجد لوحات ألوان محفوظة";
-"%@: %@" = "%@: \U2068%@\U2069";
-"%@ (%.0f%%)" = "%@ (\U2066%.0f%%\U2069)";
-"Follow System" = "اتباع إعدادات النظام";
-"Glyph…" = "صورة حرف…";
-"Background…" = "الخلفية…";
-"Bounding Box…" = "الإطار المحيط…";
-"Increase Leading" = "زيادة تباعد الأسطر";
-"Decrease Leading" = "تقليل تباعد الأسطر";
-
-/* Explicit defaults for newly opened font windows. */
-
-/* Saved-text deletion and full screen. */
-"Delete Saved Text" = "حذف النصوص المحفوظة";
-"Clear All Saved Text" = "مسح كل النصوص المحفوظة";
-"Enter Full Screen" = "الدخول إلى وضع ملء الشاشة";
-
-/* Native typography and opening settings. */
-"Typography" = "أسلوب الطباعة";
-"Other" = "أخرى";
-"No Typographic Features" = "لا توجد ميزات طباعية";
-"Default Size" = "الحجم الافتراضي";
-"Use as Defaults" = "استخدام كإعدادات افتراضية";
-"Restore Default" = "استعادة إلى الإعدادات الافتراضية";
-"Text Decorations" = "زخارف النص";
-"Filter by Feature" = "تصفية حسب ميزة الخط";
-"No Features to Filter" = "لا توجد ميزات للتصفية";
-"No Feature" = "بلا ميزة";
-
-"Writing Direction" = "اتجاه الكتابة";
-"Left to Right" = "من اليسار إلى اليمين";
-"Right to Left" = "من اليمين إلى اليسار";
-"Outline" = "تخطيط";
-
-"Typesetting Language" = "لغة التنضيد";
-"No Selectable Languages" = "لا توجد لغات للاختيار منها";

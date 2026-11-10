@@ -1,62 +1,36 @@
 /* ខ្មែរ */
 
-"File" = "ឯកសារ";
-"Copy to Font Book" = "ចម្លងទៅសៀវភៅពុម្ពអក្សរ";
-"Copy to All Users" = "ចម្លងសម្រាប់អ្នកប្រើទាំងអស់";
-"Current User…" = "អ្នកប្រើបច្ចុប្បន្ន…";
-"All Users…" = "អ្នកប្រើទាំងអស់…";
-"System Fonts…" = "ភ្ជាប់មកជាមួយប្រព័ន្ធ…";
-"Open Recent" = "បើកឯកសារថ្មីៗ";
-"Recent Location…" = "ទីតាំងដែលបានប្រើថ្មីៗ…";
-"Clear Menu" = "សម្អាតម៉ឺនុយ";
-"Close" = "បិទ";
-"Cut" = "កាត់";
-"Copy" = "ចម្លង";
-"Paste" = "បិទភ្ជាប់";
-"Delete" = "លុប";
-"Select All" = "ជ្រើសទាំងអស់";
-"Underline" = "គូសបន្ទាត់ក្រោម";
-"Strikethrough" = "គូសបន្ទាត់ឆូត";
-"View" = "ទិដ្ឋភាព";
+/* Application and window commands. */
+"About Glyph Atlas" = "អំពី Glyph Atlas";
+"Hide Glyph Atlas" = "លាក់ Glyph Atlas";
+"Hide Others" = "លាក់កម្មវិធីផ្សេងទៀត";
+"Show All" = "បង្ហាញទាំងអស់";
+"Quit Glyph Atlas" = "ចេញពី Glyph Atlas";
+"Services" = "សេវាកម្ម";
 "Window" = "បង្អួច";
 "Minimize" = "បង្រួមបង្អួច";
 "Zoom" = "លៃតម្រូវទំហំបង្អួច";
 "Bring All to Front" = "នាំបង្អួចទាំងអស់មកខាងមុខ";
+"Enter Full Screen" = "បង្ហាញពេញអេក្រង់";
 "Help" = "ជំនួយ";
+"Glyph Atlas Help" = "ជំនួយ Glyph Atlas";
 "Cancel" = "បោះបង់";
 "OK" = "យល់ព្រម";
-"Show All" = "បង្ហាញទាំងអស់";
-"Services" = "សេវាកម្ម";
-"Edit" = "កែសម្រួល";
-"Undo" = "មិនធ្វើវិញ";
-"Redo" = "ធ្វើវិញ";
-"Add Glyph" = "បន្ថែមរូបតួអក្សរ";
-"Replace Glyph" = "ជំនួសរូបតួអក្សរ";
+
+/* File and font operations. */
+"File" = "ឯកសារ";
 "Open" = "បើក";
-"Make Text Bigger" = "ពង្រីកអត្ថបទ";
-"Make Text Smaller" = "បង្រួមអត្ថបទ";
-"Text Alignment" = "តម្រឹមអត្ថបទ";
-"Left" = "តម្រឹមឆ្វេង";
-"Center" = "តម្រឹមកណ្ដាល";
-"Right" = "តម្រឹមស្ដាំ";
-"Justified" = "តម្រឹមសងខាង";
-"Top" = "តម្រឹមខាងលើ";
-"Bottom" = "តម្រឹមខាងក្រោម";
-"About Glyph Atlas" = "អំពី Glyph Atlas";
-"Hide Glyph Atlas" = "លាក់ Glyph Atlas";
-"Hide Others" = "លាក់កម្មវិធីផ្សេងទៀត";
-"Quit Glyph Atlas" = "ចេញពី Glyph Atlas";
-"Glyph Atlas Help" = "ជំនួយ Glyph Atlas";
 "Open At" = "បើកពីទីតាំង";
+"Current User…" = "អ្នកប្រើបច្ចុប្បន្ន…";
+"All Users…" = "អ្នកប្រើទាំងអស់…";
+"System Fonts…" = "ភ្ជាប់មកជាមួយប្រព័ន្ធ…";
+"Recent Location…" = "ទីតាំងដែលបានប្រើថ្មីៗ…";
+"Open Recent" = "បើកឯកសារថ្មីៗ";
 "No Recent Fonts" = "គ្មានពុម្ពអក្សរដែលបានបើកថ្មីៗ";
-"Single Glyph" = "រូបតួអក្សរតែមួយ";
-"Characters" = "តួអក្សរ";
-"Glyph Grid" = "ក្រឡាចត្រង្គរូបតួអក្សរ";
-"All Glyphs" = "រូបតួអក្សរទាំងអស់";
-"Expand Bounding Box" = "ពង្រីកប្រអប់ព័ទ្ធជុំវិញ";
-"Shrink Bounding Box" = "បង្រួមប្រអប់ព័ទ្ធជុំវិញ";
-"Vertical Layout" = "ប្លង់បញ្ឈរ";
-"Enter text" = "បញ្ចូលអត្ថបទ";
+"Clear Menu" = "សម្អាតម៉ឺនុយ";
+"Close" = "បិទ";
+"Copy to Font Book" = "ចម្លងទៅសៀវភៅពុម្ពអក្សរ";
+"Copy to All Users" = "ចម្លងសម្រាប់អ្នកប្រើទាំងអស់";
 "Font Name" = "ឈ្មោះពុម្ពអក្សរ";
 "Font File" = "ឯកសារពុម្ពអក្សរ";
 "Untitled Font" = "ពុម្ពអក្សរគ្មានឈ្មោះ";
@@ -65,8 +39,99 @@
 "This file does not contain a font that CoreText can read." = "ឯកសារនេះមិនមានពុម្ពអក្សរដែល CoreText អាចអានបានទេ។";
 "Cannot Read Font" = "មិនអាចអានពុម្ពអក្សរបានទេ";
 "CoreText could not create this font." = "CoreText មិនអាចបង្កើតពុម្ពអក្សរនេះបានទេ។";
-"Bounding Box" = "ប្រអប់ព័ទ្ធជុំវិញ";
+"An item named “%@” already exists in Font Book." = "ធាតុឈ្មោះ «%@» មានរួចហើយក្នុងសៀវភៅពុម្ពអក្សរ។";
+"“%@” is already in Font Book." = "«%@» មានរួចហើយក្នុងសៀវភៅពុម្ពអក្សរ។";
+"Keep Both" = "រក្សាទុកទាំងពីរ";
+"Stop" = "បញ្ឈប់";
+"Replace" = "ជំនួស";
+
+/* Editing and saved text. */
+"Edit" = "កែសម្រួល";
+"Undo" = "មិនធ្វើវិញ";
+"Redo" = "ធ្វើវិញ";
+"Cut" = "កាត់";
+"Copy" = "ចម្លង";
+"Paste" = "បិទភ្ជាប់";
+"Delete" = "លុប";
+"Select All" = "ជ្រើសទាំងអស់";
+"Enter text" = "បញ្ចូលអត្ថបទ";
+"Saved Text" = "អត្ថបទដែលបានរក្សាទុក";
+"Save Current Text" = "រក្សាទុកអត្ថបទបច្ចុប្បន្ន";
+"No Saved Text" = "គ្មានអត្ថបទដែលបានរក្សាទុក";
+"Delete Saved Text" = "លុបអត្ថបទដែលបានរក្សាទុក";
+"Clear All Saved Text" = "លុបអត្ថបទដែលបានរក្សាទុកទាំងអស់";
+
+/* Views and glyphs. */
+"View" = "ទិដ្ឋភាព";
+"Show Sidebar" = "បង្ហាញរបារចំហៀង";
+"Hide Sidebar" = "លាក់របារចំហៀង";
+"Single Glyph" = "រូបតួអក្សរតែមួយ";
+"Characters" = "តួអក្សរ";
+"Glyph Grid" = "ក្រឡាចត្រង្គរូបតួអក្សរ";
+"All Glyphs" = "រូបតួអក្សរទាំងអស់";
+"Add Glyph" = "បន្ថែមរូបតួអក្សរ";
+"Replace Glyph" = "ជំនួសរូបតួអក្សរ";
 "Text and alternate glyph list" = "បញ្ជីអត្ថបទ និងរូបតួអក្សរជំនួស";
+"Filter by Feature" = "ត្រងតាមលក្ខណៈពុម្ពអក្សរ";
+"No Features to Filter" = "គ្មានលក្ខណៈពុម្ពអក្សរសម្រាប់ត្រង";
+"No Feature" = "គ្មានលក្ខណៈពុម្ពអក្សរ";
+
+/* Text layout and typography. */
+"Make Text Bigger" = "ពង្រីកអត្ថបទ";
+"Make Text Smaller" = "បង្រួមអត្ថបទ";
+"Increase Leading" = "បង្កើនចន្លោះបន្ទាត់";
+"Decrease Leading" = "បន្ថយចន្លោះបន្ទាត់";
+"Default Size" = "ទំហំលំនាំដើម";
+"Text Alignment" = "តម្រឹមអត្ថបទ";
+"Left" = "តម្រឹមឆ្វេង";
+"Center" = "តម្រឹមកណ្ដាល";
+"Right" = "តម្រឹមស្ដាំ";
+"Justified" = "តម្រឹមសងខាង";
+"Top" = "តម្រឹមខាងលើ";
+"Bottom" = "តម្រឹមខាងក្រោម";
+"Vertical Layout" = "ប្លង់បញ្ឈរ";
+"Writing Direction" = "ទិសសរសេរ";
+"Left to Right" = "ពីឆ្វេងទៅស្ដាំ";
+"Right to Left" = "ពីស្ដាំទៅឆ្វេង";
+"Text Decorations" = "ការតុបតែងអត្ថបទ";
+"Underline" = "គូសបន្ទាត់ក្រោម";
+"Strikethrough" = "គូសបន្ទាត់ឆូត";
+"Outline" = "គ្រោងជុំវិញ";
+"Typography" = "ការរៀបពុម្ពអក្សរ";
+"No Typographic Features" = "គ្មានលក្ខណៈពិសេសនៃការរៀបពុម្ពអក្សរ";
+"Typesetting Language" = "ភាសាសម្រាប់រៀបពុម្ព";
+"No Selectable Languages" = "គ្មានភាសាដែលអាចជ្រើសបាន";
+"Other" = "ផ្សេងទៀត";
+
+/* Bounding box and colors. */
+"Bounding Box" = "ប្រអប់ព័ទ្ធជុំវិញ";
+"Show Bounding Box" = "បង្ហាញប្រអប់ព័ទ្ធជុំវិញ";
+"Hide Bounding Box" = "លាក់ប្រអប់ព័ទ្ធជុំវិញ";
+"Expand Bounding Box" = "ពង្រីកប្រអប់ព័ទ្ធជុំវិញ";
+"Shrink Bounding Box" = "បង្រួមប្រអប់ព័ទ្ធជុំវិញ";
+"Colors" = "ពណ៌";
+"Glyph…" = "រូបតួអក្សរ…";
+"Background…" = "ផ្ទៃខាងក្រោយ…";
+"Bounding Box…" = "ប្រអប់ព័ទ្ធជុំវិញ…";
+"Follow System" = "តាមការកំណត់ប្រព័ន្ធ";
+"Save Current Palette" = "រក្សាទុកក្ដារពណ៌បច្ចុប្បន្ន";
+"Delete Palettes" = "លុបក្ដារពណ៌";
+"Clear All Saved Palettes" = "លុបក្ដារពណ៌ដែលបានរក្សាទុកទាំងអស់";
+"No Saved Palettes" = "គ្មានក្ដារពណ៌ដែលបានរក្សាទុក";
+
+/* Variable fonts and defaults. */
+"Variable" = "អថេរ";
+"Named Instance" = "វ៉ារ្យ៉ង់មានឈ្មោះ";
+"Default" = "លំនាំដើម";
+"Custom" = "ផ្ទាល់ខ្លួន";
+"Use as Defaults" = "ប្រើជាលំនាំដើម";
+"Restore Default" = "ស្ដារលំនាំដើម";
+
+/* Format strings. */
+"%@: %@" = "%@: %@";
+"%@ (%.0f%%)" = "%@ (%.0f%%)";
+
+/* Help. */
 "Help.01" = "ជ្រើស «បើកពីទីតាំង» ក្នុងរបារម៉ឺនុយ ដើម្បីបើកពុម្ពអក្សរដោយផ្ទាល់ពីថតពុម្ពអក្សរ។ អ្នកក៏អាចអូសឯកសារពុម្ពអក្សរទៅលើរូបតំណាងកម្មវិធី ឬចូលក្នុងបង្អួចដែលបើកពុម្ពអក្សររួចហើយ។ អ្នកអាចកំណត់ Glyph Atlas ជាកម្មវិធីលំនាំដើមសម្រាប់បើកឯកសារពុម្ពអក្សរ។ ឯកសារដែលបានបើកថ្មីៗអាចបើកឡើងវិញបាន។";
 "Help.02" = "ប្រើរបារម៉ឺនុយដើម្បីចម្លងពុម្ពអក្សរដែលបើកក្នុងបង្អួចបច្ចុប្បន្ន ទៅថតពុម្ពអក្សរផ្ទាល់ខ្លួនដោយចុចមួយដង។ ចុច ⌥ ឱ្យជាប់ ដើម្បីចម្លងទៅថតពុម្ពអក្សរសម្រាប់អ្នកប្រើទាំងអស់។";
 "Help.03" = "ពេលបើកពុម្ពអក្សរអថេរ ផ្ទាំងកែតម្រូវនឹងបង្ហាញក្បែរប៊ូតុងបញ្ជាបង្អួច។ អូសផ្ទាំងនោះចេញ ដើម្បីទុកឱ្យវាបើក។ ជ្រើសតម្លៃជាលេខ រួចប្រើ ↑/↓ ឬ ⇧↑/⇧↓ ដើម្បីកែតម្រូវ។";
@@ -82,64 +147,3 @@
 "Help.13" = "ស្រមោលបង្ហាញប្រអប់ព័ទ្ធជុំវិញ ដែលរួមមានទទឹងនិងកម្ពស់រូបតួអក្សរ ព្រមទាំងកម្ពស់និងចន្លោះបន្ទាត់។ ចុច ⌘4 ដើម្បីលាក់វា។";
 "Help.14" = "កម្មវិធីគាំទ្ររបៀបងងឹត។ សូមប្រយ័ត្នពេលចុចលើរូបតួអក្សរដែលមានផ្ទៃពេញ ព្រោះវាអាចចាំងភ្នែក។ ក្នុង «ពណ៌» លើរបារម៉ឺនុយ អ្នកអាចប្ដូរពណ៌រូបតួអក្សរ ស្រមោលប្រអប់ព័ទ្ធជុំវិញ និងផ្ទៃខាងក្រោយ។ ជ្រើស «រក្សាទុកក្ដារពណ៌បច្ចុប្បន្ន» ដើម្បីរក្សាពណ៌ទាំងនោះ។ ចុច ⌥ ឱ្យជាប់ដើម្បីឃើញ «លុបក្ដារពណ៌»។";
 "Help.15" = "ជ្រើស «ប្រើជាលំនាំដើម» ក្នុងរបារម៉ឺនុយ ដើម្បីរក្សាទុកទិដ្ឋភាព ពណ៌ ទំហំ ការកំណត់មើលជាមុនផ្សេងទៀត និងទំហំបង្អួច។ ពុម្ពអក្សរដែលបើកនៅពេលក្រោយនឹងប្រើការកំណត់ទាំងនេះ។ ចុច ⌥ ឱ្យជាប់ដើម្បីជ្រើស «ស្ដារលំនាំដើម»។";
-
-/* Variable font controls. */
-"Variable" = "អថេរ";
-"Named Instance" = "វ៉ារ្យ៉ង់មានឈ្មោះ";
-"Default" = "លំនាំដើម";
-"Custom" = "ផ្ទាល់ខ្លួន";
-
-
-/* Font Book copy alerts. Conflict buttons follow Finder. */
-"An item named “%@” already exists in Font Book." = "ធាតុឈ្មោះ «%@» មានរួចហើយក្នុងសៀវភៅពុម្ពអក្សរ។";
-"“%@” is already in Font Book." = "«%@» មានរួចហើយក្នុងសៀវភៅពុម្ពអក្សរ។";
-"Keep Both" = "រក្សាទុកទាំងពីរ";
-"Stop" = "បញ្ឈប់";
-"Replace" = "ជំនួស";
-
-/* User-saved plain text. */
-"Saved Text" = "អត្ថបទដែលបានរក្សាទុក";
-"Save Current Text" = "រក្សាទុកអត្ថបទបច្ចុប្បន្ន";
-"No Saved Text" = "គ្មានអត្ថបទដែលបានរក្សាទុក";
-
-/* Preview colors and native leading. */
-"Colors" = "ពណ៌";
-"Delete Palettes" = "លុបក្ដារពណ៌";
-"Save Current Palette" = "រក្សាទុកក្ដារពណ៌បច្ចុប្បន្ន";
-"Clear All Saved Palettes" = "លុបក្ដារពណ៌ដែលបានរក្សាទុកទាំងអស់";
-"No Saved Palettes" = "គ្មានក្ដារពណ៌ដែលបានរក្សាទុក";
-"%@: %@" = "%@: %@";
-"%@ (%.0f%%)" = "%@ (%.0f%%)";
-"Follow System" = "តាមការកំណត់ប្រព័ន្ធ";
-"Glyph…" = "រូបតួអក្សរ…";
-"Background…" = "ផ្ទៃខាងក្រោយ…";
-"Bounding Box…" = "ប្រអប់ព័ទ្ធជុំវិញ…";
-"Increase Leading" = "បង្កើនចន្លោះបន្ទាត់";
-"Decrease Leading" = "បន្ថយចន្លោះបន្ទាត់";
-
-/* Explicit defaults for newly opened font windows. */
-
-/* Saved-text deletion and full screen. */
-"Delete Saved Text" = "លុបអត្ថបទដែលបានរក្សាទុក";
-"Clear All Saved Text" = "លុបអត្ថបទដែលបានរក្សាទុកទាំងអស់";
-"Enter Full Screen" = "បង្ហាញពេញអេក្រង់";
-
-/* Native typography and opening settings. */
-"Typography" = "ការរៀបពុម្ពអក្សរ";
-"Other" = "ផ្សេងទៀត";
-"No Typographic Features" = "គ្មានលក្ខណៈពិសេសនៃការរៀបពុម្ពអក្សរ";
-"Default Size" = "ទំហំលំនាំដើម";
-"Use as Defaults" = "ប្រើជាលំនាំដើម";
-"Restore Default" = "ស្ដារលំនាំដើម";
-"Text Decorations" = "ការតុបតែងអត្ថបទ";
-"Filter by Feature" = "ត្រងតាមលក្ខណៈពុម្ពអក្សរ";
-"No Features to Filter" = "គ្មានលក្ខណៈពុម្ពអក្សរសម្រាប់ត្រង";
-"No Feature" = "គ្មានលក្ខណៈពុម្ពអក្សរ";
-
-"Writing Direction" = "ទិសសរសេរ";
-"Left to Right" = "ពីឆ្វេងទៅស្ដាំ";
-"Right to Left" = "ពីស្ដាំទៅឆ្វេង";
-"Outline" = "គ្រោងជុំវិញ";
-
-"Typesetting Language" = "ភាសាសម្រាប់រៀបពុម្ព";
-"No Selectable Languages" = "គ្មានភាសាដែលអាចជ្រើសបាន";

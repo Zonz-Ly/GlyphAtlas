@@ -11,6 +11,9 @@
 #import <CoreText/CoreText.h>
 
 static NSString *const GAOpeningSettingsKey = @"GAOpeningSettings";
+static NSToolbarItemIdentifier const GAFontNameItem = @"GAFontName";
+static NSToolbarItemIdentifier const GATextInputItem = @"GATextInput";
+static NSToolbarItemIdentifier const GAVariationItem = @"GAVariation";
 
 /// Prefer a non-C0/DEL mapping for input, keeping the first if none qualifies.
 static NSNumber *GAInputScalarForGlyph(NSArray<NSNumber *> *scalars) {
@@ -30,21 +33,12 @@ static NSNumber *GAInputScalarForGlyph(NSArray<NSNumber *> *scalars) {
 
 @implementation GAFontTitleField
 
-- (BOOL)mouseDownCanMoveWindow {
-    return YES;
-}
-
-@end
-
-@interface GAFontTitleView : NSStackView
-@end
-
-@implementation GAFontTitleView
-
-- (NSView *)hitTest:(NSPoint)point {
-    NSView *hit = [super hitTest:point];
-    // AppKit must be able to find the label to expand its clipped text.
-    return hit == self ? nil : hit;
+- (void)mouseDown:(NSEvent *)event {
+    if (event.clickCount == 2) {
+        [self.window performZoom:self];
+        return;
+    }
+    [super mouseDown:event];
 }
 
 @end
@@ -68,11 +62,11 @@ static NSNumber *GAInputScalarForGlyph(NSArray<NSNumber *> *scalars) {
             (NSEventModifierFlagCommand | NSEventModifierFlagControl)) {
         NSString *key = event.charactersIgnoringModifiers;
         if ([key isEqualToString:@"+"] || [key isEqualToString:@"="]) {
-            [controller adjustLineSpacing:1];
+            [controller adjustLineHeight:1];
             return YES;
         }
         if ([key isEqualToString:@"-"] || [key isEqualToString:@"_"]) {
-            [controller adjustLineSpacing:-1];
+            [controller adjustLineHeight:-1];
             return YES;
         }
     }
@@ -176,6 +170,10 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 
 @interface GAMainWindowController () <NSWindowDelegate, NSToolbarDelegate, NSPopoverDelegate>
 @property (nonatomic, strong) NSSplitViewController *splitViewController;
+@property (nonatomic, strong) NSSplitViewItem *sidebarItem;
+@property (nonatomic) CGFloat sidebarExpandedWidth;
+@property (nonatomic, strong) NSView *toolbarInputContainer;
+@property (nonatomic) BOOL sidebarTransitionInProgress;
 @property (nonatomic, strong) GASidebarViewController *sidebarViewController;
 @property (nonatomic, strong) GADetailViewController *detailViewController;
 @property (nonatomic, strong, nullable) GAFontDocument *fontDocument;
@@ -233,7 +231,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
                                                             backing:NSBackingStoreBuffered
                                                               defer:NO];
     window.restorable = NO;
-    window.minSize = NSMakeSize(600, GAUsesMacOS26Layout() ? 380 : 390);
     window.tabbingMode = NSWindowTabbingModeDisallowed;
     window.titleVisibility = NSWindowTitleHidden;
     window.titlebarAppearsTransparent = YES;
@@ -278,6 +275,10 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         windowFrame.size = settings[@"windowSize"]
             ? NSSizeFromString(settings[@"windowSize"]) : NSMakeSize(600, 400);
         [window setFrame:windowFrame display:NO];
+        [window.contentView.superview layoutSubtreeIfNeeded];
+        CGFloat sidebarWidth = settings[@"sidebarWidth"] ? [settings[@"sidebarWidth"] doubleValue] : 200;
+        [self.splitViewController.splitView setPosition:sidebarWidth ofDividerAtIndex:0];
+        if ([settings[@"sidebarHidden"] boolValue]) [self toggleSidebar];
         [window center];
     }
     return self;
@@ -307,12 +308,13 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     sidebarItem.minimumThickness = 200;
     sidebarItem.maximumThickness = 1000;
     sidebarItem.canCollapse = NO;
+    sidebarItem.collapseBehavior = NSSplitViewItemCollapseBehaviorPreferResizingSiblingsWithFixedSplitView;
     sidebarItem.allowsFullHeightLayout = YES;
+    self.sidebarItem = sidebarItem;
     [split addSplitViewItem:sidebarItem];
 
     NSSplitViewItem *detailItem =
         [NSSplitViewItem splitViewItemWithViewController:self.detailViewController];
-    detailItem.minimumThickness = 300;
     if (GAUsesMacOS26Layout()) {
         if (@available(macOS 26.0, *)) detailItem.automaticallyAdjustsSafeAreaInsets = YES;
     }
@@ -321,7 +323,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     window.contentViewController = split;
 
     self.titleFontNameField = [GAFontTitleField labelWithString:@""];
-    self.titleFontNameField.autoresizingMask = NSViewWidthSizable;
     self.titleFontNameField.lineBreakMode = NSLineBreakByTruncatingTail;
     self.titleFontNameField.allowsExpansionToolTips = YES;
     NSFont *titleBarFont = [NSFont titleBarFontOfSize:13];
@@ -337,19 +338,25 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         [NSImage imageWithSystemSymbolName:@"slider.horizontal.3" accessibilityDescription:nil]
                                              target:self action:@selector(showVariations:)];
     self.variationButton.bordered = NO;
-    self.variationButton.hidden = YES;
     self.variationButton.accessibilityLabel = NSLocalizedString(@"Variable", @"Variable font controls");
-    self.fontTitleView = [GAFontTitleView stackViewWithViews:@[self.variationButton, self.titleFontNameField]];
-    self.fontTitleView.spacing = 5;
+    self.fontTitleView = [NSStackView stackViewWithViews:@[self.variationButton, self.titleFontNameField]];
+    self.fontTitleView.spacing = 0;
+    [self.fontTitleView setCustomSpacing:5 afterView:self.variationButton];
+    self.variationButton.hidden = YES;
     [self.titleFontNameField setContentCompressionResistancePriority:NSLayoutPriorityDefaultLow
                                                      forOrientation:NSLayoutConstraintOrientationHorizontal];
 
-    NSToolbar *toolbar = [[NSToolbar alloc] initWithIdentifier:@"GATitleToolbar"];
+    // AppKit synchronizes item changes between toolbars with the same identifier.
+    NSString *toolbarIdentifier = [@"GATitleToolbar." stringByAppendingString:NSUUID.UUID.UUIDString];
+    NSToolbar *toolbar = [[NSToolbar alloc] initWithIdentifier:toolbarIdentifier];
     toolbar.delegate = self;
     toolbar.displayMode = NSToolbarDisplayModeIconOnly;
     window.toolbar = toolbar;
     window.toolbarStyle = GAUsesMacOS26Layout()
         ? NSWindowToolbarStyleUnified : NSWindowToolbarStyleUnifiedCompact;
+    if (@available(macOS 26.0, *)) {
+        [self.sidebarViewController enableScrollEdgeEffectForSplitViewItem:sidebarItem];
+    }
 
     __weak typeof(self) weakSelf = self;
     [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(handleInputBlankClick:)
@@ -556,6 +563,8 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     NSMutableDictionary *settings = [self.detailViewController.currentPreviewSettings mutableCopy];
     BOOL fullScreen = (self.window.styleMask & NSWindowStyleMaskFullScreen) != 0;
     NSSize windowSize = fullScreen ? self.windowedSize : self.window.frame.size;
+    CGFloat sidebarWidth = self.sidebarHidden ? self.sidebarExpandedWidth
+        : NSWidth(self.sidebarViewController.view.frame);
     [settings addEntriesFromDictionary:@{
         @"viewMode":@(self.viewMode), @"showsMetrics":@(self.showsMetrics),
         @"vertical":@(self.verticalWriting), @"alignment":@(self.textAlignment),
@@ -563,6 +572,8 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         @"outlined":@(self.outlined), @"baseWritingDirection":@(self.baseWritingDirection),
         @"typesettingLanguageTag":self.typesettingLanguageTag,
         @"windowSize":NSStringFromSize(windowSize), @"fullScreen":@(fullScreen),
+        @"sidebarHidden":@(self.sidebarHidden),
+        @"sidebarWidth":@(sidebarWidth),
     }];
     [NSUserDefaults.standardUserDefaults setObject:settings forKey:GAOpeningSettingsKey];
 }
@@ -608,9 +619,9 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     [self.detailViewController setTypesettingLanguage:identifier ?: @""];
 }
 
-- (void)adjustLineSpacing:(NSInteger)steps {
+- (void)adjustLineHeight:(NSInteger)steps {
     if (GAViewModeSupportsTextLayout(self.viewMode))
-        [self.detailViewController adjustLineSpacing:steps];
+        [self.detailViewController adjustLineHeight:steps];
 }
 
 - (GAPreviewColors *)previewColors {
@@ -708,7 +719,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         return;
     }
     self.didFocusInitialField = YES;
-    [self.splitViewController.splitView setPosition:200 ofDividerAtIndex:0];
     [self.sidebarViewController focusInput];
 }
 
@@ -737,12 +747,93 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 
 #pragma mark - Toolbar
 
+- (BOOL)isSidebarHidden {
+    return self.sidebarItem.isCollapsed;
+}
+
+- (void)toggleSidebar {
+    if (self.sidebarTransitionInProgress) return;
+    BOOL hidden = !self.sidebarHidden;
+    NSWindow *window = self.window;
+    NSRange selection = self.sidebarViewController.inputSelectionRange;
+    if (selection.location != NSNotFound && ![window makeFirstResponder:nil]) return;
+
+    self.sidebarTransitionInProgress = YES;
+    if (self.variationPopover.shown && !self.variationPopover.detached)
+        [self.variationPopover close];
+
+    BOOL animate = window.isVisible && !NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceMotion;
+    BOOL pinSidebarList = animate && hidden;
+    if (hidden) {
+        [window.contentView.superview layoutSubtreeIfNeeded];
+        self.sidebarExpandedWidth = NSWidth(self.sidebarViewController.view.frame);
+        if (pinSidebarList) [self.sidebarViewController setSidebarListTopPinned:YES];
+    }
+    [self updateToolbarForHiddenSidebar:hidden];
+    __weak typeof(self) weakSelf = self;
+    void (^finish)(void) = ^{
+        GAMainWindowController *controller = weakSelf;
+        if (pinSidebarList) [controller.sidebarViewController setSidebarListTopPinned:NO];
+        if (!controller.sidebarTransitionInProgress) return;
+        NSWindow *currentWindow = controller.window;
+        controller.sidebarTransitionInProgress = NO;
+        if (currentWindow.firstResponder == currentWindow) {
+            if (selection.location != NSNotFound) {
+                [currentWindow.contentView.superview layoutSubtreeIfNeeded];
+                [controller.sidebarViewController restoreInputSelection:selection];
+            } else if (!hidden) {
+                [controller.sidebarViewController focusGlyphList];
+            }
+        }
+    };
+    if (animate) {
+        [NSAnimationContext runAnimationGroup:^(__unused NSAnimationContext *context) {
+            self.sidebarItem.animator.collapsed = hidden;
+        } completionHandler:finish];
+    } else {
+        self.sidebarItem.collapsed = hidden;
+        finish();
+    }
+}
+
+- (void)updateToolbarForHiddenSidebar:(BOOL)hidden {
+    NSWindow *window = self.window;
+    NSToolbar *toolbar = window.toolbar;
+    if (hidden && !self.toolbarInputContainer) {
+        self.toolbarInputContainer = [NSView new];
+        [self.toolbarInputContainer.widthAnchor constraintGreaterThanOrEqualToConstant:120].active = YES;
+    }
+    [self.sidebarViewController useInputInToolbarContainer:hidden ? self.toolbarInputContainer : nil];
+    if (hidden) [self.sidebarViewController setToolbarInputPlaceholder:self.titleFontNameField.stringValue];
+    while (toolbar.items.count > 0) [toolbar removeItemAtIndex:toolbar.items.count - 1];
+    window.toolbarStyle = hidden || GAUsesMacOS26Layout()
+        ? NSWindowToolbarStyleUnified : NSWindowToolbarStyleUnifiedCompact;
+    [self.detailViewController setUsesToolbarSafeArea:hidden];
+    if (hidden) {
+        [toolbar insertItemWithItemIdentifier:GATextInputItem atIndex:0];
+        [toolbar insertItemWithItemIdentifier:NSToolbarFlexibleSpaceItemIdentifier atIndex:1];
+        [self updateToolbarVariationItem];
+    } else {
+        [toolbar insertItemWithItemIdentifier:GAFontNameItem atIndex:0];
+        [toolbar insertItemWithItemIdentifier:NSToolbarSidebarTrackingSeparatorItemIdentifier atIndex:1];
+    }
+}
+
+- (void)updateToolbarVariationItem {
+    NSToolbar *toolbar = self.window.toolbar;
+    BOOL hasItem = [toolbar.items.firstObject.itemIdentifier isEqualToString:GAVariationItem];
+    BOOL needsItem = self.fontResource.axes.count > 0;
+    if (needsItem && !hasItem) [toolbar insertItemWithItemIdentifier:GAVariationItem atIndex:0];
+    if (!needsItem && hasItem) [toolbar removeItemAtIndex:0];
+}
+
 - (NSArray<NSToolbarItemIdentifier> *)toolbarDefaultItemIdentifiers:(NSToolbar *)toolbar {
-    return [self toolbarAllowedItemIdentifiers:toolbar];
+    return @[GAFontNameItem, NSToolbarSidebarTrackingSeparatorItemIdentifier];
 }
 
 - (NSArray<NSToolbarItemIdentifier> *)toolbarAllowedItemIdentifiers:(NSToolbar *)toolbar {
-    return @[@"GAFontName", NSToolbarSidebarTrackingSeparatorItemIdentifier];
+    return @[GAFontNameItem, NSToolbarSidebarTrackingSeparatorItemIdentifier,
+             GATextInputItem, GAVariationItem, NSToolbarFlexibleSpaceItemIdentifier];
 }
 
 - (NSToolbarItem *)toolbar:(NSToolbar *)toolbar
@@ -754,12 +845,29 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
                                              splitView:self.splitViewController.splitView
                                           dividerIndex:0];
     }
-    if (![itemIdentifier isEqualToString:@"GAFontName"]) {
-        return nil;
-    }
     NSToolbarItem *item = [[NSToolbarItem alloc] initWithItemIdentifier:itemIdentifier];
+    if ([itemIdentifier isEqualToString:GATextInputItem]) {
+        item.label = NSLocalizedString(@"Enter text", @"Enter text");
+        item.view = self.toolbarInputContainer;
+        item.visibilityPriority = NSToolbarItemVisibilityPriorityHigh;
+        return item;
+    }
+    if ([itemIdentifier isEqualToString:GAVariationItem]) {
+        item.label = self.variationButton.accessibilityLabel;
+        item.image = self.variationButton.image;
+        item.target = self;
+        item.action = @selector(showVariations:);
+        item.bordered = YES;
+        if (@available(macOS 14.0, *)) return item;
+        NSButton *button = [NSButton buttonWithImage:item.image target:self action:item.action];
+        button.bezelStyle = NSBezelStyleToolbar;
+        button.accessibilityLabel = item.label;
+        item.view = button;
+        return item;
+    }
+    if (![itemIdentifier isEqualToString:GAFontNameItem]) return nil;
     item.label = NSLocalizedString(@"Font Name", @"Font Name");
-    item.paletteLabel = NSLocalizedString(@"Font Name", @"Font Name");
+    item.paletteLabel = item.label;
     item.view = self.fontTitleView;
     // Keep the compact title and Variable button free of toolbar glass.
     item.bordered = NO;
@@ -820,13 +928,13 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     self.fontResource = resource;
     self.variationCoordinates = resource.defaultCoordinates;
     self.variationButton.hidden = resource.axes.count == 0;
+    if (self.sidebarHidden) [self updateToolbarVariationItem];
     [self loadDescriptor:resource.defaultDescriptor url:url fileReference:fileReference preservingSelection:NO];
 }
 
 #pragma mark - Variation controls
 
 - (void)showVariations:(id)sender {
-    (void)sender;
     if (self.variationPopover.detached) {
         [self.variationPopover.contentViewController.view.window makeKeyAndOrderFront:nil];
         return;
@@ -853,8 +961,14 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     self.variationPopover.delegate = self;
     self.variationPopover.behavior = NSPopoverBehaviorTransient;
     self.variationPopover.contentViewController = controller;
-    [self.variationPopover showRelativeToRect:self.variationButton.bounds
-                                      ofView:self.variationButton preferredEdge:NSRectEdgeMinY];
+    if (@available(macOS 14.0, *)) {
+        if ([sender isKindOfClass:NSToolbarItem.class]) {
+            [self.variationPopover showRelativeToToolbarItem:sender];
+            return;
+        }
+    }
+    NSView *anchor = sender;
+    [self.variationPopover showRelativeToRect:anchor.bounds ofView:anchor preferredEdge:NSRectEdgeMinY];
 }
 
 - (BOOL)popoverShouldDetach:(NSPopover *)popover {
@@ -884,13 +998,14 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     if (notification.object != self.variationPopover) return;
     if ([notification.userInfo[NSPopoverCloseReasonKey]
             isEqual:NSPopoverCloseReasonDetachToWindow]) return;
-    if (self.sidebarViewController.inputFocused) return;
+    if (self.sidebarTransitionInProgress || self.sidebarViewController.inputFocused) return;
     [self.sidebarViewController focusGlyphList];
 }
 
 - (void)windowWillClose:(NSNotification *)notification {
     [self cancelLayoutLookup];
     if (notification.object == self.window) {
+        self.sidebarTransitionInProgress = NO;
         [self.glyphFilterRequest cancel];
         self.glyphFilterRequest = nil;
         self.pendingGlyphFilterTag = nil;
@@ -976,11 +1091,13 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
             NSString *displayName = self.fontResource.usesFamilyName ? self.fontResource.name : document.fullName;
             self.window.title = displayName;
             self.window.subtitle = document.fontURL.lastPathComponent ?: @"";
+            [self.sidebarViewController setToolbarInputPlaceholder:displayName];
             if (![self.titleFontNameField.stringValue isEqualToString:displayName]) {
                 self.titleFontNameField.stringValue = displayName;
                 [self.titleFontNameField invalidateIntrinsicContentSize];
                 // The native expansion region can stay cached if the title's bounds do not change.
-                [self.window invalidateCursorRectsForView:self.titleFontNameField];
+                if (self.titleFontNameField.window == self.window)
+                    [self.window invalidateCursorRectsForView:self.titleFontNameField];
             }
             if (!preserve) [self.sidebarViewController clearGroups];
             if (selected != nil) {

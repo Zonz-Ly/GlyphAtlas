@@ -16,8 +16,15 @@ NS_INLINE BOOL GAViewModeSupportsMetrics(GAViewMode mode) {
 
 #if __MAC_OS_X_VERSION_MAX_ALLOWED < 260000
 /// Public Tahoe API, declared here for builds using an earlier SDK.
+API_AVAILABLE(macos(26.0))
+@interface NSSplitViewItemAccessoryViewController : NSViewController
+@property (nonatomic) BOOL automaticallyAppliesContentInsets;
+@end
+
 @interface NSSplitViewItem (GAMacOS26SDKDeclarations)
 @property (nonatomic) BOOL automaticallyAdjustsSafeAreaInsets API_AVAILABLE(macos(26.0));
+- (void)addTopAlignedAccessoryViewController:(NSSplitViewItemAccessoryViewController *)controller
+    API_AVAILABLE(macos(26.0));
 @end
 #endif
 

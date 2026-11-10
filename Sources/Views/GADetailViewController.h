@@ -9,10 +9,11 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, strong, readonly) GAPreviewColors *previewColors;
 - (void)applyPreviewColorRepresentation:(NSDictionary<NSString *, NSData *> *)representation;
 - (void)refreshPreviewColors;
-- (void)adjustLineSpacing:(NSInteger)steps;
+- (void)adjustLineHeight:(NSInteger)steps;
 - (NSDictionary *)currentPreviewSettings;
 - (void)applyOpeningSettings:(nullable NSDictionary *)settings;
 @property (nonatomic) GAViewMode viewMode;
+- (void)setUsesToolbarSafeArea:(BOOL)enabled;
 @property (nonatomic, copy, nullable) void (^onAllGlyphDoubleClick)(GAAllGlyphEntry *entry);
 @property(nonatomic, copy, nullable) void (^onGlyphSelected)
     (NSArray<NSNumber *> *glyphIDs, NSRange range, NSArray<NSNumber *> * _Nullable leadingGlyphIDs,

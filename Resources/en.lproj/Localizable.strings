@@ -1,62 +1,36 @@
 /* Standard commands follow macOS terminology. App-specific text and Help are translated here. */
 
-"File" = "File";
-"Copy to Font Book" = "Copy to Font Book";
-"Copy to All Users" = "Copy to All Users";
-"Current User…" = "Current User…";
-"All Users…" = "All Users…";
-"System Fonts…" = "Built-in…";
-"Open Recent" = "Open Recent";
-"Recent Location…" = "Recent Location…";
-"Clear Menu" = "Clear Menu";
-"Close" = "Close";
-"Cut" = "Cut";
-"Copy" = "Copy";
-"Paste" = "Paste";
-"Delete" = "Delete";
-"Select All" = "Select All";
-"Underline" = "Underline";
-"Strikethrough" = "Strikethrough";
-"View" = "View";
+/* Application and window commands. */
+"About Glyph Atlas" = "About Glyph Atlas";
+"Hide Glyph Atlas" = "Hide Glyph Atlas";
+"Hide Others" = "Hide Others";
+"Show All" = "Show All";
+"Quit Glyph Atlas" = "Quit Glyph Atlas";
+"Services" = "Services";
 "Window" = "Window";
 "Minimize" = "Minimize";
 "Zoom" = "Zoom";
 "Bring All to Front" = "Bring All to Front";
+"Enter Full Screen" = "Enter Full Screen";
 "Help" = "Help";
+"Glyph Atlas Help" = "Glyph Atlas Help";
 "Cancel" = "Cancel";
 "OK" = "OK";
-"Show All" = "Show All";
-"Services" = "Services";
-"Edit" = "Edit";
-"Undo" = "Undo";
-"Redo" = "Redo";
-"Add Glyph" = "Add Glyph";
-"Replace Glyph" = "Replace Glyph";
+
+/* File and font operations. */
+"File" = "File";
 "Open" = "Open";
-"Make Text Bigger" = "Make Text Bigger";
-"Make Text Smaller" = "Make Text Smaller";
-"Text Alignment" = "Text Alignment";
-"Left" = "Left";
-"Center" = "Center";
-"Right" = "Right";
-"Justified" = "Justified";
-"Top" = "Top";
-"Bottom" = "Bottom";
-"About Glyph Atlas" = "About Glyph Atlas";
-"Hide Glyph Atlas" = "Hide Glyph Atlas";
-"Hide Others" = "Hide Others";
-"Quit Glyph Atlas" = "Quit Glyph Atlas";
-"Glyph Atlas Help" = "Glyph Atlas Help";
 "Open At" = "Open At";
+"Current User…" = "Current User…";
+"All Users…" = "All Users…";
+"System Fonts…" = "Built-in…";
+"Recent Location…" = "Recent Location…";
+"Open Recent" = "Open Recent";
 "No Recent Fonts" = "No Recent Fonts";
-"Single Glyph" = "Single Glyph";
-"Characters" = "Characters";
-"Glyph Grid" = "Glyph Grid";
-"All Glyphs" = "All Glyphs";
-"Expand Bounding Box" = "Expand Bounding Box";
-"Shrink Bounding Box" = "Shrink Bounding Box";
-"Vertical Layout" = "Vertical Layout";
-"Enter text" = "Enter text";
+"Clear Menu" = "Clear Menu";
+"Close" = "Close";
+"Copy to Font Book" = "Copy to Font Book";
+"Copy to All Users" = "Copy to All Users";
 "Font Name" = "Font Name";
 "Font File" = "Font File";
 "Untitled Font" = "Untitled Font";
@@ -65,8 +39,99 @@
 "This file does not contain a font that CoreText can read." = "This file does not contain a font that CoreText can read.";
 "Cannot Read Font" = "Cannot Read Font";
 "CoreText could not create this font." = "CoreText could not create this font.";
-"Bounding Box" = "Bounding Box";
+"An item named “%@” already exists in Font Book." = "An item named “%@” already exists in Font Book.";
+"“%@” is already in Font Book." = "“%@” is already in Font Book.";
+"Keep Both" = "Keep Both";
+"Stop" = "Stop";
+"Replace" = "Replace";
+
+/* Editing and saved text. */
+"Edit" = "Edit";
+"Undo" = "Undo";
+"Redo" = "Redo";
+"Cut" = "Cut";
+"Copy" = "Copy";
+"Paste" = "Paste";
+"Delete" = "Delete";
+"Select All" = "Select All";
+"Enter text" = "Enter text";
+"Saved Text" = "Saved Text";
+"Save Current Text" = "Save Current Text";
+"No Saved Text" = "No Saved Text";
+"Delete Saved Text" = "Delete Saved Text";
+"Clear All Saved Text" = "Clear All Saved Text";
+
+/* Views and glyphs. */
+"View" = "View";
+"Show Sidebar" = "Show Sidebar";
+"Hide Sidebar" = "Hide Sidebar";
+"Single Glyph" = "Single Glyph";
+"Characters" = "Characters";
+"Glyph Grid" = "Glyph Grid";
+"All Glyphs" = "All Glyphs";
+"Add Glyph" = "Add Glyph";
+"Replace Glyph" = "Replace Glyph";
 "Text and alternate glyph list" = "Text and alternate glyph list";
+"Filter by Feature" = "Filter by Feature";
+"No Features to Filter" = "No Features to Filter";
+"No Feature" = "No Feature";
+
+/* Text layout and typography. */
+"Make Text Bigger" = "Make Text Bigger";
+"Make Text Smaller" = "Make Text Smaller";
+"Increase Leading" = "Increase Leading";
+"Decrease Leading" = "Decrease Leading";
+"Default Size" = "Default Size";
+"Text Alignment" = "Text Alignment";
+"Left" = "Left";
+"Center" = "Center";
+"Right" = "Right";
+"Justified" = "Justified";
+"Top" = "Top";
+"Bottom" = "Bottom";
+"Vertical Layout" = "Vertical Layout";
+"Writing Direction" = "Writing Direction";
+"Left to Right" = "Left to Right";
+"Right to Left" = "Right to Left";
+"Text Decorations" = "Text Decorations";
+"Underline" = "Underline";
+"Strikethrough" = "Strikethrough";
+"Outline" = "Outline";
+"Typography" = "Typography";
+"No Typographic Features" = "No Typographic Features";
+"Typesetting Language" = "Typesetting Language";
+"No Selectable Languages" = "No Selectable Languages";
+"Other" = "Other";
+
+/* Bounding box and colors. */
+"Bounding Box" = "Bounding Box";
+"Show Bounding Box" = "Show Bounding Box";
+"Hide Bounding Box" = "Hide Bounding Box";
+"Expand Bounding Box" = "Expand Bounding Box";
+"Shrink Bounding Box" = "Shrink Bounding Box";
+"Colors" = "Colors";
+"Glyph…" = "Glyph…";
+"Background…" = "Background…";
+"Bounding Box…" = "Bounding Box…";
+"Follow System" = "Follow System";
+"Save Current Palette" = "Save Current Palette";
+"Delete Palettes" = "Delete Palettes";
+"Clear All Saved Palettes" = "Clear All Saved Palettes";
+"No Saved Palettes" = "No Saved Palettes";
+
+/* Variable fonts and defaults. */
+"Variable" = "Variable";
+"Named Instance" = "Named Instance";
+"Default" = "Default";
+"Custom" = "Custom";
+"Use as Defaults" = "Use as Defaults";
+"Restore Default" = "Restore Default";
+
+/* Format strings. */
+"%@: %@" = "%@: %@";
+"%@ (%.0f%%)" = "%@ (%.0f%%)";
+
+/* Help. */
 "Help.01" = "Use “Open At” in the menu bar to open a font directly from a Fonts folder. You can also drag a font onto the app icon or onto a window with a font already open, or set Glyph Atlas as the default app for opening font files. Recently opened items are supported.";
 "Help.02" = "Use the menu bar to copy the font open in the current window to your user Fonts folder in one click. Hold ⌥ to copy it to the Fonts folder for all users.";
 "Help.03" = "When you open a variable font, a variation panel appears beside the window controls. Drag it out to keep it open. Select a numeric value and use ↑/↓ or ⇧↑/⇧↓ to adjust it.";
@@ -82,64 +147,3 @@
 "Help.13" = "The shadow shows the bounding box, including the glyph's width and height and the layout's line height and leading. Press ⌘4 to toggle Bounding Box.";
 "Help.14" = "Dark mode is supported. Watch out when clicking a solid glyph, as it can dazzle you. You can change the glyph, bounding box shadow, and background colors under Colors in the menu bar. Choose Save Current Palette to keep your colors. Hold ⌥ to find Delete Palettes.";
 "Help.15" = "Choose Use as Defaults in the menu bar to save the current view, colors, size, other preview settings, and window size. Font files you open later will use these settings. Hold ⌥ to choose Restore Default instead.";
-
-/* Variable font controls. */
-"Variable" = "Variable";
-"Named Instance" = "Named Instance";
-"Default" = "Default";
-"Custom" = "Custom";
-
-
-/* Font Book copy alerts. Conflict buttons follow Finder. */
-"An item named “%@” already exists in Font Book." = "An item named “%@” already exists in Font Book.";
-"“%@” is already in Font Book." = "“%@” is already in Font Book.";
-"Keep Both" = "Keep Both";
-"Stop" = "Stop";
-"Replace" = "Replace";
-
-/* User-saved plain text. */
-"Saved Text" = "Saved Text";
-"Save Current Text" = "Save Current Text";
-"No Saved Text" = "No Saved Text";
-
-/* Preview colors and native leading. */
-"Colors" = "Colors";
-"Delete Palettes" = "Delete Palettes";
-"Save Current Palette" = "Save Current Palette";
-"Clear All Saved Palettes" = "Clear All Saved Palettes";
-"No Saved Palettes" = "No Saved Palettes";
-"%@: %@" = "%@: %@";
-"%@ (%.0f%%)" = "%@ (%.0f%%)";
-"Follow System" = "Follow System";
-"Glyph…" = "Glyph…";
-"Background…" = "Background…";
-"Bounding Box…" = "Bounding Box…";
-"Increase Leading" = "Increase Leading";
-"Decrease Leading" = "Decrease Leading";
-
-/* Explicit defaults for newly opened font windows. */
-
-/* Saved-text deletion and full screen. */
-"Delete Saved Text" = "Delete Saved Text";
-"Clear All Saved Text" = "Clear All Saved Text";
-"Enter Full Screen" = "Enter Full Screen";
-
-/* Native typography and opening settings. */
-"Typography" = "Typography";
-"Other" = "Other";
-"No Typographic Features" = "No Typographic Features";
-"Default Size" = "Default Size";
-"Use as Defaults" = "Use as Defaults";
-"Restore Default" = "Restore Default";
-"Text Decorations" = "Text Decorations";
-"Filter by Feature" = "Filter by Feature";
-"No Features to Filter" = "No Features to Filter";
-"No Feature" = "No Feature";
-
-"Writing Direction" = "Writing Direction";
-"Left to Right" = "Left to Right";
-"Right to Left" = "Right to Left";
-"Outline" = "Outline";
-
-"Typesetting Language" = "Typesetting Language";
-"No Selectable Languages" = "No Selectable Languages";

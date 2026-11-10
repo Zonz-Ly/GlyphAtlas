@@ -1,62 +1,36 @@
 /* Standard commands follow macOS terminology. App-specific text and Help are translated here. */
 
-"File" = "Файл";
-"Copy to Font Book" = "Скопировать в «Шрифты»";
-"Copy to All Users" = "Скопировать для всех пользователей";
-"Current User…" = "Текущий пользователь…";
-"All Users…" = "Все пользователи…";
-"System Fonts…" = "Встроенные…";
-"Open Recent" = "Открытие недавних";
-"Recent Location…" = "Последняя папка…";
-"Clear Menu" = "Очистить меню";
-"Close" = "Закрыть";
-"Cut" = "Вырезать";
-"Copy" = "Скопировать";
-"Paste" = "Вставить";
-"Delete" = "Удалить";
-"Select All" = "Выбрать все";
-"Underline" = "Подчеркнутый";
-"Strikethrough" = "Зачеркнутый";
-"View" = "Вид";
+/* Application and window commands. */
+"About Glyph Atlas" = "О программе Glyph Atlas";
+"Hide Glyph Atlas" = "Скрыть Glyph Atlas";
+"Hide Others" = "Скрыть остальные";
+"Show All" = "Показать все";
+"Quit Glyph Atlas" = "Завершить Glyph Atlas";
+"Services" = "Службы";
 "Window" = "Окно";
 "Minimize" = "Убрать в Dock";
 "Zoom" = "Изменить масштаб";
 "Bring All to Front" = "Все окна — на передний план";
+"Enter Full Screen" = "Перейти в полноэкранный режим";
 "Help" = "Справка";
+"Glyph Atlas Help" = "Справка Glyph Atlas";
 "Cancel" = "Отменить";
 "OK" = "ОК";
-"Show All" = "Показать все";
-"Services" = "Службы";
-"Edit" = "Правка";
-"Undo" = "Отменить";
-"Redo" = "Повторить";
-"Add Glyph" = "Добавить глиф";
-"Replace Glyph" = "Заменить глиф";
+
+/* File and font operations. */
+"File" = "Файл";
 "Open" = "Открыть";
-"Make Text Bigger" = "Увеличить текст";
-"Make Text Smaller" = "Уменьшить текст";
-"Text Alignment" = "Выравнивание текста";
-"Left" = "Выровнять влево";
-"Center" = "Выровнять по центру";
-"Right" = "Выровнять по правому краю";
-"Justified" = "Выровнять по ширине";
-"Top" = "Выровнять по верхнему краю";
-"Bottom" = "Выровнять по нижнему краю";
-"About Glyph Atlas" = "О программе Glyph Atlas";
-"Hide Glyph Atlas" = "Скрыть Glyph Atlas";
-"Hide Others" = "Скрыть остальные";
-"Quit Glyph Atlas" = "Завершить Glyph Atlas";
-"Glyph Atlas Help" = "Справка Glyph Atlas";
 "Open At" = "Открыть из папки";
+"Current User…" = "Текущий пользователь…";
+"All Users…" = "Все пользователи…";
+"System Fonts…" = "Встроенные…";
+"Recent Location…" = "Последняя папка…";
+"Open Recent" = "Открытие недавних";
 "No Recent Fonts" = "Нет недавно использованных шрифтов";
-"Single Glyph" = "Один глиф";
-"Characters" = "Символы";
-"Glyph Grid" = "Сетка глифов";
-"All Glyphs" = "Все глифы";
-"Expand Bounding Box" = "Увеличить ограничивающую рамку";
-"Shrink Bounding Box" = "Уменьшить ограничивающую рамку";
-"Vertical Layout" = "Вертикальная компоновка";
-"Enter text" = "Введите текст";
+"Clear Menu" = "Очистить меню";
+"Close" = "Закрыть";
+"Copy to Font Book" = "Скопировать в «Шрифты»";
+"Copy to All Users" = "Скопировать для всех пользователей";
 "Font Name" = "Название шрифта";
 "Font File" = "Файл шрифта";
 "Untitled Font" = "Шрифт без названия";
@@ -65,8 +39,99 @@
 "This file does not contain a font that CoreText can read." = "В этом файле нет шрифта, который может прочитать CoreText.";
 "Cannot Read Font" = "Не удается прочитать шрифт";
 "CoreText could not create this font." = "CoreText не удалось создать этот шрифт.";
-"Bounding Box" = "Ограничивающая рамка";
+"An item named “%@” already exists in Font Book." = "В приложении «Шрифты» уже есть объект «%@».";
+"“%@” is already in Font Book." = "«%@» уже находится в приложении «Шрифты».";
+"Keep Both" = "Оставить оба";
+"Stop" = "Остановить";
+"Replace" = "Заменить";
+
+/* Editing and saved text. */
+"Edit" = "Правка";
+"Undo" = "Отменить";
+"Redo" = "Повторить";
+"Cut" = "Вырезать";
+"Copy" = "Скопировать";
+"Paste" = "Вставить";
+"Delete" = "Удалить";
+"Select All" = "Выбрать все";
+"Enter text" = "Введите текст";
+"Saved Text" = "Сохранённые тексты";
+"Save Current Text" = "Сохранить текущий текст";
+"No Saved Text" = "Нет сохранённых текстов";
+"Delete Saved Text" = "Удалить сохранённые тексты";
+"Clear All Saved Text" = "Очистить список сохранённых текстов";
+
+/* Views and glyphs. */
+"View" = "Вид";
+"Show Sidebar" = "Показать боковое меню";
+"Hide Sidebar" = "Скрыть боковое меню";
+"Single Glyph" = "Один глиф";
+"Characters" = "Символы";
+"Glyph Grid" = "Сетка глифов";
+"All Glyphs" = "Все глифы";
+"Add Glyph" = "Добавить глиф";
+"Replace Glyph" = "Заменить глиф";
 "Text and alternate glyph list" = "Список текста и альтернативных глифов";
+"Filter by Feature" = "Фильтр по функции";
+"No Features to Filter" = "Нет функций для фильтрации";
+"No Feature" = "Без функции";
+
+/* Text layout and typography. */
+"Make Text Bigger" = "Увеличить текст";
+"Make Text Smaller" = "Уменьшить текст";
+"Increase Leading" = "Увеличить межстрочный интервал";
+"Decrease Leading" = "Уменьшить межстрочный интервал";
+"Default Size" = "Размер по умолчанию";
+"Text Alignment" = "Выравнивание текста";
+"Left" = "Выровнять влево";
+"Center" = "Выровнять по центру";
+"Right" = "Выровнять по правому краю";
+"Justified" = "Выровнять по ширине";
+"Top" = "Выровнять по верхнему краю";
+"Bottom" = "Выровнять по нижнему краю";
+"Vertical Layout" = "Вертикальная компоновка";
+"Writing Direction" = "Направление письма";
+"Left to Right" = "Слева направо";
+"Right to Left" = "Справа налево";
+"Text Decorations" = "Оформление текста";
+"Underline" = "Подчеркнутый";
+"Strikethrough" = "Зачеркнутый";
+"Outline" = "Контурный";
+"Typography" = "Типографика";
+"No Typographic Features" = "Нет типографических функций";
+"Typesetting Language" = "Язык набора";
+"No Selectable Languages" = "Нет доступных языков";
+"Other" = "Другие";
+
+/* Bounding box and colors. */
+"Bounding Box" = "Ограничивающая рамка";
+"Show Bounding Box" = "Показать ограничивающую рамку";
+"Hide Bounding Box" = "Скрыть ограничивающую рамку";
+"Expand Bounding Box" = "Увеличить ограничивающую рамку";
+"Shrink Bounding Box" = "Уменьшить ограничивающую рамку";
+"Colors" = "Цвета";
+"Glyph…" = "Глиф…";
+"Background…" = "Фон…";
+"Bounding Box…" = "Ограничивающая рамка…";
+"Follow System" = "Как в системе";
+"Save Current Palette" = "Сохранить текущую палитру";
+"Delete Palettes" = "Удалить палитры";
+"Clear All Saved Palettes" = "Очистить список сохранённых палитр";
+"No Saved Palettes" = "Нет сохранённых палитр";
+
+/* Variable fonts and defaults. */
+"Variable" = "Вариативный";
+"Named Instance" = "Именованный экземпляр";
+"Default" = "По умолчанию";
+"Custom" = "Свои";
+"Use as Defaults" = "Сделать параметрами по умолчанию";
+"Restore Default" = "Восстановить настройки по умолчанию";
+
+/* Format strings. */
+"%@: %@" = "%@: %@";
+"%@ (%.0f%%)" = "%@ (%.0f%%)";
+
+/* Help. */
 "Help.01" = "Чтобы открыть шрифт прямо из папки со шрифтами, выберите «Открыть из папки» в строке меню. Файл также можно перетащить на значок приложения или в окно, в котором уже открыт шрифт. Glyph Atlas можно сделать приложением по умолчанию для открытия файлов шрифтов. Недавно открытые файлы можно открыть снова.";
 "Help.02" = "Через строку меню можно одним нажатием скопировать шрифт, открытый в текущем окне, в папку шрифтов пользователя. Удерживайте ⌥, чтобы скопировать шрифт в папку шрифтов для всех пользователей.";
 "Help.03" = "При открытии вариативного шрифта рядом с кнопками управления окном появляется панель вариаций. Перетащите её за пределы окна, чтобы оставить открытой. Выберите числовое значение и измените его клавишами ↑/↓ или ⇧↑/⇧↓.";
@@ -82,64 +147,3 @@
 "Help.13" = "Тень показывает ограничивающую рамку, включая ширину и высоту глифа, высоту строки и межстрочный интервал. Нажмите ⌘4, чтобы скрыть её.";
 "Help.14" = "Поддерживается темный режим. Но будьте осторожны: при нажатии на сплошной глиф можно ослепнуть от яркости. В пункте «Цвета» строки меню можно изменить цвет глифов, тени ограничивающей рамки и фона. Чтобы сохранить выбранные цвета, выберите «Сохранить текущую палитру». Удерживайте ⌥, чтобы увидеть пункт «Удалить палитры».";
 "Help.15" = "Выберите «Сделать параметрами по умолчанию» в строке меню, чтобы сохранить текущий вид, цвета, размер и другие настройки предпросмотра вместе с размером окна. Открываемые затем файлы шрифтов будут использовать эти настройки. Удерживайте ⌥, чтобы выбрать «Восстановить настройки по умолчанию».";
-
-/* Variable font controls. */
-"Variable" = "Вариативный";
-"Named Instance" = "Именованный экземпляр";
-"Default" = "По умолчанию";
-"Custom" = "Свои";
-
-
-/* Font Book copy alerts. Conflict buttons follow Finder. */
-"An item named “%@” already exists in Font Book." = "В приложении «Шрифты» уже есть объект «%@».";
-"“%@” is already in Font Book." = "«%@» уже находится в приложении «Шрифты».";
-"Keep Both" = "Оставить оба";
-"Stop" = "Остановить";
-"Replace" = "Заменить";
-
-/* User-saved plain text. */
-"Saved Text" = "Сохранённые тексты";
-"Save Current Text" = "Сохранить текущий текст";
-"No Saved Text" = "Нет сохранённых текстов";
-
-/* Preview colors and native leading. */
-"Colors" = "Цвета";
-"Delete Palettes" = "Удалить палитры";
-"Save Current Palette" = "Сохранить текущую палитру";
-"Clear All Saved Palettes" = "Очистить список сохранённых палитр";
-"No Saved Palettes" = "Нет сохранённых палитр";
-"%@: %@" = "%@: %@";
-"%@ (%.0f%%)" = "%@ (%.0f%%)";
-"Follow System" = "Как в системе";
-"Glyph…" = "Глиф…";
-"Background…" = "Фон…";
-"Bounding Box…" = "Ограничивающая рамка…";
-"Increase Leading" = "Увеличить межстрочный интервал";
-"Decrease Leading" = "Уменьшить межстрочный интервал";
-
-/* Explicit defaults for newly opened font windows. */
-
-/* Saved-text deletion and full screen. */
-"Delete Saved Text" = "Удалить сохранённые тексты";
-"Clear All Saved Text" = "Очистить список сохранённых текстов";
-"Enter Full Screen" = "Перейти в полноэкранный режим";
-
-/* Native typography and opening settings. */
-"Typography" = "Типографика";
-"Other" = "Другие";
-"No Typographic Features" = "Нет типографических функций";
-"Default Size" = "Размер по умолчанию";
-"Use as Defaults" = "Сделать параметрами по умолчанию";
-"Restore Default" = "Восстановить настройки по умолчанию";
-"Text Decorations" = "Оформление текста";
-"Filter by Feature" = "Фильтр по функции";
-"No Features to Filter" = "Нет функций для фильтрации";
-"No Feature" = "Без функции";
-
-"Writing Direction" = "Направление письма";
-"Left to Right" = "Слева направо";
-"Right to Left" = "Справа налево";
-"Outline" = "Контурный";
-
-"Typesetting Language" = "Язык набора";
-"No Selectable Languages" = "Нет доступных языков";

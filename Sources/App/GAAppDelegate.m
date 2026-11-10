@@ -896,9 +896,17 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
     if (!includeZoom) {
         [self addGlyphFeatureFilterToMenu:menu];
         [menu addItem:NSMenuItem.separatorItem];
+    } else {
+        NSMenuItem *sidebar = [menu addItemWithTitle:NSLocalizedString(@"Hide Sidebar", @"Hide the glyph sidebar")
+                                              action:@selector(toggleSidebar:) keyEquivalent:@"s"];
+        sidebar.target = self;
+        sidebar.keyEquivalentModifierMask = NSEventModifierFlagControl | NSEventModifierFlagCommand;
     }
 
-    NSMenuItem *metrics = [menu addItemWithTitle:NSLocalizedString(@"Bounding Box", @"Toggle the bounding box")
+    NSString *metricsTitle = includeZoom
+        ? NSLocalizedString(@"Hide Bounding Box", @"Hide the bounding box")
+        : NSLocalizedString(@"Bounding Box", @"Toggle the bounding box");
+    NSMenuItem *metrics = [menu addItemWithTitle:metricsTitle
                                           action:@selector(toggleShowMetrics:)
                                    keyEquivalent:@"4"];
     metrics.target = self;
@@ -930,11 +938,11 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
     metricsZoomIn.keyEquivalentModifierMask =
         NSEventModifierFlagCommand | NSEventModifierFlagOption;
     metricsZoomIn.alternate = YES;
-    NSMenuItem *spacingIn = [menu addItemWithTitle:NSLocalizedString(@"Increase Leading", @"Increase preview leading")
-        action:@selector(increaseLineSpacing:) keyEquivalent:@"+"];
-    spacingIn.target = self;
-    spacingIn.keyEquivalentModifierMask = NSEventModifierFlagCommand | NSEventModifierFlagControl;
-    spacingIn.alternate = YES;
+    NSMenuItem *lineHeightIn = [menu addItemWithTitle:NSLocalizedString(@"Increase Leading", @"Increase preview leading")
+        action:@selector(increaseLineHeight:) keyEquivalent:@"+"];
+    lineHeightIn.target = self;
+    lineHeightIn.keyEquivalentModifierMask = NSEventModifierFlagCommand | NSEventModifierFlagControl;
+    lineHeightIn.alternate = YES;
 
     NSMenuItem *zoomOut = [menu addItemWithTitle:NSLocalizedString(@"Make Text Smaller", @"Decrease the preview text size")
                                           action:@selector(zoomOut:)
@@ -947,11 +955,11 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
     metricsZoomOut.keyEquivalentModifierMask =
         NSEventModifierFlagCommand | NSEventModifierFlagOption;
     metricsZoomOut.alternate = YES;
-    NSMenuItem *spacingOut = [menu addItemWithTitle:NSLocalizedString(@"Decrease Leading", @"Decrease preview leading")
-        action:@selector(decreaseLineSpacing:) keyEquivalent:@"-"];
-    spacingOut.target = self;
-    spacingOut.keyEquivalentModifierMask = NSEventModifierFlagCommand | NSEventModifierFlagControl;
-    spacingOut.alternate = YES;
+    NSMenuItem *lineHeightOut = [menu addItemWithTitle:NSLocalizedString(@"Decrease Leading", @"Decrease preview leading")
+        action:@selector(decreaseLineHeight:) keyEquivalent:@"-"];
+    lineHeightOut.target = self;
+    lineHeightOut.keyEquivalentModifierMask = NSEventModifierFlagCommand | NSEventModifierFlagControl;
+    lineHeightOut.alternate = YES;
     NSMenuItem *defaultSize = [menu addItemWithTitle:NSLocalizedString(@"Default Size", @"Reset the current view to its default size")
                                              action:@selector(resetZoom:)
                                       keyEquivalent:@"0"];
@@ -1195,6 +1203,10 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
     [[self controllerForViewMenu:sender.menu] setViewMode:(GAViewMode)sender.tag];
 }
 
+- (void)toggleSidebar:(NSMenuItem *)sender {
+    [[self controllerForViewMenu:sender.menu] toggleSidebar];
+}
+
 - (void)toggleShowMetrics:(id)sender {
     [[self controllerForViewMenu:[sender menu]] toggleShowsMetrics];
 }
@@ -1215,12 +1227,12 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
     [self.activeMainWindowController zoomMetricsOut];
 }
 
-- (void)increaseLineSpacing:(id)sender {
-    [self.activeMainWindowController adjustLineSpacing:1];
+- (void)increaseLineHeight:(id)sender {
+    [self.activeMainWindowController adjustLineHeight:1];
 }
 
-- (void)decreaseLineSpacing:(id)sender {
-    [self.activeMainWindowController adjustLineSpacing:-1];
+- (void)decreaseLineHeight:(id)sender {
+    [self.activeMainWindowController adjustLineHeight:-1];
 }
 
 - (void)followSystemColors:(NSMenuItem *)sender {
@@ -1386,13 +1398,19 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
         return YES;
     }
     GAMainWindowController *controller = [self controllerForViewMenu:item.menu];
+    if (action == @selector(toggleSidebar:)) {
+        item.title = controller.isSidebarHidden
+            ? NSLocalizedString(@"Show Sidebar", @"Show the glyph sidebar")
+            : NSLocalizedString(@"Hide Sidebar", @"Hide the glyph sidebar");
+        return controller != nil;
+    }
     if (controller == nil) {
         return NO;
     }
     if (action == @selector(copyToFontBook:)) {
         return controller.fontURL != nil;
     }
-    if (action == @selector(increaseLineSpacing:) || action == @selector(decreaseLineSpacing:) ||
+    if (action == @selector(increaseLineHeight:) || action == @selector(decreaseLineHeight:) ||
         action == @selector(zoomMetricsIn:) || action == @selector(zoomMetricsOut:))
         return GAViewModeSupportsTextLayout(controller.viewMode);
     if (action == @selector(switchViewMode:)) {
@@ -1427,7 +1445,13 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
             (!tag.length || GAIdentifierForOpenTypeLanguage(tag) != nil);
     }
     if (action == @selector(toggleShowMetrics:)) {
-        item.state = controller.showsMetrics ? NSControlStateValueOn : NSControlStateValueOff;
+        if (item.menu == self.viewMenu) {
+            item.title = controller.showsMetrics
+                ? NSLocalizedString(@"Hide Bounding Box", @"Hide the bounding box")
+                : NSLocalizedString(@"Show Bounding Box", @"Show the bounding box");
+        } else {
+            item.state = controller.showsMetrics ? NSControlStateValueOn : NSControlStateValueOff;
+        }
         return GAViewModeSupportsMetrics(controller.viewMode);
     }
     if (action == @selector(setTextAlignment:)) {

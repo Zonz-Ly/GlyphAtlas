@@ -1,62 +1,36 @@
 /* Standard commands follow macOS terminology. App-specific text and Help are translated here. */
 
-"File" = "फ़ाइल";
-"Copy to Font Book" = "फ़ॉन्ट बुक में कॉपी करें";
-"Copy to All Users" = "सभी यूज़र के लिए कॉपी करें";
-"Current User…" = "वर्तमान यूज़र…";
-"All Users…" = "सभी यूज़र…";
-"System Fonts…" = "बिल्ट-इन…";
-"Open Recent" = "हालिया खोलें";
-"Recent Location…" = "हाल की जगह…";
-"Clear Menu" = "मेनू साफ़ करें";
-"Close" = "बंद करें";
-"Cut" = "कट";
-"Copy" = "कॉपी";
-"Paste" = "पेस्ट";
-"Delete" = "डिलीट करें";
-"Select All" = "सभी चुनें";
-"Underline" = "रेखांकित करें";
-"Strikethrough" = "स्ट्राइकथ्रू";
-"View" = "दृश्य";
+/* Application and window commands. */
+"About Glyph Atlas" = "Glyph Atlas के बारे में";
+"Hide Glyph Atlas" = "Glyph Atlas छिपाएँ";
+"Hide Others" = "अन्य ऐप छिपाएँ";
+"Show All" = "सभी दिखाएँ";
+"Quit Glyph Atlas" = "Glyph Atlas बंद करें";
+"Services" = "सेवाएँ";
 "Window" = "विंडो";
 "Minimize" = "मिनिमाइज़ करें";
 "Zoom" = "ज़ूम करें";
 "Bring All to Front" = "सभी आगे लाएँ";
+"Enter Full Screen" = "फ़ुल स्‍क्रीन में प्रवेश करें";
 "Help" = "सहायता";
+"Glyph Atlas Help" = "Glyph Atlas सहायता";
 "Cancel" = "रद्द करें";
 "OK" = "ठीक";
-"Show All" = "सभी दिखाएँ";
-"Services" = "सेवाएँ";
-"Edit" = "संपादन";
-"Undo" = "पहले जैसा करें";
-"Redo" = "फिर करें";
-"Add Glyph" = "ग्लिफ़ जोड़ें";
-"Replace Glyph" = "ग्लिफ़ बदलें";
+
+/* File and font operations. */
+"File" = "फ़ाइल";
 "Open" = "खोलें";
-"Make Text Bigger" = "टेक्स्ट बड़ा करें";
-"Make Text Smaller" = "टेक्स्ट छोटा करें";
-"Text Alignment" = "टेक्स्ट अलाइनमेंट";
-"Left" = "बाईं ओर अलाइन करें";
-"Center" = "मध्य";
-"Right" = "दाईं ओर अलाइन करें";
-"Justified" = "जस्टिफ़ाई करें";
-"Top" = "ऊपर की ओर अलाइन करें";
-"Bottom" = "नीचे की ओर अलाइन करें";
-"About Glyph Atlas" = "Glyph Atlas के बारे में";
-"Hide Glyph Atlas" = "Glyph Atlas छिपाएँ";
-"Hide Others" = "अन्य ऐप छिपाएँ";
-"Quit Glyph Atlas" = "Glyph Atlas बंद करें";
-"Glyph Atlas Help" = "Glyph Atlas सहायता";
 "Open At" = "खोलने की जगह";
+"Current User…" = "वर्तमान यूज़र…";
+"All Users…" = "सभी यूज़र…";
+"System Fonts…" = "बिल्ट-इन…";
+"Recent Location…" = "हाल की जगह…";
+"Open Recent" = "हालिया खोलें";
 "No Recent Fonts" = "कोई हालिया फ़ॉन्ट नहीं";
-"Single Glyph" = "एक ग्लिफ़";
-"Characters" = "वर्ण";
-"Glyph Grid" = "ग्लिफ़ ग्रिड";
-"All Glyphs" = "सभी ग्लिफ़";
-"Expand Bounding Box" = "बाउंडिंग बॉक्स बड़ा करें";
-"Shrink Bounding Box" = "बाउंडिंग बॉक्स छोटा करें";
-"Vertical Layout" = "लंबवत लेआउट";
-"Enter text" = "टेक्स्ट दर्ज करें";
+"Clear Menu" = "मेनू साफ़ करें";
+"Close" = "बंद करें";
+"Copy to Font Book" = "फ़ॉन्ट बुक में कॉपी करें";
+"Copy to All Users" = "सभी यूज़र के लिए कॉपी करें";
 "Font Name" = "फ़ॉन्ट का नाम";
 "Font File" = "फ़ॉन्ट फ़ाइल";
 "Untitled Font" = "बिना शीर्षक का फ़ॉन्ट";
@@ -65,8 +39,99 @@
 "This file does not contain a font that CoreText can read." = "इस फ़ाइल में ऐसा कोई फ़ॉन्ट नहीं है जिसे CoreText पढ़ सके।";
 "Cannot Read Font" = "फ़ॉन्ट नहीं पढ़ा जा सका";
 "CoreText could not create this font." = "CoreText यह फ़ॉन्ट नहीं बना सका।";
-"Bounding Box" = "बाउंडिंग बॉक्स";
+"An item named “%@” already exists in Font Book." = "फ़ॉन्ट बुक में “%@” नाम का एक आइटम पहले से मौजूद है।";
+"“%@” is already in Font Book." = "“%@” फ़ॉन्ट बुक में पहले से मौजूद है।";
+"Keep Both" = "दोनों रखें";
+"Stop" = "रोकें";
+"Replace" = "बदलें";
+
+/* Editing and saved text. */
+"Edit" = "संपादन";
+"Undo" = "पहले जैसा करें";
+"Redo" = "फिर करें";
+"Cut" = "कट";
+"Copy" = "कॉपी";
+"Paste" = "पेस्ट";
+"Delete" = "डिलीट करें";
+"Select All" = "सभी चुनें";
+"Enter text" = "टेक्स्ट दर्ज करें";
+"Saved Text" = "सहेजा गया टेक्स्ट";
+"Save Current Text" = "मौजूदा टेक्स्ट सहेजें";
+"No Saved Text" = "कोई सहेजा गया टेक्स्ट नहीं";
+"Delete Saved Text" = "सहेजे गए टेक्स्ट डिलीट करें";
+"Clear All Saved Text" = "सभी सहेजे गए टेक्स्ट साफ़ करें";
+
+/* Views and glyphs. */
+"View" = "दृश्य";
+"Show Sidebar" = "साइडबार दिखाएँ";
+"Hide Sidebar" = "साइडबार छिपाएँ";
+"Single Glyph" = "एक ग्लिफ़";
+"Characters" = "वर्ण";
+"Glyph Grid" = "ग्लिफ़ ग्रिड";
+"All Glyphs" = "सभी ग्लिफ़";
+"Add Glyph" = "ग्लिफ़ जोड़ें";
+"Replace Glyph" = "ग्लिफ़ बदलें";
 "Text and alternate glyph list" = "टेक्स्ट और वैकल्पिक ग्लिफ़ की सूची";
+"Filter by Feature" = "फ़ीचर के अनुसार फ़िल्टर करें";
+"No Features to Filter" = "फ़िल्टर करने के लिए कोई फ़ीचर नहीं है";
+"No Feature" = "कोई फ़ीचर नहीं";
+
+/* Text layout and typography. */
+"Make Text Bigger" = "टेक्स्ट बड़ा करें";
+"Make Text Smaller" = "टेक्स्ट छोटा करें";
+"Increase Leading" = "लाइन स्पेसिंग बढ़ाएँ";
+"Decrease Leading" = "लाइन स्पेसिंग घटाएँ";
+"Default Size" = "डिफ़ॉल्ट आकार";
+"Text Alignment" = "टेक्स्ट अलाइनमेंट";
+"Left" = "बाईं ओर अलाइन करें";
+"Center" = "मध्य";
+"Right" = "दाईं ओर अलाइन करें";
+"Justified" = "जस्टिफ़ाई करें";
+"Top" = "ऊपर की ओर अलाइन करें";
+"Bottom" = "नीचे की ओर अलाइन करें";
+"Vertical Layout" = "लंबवत लेआउट";
+"Writing Direction" = "लिखने की दिशा";
+"Left to Right" = "बाएँ से दाएँ";
+"Right to Left" = "दाएँ से बाएँ";
+"Text Decorations" = "टेक्स्ट की सजावट";
+"Underline" = "रेखांकित करें";
+"Strikethrough" = "स्ट्राइकथ्रू";
+"Outline" = "आउटलाइन";
+"Typography" = "टाइपोग्राफ़ी";
+"No Typographic Features" = "कोई टाइपोग्राफ़िक फ़ीचर नहीं";
+"Typesetting Language" = "टाइपसेटिंग की भाषा";
+"No Selectable Languages" = "चुनने के लिए कोई भाषा उपलब्ध नहीं है";
+"Other" = "अन्य";
+
+/* Bounding box and colors. */
+"Bounding Box" = "बाउंडिंग बॉक्स";
+"Show Bounding Box" = "बाउंडिंग बॉक्स दिखाएँ";
+"Hide Bounding Box" = "बाउंडिंग बॉक्स छिपाएँ";
+"Expand Bounding Box" = "बाउंडिंग बॉक्स बड़ा करें";
+"Shrink Bounding Box" = "बाउंडिंग बॉक्स छोटा करें";
+"Colors" = "रंग";
+"Glyph…" = "ग्लिफ़…";
+"Background…" = "बैकग्राउंड…";
+"Bounding Box…" = "बाउंडिंग बॉक्स…";
+"Follow System" = "सिस्टम सेटिंग्ज़ का उपयोग करें";
+"Save Current Palette" = "मौजूदा पैलेट सहेजें";
+"Delete Palettes" = "पैलेट डिलीट करें";
+"Clear All Saved Palettes" = "सभी सहेजे गए पैलेट साफ़ करें";
+"No Saved Palettes" = "कोई सहेजा गया पैलेट नहीं";
+
+/* Variable fonts and defaults. */
+"Variable" = "वैरिएबल";
+"Named Instance" = "नामित इंस्टेंस";
+"Default" = "डिफ़ॉल्ट";
+"Custom" = "कस्टम";
+"Use as Defaults" = "डिफ़ॉल्ट के रूप में उपयोग करें";
+"Restore Default" = "डिफ़ॉल्ट पर रीस्टोर करें";
+
+/* Format strings. */
+"%@: %@" = "%@: %@";
+"%@ (%.0f%%)" = "%@ (%.0f%%)";
+
+/* Help. */
 "Help.01" = "फ़ॉन्ट फ़ोल्डर से सीधे फ़ॉन्ट खोलने के लिए मेनू बार में “खोलने की जगह” चुनें। आप फ़ॉन्ट को ऐप के आइकॉन या ऐसी विंडो पर भी ड्रैग कर सकते हैं जिसमें कोई फ़ॉन्ट पहले से खुला है। आप Glyph Atlas को फ़ॉन्ट फ़ाइलें खोलने के लिए डिफ़ॉल्ट ऐप बना सकते हैं। हाल में खोले गए आइटम भी दोबारा खोले जा सकते हैं।";
 "Help.02" = "मेनू बार से मौजूदा विंडो में खुले फ़ॉन्ट को एक क्लिक में अपने फ़ॉन्ट फ़ोल्डर में कॉपी करें। सभी यूज़र के फ़ॉन्ट फ़ोल्डर में कॉपी करने के लिए ⌥ दबाए रखें।";
 "Help.03" = "वैरिएबल फ़ॉन्ट खोलने पर विंडो के कंट्रोल के पास वैरिएशन पैनल दिखाई देता है। उसे खुला रखने के लिए बाहर ड्रैग करें। कोई संख्यात्मक मान चुनें और उसे ↑/↓ या ⇧↑/⇧↓ से बदलें।";
@@ -82,64 +147,3 @@
 "Help.13" = "छाया बाउंडिंग बॉक्स दिखाती है। इसमें ग्लिफ़ की चौड़ाई और ऊँचाई के साथ टेक्स्ट लेआउट की लाइन की ऊँचाई और लाइन स्पेसिंग शामिल हैं। इसे छिपाने के लिए ⌘4 दबाएँ।";
 "Help.14" = "डार्क मोड उपलब्ध है। किसी भरे हुए ग्लिफ़ पर क्लिक करते समय ध्यान रखें कि उसकी चमक से आँखें चौंधिया सकती हैं। मेनू बार में “रंग” से ग्लिफ़, बाउंडिंग बॉक्स की छाया और बैकग्राउंड के रंग बदलें। रंग सहेजने के लिए “मौजूदा पैलेट सहेजें” चुनें। “पैलेट डिलीट करें” देखने के लिए ⌥ दबाए रखें।";
 "Help.15" = "मौजूदा दृश्य, रंग, आकार, अन्य प्रीव्यू सेटिंग्ज़ और विंडो का आकार सहेजने के लिए मेनू बार में “डिफ़ॉल्ट के रूप में उपयोग करें” चुनें। बाद में खोली गई फ़ॉन्ट फ़ाइलें इन सेटिंग्ज़ का उपयोग करेंगी। “डिफ़ॉल्ट पर रीस्टोर करें” चुनने के लिए ⌥ दबाए रखें।";
-
-/* Variable font controls. */
-"Variable" = "वैरिएबल";
-"Named Instance" = "नामित इंस्टेंस";
-"Default" = "डिफ़ॉल्ट";
-"Custom" = "कस्टम";
-
-
-/* Font Book copy alerts. Conflict buttons follow Finder. */
-"An item named “%@” already exists in Font Book." = "फ़ॉन्ट बुक में “%@” नाम का एक आइटम पहले से मौजूद है।";
-"“%@” is already in Font Book." = "“%@” फ़ॉन्ट बुक में पहले से मौजूद है।";
-"Keep Both" = "दोनों रखें";
-"Stop" = "रोकें";
-"Replace" = "बदलें";
-
-/* User-saved plain text. */
-"Saved Text" = "सहेजा गया टेक्स्ट";
-"Save Current Text" = "मौजूदा टेक्स्ट सहेजें";
-"No Saved Text" = "कोई सहेजा गया टेक्स्ट नहीं";
-
-/* Preview colors and native leading. */
-"Colors" = "रंग";
-"Delete Palettes" = "पैलेट डिलीट करें";
-"Save Current Palette" = "मौजूदा पैलेट सहेजें";
-"Clear All Saved Palettes" = "सभी सहेजे गए पैलेट साफ़ करें";
-"No Saved Palettes" = "कोई सहेजा गया पैलेट नहीं";
-"%@: %@" = "%@: %@";
-"%@ (%.0f%%)" = "%@ (%.0f%%)";
-"Follow System" = "सिस्टम सेटिंग्ज़ का उपयोग करें";
-"Glyph…" = "ग्लिफ़…";
-"Background…" = "बैकग्राउंड…";
-"Bounding Box…" = "बाउंडिंग बॉक्स…";
-"Increase Leading" = "लाइन स्पेसिंग बढ़ाएँ";
-"Decrease Leading" = "लाइन स्पेसिंग घटाएँ";
-
-/* Explicit defaults for newly opened font windows. */
-
-/* Saved-text deletion and full screen. */
-"Delete Saved Text" = "सहेजे गए टेक्स्ट डिलीट करें";
-"Clear All Saved Text" = "सभी सहेजे गए टेक्स्ट साफ़ करें";
-"Enter Full Screen" = "फ़ुल स्‍क्रीन में प्रवेश करें";
-
-/* Native typography and opening settings. */
-"Typography" = "टाइपोग्राफ़ी";
-"Other" = "अन्य";
-"No Typographic Features" = "कोई टाइपोग्राफ़िक फ़ीचर नहीं";
-"Default Size" = "डिफ़ॉल्ट आकार";
-"Use as Defaults" = "डिफ़ॉल्ट के रूप में उपयोग करें";
-"Restore Default" = "डिफ़ॉल्ट पर रीस्टोर करें";
-"Text Decorations" = "टेक्स्ट की सजावट";
-"Filter by Feature" = "फ़ीचर के अनुसार फ़िल्टर करें";
-"No Features to Filter" = "फ़िल्टर करने के लिए कोई फ़ीचर नहीं है";
-"No Feature" = "कोई फ़ीचर नहीं";
-
-"Writing Direction" = "लिखने की दिशा";
-"Left to Right" = "बाएँ से दाएँ";
-"Right to Left" = "दाएँ से बाएँ";
-"Outline" = "आउटलाइन";
-
-"Typesetting Language" = "टाइपसेटिंग की भाषा";
-"No Selectable Languages" = "चुनने के लिए कोई भाषा उपलब्ध नहीं है";

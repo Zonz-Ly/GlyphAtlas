@@ -1,62 +1,36 @@
 /* Standard commands follow macOS terminology. App-specific text and Help are translated here. */
 
-"File" = "Arquivo";
-"Copy to Font Book" = "Copiar para o Catálogo de Fontes";
-"Copy to All Users" = "Copiar para Todos os Usuários";
-"Current User…" = "Usuário Atual…";
-"All Users…" = "Todos os Usuários…";
-"System Fonts…" = "Integradas…";
-"Open Recent" = "Abrir Recente";
-"Recent Location…" = "Última Localização…";
-"Clear Menu" = "Limpar Menu";
-"Close" = "Fechar";
-"Cut" = "Cortar";
-"Copy" = "Copiar";
-"Paste" = "Colar";
-"Delete" = "Apagar";
-"Select All" = "Selecionar Tudo";
-"Underline" = "Sublinhado";
-"Strikethrough" = "Tachado";
-"View" = "Visualizar";
+/* Application and window commands. */
+"About Glyph Atlas" = "Sobre o Glyph Atlas";
+"Hide Glyph Atlas" = "Ocultar Glyph Atlas";
+"Hide Others" = "Ocultar Outros";
+"Show All" = "Mostrar Tudo";
+"Quit Glyph Atlas" = "Encerrar Glyph Atlas";
+"Services" = "Serviços";
 "Window" = "Janela";
 "Minimize" = "Minimizar";
 "Zoom" = "Zoom";
 "Bring All to Front" = "Trazer Todas para a Frente";
+"Enter Full Screen" = "Entrar em Tela Cheia";
 "Help" = "Ajuda";
+"Glyph Atlas Help" = "Ajuda do Glyph Atlas";
 "Cancel" = "Cancelar";
 "OK" = "OK";
-"Show All" = "Mostrar Tudo";
-"Services" = "Serviços";
-"Edit" = "Editar";
-"Undo" = "Desfazer";
-"Redo" = "Refazer";
-"Add Glyph" = "Adicionar Glifo";
-"Replace Glyph" = "Substituir Glifo";
+
+/* File and font operations. */
+"File" = "Arquivo";
 "Open" = "Abrir";
-"Make Text Bigger" = "Tornar o Texto Maior";
-"Make Text Smaller" = "Tornar o Texto Menor";
-"Text Alignment" = "Alinhamento do Texto";
-"Left" = "Alinhar à esquerda";
-"Center" = "Centralizar";
-"Right" = "Alinhar à direita";
-"Justified" = "Justificar";
-"Top" = "Alinhar acima";
-"Bottom" = "Alinhar abaixo";
-"About Glyph Atlas" = "Sobre o Glyph Atlas";
-"Hide Glyph Atlas" = "Ocultar Glyph Atlas";
-"Hide Others" = "Ocultar Outros";
-"Quit Glyph Atlas" = "Encerrar Glyph Atlas";
-"Glyph Atlas Help" = "Ajuda do Glyph Atlas";
 "Open At" = "Abrir em";
+"Current User…" = "Usuário Atual…";
+"All Users…" = "Todos os Usuários…";
+"System Fonts…" = "Integradas…";
+"Recent Location…" = "Última Localização…";
+"Open Recent" = "Abrir Recente";
 "No Recent Fonts" = "Nenhuma Fonte Recente";
-"Single Glyph" = "Glifo Único";
-"Characters" = "Caracteres";
-"Glyph Grid" = "Grade de Glifos";
-"All Glyphs" = "Todos os Glifos";
-"Expand Bounding Box" = "Ampliar Caixa Delimitadora";
-"Shrink Bounding Box" = "Reduzir Caixa Delimitadora";
-"Vertical Layout" = "Layout Vertical";
-"Enter text" = "Digite o texto";
+"Clear Menu" = "Limpar Menu";
+"Close" = "Fechar";
+"Copy to Font Book" = "Copiar para o Catálogo de Fontes";
+"Copy to All Users" = "Copiar para Todos os Usuários";
 "Font Name" = "Nome da Fonte";
 "Font File" = "Arquivo de Fonte";
 "Untitled Font" = "Fonte sem Título";
@@ -65,8 +39,99 @@
 "This file does not contain a font that CoreText can read." = "Este arquivo não contém uma fonte que o CoreText possa ler.";
 "Cannot Read Font" = "Não Foi Possível Ler a Fonte";
 "CoreText could not create this font." = "O CoreText não pôde criar esta fonte.";
-"Bounding Box" = "Caixa Delimitadora";
+"An item named “%@” already exists in Font Book." = "Já existe um item chamado “%@” no Catálogo de Fontes.";
+"“%@” is already in Font Book." = "“%@” já está no Catálogo de Fontes.";
+"Keep Both" = "Manter Ambos";
+"Stop" = "Parar";
+"Replace" = "Substituir";
+
+/* Editing and saved text. */
+"Edit" = "Editar";
+"Undo" = "Desfazer";
+"Redo" = "Refazer";
+"Cut" = "Cortar";
+"Copy" = "Copiar";
+"Paste" = "Colar";
+"Delete" = "Apagar";
+"Select All" = "Selecionar Tudo";
+"Enter text" = "Digite o texto";
+"Saved Text" = "Textos salvos";
+"Save Current Text" = "Salvar texto atual";
+"No Saved Text" = "Nenhum texto salvo";
+"Delete Saved Text" = "Apagar Textos Salvos";
+"Clear All Saved Text" = "Limpar Todos os Textos Salvos";
+
+/* Views and glyphs. */
+"View" = "Visualizar";
+"Show Sidebar" = "Mostrar Barra Lateral";
+"Hide Sidebar" = "Ocultar Barra Lateral";
+"Single Glyph" = "Glifo Único";
+"Characters" = "Caracteres";
+"Glyph Grid" = "Grade de Glifos";
+"All Glyphs" = "Todos os Glifos";
+"Add Glyph" = "Adicionar Glifo";
+"Replace Glyph" = "Substituir Glifo";
 "Text and alternate glyph list" = "Lista de texto e glifos alternativos";
+"Filter by Feature" = "Filtrar por recurso";
+"No Features to Filter" = "Nenhum recurso para filtrar";
+"No Feature" = "Sem recurso";
+
+/* Text layout and typography. */
+"Make Text Bigger" = "Tornar o Texto Maior";
+"Make Text Smaller" = "Tornar o Texto Menor";
+"Increase Leading" = "Aumentar Espaçamento entre Linhas";
+"Decrease Leading" = "Diminuir Espaçamento entre Linhas";
+"Default Size" = "Tamanho Padrão";
+"Text Alignment" = "Alinhamento do Texto";
+"Left" = "Alinhar à esquerda";
+"Center" = "Centralizar";
+"Right" = "Alinhar à direita";
+"Justified" = "Justificar";
+"Top" = "Alinhar acima";
+"Bottom" = "Alinhar abaixo";
+"Vertical Layout" = "Layout Vertical";
+"Writing Direction" = "Direção de escrita";
+"Left to Right" = "Da esquerda para a direita";
+"Right to Left" = "Da direita para a esquerda";
+"Text Decorations" = "Decoração do Texto";
+"Underline" = "Sublinhado";
+"Strikethrough" = "Tachado";
+"Outline" = "Contorno";
+"Typography" = "Tipografia";
+"No Typographic Features" = "Sem recursos tipográficos";
+"Typesetting Language" = "Idioma de composição";
+"No Selectable Languages" = "Nenhum idioma disponível";
+"Other" = "Outros";
+
+/* Bounding box and colors. */
+"Bounding Box" = "Caixa Delimitadora";
+"Show Bounding Box" = "Mostrar Caixa Delimitadora";
+"Hide Bounding Box" = "Ocultar Caixa Delimitadora";
+"Expand Bounding Box" = "Ampliar Caixa Delimitadora";
+"Shrink Bounding Box" = "Reduzir Caixa Delimitadora";
+"Colors" = "Cores";
+"Glyph…" = "Glifo…";
+"Background…" = "Fundo…";
+"Bounding Box…" = "Caixa Delimitadora…";
+"Follow System" = "Seguir o Sistema";
+"Save Current Palette" = "Salvar Paleta Atual";
+"Delete Palettes" = "Apagar Paletas";
+"Clear All Saved Palettes" = "Limpar Todas as Paletas Salvas";
+"No Saved Palettes" = "Nenhuma paleta salva";
+
+/* Variable fonts and defaults. */
+"Variable" = "Variável";
+"Named Instance" = "Instância nomeada";
+"Default" = "Padrão";
+"Custom" = "Personalizado";
+"Use as Defaults" = "Usar como Padrão";
+"Restore Default" = "Restaurar aos Padrões";
+
+/* Format strings. */
+"%@: %@" = "%@: %@";
+"%@ (%.0f%%)" = "%@ (%.0f%%)";
+
+/* Help. */
 "Help.01" = "Use “Abrir em” na barra de menus para abrir uma fonte diretamente de uma pasta de fontes. Você também pode arrastar a fonte para o ícone do app ou para uma janela que já tenha uma fonte aberta, ou definir o Glyph Atlas como app padrão para abrir arquivos de fontes. É possível reabrir arquivos recentes.";
 "Help.02" = "Na barra de menus, copie com um clique a fonte aberta na janela atual para a pasta de fontes do seu usuário. Mantenha ⌥ pressionado para copiar a fonte para a pasta de fontes de todos os usuários.";
 "Help.03" = "Ao abrir uma fonte variável, um painel de variações aparece ao lado dos controles da janela. Arraste-o para fora para mantê-lo aberto. Selecione um valor numérico e ajuste-o com ↑/↓ ou ⇧↑/⇧↓.";
@@ -82,64 +147,3 @@
 "Help.13" = "A sombra indica a caixa delimitadora, incluindo a largura e a altura do glifo, a altura das linhas e o espaçamento entre linhas da composição. Pressione ⌘4 para ocultá-la.";
 "Help.14" = "O Modo Escuro é compatível. Mas cuidado: clicar em um glifo sólido pode ofuscar seus olhos. Você pode mudar as cores do glifo, da sombra da caixa delimitadora e do fundo em Cores, na barra de menus. Escolha “Salvar Paleta Atual” para guardar as cores ajustadas. Mantenha ⌥ pressionado para ver “Apagar Paletas”.";
 "Help.15" = "Escolha Usar como Padrão na barra de menus para salvar a visualização, as cores, o tamanho e os demais ajustes atuais, junto com o tamanho da janela. Os arquivos de fontes abertos depois usarão esses ajustes. Mantenha ⌥ pressionado para escolher Restaurar aos Padrões.";
-
-/* Variable font controls. */
-"Variable" = "Variável";
-"Named Instance" = "Instância nomeada";
-"Default" = "Padrão";
-"Custom" = "Personalizado";
-
-
-/* Font Book copy alerts. Conflict buttons follow Finder. */
-"An item named “%@” already exists in Font Book." = "Já existe um item chamado “%@” no Catálogo de Fontes.";
-"“%@” is already in Font Book." = "“%@” já está no Catálogo de Fontes.";
-"Keep Both" = "Manter Ambos";
-"Stop" = "Parar";
-"Replace" = "Substituir";
-
-/* User-saved plain text. */
-"Saved Text" = "Textos salvos";
-"Save Current Text" = "Salvar texto atual";
-"No Saved Text" = "Nenhum texto salvo";
-
-/* Preview colors and native leading. */
-"Colors" = "Cores";
-"Delete Palettes" = "Apagar Paletas";
-"Save Current Palette" = "Salvar Paleta Atual";
-"Clear All Saved Palettes" = "Limpar Todas as Paletas Salvas";
-"No Saved Palettes" = "Nenhuma paleta salva";
-"%@: %@" = "%@: %@";
-"%@ (%.0f%%)" = "%@ (%.0f%%)";
-"Follow System" = "Seguir o Sistema";
-"Glyph…" = "Glifo…";
-"Background…" = "Fundo…";
-"Bounding Box…" = "Caixa Delimitadora…";
-"Increase Leading" = "Aumentar Espaçamento entre Linhas";
-"Decrease Leading" = "Diminuir Espaçamento entre Linhas";
-
-/* Explicit defaults for newly opened font windows. */
-
-/* Saved-text deletion and full screen. */
-"Delete Saved Text" = "Apagar Textos Salvos";
-"Clear All Saved Text" = "Limpar Todos os Textos Salvos";
-"Enter Full Screen" = "Entrar em Tela Cheia";
-
-/* Native typography and opening settings. */
-"Typography" = "Tipografia";
-"Other" = "Outros";
-"No Typographic Features" = "Sem recursos tipográficos";
-"Default Size" = "Tamanho Padrão";
-"Use as Defaults" = "Usar como Padrão";
-"Restore Default" = "Restaurar aos Padrões";
-"Text Decorations" = "Decoração do Texto";
-"Filter by Feature" = "Filtrar por recurso";
-"No Features to Filter" = "Nenhum recurso para filtrar";
-"No Feature" = "Sem recurso";
-
-"Writing Direction" = "Direção de escrita";
-"Left to Right" = "Da esquerda para a direita";
-"Right to Left" = "Da direita para a esquerda";
-"Outline" = "Contorno";
-
-"Typesetting Language" = "Idioma de composição";
-"No Selectable Languages" = "Nenhum idioma disponível";

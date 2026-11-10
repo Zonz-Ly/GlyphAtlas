@@ -62,8 +62,15 @@ typedef NS_ENUM(NSInteger, GAPendingSelectionScroll) {
 /// the window can keep line breaks as marked U+23CE characters.
 - (nullable NSTextView *)fieldEditorForControl:(id _Nullable)control;
 - (void)focusInput;
-/// Return focus to the sidebar glyph list.
+/// Return focus to the glyph list or to the window when the sidebar is hidden.
 - (void)focusGlyphList;
+/// Selects the toolbar input, or the sidebar input when the container is nil.
+- (void)useInputInToolbarContainer:(nullable NSView *)container;
+/// Shown only while the toolbar input is empty; never becomes query text.
+- (void)setToolbarInputPlaceholder:(NSString *)placeholder;
+- (void)setSidebarListTopPinned:(BOOL)pinned;
+- (void)enableScrollEdgeEffectForSplitViewItem:(NSSplitViewItem *)item API_AVAILABLE(macos(26.0));
+- (void)restoreInputSelection:(NSRange)selection;
 - (void)setGlyphListDimmed:(BOOL)dimmed;
 
 @end

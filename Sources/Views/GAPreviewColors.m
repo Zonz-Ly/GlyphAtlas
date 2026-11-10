@@ -21,7 +21,10 @@ NSColor *GABoundingBoxBackgroundColor(void) {
                                    green:(60.0 / 255.0)
                                     blue:(60.0 / 255.0)
                                    alpha:1.0]
-            : [NSColor whiteColor];
+            : [NSColor colorWithSRGBRed:(253.0 / 255.0)
+                                   green:(253.0 / 255.0)
+                                    blue:(253.0 / 255.0)
+                                   alpha:1.0];
     }];
 }
 

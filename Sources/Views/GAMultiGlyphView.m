@@ -7,10 +7,35 @@
 #import <math.h>
 
 static const CGFloat GAMultiBaseFontSize = 51.0;
+
+typedef struct {
+    CGFloat ascent;
+    CGFloat descent;
+    CGFloat verticalAscent;
+} GAFirstBaselineMetrics;
+
+static GAFirstBaselineMetrics GAReadFirstBaselineMetrics(CTFontRef font, BOOL vertical) {
+    GAFirstBaselineMetrics metrics = {CTFontGetAscent(font), 0, 0};
+    if (vertical) {
+        // Vertical layout can use explicit vertical metrics or derive its
+        // centerline from horizontal ascent and descent when those are absent.
+        metrics.descent = CTFontGetDescent(font);
+        CTFontDescriptorRef descriptor = CTFontDescriptorCreateWithAttributes(
+            (__bridge CFDictionaryRef)@{
+                (__bridge NSString *)kCTFontOrientationAttribute: @(kCTFontOrientationVertical),
+            });
+        CTFontRef verticalFont = CTFontCreateCopyWithAttributes(font, 0, NULL, descriptor);
+        metrics.verticalAscent = CTFontGetAscent(verticalFont);
+        CFRelease(verticalFont);
+        CFRelease(descriptor);
+    }
+    return metrics;
+}
+
 typedef NS_ENUM(NSUInteger, GAMagnificationControl) {
     GAMagnificationText,
     GAMagnificationBoundingBox,
-    GAMagnificationLineSpacing,
+    GAMagnificationLineHeight,
 };
 /// Twenty zoom-outs and twenty zoom-ins: `1 / 1.12^20` to `1.12^20`.
 static CGFloat GAMultiClampTextScale(CGFloat scale) {
@@ -24,9 +49,23 @@ static CGFloat GAMultiClampTextScale(CGFloat scale) {
 /// to the page view so the whole view stays draggable and click-to-select
 /// keeps working.
 @interface GAMultiTextView : NSTextView
+@property(nonatomic) CGFloat firstBaselineOffset;
 @end
 
 @implementation GAMultiTextView
+
+- (NSPoint)textContainerOrigin {
+    NSPoint origin = super.textContainerOrigin;
+    // The container's y axis follows the line progression in either writing orientation.
+    origin.y -= self.firstBaselineOffset;
+    return origin;
+}
+
+- (void)setFirstBaselineOffset:(CGFloat)offset {
+    if (_firstBaselineOffset == offset) return;
+    _firstBaselineOffset = offset;
+    [self invalidateTextContainerOrigin];
+}
 
 - (NSView *)hitTest:(NSPoint)point {
     return nil;
@@ -80,6 +119,32 @@ NS_ASSUME_NONNULL_END
 @interface NSTextLineFragment (GAGlyphReadback)
 @property(nonatomic, readonly, nullable) CTLineRef lineRef;
 @end
+
+static GAMultiTextView *GACreateMultiTextView(void) {
+    GAMultiTextView *textView =
+        [[GAMultiTextView alloc] initUsingTextLayoutManager:YES];
+    textView.hidden = YES;
+    textView.editable = NO;
+    textView.selectable = NO;
+    textView.drawsBackground = NO;
+    textView.textContainer.lineFragmentPadding = 0;
+    textView.textContainer.widthTracksTextView = NO;
+    textView.verticallyResizable = NO;
+    textView.menu = nil;
+    textView.textLayoutManager.requiresCTLineRef = YES;
+    return textView;
+}
+
+static NSTextLineFragment *GAFirstLineBaseline(NSTextLayoutManager *layout, CGFloat *baseline) {
+    NSTextLayoutFragment *fragment =
+        [layout textLayoutFragmentForLocation:layout.documentRange.location];
+    NSTextLineFragment *line = fragment.textLineFragments.firstObject;
+    if (line) {
+        *baseline = NSMinY(fragment.layoutFragmentFrame) +
+                    NSMinY(line.typographicBounds) + line.glyphOrigin.y;
+    }
+    return line;
+}
 
 #pragma mark - Display copy
 
@@ -291,7 +356,10 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
 @property (nonatomic) NSSize pageContentSize;
 @property (nonatomic) CGFloat magnificationStartTextScale;
 @property(nonatomic) CGFloat magnificationStartPage;
-@property(nonatomic) CGFloat magnificationStartLineSpacing;
+@property(nonatomic) CGFloat magnificationStartLineHeight;
+@property(nonatomic) CGFloat naturalFirstBaseline;
+@property(nonatomic) BOOL hasNaturalFirstBaseline;
+@property(nonatomic) GAFirstBaselineMetrics naturalBaselineMetrics;
 @property(nonatomic) BOOL pinchHasPair;
 @property(nonatomic) GAMagnificationControl pinchCandidate;
 @property(nonatomic) GAMagnificationControl magnificationControl;
@@ -308,23 +376,14 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
         _sideInsetFraction = GABoundingBoxDefaultSideInsetFraction;
         _showsMetrics = YES;
         _textScale = 1.0;
+        _lineHeightMultiple = 1.0;
         _baseWritingDirection = NSWritingDirectionNatural;
         _typesettingLanguage = @"";
         self.allowedTouchTypes = NSTouchTypeMaskIndirect;
         self.wantsRestingTouches = YES;
         _featureSettings = @[];
 
-        GAMultiTextView *textView =
-            [[GAMultiTextView alloc] initUsingTextLayoutManager:YES];
-        textView.hidden = YES;
-        textView.editable = NO;
-        textView.selectable = NO;
-        textView.drawsBackground = NO;
-        textView.textContainer.lineFragmentPadding = 0;
-        textView.textContainer.widthTracksTextView = NO;
-        textView.verticallyResizable = NO;
-        textView.menu = nil;
-        textView.textLayoutManager.requiresCTLineRef = YES;
+        GAMultiTextView *textView = GACreateMultiTextView();
         self.textView = textView;
         [self addSubview:textView];
 
@@ -347,6 +406,8 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
 #pragma mark - State
 
 - (void)setDocument:(GAFontDocument *)document {
+    // A window keeps its font; variation changes invalidate the baseline only
+    // when the applied display font's native baseline metrics change.
     _document = document;
     [self rebuildLayout];
 }
@@ -411,10 +472,12 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
 - (void)resetLayoutScale {
     CGFloat defaultInset = GABoundingBoxDefaultSideInsetFraction;
     BOOL insetChanged = fabs(_sideInsetFraction - defaultInset) >= 1e-9;
-    if (!insetChanged && fabs(_textScale - 1.0) < 1e-9 && fabs(_lineSpacingAdjustment) < 1e-9) return;
+    if (!insetChanged && fabs(_textScale - 1.0) < 1e-9 && fabs(_lineHeightMultiple - 1.0) < 1e-9) return;
     GAPreserveScrollPosition(self.enclosingScrollView, ^{
+        if (fabs(self->_textScale - 1.0) >= 1e-9)
+            self.hasNaturalFirstBaseline = NO;
         self->_textScale = 1.0;
-        self->_lineSpacingAdjustment = 0.0;
+        self->_lineHeightMultiple = 1.0;
         self->_sideInsetFraction = defaultInset;
         [self rebuildLayout];
         if (insetChanged && self.onSideInsetFractionChanged)
@@ -427,6 +490,7 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
     if (fabs(clamped - _textScale) < 1e-9) return;
     GAPreserveScrollPosition(self.enclosingScrollView, ^{
         self->_textScale = clamped;
+        self.hasNaturalFirstBaseline = NO;
         [self rebuildLayout];
     });
 }
@@ -439,12 +503,12 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
     [self rebuildLayout];
 }
 
-- (void)setLineSpacingAdjustment:(CGFloat)adjustment {
-    adjustment = MAX(0.0, MIN(2.0, adjustment));
-    if (fabs(adjustment) < 1e-9) adjustment = 0;
-    if (fabs(_lineSpacingAdjustment - adjustment) < 1e-9) return;
+- (void)setLineHeightMultiple:(CGFloat)multiple {
+    CGFloat maximum = GAGlyphZoomStep10;
+    multiple = MIN(maximum, MAX(1.0 / maximum, multiple));
+    if (fabs(_lineHeightMultiple - multiple) < 1e-9) return;
     GAPreserveScrollPosition(self.enclosingScrollView, ^{
-        self->_lineSpacingAdjustment = adjustment;
+        self->_lineHeightMultiple = multiple;
         [self rebuildLayout];
     });
 }
@@ -464,6 +528,7 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
         return;
     }
     _vertical = vertical;
+    self.hasNaturalFirstBaseline = NO;
     [self rebuildLayout];
 }
 
@@ -473,6 +538,13 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
     }
     _viewportSize = viewportSize;
     [self rebuildLayout];
+}
+
+- (void)setToolbarTopInset:(CGFloat)toolbarTopInset {
+    if (_toolbarTopInset == toolbarTopInset) return;
+    _toolbarTopInset = toolbarTopInset;
+    [self positionTextView];
+    self.needsDisplay = YES;
 }
 
 - (void)zoomTextIn {
@@ -496,7 +568,7 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
     if (!self.pinchHasPair) return;
     CGFloat angle = atan2(dy, dx) * 180.0 / M_PI;
     self.pinchCandidate = angle <= 35 ? GAMagnificationBoundingBox
-        : angle >= 75 ? GAMagnificationLineSpacing : GAMagnificationText;
+        : angle >= 75 ? GAMagnificationLineHeight : GAMagnificationText;
 }
 
 - (void)touchesBeganWithEvent:(NSEvent *)event { [self readPinchTouches:event]; }
@@ -512,15 +584,15 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
         self.magnificationControl = self.pinchHasPair ? self.pinchCandidate : GAMagnificationText;
         self.magnificationStartTextScale = self.textScale;
         self.magnificationStartPage = 1.0 - 2.0 * self.sideInsetFraction;
-        self.magnificationStartLineSpacing = self.lineSpacingAdjustment;
+        self.magnificationStartLineHeight = self.lineHeightMultiple;
     } else if (recognizer.state == NSGestureRecognizerStateChanged) {
         switch (self.magnificationControl) {
             case GAMagnificationBoundingBox:
                 self.sideInsetFraction = 0.5 * (1.0 - GABoundingBoxPageFractionForMagnification(
                     self.magnificationStartPage, recognizer.magnification));
                 break;
-            case GAMagnificationLineSpacing:
-                self.lineSpacingAdjustment = self.magnificationStartLineSpacing + recognizer.magnification;
+            case GAMagnificationLineHeight:
+                self.lineHeightMultiple = self.magnificationStartLineHeight * (1.0 + recognizer.magnification);
                 break;
             case GAMagnificationText:
                 self.textScale = self.magnificationStartTextScale * (1.0 + recognizer.magnification);
@@ -662,10 +734,7 @@ static NSTextAttachment *GAOmittedGlyphAttachment(void) {
     NSMutableParagraphStyle *paragraph = [[NSMutableParagraphStyle alloc] init];
     paragraph.alignment = self.textAlignment;
     paragraph.baseWritingDirection = self.baseWritingDirection;
-    CTFontRef displayFont = (__bridge CTFontRef)font;
-    CGFloat naturalHeight = CTFontGetAscent(displayFont) + CTFontGetDescent(displayFont)
-        + CTFontGetLeading(displayFont);
-    paragraph.lineSpacing = self.lineSpacingAdjustment * naturalHeight;
+    paragraph.lineHeightMultiple = self.lineHeightMultiple;
     NSMutableDictionary<NSAttributedStringKey, id> *attributes = [@{
         NSFontAttributeName : font,
         NSForegroundColorAttributeName :
@@ -770,9 +839,50 @@ static NSIndexSet *GAForeignCharactersToOmit(NSAttributedString *display, NSInde
     return *retryControls ? controls : characters;
 }
 
+- (void)updateFirstBaselineOffsetForFont:(NSFont *)font {
+    GAFirstBaselineMetrics metrics =
+        GAReadFirstBaselineMetrics((__bridge CTFontRef)font, self.vertical);
+    GAFirstBaselineMetrics previous = self.naturalBaselineMetrics;
+    if (metrics.ascent != previous.ascent || metrics.descent != previous.descent ||
+        metrics.verticalAscent != previous.verticalAscent)
+        self.hasNaturalFirstBaseline = NO;
+    if (self.hasNaturalFirstBaseline && self.lineHeightMultiple == 1.0) return;
+    CGFloat baseline = 0;
+    NSTextLineFragment *line = GAFirstLineBaseline(self.textView.textLayoutManager, &baseline);
+    if (!line) return;
+    if (!self.hasNaturalFirstBaseline) {
+        if (self.lineHeightMultiple == 1.0) {
+            self.naturalFirstBaseline = baseline;
+        } else {
+            if (!line.characterRange.length) return;
+            NSMutableAttributedString *text =
+                [[line.attributedString attributedSubstringFromRange:line.characterRange] mutableCopy];
+            NSMutableParagraphStyle *paragraph =
+                [[text attribute:NSParagraphStyleAttributeName atIndex:0 effectiveRange:NULL] mutableCopy];
+            paragraph.lineHeightMultiple = 1.0;
+            [text addAttribute:NSParagraphStyleAttributeName value:paragraph
+                         range:NSMakeRange(0, text.length)];
+            GAMultiTextView *reference = GACreateMultiTextView();
+            reference.frame = self.textView.frame;
+            reference.textContainerInset = self.textView.textContainerInset;
+            [reference setLayoutOrientation:self.textView.layoutOrientation];
+            reference.textContainer.containerSize = self.textView.textContainer.containerSize;
+            reference.textStorage.attributedString = text;
+            [reference.textLayoutManager ensureLayoutForRange:reference.textLayoutManager.documentRange];
+            CGFloat naturalBaseline = 0;
+            if (!GAFirstLineBaseline(reference.textLayoutManager, &naturalBaseline)) return;
+            self.naturalFirstBaseline = naturalBaseline;
+        }
+        self.naturalBaselineMetrics = metrics;
+        self.hasNaturalFirstBaseline = YES;
+    }
+    self.textView.firstBaselineOffset = baseline - self.naturalFirstBaseline;
+}
+
 - (void)rebuildLayout {
     self.glyphHits = @[];
     self.pageContentSize = NSZeroSize;
+    self.textView.firstBaselineOffset = 0;
     NSRect area = [self pageArea];
     NSFont *font = nil;
     NSSize page = NSZeroSize;
@@ -851,10 +961,11 @@ static NSIndexSet *GAForeignCharactersToOmit(NSAttributedString *display, NSInde
     }
     self.displaySourceIndices = sourceIndices;
 
+    [self updateFirstBaselineOffsetForFont:font];
     NSRect usage = self.textView.textLayoutManager.usageBoundsForTextContainer;
-    CGFloat pageWidth = self.vertical ? MAX(1.0, ceil(usage.size.height)) : page.width;
-    CGFloat pageHeight = self.vertical ? page.height
-                                       : MAX(1.0, ceil(usage.size.height));
+    CGFloat extent = MAX(1.0, ceil(usage.size.height - self.textView.firstBaselineOffset));
+    CGFloat pageWidth = self.vertical ? extent : page.width;
+    CGFloat pageHeight = self.vertical ? page.height : extent;
     self.pageContentSize = NSMakeSize(pageWidth, pageHeight);
     self.textView.hidden = NO;
     [self.textView setNeedsDisplay:YES];
@@ -872,8 +983,8 @@ static NSIndexSet *GAForeignCharactersToOmit(NSAttributedString *display, NSInde
     NSRect page = [self pageRect];
     NSPoint inset = [self pageArea].origin;
     if (self.vertical) {
-        // Rotated bounds: keep the frame on the page so the text container's
-        // rotated origin still lands on pageRect.
+        // Keep vertical clipping on the page; the first-baseline offset is
+        // applied separately in the container's rotated coordinates.
         [self.textView setFrame:page];
     } else {
         // Unrotated bounds: expand the frame by the side inset so ink can
@@ -892,14 +1003,24 @@ static NSIndexSet *GAForeignCharactersToOmit(NSAttributedString *display, NSInde
     return GAInsetRectByFraction(viewport, self.sideInsetFraction);
 }
 
+- (CGFloat)pageVerticalMargin {
+    CGFloat centeredMargin =
+        (self.viewportSize.height - self.pageContentSize.height) * 0.5;
+    return MAX([self pageArea].origin.y, centeredMargin);
+}
+
 - (NSSize)documentSize {
     NSSize viewport = self.viewportSize;
     NSPoint inset = [self pageArea].origin;
     NSSize page = self.pageContentSize;
-    if (self.vertical) {
-        return NSMakeSize(MAX(viewport.width, page.width + 2 * inset.x), viewport.height);
+    CGFloat width = self.vertical ? MAX(viewport.width, page.width + 2 * inset.x) : viewport.width;
+    CGFloat height = self.vertical ? viewport.height : MAX(viewport.height, page.height + 2 * inset.y);
+    if (self.toolbarTopInset > 0) {
+        CGFloat margin = [self pageVerticalMargin];
+        height = MAX(viewport.height - self.toolbarTopInset,
+                     page.height + margin + MAX(0, margin - self.toolbarTopInset));
     }
-    return NSMakeSize(viewport.width, MAX(viewport.height, page.height + 2 * inset.y));
+    return NSMakeSize(width, height);
 }
 
 - (NSRect)pageRect {
@@ -909,15 +1030,20 @@ static NSIndexSet *GAForeignCharactersToOmit(NSAttributedString *display, NSInde
     if (page.width <= 0 || page.height <= 0) {
         return NSZeroRect;
     }
+    CGFloat y = inset.y;
+    if (self.toolbarTopInset > 0) {
+        CGFloat topGap = MAX(0, [self pageVerticalMargin] - self.toolbarTopInset);
+        y = NSHeight(self.bounds) - page.height - topGap;
+    } else if (!self.vertical) {
+        y = page.height <= viewport.height ? (NSHeight(self.bounds) - page.height) * 0.5
+                                          : NSHeight(self.bounds) - inset.y - page.height;
+    }
     if (self.vertical) {
         CGFloat x = page.width <= viewport.width
             ? (NSWidth(self.bounds) - page.width) * 0.5
             : NSWidth(self.bounds) - inset.x - page.width;
-        return NSMakeRect(x, inset.y, page.width, page.height);
+        return NSMakeRect(x, y, page.width, page.height);
     }
-    CGFloat y = page.height <= viewport.height
-        ? (NSHeight(self.bounds) - page.height) * 0.5
-        : NSHeight(self.bounds) - inset.y - page.height;
     return NSMakeRect(inset.x, y, page.width, page.height);
 }
 
@@ -965,6 +1091,12 @@ static NSIndexSet *GAForeignCharactersToOmit(NSAttributedString *display, NSInde
                 local.y - NSMinY(fragment.layoutFragmentFrame) - NSMinY(typographic));
             CGRect lineBounds = CGRectMake(0, 0, typographic.size.width,
                                            typographic.size.height);
+            if (fragmentStart == 0 && line == fragment.textLineFragments.firstObject) {
+                // Tight leading places part of the first glyph above its native line box.
+                CGFloat top = MIN(0.0, self.textView.firstBaselineOffset);
+                lineBounds.origin.y = top;
+                lineBounds.size.height -= top;
+            }
             if (!NSPointInRect(linePoint, lineBounds)) {
                 continue;
             }

@@ -1,62 +1,36 @@
 /* Standard commands follow macOS terminology. App-specific text and Help are translated here. */
 
-"File" = "Ablage";
-"Copy to Font Book" = "In die Schriftsammlung kopieren";
-"Copy to All Users" = "Für alle Benutzer:innen kopieren";
-"Current User…" = "Aktuelle:r Benutzer:in …";
-"All Users…" = "Alle Benutzer:innen …";
-"System Fonts…" = "Integriert …";
-"Open Recent" = "Benutzte Dokumente";
-"Recent Location…" = "Letzter Speicherort …";
-"Clear Menu" = "Einträge löschen";
-"Close" = "Schließen";
-"Cut" = "Ausschneiden";
-"Copy" = "Kopieren";
-"Paste" = "Einsetzen";
-"Delete" = "Löschen";
-"Select All" = "Alles auswählen";
-"Underline" = "Unterstrichen";
-"Strikethrough" = "Durchstreichen";
-"View" = "Darstellung";
+/* Application and window commands. */
+"About Glyph Atlas" = "Über Glyph Atlas";
+"Hide Glyph Atlas" = "Glyph Atlas ausblenden";
+"Hide Others" = "Andere ausblenden";
+"Show All" = "Alle einblenden";
+"Quit Glyph Atlas" = "Glyph Atlas beenden";
+"Services" = "Dienste";
 "Window" = "Fenster";
 "Minimize" = "Minimieren";
 "Zoom" = "Zoomen";
 "Bring All to Front" = "Alle nach vorne bringen";
+"Enter Full Screen" = "Vollbildmodus";
 "Help" = "Hilfe";
+"Glyph Atlas Help" = "Glyph Atlas-Hilfe";
 "Cancel" = "Abbrechen";
 "OK" = "OK";
-"Show All" = "Alle einblenden";
-"Services" = "Dienste";
-"Edit" = "Bearbeiten";
-"Undo" = "Widerrufen";
-"Redo" = "Wiederholen";
-"Add Glyph" = "Glyphe hinzufügen";
-"Replace Glyph" = "Glyphe ersetzen";
+
+/* File and font operations. */
+"File" = "Ablage";
 "Open" = "Öffnen";
-"Make Text Bigger" = "Schrift größer";
-"Make Text Smaller" = "Schrift kleiner";
-"Text Alignment" = "Textausrichtung";
-"Left" = "Linksbündig";
-"Center" = "Zentriert";
-"Right" = "Rechtsbündig";
-"Justified" = "Blocksatz";
-"Top" = "Oben ausrichten";
-"Bottom" = "Unten ausrichten";
-"About Glyph Atlas" = "Über Glyph Atlas";
-"Hide Glyph Atlas" = "Glyph Atlas ausblenden";
-"Hide Others" = "Andere ausblenden";
-"Quit Glyph Atlas" = "Glyph Atlas beenden";
-"Glyph Atlas Help" = "Glyph Atlas-Hilfe";
 "Open At" = "Aus Ordner öffnen";
+"Current User…" = "Aktuelle:r Benutzer:in …";
+"All Users…" = "Alle Benutzer:innen …";
+"System Fonts…" = "Integriert …";
+"Recent Location…" = "Letzter Speicherort …";
+"Open Recent" = "Benutzte Dokumente";
 "No Recent Fonts" = "Keine zuletzt benutzten Schriften";
-"Single Glyph" = "Einzelne Glyphe";
-"Characters" = "Zeichen";
-"Glyph Grid" = "Glyphenraster";
-"All Glyphs" = "Alle Glyphen";
-"Expand Bounding Box" = "Begrenzungsrahmen vergrößern";
-"Shrink Bounding Box" = "Begrenzungsrahmen verkleinern";
-"Vertical Layout" = "Vertikales Layout";
-"Enter text" = "Text eingeben";
+"Clear Menu" = "Einträge löschen";
+"Close" = "Schließen";
+"Copy to Font Book" = "In die Schriftsammlung kopieren";
+"Copy to All Users" = "Für alle Benutzer:innen kopieren";
 "Font Name" = "Schriftname";
 "Font File" = "Schriftdatei";
 "Untitled Font" = "Unbenannte Schrift";
@@ -65,8 +39,99 @@
 "This file does not contain a font that CoreText can read." = "Diese Datei enthält keine Schrift, die CoreText lesen kann.";
 "Cannot Read Font" = "Schrift kann nicht gelesen werden";
 "CoreText could not create this font." = "CoreText konnte diese Schrift nicht erstellen.";
-"Bounding Box" = "Begrenzungsrahmen";
+"An item named “%@” already exists in Font Book." = "In der Schriftsammlung existiert bereits ein Objekt mit dem Namen „%@“.";
+"“%@” is already in Font Book." = "„%@“ befindet sich bereits in der Schriftsammlung.";
+"Keep Both" = "Beide behalten";
+"Stop" = "Stoppen";
+"Replace" = "Ersetzen";
+
+/* Editing and saved text. */
+"Edit" = "Bearbeiten";
+"Undo" = "Widerrufen";
+"Redo" = "Wiederholen";
+"Cut" = "Ausschneiden";
+"Copy" = "Kopieren";
+"Paste" = "Einsetzen";
+"Delete" = "Löschen";
+"Select All" = "Alles auswählen";
+"Enter text" = "Text eingeben";
+"Saved Text" = "Gesicherte Texte";
+"Save Current Text" = "Aktuellen Text sichern";
+"No Saved Text" = "Keine gesicherten Texte";
+"Delete Saved Text" = "Gesicherte Texte löschen";
+"Clear All Saved Text" = "Alle gesicherten Texte löschen";
+
+/* Views and glyphs. */
+"View" = "Darstellung";
+"Show Sidebar" = "Seitenleiste einblenden";
+"Hide Sidebar" = "Seitenleiste ausblenden";
+"Single Glyph" = "Einzelne Glyphe";
+"Characters" = "Zeichen";
+"Glyph Grid" = "Glyphenraster";
+"All Glyphs" = "Alle Glyphen";
+"Add Glyph" = "Glyphe hinzufügen";
+"Replace Glyph" = "Glyphe ersetzen";
 "Text and alternate glyph list" = "Liste der Zeichen und alternativen Glyphen";
+"Filter by Feature" = "Nach Funktion filtern";
+"No Features to Filter" = "Keine Funktionen zum Filtern";
+"No Feature" = "Ohne Merkmal";
+
+/* Text layout and typography. */
+"Make Text Bigger" = "Schrift größer";
+"Make Text Smaller" = "Schrift kleiner";
+"Increase Leading" = "Zeilenabstand vergrößern";
+"Decrease Leading" = "Zeilenabstand verkleinern";
+"Default Size" = "Standardgröße";
+"Text Alignment" = "Textausrichtung";
+"Left" = "Linksbündig";
+"Center" = "Zentriert";
+"Right" = "Rechtsbündig";
+"Justified" = "Blocksatz";
+"Top" = "Oben ausrichten";
+"Bottom" = "Unten ausrichten";
+"Vertical Layout" = "Vertikales Layout";
+"Writing Direction" = "Schreibrichtung";
+"Left to Right" = "Von links nach rechts";
+"Right to Left" = "Von rechts nach links";
+"Text Decorations" = "Textdekoration";
+"Underline" = "Unterstrichen";
+"Strikethrough" = "Durchstreichen";
+"Outline" = "Konturschrift";
+"Typography" = "Typografie";
+"No Typographic Features" = "Keine Typografiefunktionen";
+"Typesetting Language" = "Sprache für den Schriftsatz";
+"No Selectable Languages" = "Keine Sprachen zur Auswahl";
+"Other" = "Sonstige";
+
+/* Bounding box and colors. */
+"Bounding Box" = "Begrenzungsrahmen";
+"Show Bounding Box" = "Begrenzungsrahmen einblenden";
+"Hide Bounding Box" = "Begrenzungsrahmen ausblenden";
+"Expand Bounding Box" = "Begrenzungsrahmen vergrößern";
+"Shrink Bounding Box" = "Begrenzungsrahmen verkleinern";
+"Colors" = "Farben";
+"Glyph…" = "Glyphe …";
+"Background…" = "Hintergrund …";
+"Bounding Box…" = "Begrenzungsrahmen …";
+"Follow System" = "Systemeinstellung verwenden";
+"Save Current Palette" = "Aktuelle Farbpalette sichern";
+"Delete Palettes" = "Farbpaletten löschen";
+"Clear All Saved Palettes" = "Alle gesicherten Farbpaletten löschen";
+"No Saved Palettes" = "Keine gesicherten Farbpaletten";
+
+/* Variable fonts and defaults. */
+"Variable" = "Variabel";
+"Named Instance" = "Benannte Instanz";
+"Default" = "Standard";
+"Custom" = "Eigene";
+"Use as Defaults" = "Als Standard verwenden";
+"Restore Default" = "Standard wiederherstellen";
+
+/* Format strings. */
+"%@: %@" = "%@: %@";
+"%@ (%.0f%%)" = "%@ (%.0f%%)";
+
+/* Help. */
 "Help.01" = "Wähle in der Menüleiste „Aus Ordner öffnen“, um eine Schrift direkt aus einem Schriftordner zu öffnen. Du kannst die Schrift auch auf das App-Symbol oder in ein Fenster mit einer geöffneten Schrift ziehen oder Glyph Atlas als Standard-App für Schriftdateien festlegen. Zuletzt geöffnete Dateien sind ebenfalls verfügbar.";
 "Help.02" = "Über die Menüleiste kannst du die im aktuellen Fenster geöffnete Schrift mit einem Klick in deinen Benutzerordner für Schriften kopieren. Halte ⌥ gedrückt, um die Schrift in den Schriftenordner für alle Benutzer:innen zu kopieren.";
 "Help.03" = "Beim Öffnen einer variablen Schrift erscheint neben den Fenstersteuerungen ein Variationsfenster. Ziehe es heraus, damit es geöffnet bleibt. Wähle einen Zahlenwert aus und passe ihn mit ↑/↓ oder ⇧↑/⇧↓ an.";
@@ -82,64 +147,3 @@
 "Help.13" = "Der Schatten zeigt den Begrenzungsrahmen mit Breite und Höhe der Glyphe sowie Zeilenhöhe und Zeilenabstand des Satzes. Mit ⌘4 blendest du ihn aus.";
 "Help.14" = "Der Dunkelmodus wird unterstützt. Aber Vorsicht: Ein Klick auf eine vollständig ausgefüllte Glyphe kann blenden. Unter „Farben“ in der Menüleiste kannst du die Farben der Glyphe, des Begrenzungsrahmenschattens und des Hintergrunds ändern. Mit „Aktuelle Farbpalette sichern“ kannst du deine Farben sichern. Halte ⌥ gedrückt, um „Farbpaletten löschen“ zu sehen.";
 "Help.15" = "Mit „Als Standard verwenden“ in der Menüleiste speicherst du die aktuelle Ansicht, Farben, Größen und weitere Vorschaueinstellungen zusammen mit der Fenstergröße. Später geöffnete Schriftdateien verwenden diese Einstellungen. Halte ⌥ gedrückt, um stattdessen „Standard wiederherstellen“ zu wählen.";
-
-/* Variable font controls. */
-"Variable" = "Variabel";
-"Named Instance" = "Benannte Instanz";
-"Default" = "Standard";
-"Custom" = "Eigene";
-
-
-/* Font Book copy alerts. Conflict buttons follow Finder. */
-"An item named “%@” already exists in Font Book." = "In der Schriftsammlung existiert bereits ein Objekt mit dem Namen „%@“.";
-"“%@” is already in Font Book." = "„%@“ befindet sich bereits in der Schriftsammlung.";
-"Keep Both" = "Beide behalten";
-"Stop" = "Stoppen";
-"Replace" = "Ersetzen";
-
-/* User-saved plain text. */
-"Saved Text" = "Gesicherte Texte";
-"Save Current Text" = "Aktuellen Text sichern";
-"No Saved Text" = "Keine gesicherten Texte";
-
-/* Preview colors and native leading. */
-"Colors" = "Farben";
-"Delete Palettes" = "Farbpaletten löschen";
-"Save Current Palette" = "Aktuelle Farbpalette sichern";
-"Clear All Saved Palettes" = "Alle gesicherten Farbpaletten löschen";
-"No Saved Palettes" = "Keine gesicherten Farbpaletten";
-"%@: %@" = "%@: %@";
-"%@ (%.0f%%)" = "%@ (%.0f%%)";
-"Follow System" = "Systemeinstellung verwenden";
-"Glyph…" = "Glyphe …";
-"Background…" = "Hintergrund …";
-"Bounding Box…" = "Begrenzungsrahmen …";
-"Increase Leading" = "Zeilenabstand vergrößern";
-"Decrease Leading" = "Zeilenabstand verkleinern";
-
-/* Explicit defaults for newly opened font windows. */
-
-/* Saved-text deletion and full screen. */
-"Delete Saved Text" = "Gesicherte Texte löschen";
-"Clear All Saved Text" = "Alle gesicherten Texte löschen";
-"Enter Full Screen" = "Vollbildmodus";
-
-/* Native typography and opening settings. */
-"Typography" = "Typografie";
-"Other" = "Sonstige";
-"No Typographic Features" = "Keine Typografiefunktionen";
-"Default Size" = "Standardgröße";
-"Use as Defaults" = "Als Standard verwenden";
-"Restore Default" = "Standard wiederherstellen";
-"Text Decorations" = "Textdekoration";
-"Filter by Feature" = "Nach Funktion filtern";
-"No Features to Filter" = "Keine Funktionen zum Filtern";
-"No Feature" = "Ohne Merkmal";
-
-"Writing Direction" = "Schreibrichtung";
-"Left to Right" = "Von links nach rechts";
-"Right to Left" = "Von rechts nach links";
-"Outline" = "Konturschrift";
-
-"Typesetting Language" = "Sprache für den Schriftsatz";
-"No Selectable Languages" = "Keine Sprachen zur Auswahl";

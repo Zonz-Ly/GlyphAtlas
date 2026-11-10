@@ -387,7 +387,7 @@ class FeatureOutputs {
                  Effects *effects = nullptr, const LookupFlags *scopeFlags = nullptr) {
         budget_.step();
         if (index >= lookups_.size())
-            throw InvalidTable("feature lookup outside list");
+            return;
         const size_t anchorState = anchor < scope.size() ? scope[anchor].state : 0;
         // Narrowing a predicate preserves the slot state. A different slot or
         // an earlier substitution can legitimately re-enter the same lookup.
