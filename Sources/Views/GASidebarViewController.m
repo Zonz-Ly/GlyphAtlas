@@ -108,7 +108,6 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
 @property (nonatomic, strong, nullable) GAGlyphVariant *selectedVariant;
 @property (nonatomic) NSRange selectedVariantTextRange;
 @property (nonatomic) BOOL suppressSelectionCallback;
-@property (nonatomic) CGFloat lastTableWidth;
 @property (nonatomic, copy, nullable) NSString *pendingSelectionGlyphKey;
 @property (nonatomic) NSRange pendingSelectionTextRange;
 @property (nonatomic) GAPendingSelectionScroll pendingSelectionScroll;
@@ -366,13 +365,6 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
 - (void)viewDidLayout {
     [super viewDidLayout];
     [self.tableView sizeLastColumnToFit];
-    CGFloat width = self.tableView.bounds.size.width;
-    if (self.lastTableWidth > 0 && fabs(width - self.lastTableWidth) > 0.5) {
-        self.lastTableWidth = width;
-        [self reloadRowsPreservingSelection];
-    } else if (self.lastTableWidth <= 0) {
-        self.lastTableWidth = width;
-    }
 }
 
 - (NSFont *)inputFont {
@@ -1280,19 +1272,6 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
     bounds.origin = origin;
     [clip scrollToPoint:[clip constrainBoundsRect:bounds].origin];
     [self.scrollView reflectScrolledClipView:self.scrollView.contentView];
-}
-
-- (void)reloadRowsPreservingSelection {
-    NSDictionary *anchor = [self captureScrollAnchor];
-    NSInteger selectedRow = self.tableView.selectedRow;
-    self.suppressSelectionCallback = YES;
-    [self reloadTableGeometry];
-    if (selectedRow >= 0 && selectedRow < (NSInteger)self.rows.count) {
-        [self.tableView selectRowIndexes:[NSIndexSet indexSetWithIndex:(NSUInteger)selectedRow]
-                    byExtendingSelection:NO];
-    }
-    [self restoreScrollAnchor:anchor];
-    self.suppressSelectionCallback = NO;
 }
 
 - (void)notifySelection {
