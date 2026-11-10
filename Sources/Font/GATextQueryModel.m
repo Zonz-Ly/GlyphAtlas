@@ -120,6 +120,22 @@ static GACharacterGroup *SelectionGroup(GAGlyphSelectionRun *run, GAFontDocument
     return group;
 }
 
+static int GACompareSourceEndpoints(const void *a, const void *b) {
+    NSUInteger x = *(const NSUInteger *)a, y = *(const NSUInteger *)b;
+    return (x > y) - (x < y);
+}
+
+static NSUInteger GASourceEndpointCount(const NSUInteger *points, NSUInteger count,
+                                         NSUInteger edge, BOOL includeEqual) {
+    NSUInteger first = 0;
+    while (first < count) {
+        NSUInteger mid = (first + count) / 2;
+        if (points[mid] < edge || (includeEqual && points[mid] == edge)) first = mid + 1;
+        else count = mid;
+    }
+    return first;
+}
+
 NSArray<GACharacterGroup *> *GABuildDisplayGroups(NSArray<GACharacterGroup *> *groups,
                                                   NSString *text,
                                                   NSArray<GAGlyphSelectionRun *> *selections,
@@ -227,16 +243,44 @@ NSArray<GACharacterGroup *> *GABuildDisplayGroups(NSArray<GACharacterGroup *> *g
         if (variants == nil) {
             variants = [NSMutableArray array];
             byRange[rangeValue] = variants;
-            NSUInteger spanLength = 0;
-            for (GACharacterGroup *group in groups) {
-                if (group.textRange.location != NSNotFound &&
-                    NSIntersectionRange(group.textRange, range).length > 0) {
-                    spanLength++;
-                }
-            }
-            spanLengths[rangeValue] = @(spanLength);
         }
         [variants addObject:variant];
+    }
+    // Counting starts before the range end minus ends at/before its start
+    // handles overlapping, unordered and duplicate source groups alike.
+    // Small projections retain the cheaper direct scan.
+    BOOL indexed = groups.count >= 64 && byRange.count >= 16;
+    NSMutableData *startData = indexed
+        ? [NSMutableData dataWithLength:groups.count * sizeof(NSUInteger)] : nil;
+    NSMutableData *endData = indexed
+        ? [NSMutableData dataWithLength:groups.count * sizeof(NSUInteger)] : nil;
+    NSUInteger *starts = startData.mutableBytes, *ends = endData.mutableBytes;
+    NSUInteger count = 0;
+    if (indexed) {
+        for (GACharacterGroup *group in groups) {
+            NSRange source = group.textRange;
+            if (source.location == NSNotFound || !source.length) continue;
+            if (NSMaxRange(source) < source.location) { indexed = NO; break; }
+            starts[count] = source.location;
+            ends[count++] = NSMaxRange(source);
+        }
+        if (indexed) {
+            qsort(starts, count, sizeof(NSUInteger), GACompareSourceEndpoints);
+            qsort(ends, count, sizeof(NSUInteger), GACompareSourceEndpoints);
+        }
+    }
+    for (NSValue *rangeValue in byRange) {
+        NSRange range = rangeValue.rangeValue;
+        NSUInteger spanLength = 0;
+        if (indexed) {
+            spanLength = GASourceEndpointCount(starts, count, NSMaxRange(range), NO) -
+                         GASourceEndpointCount(ends, count, range.location, YES);
+        } else {
+            for (GACharacterGroup *group in groups)
+                if (group.textRange.location != NSNotFound &&
+                    NSIntersectionRange(group.textRange, range).length > 0) spanLength++;
+        }
+        spanLengths[rangeValue] = @(spanLength);
     }
     // Order combination groups by the number of source character groups,
     // then by source position. Each is inserted after its final source
