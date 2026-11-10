@@ -361,6 +361,9 @@ NSArray<GACharacterGroup *> *GAGroupsForScanResult(NSString *text, GARawScanResu
 
 /// Checks a nonempty glyph name; the caller handles missing names.
 static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
+    unichar initial = [name characterAtIndex:0];
+    if (initial < 128 && initial != 'g' && initial != 'G' && initial != 'u' && initial != 'U')
+        return NO;
     static NSRegularExpression *gidPattern;
     static NSRegularExpression *temporaryPattern;
     static NSRegularExpression *variationPattern;
