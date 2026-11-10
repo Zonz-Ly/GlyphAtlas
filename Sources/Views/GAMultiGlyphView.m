@@ -862,7 +862,9 @@ static NSTextAttachment *GAOmittedGlyphAttachment(void) {
                  : a.textRange.location < b.textRange.location ? NSOrderedDescending
                                                                : NSOrderedSame;
         }];
+    BOOL horizontal = !self.vertical;
     for (GACharacterGroup *group in ordered) {
+        if (horizontal && !group.seeded) continue;
         if (![self groupHasVisibleRange:group inLength:self.text.length]) {
             continue;
         }
