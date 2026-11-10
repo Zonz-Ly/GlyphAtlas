@@ -102,8 +102,9 @@ class Positioning {
             valueRecord(buffer_[at], set, p, f1, gdef_, metrics_);
             valueRecord(buffer_[*second], set, p + size1, f2, gdef_, metrics_);
         } else if (format == 2) {
-            unsigned c1 = ClassDef(d.offset16(8)).get(buffer_[at].glyph),
-                     c2 = ClassDef(d.offset16(10)).get(buffer_[*second].glyph), n1 = d.u16(12),
+            auto classes = sub.positioningTables->classes();
+            unsigned c1 = classes.first.get(buffer_[at].glyph),
+                     c2 = classes.second.get(buffer_[*second].glyph), n1 = d.u16(12),
                      n2 = d.u16(14);
             if (c1 >= n1 || c2 >= n2)
                 return {};
@@ -166,7 +167,7 @@ class Positioning {
         int ci = sub.coverage.index(buffer_[at].glyph);
         if (ci < 0)
             return {};
-        Coverage targets(d.offset16(4));
+        const Coverage &targets = sub.positioningTables->coverage();
         unsigned classes = d.u16(6);
         View marks = d.offset16(8);
         if (unsigned(ci) >= marks.u16(0))

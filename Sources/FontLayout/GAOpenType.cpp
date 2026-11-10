@@ -280,6 +280,29 @@ static void indexPatterns(Subtable &s) {
                 s.starts[g].push_back(i);
     }
 }
+void PositioningTables::read() const {
+    std::call_once(ready_, [this] {
+        try {
+            if (pair_) {
+                first_ = ClassDef(data_.offset16(8));
+                second_ = ClassDef(data_.offset16(10));
+            } else
+                targets_ = Coverage(data_.offset16(4));
+        } catch (const InvalidTable &) {
+            failure_ = std::current_exception();
+        }
+    });
+    if (failure_)
+        std::rethrow_exception(failure_);
+}
+std::pair<const ClassDef &, const ClassDef &> PositioningTables::classes() const {
+    read();
+    return {first_, second_};
+}
+const Coverage &PositioningTables::coverage() const {
+    read();
+    return targets_;
+}
 static Subtable readSubtable(View data, unsigned type, bool positioning, unsigned depth = 0) {
     if (depth > 0 && (type == (positioning ? 9 : 7)))
         throw InvalidTable("nested extension lookup");
@@ -298,6 +321,8 @@ static Subtable readSubtable(View data, unsigned type, bool positioning, unsigne
             s.coverage = Coverage(data.offset16(2));
         else
             throw InvalidTable("unknown positioning lookup");
+        if ((type == 2 && data.u16(0) == 2) || (type >= 4 && type <= 6))
+            s.positioningTables = std::make_shared<PositioningTables>(data, type == 2);
         indexPatterns(s);
         return s;
     }

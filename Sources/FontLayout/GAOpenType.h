@@ -1,6 +1,7 @@
 #pragma once
 #include "GAGlyphBuffer.h"
 #include <optional>
+#include <mutex>
 #include <unordered_map>
 
 namespace ga::layout {
@@ -24,10 +25,27 @@ struct Pattern {
     std::vector<LookupRecord> actions;
     std::vector<Glyph> replacement;
 };
+// Secondary positioning tables are validated at their original first-use point.
+// The shared result (including a table error) is immutable after publication.
+class PositioningTables {
+    View data_;
+    bool pair_;
+    mutable std::once_flag ready_;
+    mutable std::exception_ptr failure_;
+    mutable ClassDef first_, second_;
+    mutable Coverage targets_;
+    void read() const;
+
+  public:
+    PositioningTables(View data, bool pair) : data_(data), pair_(pair) {}
+    std::pair<const ClassDef &, const ClassDef &> classes() const;
+    const Coverage &coverage() const;
+};
 struct Subtable {
     unsigned type;
     View data;
     Coverage coverage;
+    std::shared_ptr<const PositioningTables> positioningTables;
     std::vector<Pattern> patterns;
     std::unordered_map<Glyph, std::vector<unsigned>> starts;
     std::unordered_map<Glyph, std::vector<Glyph>> alternateInputs;
