@@ -219,6 +219,7 @@ static NSFont *GABadgeFont(void) {
 /// A vertical column of Unicode code badges.
 @interface GAUnicodeCodesView : NSView
 @property (nonatomic, getter=isRowSelected) BOOL rowSelected;
+@property (nonatomic, copy) NSArray<NSNumber *> *unicodeScalars;
 - (void)setUnicodeScalars:(NSArray<NSNumber *> *)unicodeScalars;
 + (CGFloat)heightForScalars:(NSArray<NSNumber *> * _Nonnull)scalars;
 + (CGFloat)widthForScalars:(NSArray<NSNumber *> * _Nonnull)scalars;
@@ -246,6 +247,9 @@ static NSFont *GABadgeFont(void) {
 }
 
 - (void)setUnicodeScalars:(NSArray<NSNumber *> *)unicodeScalars {
+    if ([_unicodeScalars isEqualToArray:unicodeScalars])
+        return;
+    _unicodeScalars = [unicodeScalars copy];
     for (GAUnicodeBadgeView *badge in self.labels) {
         [badge removeFromSuperview];
     }
