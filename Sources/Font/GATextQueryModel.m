@@ -47,12 +47,26 @@ static NSArray<GACharacterGroup *> *GAProjectScanResult(GAFontDocument *document
     _groups = groups;
     return YES;
 }
-- (void)updateFontDocument:(GAFontDocument *)document {
-    _document = document;
+- (BOOL)updateFontDocument:(GAFontDocument *)document cancelled:(BOOL (^)(void))cancelled {
+    if (cancelled && cancelled())
+        return NO;
+    GARawScanResult *result = _result;
+    NSArray<GACharacterGroup *> *groups = _groups;
     if (_result) {
-        _result = [document rebindResult:_result content:_text];
-        _groups = GAProjectScanResult(document, _result, _text, nil);
+        result = [document rebindResult:_result content:_text cancelled:cancelled];
+        if (!result)
+            return NO;
+        groups = GAProjectScanResult(document, result, _text, cancelled);
+        if (!groups)
+            return NO;
     }
+    if (cancelled && cancelled())
+        return NO;
+    // analysisQueue owns these fields; publish only a completed projection.
+    _document = document;
+    _result = result;
+    _groups = groups;
+    return YES;
 }
 @end
 

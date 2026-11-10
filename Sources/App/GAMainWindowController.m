@@ -1061,12 +1061,16 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
             [self invalidateWorkerQueries];
             // Swap all model-owned state on its queue after the old batch yields.
             dispatch_async(self.analysisQueue, ^{
-                self.workerFontDocument = document;
+                BOOL (^cancelled)(void) = ^BOOL {
+                    @synchronized (self) { return request != self.fontLoadGeneration; }
+                };
+                if (cancelled()) return;
                 if (preserve && self.queryModel != nil) {
-                    [self.queryModel updateFontDocument:document];
+                    if (![self.queryModel updateFontDocument:document cancelled:cancelled]) return;
                 } else {
                     self.queryModel = [[GATextQueryModel alloc] initWithFontDocument:document];
                 }
+                self.workerFontDocument = document;
                 // Schedule from the latest input only after the old worker has
                 // yielded and the new model is installed. Otherwise that old
                 // worker could consume the pending text before this reset.

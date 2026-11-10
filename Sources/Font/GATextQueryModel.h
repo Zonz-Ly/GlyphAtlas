@@ -16,7 +16,8 @@ NS_ASSUME_NONNULL_BEGIN
          selections:(NSArray<GAGlyphSelectionRun *> *)selections
           cancelled:(BOOL (^_Nullable)(void))cancelled;
 /// Rebinds metrics without querying substitution rules again.
-- (void)updateFontDocument:(GAFontDocument *)document;
+- (BOOL)updateFontDocument:(GAFontDocument *)document
+                cancelled:(BOOL (^_Nullable)(void))cancelled;
 @end
 
 #pragma mark - Display groups

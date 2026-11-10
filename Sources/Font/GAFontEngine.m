@@ -258,9 +258,12 @@ NSArray<GACharacterGroup *> *GAGroupsForScanResult(NSString *text, GARawScanResu
 - (GAFontDocument *)documentWithDescriptor:(CTFontDescriptorRef)descriptor {
     return [[GAFontDocument alloc] initWithDescriptor:descriptor URL:_fontURL sourceDocument:self];
 }
-- (GARawScanResult *)rebindResult:(GARawScanResult *)result content:(NSString *)content {
+- (GARawScanResult *)rebindResult:(GARawScanResult *)result content:(NSString *)content
+                       cancelled:(BOOL (^)(void))cancelled {
     NSMutableArray *candidates = [NSMutableArray arrayWithCapacity:result.candidates.count];
     for (GAScanCandidate *old in result.candidates) {
+        if (cancelled && cancelled())
+            return nil;
         GAScanCandidate *c = [[GAScanCandidate alloc] init];
         c.glyphIDs = old.glyphIDs;
         NSString *source = NSMaxRange(old.sourceRange) <= content.length
@@ -279,7 +282,7 @@ NSArray<GACharacterGroup *> *GAGroupsForScanResult(NSString *text, GARawScanResu
     rebound.incomplete = result.incomplete;
     rebound.candidates = candidates;
     rebound.sourceRanges = result.sourceRanges;
-    return rebound;
+    return cancelled && cancelled() ? nil : rebound;
 }
 - (GAGlyphVariant *)rebindVariant:(GAGlyphVariant *)old content:(NSString *)content {
     GAGlyphVariant *v = [[GAGlyphVariant alloc] init];

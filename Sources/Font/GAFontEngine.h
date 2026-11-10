@@ -115,7 +115,8 @@ FOUNDATION_EXPORT NSArray<GACharacterGroup *> *GAGroupsForScanResult(NSString *t
 /// Same resource, new coordinates; shares parsed tables and immutable inventory.
 - (GAFontDocument *)documentWithDescriptor:(CTFontDescriptorRef)descriptor;
 /// Rebind existing discoveries without enumerating substitutions again.
-- (GARawScanResult *)rebindResult:(GARawScanResult *)result content:(NSString *)content;
+- (nullable GARawScanResult *)rebindResult:(GARawScanResult *)result content:(NSString *)content
+                               cancelled:(BOOL (^_Nullable)(void))cancelled;
 - (GAGlyphVariant *)rebindVariant:(GAGlyphVariant *)variant content:(NSString *)content;
 
 /// All GIDs in the font, including glyphs without Unicode mappings.
