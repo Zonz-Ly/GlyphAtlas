@@ -1090,10 +1090,7 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
     bool hasKerning = false;
     try {
         size_t branch = metrics.variationCoordinatesValid ? r.gpos.variationBranch(metrics.normalized) : 0;
-        r.gpos.position(buffer, r.gdef, settings, metrics, branch);
-        for (auto step : r.gpos.plan(settings, branch))
-            if (step.feature == tag('k', 'e', 'r', 'n'))
-                hasKerning = true;
+        hasKerning = r.gpos.position(buffer, r.gdef, settings, metrics, branch);
     } catch (const InvalidTable &) {
         buffer = std::move(nominal);
         for (auto &item : buffer) {

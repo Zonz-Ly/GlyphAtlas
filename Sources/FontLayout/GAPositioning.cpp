@@ -363,11 +363,15 @@ class Positioning {
     }
 };
 } // namespace
-void OpenType::position(Buffer &buffer, const GDEF &gdef, const Settings &settings,
+bool OpenType::position(Buffer &buffer, const GDEF &gdef, const Settings &settings,
                         const Metrics &metrics, size_t branch) const {
     if (!positioning_)
         throw InvalidTable("substitution program used for positioning");
-    Positioning(lookups_, gdef, settings, metrics, buffer).run(plan(settings, branch));
+    auto steps = plan(settings, branch);
+    Positioning(lookups_, gdef, settings, metrics, buffer).run(steps);
+    return std::any_of(steps.begin(), steps.end(), [](const LookupStep &step) {
+        return step.feature == tag('k', 'e', 'r', 'n');
+    });
 }
 } // namespace ga::layout
 

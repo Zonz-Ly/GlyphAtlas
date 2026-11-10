@@ -115,7 +115,8 @@ class OpenType {
                     Trace *trace = nullptr, const Cancellation *cancellation = nullptr) const;
     void substituteLookups(Buffer &buffer, const GDEF &gdef, const std::vector<LookupStep> &steps,
                            Trace *trace = nullptr, const Cancellation *cancellation = nullptr) const;
-    void position(Buffer &buffer, const GDEF &gdef, const Settings &settings,
+    /// Returns whether the successfully executed plan owns the kern feature.
+    bool position(Buffer &buffer, const GDEF &gdef, const Settings &settings,
                   const Metrics &metrics, size_t branch = 0) const;
 };
 // Legacy pair/class kerning supplements positioning only when GPOS/kerx does
