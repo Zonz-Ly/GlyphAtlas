@@ -460,6 +460,11 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
     if (self) {
         _font = (CTFontRef)CFRetain(font);
         _program = source.program ?: [[GAFontProgram alloc] initWithFont:font];
+        if (source) {
+            // Discovery is coordinate-independent, including its completed
+            // paragraph results; positioning remains local to this instance.
+            @synchronized (source) { _paragraphCache = source->_paragraphCache; }
+        }
         const auto &resource = *_program->resource;
         std::map<Tag, double> values;
         for (NSNumber *axis in coordinates)
