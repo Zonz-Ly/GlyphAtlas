@@ -360,6 +360,7 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
 @property(nonatomic) CGFloat naturalFirstBaseline;
 @property(nonatomic) BOOL hasNaturalFirstBaseline;
 @property(nonatomic) GAFirstBaselineMetrics naturalBaselineMetrics;
+@property(nonatomic, strong) NSColor *displayForegroundColor;
 @property(nonatomic) BOOL pinchHasPair;
 @property(nonatomic) GAMagnificationControl pinchCandidate;
 @property(nonatomic) GAMagnificationControl magnificationControl;
@@ -514,7 +515,22 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
 }
 
 - (void)refreshPreviewColors {
-    [self rebuildLayout];
+    NSColor *color = GAResolvedColor([self.previewColors colorForRole:GAPreviewColorGlyph],
+                                    self.effectiveAppearance);
+    if (![self.displayForegroundColor isEqual:color]) {
+        NSTextStorage *storage = self.textView.textStorage;
+        [storage beginEditing];
+        [storage enumerateAttribute:NSForegroundColorAttributeName
+                            inRange:NSMakeRange(0, storage.length) options:0
+                         usingBlock:^(id value, NSRange range, BOOL *stop) {
+            (void)stop;
+            if (value) [storage addAttribute:NSForegroundColorAttributeName value:color range:range];
+        }];
+        [storage endEditing];
+        self.displayForegroundColor = color;
+    }
+    self.textView.needsDisplay = YES;
+    self.needsDisplay = YES;
 }
 
 - (void)setFeatureSettings:(NSArray<NSDictionary *> *)settings {
@@ -603,7 +619,7 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
 
 - (void)viewDidChangeEffectiveAppearance {
     [super viewDidChangeEffectiveAppearance];
-    [self rebuildLayout];
+    [self refreshPreviewColors];
 }
 
 - (void)setFrameSize:(NSSize)newSize {
@@ -735,11 +751,11 @@ static NSTextAttachment *GAOmittedGlyphAttachment(void) {
     paragraph.alignment = self.textAlignment;
     paragraph.baseWritingDirection = self.baseWritingDirection;
     paragraph.lineHeightMultiple = self.lineHeightMultiple;
+    self.displayForegroundColor =
+        GAResolvedColor([self.previewColors colorForRole:GAPreviewColorGlyph], self.effectiveAppearance);
     NSMutableDictionary<NSAttributedStringKey, id> *attributes = [@{
         NSFontAttributeName : font,
-        NSForegroundColorAttributeName :
-            GAResolvedColor([self.previewColors colorForRole:GAPreviewColorGlyph],
-                            self.effectiveAppearance),
+        NSForegroundColorAttributeName : self.displayForegroundColor,
         NSParagraphStyleAttributeName : paragraph,
     } mutableCopy];
     if (self.underlined) attributes[NSUnderlineStyleAttributeName] = @(NSUnderlineStyleSingle);
