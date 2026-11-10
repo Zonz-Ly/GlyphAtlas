@@ -279,6 +279,15 @@ static NSAttributedString *GAMarkerTextFromString(NSString *string,
 }
 
 /// Restores the separators for the model text.
+NSString *GAModelStringFromFieldText(NSAttributedString *fieldText) {
+  NSMutableString *model = [fieldText.string mutableCopy];
+  GAEnumerateLineBreakMarkers(fieldText, ^(NSRange range, unichar separator) {
+    [model replaceCharactersInRange:range withString:[NSString stringWithCharacters:&separator length:1]];
+  });
+  return model;
+}
+
+/// Restores the separators and retains the model's other attributes.
 NSAttributedString *GAModelTextFromFieldText(NSAttributedString *fieldText) {
   NSMutableAttributedString *model = [fieldText mutableCopy];
   GAEnumerateLineBreakMarkers(fieldText, ^(NSRange range, unichar separator) {

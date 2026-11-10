@@ -33,6 +33,7 @@ FOUNDATION_EXPORT unichar GAInputSeparatorMarker(unichar separator);
 /// Restores the original separators recorded on the visible markers.
 FOUNDATION_EXPORT NSAttributedString *
 GAModelTextFromFieldText(NSAttributedString *fieldText);
+FOUNDATION_EXPORT NSString *GAModelStringFromFieldText(NSAttributedString *fieldText);
 FOUNDATION_EXPORT NSAttributedString *
 GAFieldTextFromModelText(NSAttributedString *modelText);
 /// Retains app font/color, explicit GID selections, and line-break markers.

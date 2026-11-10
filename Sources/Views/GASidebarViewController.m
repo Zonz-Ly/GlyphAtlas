@@ -457,7 +457,7 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
 }
 
 - (NSString *)text {
-    return self.attributedText.string;
+    return GAModelStringFromFieldText(self.searchFieldEditor.textStorage);
 }
 
 - (NSRange)inputSelectionRange {
