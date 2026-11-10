@@ -207,57 +207,67 @@ std::vector<TextRun> prepareText(NSString *text, const Cmap &cmap,
         groups.push_back(std::move(group));
     }
     bidi.reset();
-    for (GAGlyphSelectionRun *selection : selections) {
-        NSRange range = selection.range;
-        Span span{uint32_t(range.location), uint32_t(NSMaxRange(range))};
-        auto first = std::find_if(groups.begin(), groups.end(), [&](const TextRun &group) {
-            return group.source.end > span.start;
-        });
-        auto last = std::find_if(first, groups.end(), [&](const TextRun &group) {
-            return group.source.start >= span.end;
-        });
-        if (first == last)
-            throw InvalidTable("glyph selection has no source");
-        TextRun prefix{{}, {}, first->script, first->level};
-        TextRun suffix{{}, {}, (last - 1)->script, (last - 1)->level};
-        Span covered{span.end, span.start};
-        for (auto group = first; group != last; ++group)
-            for (const auto &item : group->glyphs) {
-                if (item.source.end <= span.start)
-                    prefix.glyphs.push_back(item);
-                else if (item.source.start >= span.end)
-                    suffix.glyphs.push_back(item);
-                else {
-                    if (item.source.start < span.start || item.source.end > span.end)
-                        throw InvalidTable("glyph selection splits a nominal component");
-                    covered = unite(covered, item.source);
-                }
+    if (selections.count) {
+        // Walk the original groups once. A selection may leave a suffix of
+        // its final grapheme for the next selection; keep only that remainder
+        // instead of repeatedly inserting into and shifting the whole vector.
+        std::vector<TextRun> selected;
+        selected.reserve(groups.size());
+        size_t next = 0;
+        std::optional<TextRun> tail;
+        auto available = [&] { return tail || next < groups.size(); };
+        auto current = [&]() -> TextRun & { return tail ? *tail : groups[next]; };
+        auto advance = [&] { if (tail) tail.reset(); else ++next; };
+        for (GAGlyphSelectionRun *selection : selections) {
+            NSRange range = selection.range;
+            Span span{uint32_t(range.location), uint32_t(NSMaxRange(range))};
+            while (available() && current().source.end <= span.start) {
+                selected.push_back(std::move(current()));
+                advance();
             }
-        if (!(covered == span))
-            throw InvalidTable("glyph selection does not cover nominal components");
-        TextRun replacement;
-        replacement.source = span;
-        replacement.level = first->level;
-        replacement.script = first->script;
-        for (NSNumber *identifier in selection.selection.glyphIDs) {
-            Item item;
-            item.glyph = identifier.unsignedShortValue;
-            item.source = span;
-            item.identity = identity++;
-            replacement.glyphs.push_back(item);
+            if (!available() || current().source.start >= span.end)
+                throw InvalidTable("glyph selection has no source");
+            TextRun prefix{{}, {current().source.start, span.start},
+                           current().script, current().level};
+            TextRun suffix;
+            Span covered{span.end, span.start};
+            while (available() && current().source.start < span.end) {
+                const auto &group = current();
+                suffix.source = {span.end, group.source.end};
+                suffix.script = group.script;
+                suffix.level = group.level;
+                for (const auto &item : group.glyphs) {
+                    if (item.source.end <= span.start)
+                        prefix.glyphs.push_back(item);
+                    else if (item.source.start >= span.end)
+                        suffix.glyphs.push_back(item);
+                    else {
+                        if (item.source.start < span.start || item.source.end > span.end)
+                            throw InvalidTable("glyph selection splits a nominal component");
+                        covered = unite(covered, item.source);
+                    }
+                }
+                advance();
+            }
+            if (!(covered == span))
+                throw InvalidTable("glyph selection does not cover nominal components");
+            TextRun replacement{{}, span, prefix.script, prefix.level};
+            for (NSNumber *identifier in selection.selection.glyphIDs) {
+                Item item;
+                item.glyph = identifier.unsignedShortValue;
+                item.source = span;
+                item.identity = identity++;
+                replacement.glyphs.push_back(item);
+            }
+            if (!prefix.glyphs.empty()) selected.push_back(std::move(prefix));
+            selected.push_back(std::move(replacement));
+            if (!suffix.glyphs.empty()) tail = std::move(suffix);
         }
-        std::vector<TextRun> pieces;
-        if (!prefix.glyphs.empty()) {
-            prefix.source = {first->source.start, span.start};
-            pieces.push_back(std::move(prefix));
+        while (available()) {
+            selected.push_back(std::move(current()));
+            advance();
         }
-        pieces.push_back(std::move(replacement));
-        if (!suffix.glyphs.empty()) {
-            suffix.source = {span.end, (last - 1)->source.end};
-            pieces.push_back(std::move(suffix));
-        }
-        auto position = groups.erase(first, last);
-        groups.insert(position, pieces.begin(), pieces.end());
+        groups = std::move(selected);
     }
     // Resolve common/inherited groups at grapheme boundaries, so splitting a run
     // can never leave a surrogate pair or combining sequence half processed.
