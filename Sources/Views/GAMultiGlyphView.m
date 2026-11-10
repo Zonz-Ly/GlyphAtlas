@@ -580,8 +580,19 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
     if (NSEqualSizes(_viewportSize, viewportSize)) {
         return;
     }
+    BOOL wrappingChanged = self.vertical
+        ? _viewportSize.height != viewportSize.height
+        : _viewportSize.width != viewportSize.width;
     _viewportSize = viewportSize;
-    [self rebuildLayout];
+    if (wrappingChanged || !self.layoutActive || self.layoutPending || self.textView.hidden ||
+        viewportSize.width < 1 || viewportSize.height < 1) {
+        [self rebuildLayout];
+    } else {
+        [self updateTextContainerInset];
+        self.needsDisplay = YES;
+        if (self.onContentSizeChanged) self.onContentSizeChanged();
+        [self positionTextView];
+    }
 }
 
 - (void)setToolbarTopInset:(CGFloat)toolbarTopInset {
@@ -656,6 +667,14 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
 }
 
 #pragma mark - Layout
+
+- (void)updateTextContainerInset {
+    // The horizontal frame includes the page inset; the rotated vertical
+    // frame stays on the page so that its container origin remains aligned.
+    NSPoint inset = [self pageArea].origin;
+    self.textView.textContainerInset = self.vertical
+        ? NSZeroSize : NSMakeSize(inset.x, inset.y);
+}
 
 - (CGFloat)horizontalAdvanceForGlyph:(CGGlyph)glyph font:(NSFont *)font {
     CGSize advance = CGSizeZero;
@@ -950,15 +969,7 @@ static NSIndexSet *GAForeignCharactersToOmit(NSAttributedString *display, NSInde
     }
 
     CGFloat lineLength = self.vertical ? page.height : page.width;
-    // Horizontal text views have unrotated bounds, so the inset-expanded frame
-    // gives ink room to overhang the page. Vertical text views are rotated by
-    // -setLayoutOrientation:; textContainerOrigin lives in that rotated space,
-    // so the same inset expansion moves the text container off pageRect. Keep
-    // vertical at zero inset (vertical ink overhanging the page is clipped).
-    NSPoint inset = area.origin;
-    self.textView.textContainerInset = self.vertical
-        ? NSZeroSize
-        : NSMakeSize(inset.x, inset.y);
+    [self updateTextContainerInset];
     [self.textView setLayoutOrientation:self.vertical
         ? NSTextLayoutOrientationVertical
         : NSTextLayoutOrientationHorizontal];
