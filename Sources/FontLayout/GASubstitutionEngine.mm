@@ -9,6 +9,7 @@
 #include <map>
 #include <deque>
 #include <unordered_map>
+#include <mutex>
 
 using namespace ga::layout;
 @implementation GASubstitutionMatch
@@ -456,6 +457,8 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
     CTFontRef _font;
     std::optional<std::vector<double>> _normalizedCoordinates;
     std::shared_ptr<const ParagraphCache> _paragraphCache;
+    std::unordered_map<uint32_t, double> _deviceDeltas;
+    std::mutex _deviceDeltasMutex;
 }
 - (instancetype)initWithFont:(CTFontRef)font
                  coordinates:(NSDictionary *)coordinates
@@ -1059,6 +1062,25 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
     *descender = bottom;
     return YES;
 }
+- (double)cachedDeviceDelta:(const View &)device {
+    if (device.u16(4) != 0x8000) return 0;
+    uint32_t key = (uint32_t(device.u16(0)) << 16) | device.u16(2);
+    {
+        std::lock_guard<std::mutex> lock(_deviceDeltasMutex);
+        auto found = _deviceDeltas.find(key);
+        if (found != _deviceDeltas.end()) return found->second;
+    }
+    // Decode on demand and keep failures uncached: unused malformed records
+    // must not affect other lookups or change the existing GPOS fallback.
+    double value = variationDelta(self.program->resource->gdef.variations,
+                                  key >> 16, key & 0xffff, *_normalizedCoordinates);
+    {
+        std::lock_guard<std::mutex> lock(_deviceDeltasMutex);
+        if (_deviceDeltas.size() < 2048) _deviceDeltas.emplace(key, value);
+    }
+    return value;
+}
+
 - (Metrics)metrics {
     const auto &r = *self.program->resource;
     CTFontRef font = _font;
@@ -1081,6 +1103,10 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
         metrics.normalized = *_normalizedCoordinates;
     else
         metrics.variationCoordinatesValid = false;
+    if (_normalizedCoordinates && r.gdef.variations)
+        metrics.deviceDelta = [self](const View &device) {
+            return [self cachedDeviceDelta:device];
+        };
     return metrics;
 }
 - (void)position:(Buffer &)buffer settings:(const Settings &)settings {

@@ -6,6 +6,11 @@
 
 namespace ga::layout {
 namespace {
+double positioningDelta(View device, const GDEF &gdef, const Metrics &metrics) {
+    if (!device) return 0;
+    return metrics.deviceDelta ? metrics.deviceDelta(device)
+                               : deviceDelta(device, gdef.variations, metrics.normalized);
+}
 size_t valueSize(unsigned format) {
     if (format & 0xff00)
         throw InvalidTable("reserved positioning value bits");
@@ -21,7 +26,7 @@ void valueRecord(Item &item, View parent, size_t at, unsigned format, const GDEF
                 value[bit] += parent.s16(at);
             else if (metrics.variationCoordinatesValid)
                 value[bit - 4] +=
-                    deviceDelta(parent.offset16(at), gdef.variations, metrics.normalized);
+                    positioningDelta(parent.offset16(at), gdef, metrics);
             at += 2;
         }
     item.xOffset += value[0];
@@ -39,8 +44,8 @@ std::optional<Point> anchor(View table, const GDEF &gdef, const Metrics &metrics
     if (format == 2)
         table.require(6, 2); // Contour indices are only needed for grid fitting.
     if (format == 3 && metrics.variationCoordinatesValid) {
-        p.x += deviceDelta(table.offset16(6), gdef.variations, metrics.normalized);
-        p.y += deviceDelta(table.offset16(8), gdef.variations, metrics.normalized);
+        p.x += positioningDelta(table.offset16(6), gdef, metrics);
+        p.y += positioningDelta(table.offset16(8), gdef, metrics);
     }
     return p;
 }

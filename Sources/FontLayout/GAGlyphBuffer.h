@@ -119,6 +119,8 @@ struct Metrics {
     std::function<double(Glyph)> verticalAdvance;
     std::vector<double> normalized;
     bool variationCoordinatesValid = true;
+    /// Optional instance-local evaluator for GPOS device/variation records.
+    std::function<double(const View &)> deviceDelta;
 };
 struct GDEF {
     ClassDef glyphClasses, markAttachmentClasses;
