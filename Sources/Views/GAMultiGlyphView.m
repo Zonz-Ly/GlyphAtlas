@@ -248,6 +248,20 @@ static NSArray<GAGlyphLayoutRun *> *MergeHits(NSArray<GAGlyphLayoutRun *> *atoms
 static NSArray<GAGlyphLayoutRun *> *MapGlyphLayoutRuns(
     NSArray<GAGlyphLayoutRun *> *hits, NSArray<NSNumber *> *sourceIndices,
     NSArray<NSValue *> *atomicRanges, NSString *sourceText) {
+    // Ordered, disjoint selections are already an interval index. Keep the
+    // original pass for small lists and for overlapping or unordered sources,
+    // whose one-pass expansion depends on their original order.
+    BOOL indexed = atomicRanges.count >= 8;
+    NSUInteger previousEnd = 0;
+    if (indexed) for (NSValue *value in atomicRanges) {
+        NSRange range = value.rangeValue;
+        NSUInteger end = NSMaxRange(range);
+        if (range.location == NSNotFound || range.location < previousEnd || end < range.location) {
+            indexed = NO;
+            break;
+        }
+        previousEnd = end;
+    }
     NSMutableArray *atoms = [NSMutableArray array];
     for (GAGlyphLayoutRun *display in hits) {
         if (!display.range.length || NSMaxRange(display.range) > sourceIndices.count)
@@ -263,8 +277,18 @@ static NSArray<GAGlyphLayoutRun *> *MapGlyphLayoutRuns(
             continue;
         NSRange component = NSMakeRange(first, last - first + 1);
         NSRange range = [sourceText rangeOfComposedCharacterSequencesForRange:component];
-        for (NSValue *value in atomicRanges) {
-            NSRange atomic = value.rangeValue;
+        NSUInteger start = 0, end = atomicRanges.count;
+        if (indexed) {
+            while (start < end) {
+                NSUInteger mid = (start + end) / 2;
+                if (NSMaxRange(atomicRanges[mid].rangeValue) <= range.location) start = mid + 1;
+                else end = mid;
+            }
+            end = atomicRanges.count;
+        }
+        for (NSUInteger i = start; i < end; i++) {
+            NSRange atomic = atomicRanges[i].rangeValue;
+            if (indexed && atomic.location >= NSMaxRange(range)) break;
             if (NSIntersectionRange(range, atomic).length) range = NSUnionRange(range, atomic);
             if (NSIntersectionRange(component, atomic).length) component = NSUnionRange(component, atomic);
         }
