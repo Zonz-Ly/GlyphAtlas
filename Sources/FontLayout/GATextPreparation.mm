@@ -2,6 +2,7 @@
 #import "Font/GAGlyphSelection.h"
 #include "GACmap.h"
 #include <cctype>
+#include <cstring>
 #include <deque>
 #include <memory>
 extern "C" {
@@ -16,20 +17,22 @@ uint8_t ubidi_getLevelAt(const void *, int32_t);
 void ubidi_close(void *);
 }
 namespace ga::layout {
-static Tag scriptTag(NSString *name) {
-    std::string s = name.UTF8String ?: "";
-    if (s.size() != 4)
-        return tag('D', 'F', 'L', 'T');
-    for (auto &c : s)
-        c = char(std::tolower(uint8_t(c)));
-    static const std::map<std::string, std::string> exceptions = {
-        {"hira", "kana"}, {"laoo", "lao "}, {"yiii", "yi  "}, {"nkoo", "nko "}, {"vaii", "vai "}};
-    auto found = exceptions.find(s);
-    if (found != exceptions.end())
-        return tag(found->second);
-    if (s == "zyyy" || s == "zinh" || s == "zzzz" || s == "dflt")
-        return tag('D', 'F', 'L', 'T');
-    return tag(s);
+static Tag scriptTag(const char *name) {
+    if (std::strlen(name) != 4) return tag('D', 'F', 'L', 'T');
+    Tag value = 0;
+    for (unsigned i = 0; i < 4; ++i)
+        value = (value << 8) | uint8_t(std::tolower(uint8_t(name[i])));
+    switch (value) {
+        case tag('h','i','r','a'): return tag('k','a','n','a');
+        case tag('l','a','o','o'): return tag('l','a','o',' ');
+        case tag('y','i','i','i'): return tag('y','i',' ',' ');
+        case tag('n','k','o','o'): return tag('n','k','o',' ');
+        case tag('v','a','i','i'): return tag('v','a','i',' ');
+        case tag('z','y','y','y'): case tag('z','i','n','h'):
+        case tag('z','z','z','z'): case tag('d','f','l','t'):
+            return tag('D','F','L','T');
+        default: return value;
+    }
 }
 static std::vector<uint32_t> scalars(NSString *text) {
     std::vector<uint32_t> result;
@@ -98,7 +101,7 @@ static Tag scalarScript(uint32_t scalar) {
     int32_t error = 0;
     int32_t script = uscript_getScript(scalar, &error);
     const char *shortName = error > 0 ? nullptr : uscript_getShortName(script);
-    return shortName ? scriptTag(@(shortName)) : tag('D', 'F', 'L', 'T');
+    return shortName ? scriptTag(shortName) : tag('D', 'F', 'L', 'T');
 }
 std::vector<TextRun> prepareText(NSString *text, const Cmap &cmap,
                                  NSArray<GAGlyphSelectionRun *> *selections, int baseDirection,
