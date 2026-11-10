@@ -394,8 +394,26 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
            [multiUnicodePattern firstMatchInString:name options:0 range:range] != nil;
 }
 
+static NSString *GADisplayNameForGlyph(CTFontRef font, NSNumber *number) {
+    NSString *name = CFBridgingRelease(CTFontCopyNameForGlyph(font, number.unsignedShortValue));
+    return !name.length || GAGlyphNameLooksSynthetic(name)
+        ? [NSString stringWithFormat:@"GID %@", number] : name;
+}
+
 - (void)decorateVariant:(GAGlyphVariant *)variant {
+    if (variant.glyphIDs.count == 0) {
+        variant.unicodeScalars = @[];
+        variant.glyphName = @"";
+        return;
+    }
     NSDictionary<NSNumber *, NSArray<NSNumber *> *> *map = self.unicodeMap;
+    if (variant.glyphIDs.count == 1) {
+        NSNumber *glyph = variant.glyphIDs.firstObject;
+        // unicodeMap already stores unique aliases in ascending scalar order.
+        variant.unicodeScalars = map[glyph] ?: @[];
+        variant.glyphName = GADisplayNameForGlyph(_font, glyph);
+        return;
+    }
     NSMutableSet<NSNumber *> *scalars = [NSMutableSet set];
     NSMutableArray<NSString *> *glyphNames = [NSMutableArray array];
 
@@ -405,12 +423,7 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
             [scalars addObject:scalar];
         }
 
-        CGGlyph glyph = (CGGlyph)glyphNumber.unsignedShortValue;
-        NSString *name = CFBridgingRelease(CTFontCopyNameForGlyph(_font, glyph));
-        if (!name.length || GAGlyphNameLooksSynthetic(name)) {
-            name = [NSString stringWithFormat:@"GID %@", glyphNumber];
-        }
-        [glyphNames addObject:name];
+        [glyphNames addObject:GADisplayNameForGlyph(_font, glyphNumber)];
     }
 
     NSArray<NSNumber *> *sortedScalars =
