@@ -263,6 +263,8 @@ static NSArray<GAGlyphLayoutRun *> *MapGlyphLayoutRuns(
         previousEnd = end;
     }
     NSMutableArray *atoms = [NSMutableArray array];
+    BOOL ordered = YES;
+    NSUInteger mappedEnd = 0;
     for (GAGlyphLayoutRun *display in hits) {
         if (!display.range.length || NSMaxRange(display.range) > sourceIndices.count)
             continue;
@@ -296,9 +298,16 @@ static NSArray<GAGlyphLayoutRun *> *MapGlyphLayoutRuns(
         // needs their display-space ranges after this source mapping.
         display.range = range;
         display.leadingRange = component;
+        NSUInteger rangeEnd = NSMaxRange(range);
+        ordered = ordered && range.length && range.location >= mappedEnd && rangeEnd >= range.location;
+        mappedEnd = rangeEnd;
         [atoms addObject:display];
     }
-    return MergeHits(atoms);
+    if (!ordered) return MergeHits(atoms);
+    // Disjoint hits in source order already form the final ranges.
+    for (GAGlyphLayoutRun *hit in atoms)
+        hit.leadingGlyphIDs = hit.glyphIDs;
+    return atoms;
 }
 
 /// Reads native GIDs, preserving composed characters and explicit selections.
