@@ -18,6 +18,11 @@ const CGFloat GAFontShapingSize = 200.0;
 - (void)addFeatureSource:(NSString *)source;
 @end
 
+static NSString *GAFeatureSourceTag(NSString *source) {
+    NSRange separator = [source rangeOfString:@" "];
+    return separator.location == NSNotFound ? source : [source substringToIndex:separator.location];
+}
+
 @implementation GAGlyphVariant {
     NSMutableArray<NSString *> *_mutableFeatureSources;
 }
@@ -39,9 +44,9 @@ const CGFloat GAFontShapingSize = 200.0;
     if (source.length == 0) {
         return;
     }
-    NSString *tag = [source componentsSeparatedByString:@" "].firstObject;
+    NSString *tag = GAFeatureSourceTag(source);
     for (NSString *existing in _mutableFeatureSources) {
-        if ([[existing componentsSeparatedByString:@" "].firstObject isEqualToString:tag]) {
+        if ([GAFeatureSourceTag(existing) isEqualToString:tag]) {
             return;
         }
     }
