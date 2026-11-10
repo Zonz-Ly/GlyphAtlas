@@ -196,7 +196,6 @@ NSArray<GACharacterGroup *> *GAGroupsForScanResult(NSString *text, GARawScanResu
     GASubstitutionEngine *_substitutionEngine;
     NSDictionary<NSNumber *, NSArray<NSNumber *> *> *_unicodeMap;
     NSArray<GAAllGlyphEntry *> *_allGlyphEntries;
-    NSCache<NSArray<NSNumber *> *, NSArray *> *_glyphDecorations;
 }
 
 - (instancetype)initWithDescriptor:(CTFontDescriptorRef)descriptor URL:(NSURL *)url {
@@ -216,11 +215,6 @@ NSArray<GACharacterGroup *> *GAGroupsForScanResult(NSString *text, GARawScanResu
         CFRelease(configured);
     if (_font == NULL)
         return nil;
-    _glyphDecorations = source ? source->_glyphDecorations : [[NSCache alloc] init];
-    if (!source) {
-        _glyphDecorations.countLimit = 2048;
-        _glyphDecorations.totalCostLimit = 4 * 1024 * 1024;
-    }
     _fontURL = [url copy];
     NSArray<NSString *> *languages = CFBridgingRelease(CTFontCopySupportedLanguages(_font));
     for (NSString *language in languages) {
@@ -393,13 +387,6 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
 }
 
 - (void)decorateVariant:(GAGlyphVariant *)variant {
-    NSArray<NSNumber *> *key = [variant.glyphIDs copy];
-    NSArray *cached = [_glyphDecorations objectForKey:key];
-    if (cached) {
-        variant.glyphName = cached[0];
-        variant.unicodeScalars = cached[1];
-        return;
-    }
     NSDictionary<NSNumber *, NSArray<NSNumber *> *> *map = self.unicodeMap;
     NSMutableSet<NSNumber *> *scalars = [NSMutableSet set];
     NSMutableArray<NSString *> *glyphNames = [NSMutableArray array];
@@ -422,11 +409,6 @@ static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
         [scalars.allObjects sortedArrayUsingSelector:@selector(compare:)];
     variant.unicodeScalars = sortedScalars;
     variant.glyphName = [glyphNames componentsJoinedByString:@"/"];
-    // Source-specific base fallbacks are applied by the caller, outside this
-    // resource cache. Positions and ink always belong to the current instance.
-    NSUInteger cost = key.count * 32 + variant.glyphName.length * 2 + sortedScalars.count * 16;
-    if (cost <= 64 * 1024)
-        [_glyphDecorations setObject:@[variant.glyphName, sortedScalars] forKey:key cost:cost];
 }
 
 #pragma mark - Font substitution discovery
