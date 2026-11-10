@@ -388,6 +388,8 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
 @interface GAAllGlyphsView ()
 @property (nonatomic, strong) GAAllGlyphsGrid *grid;
 @property (nonatomic, strong) NSArray<GAAllGlyphEntry *> *inventory;
+@property(nonatomic, copy) NSIndexSet *pendingGlyphIDs;
+@property(nonatomic) BOOL hasPendingGlyphIDs;
 @property (nonatomic) CGFloat magnificationStartScale;
 @property (nonatomic) BOOL scrollsUnderToolbar;
 @end
@@ -441,16 +443,42 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
 }
 
 - (void)setDocument:(GAFontDocument *)document {
-    NSArray<GAAllGlyphEntry *> *inventory = document.allGlyphEntries;
     _document = document;
-    self.grid.fontBox = document.fontBox;
+    // Until this view is first shown, no full GID inventory is needed.
+    // Once prepared, retain the existing updates and scroll/highlight behavior.
+    if (self.hidden && !self.inventory) return;
+    [self updateInventory];
+}
+
+- (void)updateInventory {
+    NSArray<GAAllGlyphEntry *> *inventory = self.document.allGlyphEntries;
+    self.grid.fontBox = self.document.fontBox;
     if (self.inventory != inventory) {
         self.inventory = inventory;
-        [self setVisibleGlyphIDs:nil];
+        [self applyVisibleGlyphIDs:nil];
     }
 }
 
+- (void)setHidden:(BOOL)hidden {
+    if (!hidden && !self.inventory) {
+        [self updateInventory];
+        if (self.hasPendingGlyphIDs) [self applyVisibleGlyphIDs:self.pendingGlyphIDs];
+        self.pendingGlyphIDs = nil;
+        self.hasPendingGlyphIDs = NO;
+    }
+    [super setHidden:hidden];
+}
+
 - (void)setVisibleGlyphIDs:(NSIndexSet *)glyphIDs {
+    if (self.hidden && !self.inventory) {
+        self.pendingGlyphIDs = glyphIDs;
+        self.hasPendingGlyphIDs = YES;
+        return;
+    }
+    [self applyVisibleGlyphIDs:glyphIDs];
+}
+
+- (void)applyVisibleGlyphIDs:(NSIndexSet *)glyphIDs {
     NSArray<GAAllGlyphEntry *> *inventory = self.inventory ?: @[];
     if (glyphIDs) {
         NSMutableArray<GAAllGlyphEntry *> *entries = [NSMutableArray arrayWithCapacity:glyphIDs.count];
