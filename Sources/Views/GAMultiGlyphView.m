@@ -292,11 +292,11 @@ static NSArray<GAGlyphLayoutRun *> *MapGlyphLayoutRuns(
             if (NSIntersectionRange(range, atomic).length) range = NSUnionRange(range, atomic);
             if (NSIntersectionRange(component, atomic).length) component = NSUnionRange(component, atomic);
         }
-        GAGlyphLayoutRun *hit = [GAGlyphLayoutRun new];
-        hit.range = range;
-        hit.leadingRange = component;
-        hit.glyphIDs = display.glyphIDs;
-        [atoms addObject:hit];
+        // The caller owns these fresh native hit records; no other consumer
+        // needs their display-space ranges after this source mapping.
+        display.range = range;
+        display.leadingRange = component;
+        [atoms addObject:display];
     }
     return MergeHits(atoms);
 }
