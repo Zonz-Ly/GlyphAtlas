@@ -420,6 +420,7 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
 @property(nonatomic, strong, readonly) NSCache<id, NSArray<GASubstitutionMatch *> *> *cache;
 @property(nonatomic, strong, readonly) NSCache<NSArray *, NSIndexSet *> *glyphOutputCache;
 @property(nonatomic, strong, readonly) NSCache<NSNumber *, NSArray<NSDictionary *> *> *relatedCache;
+@property(nonatomic, strong, readonly) NSCache<NSString *, NSArray<NSNumber *> *> *positioningContexts;
 @end
 @implementation GAFontProgram
 - (instancetype)initWithFont:(CTFontRef)font {
@@ -432,6 +433,9 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
         _relatedCache = [[NSCache alloc] init];
         _relatedCache.countLimit = 2048;
         _relatedCache.totalCostLimit = 16 * 1024 * 1024;
+        _positioningContexts = [[NSCache alloc] init];
+        _positioningContexts.countLimit = 1024;
+        _positioningContexts.totalCostLimit = 1024 * 1024;
         _cache.countLimit = 2048;
         _cache.totalCostLimit = 32 * 1024 * 1024;
     }
@@ -1114,11 +1118,25 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
                                      content:(NSString *)content {
     try {
         const auto &r = *self.program->resource;
-        auto runs = prepareText(content, r.cmap);
         Settings settings;
-        if (!runs.empty()) {
-            settings.script = runs.front().script;
-            settings.rtl = runs.front().level & 1;
+        if (content.length) {
+            NSArray<NSNumber *> *context = [self.program.positioningContexts objectForKey:content];
+            if (context) {
+                settings.script = context[0].unsignedIntValue;
+                settings.rtl = context[1].boolValue;
+            } else {
+                auto runs = prepareText(content, r.cmap);
+                if (!runs.empty()) {
+                    settings.script = runs.front().script;
+                    settings.rtl = runs.front().level & 1;
+                }
+                // Cmap and Unicode preparation belong to the shared resource;
+                // advances, GPOS and variation coordinates remain instance-local.
+                if (content.length <= 32768)
+                    [self.program.positioningContexts
+                        setObject:@[@(settings.script), @(settings.rtl)]
+                           forKey:[content copy] cost:content.length * 2 + 128];
+            }
         }
         Buffer items = literalBuffer(glyphVector(glyphIDs));
         if (settings.rtl)
