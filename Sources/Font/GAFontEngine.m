@@ -60,6 +60,23 @@ static NSString *GAFeatureSourceTag(NSString *source) {
     }
 }
 
+- (id)copyWithZone:(NSZone *)zone {
+    GAGlyphVariant *copy = [[GAGlyphVariant allocWithZone:zone] init];
+    copy.fontBox = self.fontBox;
+    copy.glyphIDs = self.glyphIDs;
+    copy.positions = self.positions;
+    copy->_mutableFeatureSources = [_mutableFeatureSources mutableCopy];
+    copy->_featureSources = _featureSources;
+    copy.base = self.base;
+    copy.unicodeScalars = self.unicodeScalars;
+    copy.glyphName = self.glyphName;
+    copy.ligature = self.ligature;
+    copy.temporary = self.temporary;
+    copy.fromGlyphSeed = self.fromGlyphSeed;
+    copy.sourceTextRange = self.sourceTextRange;
+    return copy;
+}
+
 - (NSString *)glyphKey {
     NSArray<NSNumber *> *glyphIDs = self.glyphIDs;
     if (glyphIDs.count < 2) return glyphIDs.firstObject.stringValue ?: @"∅";
@@ -290,18 +307,9 @@ NSArray<GACharacterGroup *> *GAGroupsForScanResult(NSString *text, GARawScanResu
     return cancelled && cancelled() ? nil : rebound;
 }
 - (GAGlyphVariant *)rebindVariant:(GAGlyphVariant *)old content:(NSString *)content {
-    GAGlyphVariant *v = [[GAGlyphVariant alloc] init];
+    GAGlyphVariant *v = [old copy];
     v.fontBox = _fontBox;
-    v.glyphIDs = old.glyphIDs;
     v.positions = [_substitutionEngine positionsForGlyphIDs:v.glyphIDs content:content];
-    [v addFeatureSources:old.featureSources];
-    v.base = old.base;
-    v.unicodeScalars = old.unicodeScalars;
-    v.glyphName = old.glyphName;
-    v.ligature = old.ligature;
-    v.temporary = old.temporary;
-    v.fromGlyphSeed = old.fromGlyphSeed;
-    v.sourceTextRange = old.sourceTextRange;
     return v;
 }
 

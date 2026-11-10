@@ -20,7 +20,7 @@ FOUNDATION_EXPORT const CGFloat GAFontShapingSize;
 @property (nonatomic, copy) NSArray<NSNumber *> *unicodeScalars;
 @end
 
-@interface GAGlyphVariant : NSObject
+@interface GAGlyphVariant : NSObject <NSCopying>
 @property (nonatomic, strong) GAFontBox *fontBox;
 @property (nonatomic, copy) NSArray<NSNumber *> *glyphIDs;
 /// Optional shaping origins for drawing. May be empty; drawing consumers treat

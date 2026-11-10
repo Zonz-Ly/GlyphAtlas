@@ -248,10 +248,13 @@ NSArray<GACharacterGroup *> *GABuildDisplayGroups(NSArray<GACharacterGroup *> *g
                     }
                 if (sameAsInput)
                     continue;
-                [ligatureVariants
-                    addObject:[document
-                                  rebindVariant:variant
-                                        content:[text substringWithRange:variant.sourceTextRange]]];
+                // The current scan already positioned this combination for its source text.
+                // A separate record lets the sidebar assign its own base variant.
+                GAGlyphVariant *copy = variant.fontBox == document.fontBox
+                    ? [variant copy]
+                    : [document rebindVariant:variant
+                                     content:[text substringWithRange:variant.sourceTextRange]];
+                [ligatureVariants addObject:copy];
             }
         }
     }
