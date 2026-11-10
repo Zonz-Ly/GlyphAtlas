@@ -154,6 +154,18 @@ std::vector<TextRun> prepareText(NSString *text, const Cmap &cmap,
         TextRun group;
         group.source = {uint32_t(range.location), uint32_t(NSMaxRange(range))};
         group.level = ubidi_getLevelAt(bidi.get(), int32_t(range.location));
+        auto appendItem = [&](uint32_t scalar, Glyph glyph, Span source) {
+            Item item;
+            item.scalar = scalar;
+            item.source = source;
+            item.glyph = glyph;
+            item.identity = identity++;
+            item.ignorable = u_getIntPropertyValue(scalar, ignorableProperty) != 0;
+            Tag script = scalarScript(scalar);
+            if (group.script == 0 && script != tag('D', 'F', 'L', 'T'))
+                group.script = script;
+            group.glyphs.push_back(std::move(item));
+        };
         // Normalize on either side of a literal selection independently, so
         // a newly typed accent cannot compose away its selected base glyph.
         auto boundary = std::upper_bound(seedBoundaries.begin(), seedBoundaries.end(), range.location);
@@ -161,6 +173,18 @@ std::vector<TextRun> prepareText(NSString *text, const Cmap &cmap,
             NSUInteger partEnd = boundary != seedBoundaries.end() && *boundary < NSMaxRange(range)
                                    ? *boundary : NSMaxRange(range);
             NSRange partRange = NSMakeRange(partStart, partEnd - partStart);
+            partStart = partEnd;
+            while (boundary != seedBoundaries.end() && *boundary <= partStart) ++boundary;
+            // A single encoded scalar already keeps its original form and source span.
+            if (partRange.length == 1) {
+                uint32_t scalar = units[partRange.location];
+                if ((scalar < 0xD800 || scalar > 0xDFFF) && !variationSelector(scalar)) {
+                    if (Glyph glyph = cmap.nominal(scalar)) {
+                        appendItem(scalar, glyph, {uint32_t(partRange.location), uint32_t(partEnd)});
+                        continue;
+                    }
+                }
+            }
             NSString *source = [text substringWithRange:partRange];
             NSString *composed = source.precomposedStringWithCanonicalMapping;
             auto original = scalars(source);
@@ -187,25 +211,16 @@ std::vector<TextRun> prepareText(NSString *text, const Cmap &cmap,
                     if (unpairedSelectors) unpairedSelectors->push_back(sources[i]);
                     continue;
                 }
-                Item item;
-                item.scalar = scalar;
-                item.source = sources[i];
-                item.glyph = cmap.nominal(scalar);
-                item.identity = identity++;
+                Span source = sources[i];
+                Glyph glyph = cmap.nominal(scalar);
                 if (i + 1 < values.size() && variationSelector(values[i + 1]) &&
                     !isControlOrLineBreak(scalar)) {
                     if (auto variant = cmap.variation(scalar, values[i + 1]))
-                        item.glyph = *variant;
-                    item.source = unite(item.source, sources[++i]);
+                        glyph = *variant;
+                    source = unite(source, sources[++i]);
                 }
-                item.ignorable = u_getIntPropertyValue(scalar, ignorableProperty) != 0;
-                Tag script = scalarScript(scalar);
-                if (group.script == 0 && script != tag('D', 'F', 'L', 'T'))
-                    group.script = script;
-                group.glyphs.push_back(item);
+                appendItem(scalar, glyph, source);
             }
-            partStart = partEnd;
-            while (boundary != seedBoundaries.end() && *boundary <= partStart) ++boundary;
         }
         groups.push_back(std::move(group));
     }
