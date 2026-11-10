@@ -241,7 +241,9 @@
     self.boundingBoxView.hidden = self.viewMode != GAViewModeSingleGlyph;
     self.allGlyphsView.hidden = self.viewMode != GAViewModeAllGlyphs;
     self.multiScrollView.hidden = self.viewMode != GAViewModeMultiCharacter;
+    if (self.multiScrollView.hidden) self.multiView.layoutActive = NO;
     [self updateMultiLayout];
+    self.multiView.layoutActive = !self.multiScrollView.hidden;
     [self updateToolbarAppearance];
 }
 

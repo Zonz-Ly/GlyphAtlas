@@ -376,6 +376,7 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
 @property(nonatomic) BOOL hasNaturalFirstBaseline;
 @property(nonatomic) GAFirstBaselineMetrics naturalBaselineMetrics;
 @property(nonatomic, strong) NSColor *displayForegroundColor;
+@property(nonatomic) BOOL layoutPending;
 @property(nonatomic) BOOL pinchHasPair;
 @property(nonatomic) GAMagnificationControl pinchCandidate;
 @property(nonatomic) GAMagnificationControl magnificationControl;
@@ -392,6 +393,7 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
         _sideInsetFraction = GABoundingBoxDefaultSideInsetFraction;
         _showsMetrics = YES;
         _textScale = 1.0;
+        _layoutActive = YES;
         _lineHeightMultiple = 1.0;
         _baseWritingDirection = NSWritingDirectionNatural;
         _typesettingLanguage = @"";
@@ -420,6 +422,12 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
 }
 
 #pragma mark - State
+
+- (void)setLayoutActive:(BOOL)active {
+    if (_layoutActive == active) return;
+    _layoutActive = active;
+    if (active && self.layoutPending) [self rebuildLayout];
+}
 
 - (void)setDocument:(GAFontDocument *)document {
     // A window keeps its font; variation changes invalidate the baseline only
@@ -916,6 +924,9 @@ static NSIndexSet *GAForeignCharactersToOmit(NSAttributedString *display, NSInde
 }
 
 - (void)rebuildLayout {
+    self.layoutPending = YES;
+    if (!self.layoutActive) return;
+    self.layoutPending = NO;
     self.glyphHits = @[];
     self.pageContentSize = NSZeroSize;
     self.textView.firstBaselineOffset = 0;

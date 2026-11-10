@@ -14,6 +14,8 @@ NS_ASSUME_NONNULL_BEGIN
 /// Native paragraph line-height multiplier; 1.0 uses the natural line height.
 @property(nonatomic) CGFloat lineHeightMultiple;
 @property(nonatomic) CGFloat textScale;
+/// Inactive previews retain state and lay out once before becoming visible.
+@property(nonatomic) BOOL layoutActive;
 - (void)refreshPreviewColors;
 @property (nonatomic, strong, nullable) GAFontDocument *document;
 /// Fraction of the viewport used as the page margin. Shares the single-glyph
