@@ -148,6 +148,20 @@ static NSTextLineFragment *GAFirstLineBaseline(NSTextLayoutManager *layout, CGFl
 
 #pragma mark - Display copy
 
+/// Only these group fields affect the native display copy and source mapping.
+/// Copy their values so in-place changes cannot make an old snapshot appear equal.
+static NSArray *GAMultiGroupIdentity(NSArray<GACharacterGroup *> *groups) {
+    NSMutableArray *identity = [NSMutableArray arrayWithCapacity:groups.count];
+    for (GACharacterGroup *group in groups) {
+        [identity addObject:@[
+            [NSValue valueWithRange:group.textRange], group.text.copy ?: @"",
+            @(group.seeded), @(group.insertedLigature),
+            group.variants.firstObject.glyphIDs.copy ?: @[],
+        ]];
+    }
+    return identity;
+}
+
 /// Builds fixed-GID display text without changing the user's source text.
 static NSAttributedString *GACreateGlyphDisplayString(
     NSArray<NSNumber *> *glyphIDs, NSString *baseString, NSFont *font,
@@ -350,6 +364,7 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
 @property (nonatomic, strong) GAMultiTextView *textView;
 @property (nonatomic, copy) NSString *text;
 @property (nonatomic, copy) NSArray<NSNumber *> *displaySourceIndices;
+@property(nonatomic, copy) NSArray *displayGroupIdentity;
 @property (nonatomic, copy, readonly) NSArray<GACharacterGroup *> *groups;
 @property (nonatomic, copy) NSIndexSet *omissions;
 @property(nonatomic, copy) NSArray<GAGlyphLayoutRun *> *glyphHits;
@@ -415,10 +430,15 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
 
 - (void)setText:(NSString *)text groups:(NSArray<GACharacterGroup *> *)groups
       omissions:(NSIndexSet *)omissions {
+    NSArray *identity = GAMultiGroupIdentity(groups);
+    BOOL unchanged = [_text isEqualToString:text] &&
+        [self.omissions isEqualToIndexSet:omissions] &&
+        [self.displayGroupIdentity isEqualToArray:identity];
     _text = [text copy];
     _groups = [groups copy] ?: @[];
     self.omissions = omissions;
-    [self rebuildLayout];
+    self.displayGroupIdentity = identity;
+    if (!unchanged) [self rebuildLayout];
 }
 
 - (void)setSideInsetFraction:(CGFloat)sideInsetFraction {
