@@ -308,6 +308,13 @@ NSArray<GACharacterGroup *> *GAGroupsForScanResult(NSString *text, GARawScanResu
         CFCharacterSetRef characterSet = CTFontCopyCharacterSet(_font);
         if (characterSet != NULL) {
             for (uint32_t scalar = 0; scalar <= 0x10FFFF; scalar++) {
+                // Native character sets report empty planes without scanning
+                // every scalar; nominal glyph mapping remains CoreText-owned.
+                if ((scalar & 0xFFFF) == 0 &&
+                    !CFCharacterSetHasMemberInPlane(characterSet, scalar >> 16)) {
+                    scalar += 0xFFFF;
+                    continue;
+                }
                 if (scalar >= 0xD800 && scalar <= 0xDFFF) {
                     continue;
                 }
