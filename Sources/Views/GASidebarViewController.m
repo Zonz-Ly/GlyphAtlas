@@ -986,7 +986,7 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
             old.variant.isBase != updated.variant.isBase ||
             old.variant.isLigature != updated.variant.isLigature ||
             old.variant.isTemporary != updated.variant.isTemporary ||
-            ![old.variant.glyphKey isEqualToString:updated.variant.glyphKey] ||
+            ![old.variant.glyphIDs isEqualToArray:updated.variant.glyphIDs] ||
             ![old.variant.featureSources isEqualToArray:updated.variant.featureSources] ||
             ![old.variant.unicodeScalars isEqualToArray:updated.variant.unicodeScalars] ||
             ![old.variant.glyphName isEqualToString:updated.variant.glyphName]) return NO;
