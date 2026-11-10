@@ -375,6 +375,8 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
 @property(nonatomic) CGFloat naturalFirstBaseline;
 @property(nonatomic) BOOL hasNaturalFirstBaseline;
 @property(nonatomic) GAFirstBaselineMetrics naturalBaselineMetrics;
+@property(nonatomic, strong) NSFont *displayFont;
+@property(nonatomic, strong) NSFont *baselineMetricsFont;
 @property(nonatomic, strong) NSColor *displayForegroundColor;
 @property(nonatomic) BOOL layoutPending;
 @property(nonatomic) BOOL pinchHasPair;
@@ -432,6 +434,7 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
 - (void)setDocument:(GAFontDocument *)document {
     // A window keeps its font; variation changes invalidate the baseline only
     // when the applied display font's native baseline metrics change.
+    if (_document.fontBox != document.fontBox) self.displayFont = nil;
     _document = document;
     [self rebuildLayout];
 }
@@ -503,8 +506,10 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
     BOOL insetChanged = fabs(_sideInsetFraction - defaultInset) >= 1e-9;
     if (!insetChanged && fabs(_textScale - 1.0) < 1e-9 && fabs(_lineHeightMultiple - 1.0) < 1e-9) return;
     GAPreserveScrollPosition(self.enclosingScrollView, ^{
-        if (fabs(self->_textScale - 1.0) >= 1e-9)
+        if (fabs(self->_textScale - 1.0) >= 1e-9) {
             self.hasNaturalFirstBaseline = NO;
+            self.displayFont = nil;
+        }
         self->_textScale = 1.0;
         self->_lineHeightMultiple = 1.0;
         self->_sideInsetFraction = defaultInset;
@@ -519,6 +524,7 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
     if (fabs(clamped - _textScale) < 1e-9) return;
     GAPreserveScrollPosition(self.enclosingScrollView, ^{
         self->_textScale = clamped;
+        self.displayFont = nil;
         self.hasNaturalFirstBaseline = NO;
         [self rebuildLayout];
     });
@@ -564,6 +570,7 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
 - (void)setFeatureSettings:(NSArray<NSDictionary *> *)settings {
     if ([_featureSettings isEqualToArray:settings]) return;
     _featureSettings = settings.copy;
+    self.displayFont = nil;
     [self rebuildLayout];
 }
 
@@ -903,13 +910,17 @@ static NSIndexSet *GAForeignCharactersToOmit(NSAttributedString *display, NSInde
 }
 
 - (void)updateFirstBaselineOffsetForFont:(NSFont *)font {
-    GAFirstBaselineMetrics metrics =
-        GAReadFirstBaselineMetrics((__bridge CTFontRef)font, self.vertical);
+    GAFirstBaselineMetrics metrics = self.naturalBaselineMetrics;
+    if (!self.hasNaturalFirstBaseline || self.baselineMetricsFont != font)
+        metrics = GAReadFirstBaselineMetrics((__bridge CTFontRef)font, self.vertical);
     GAFirstBaselineMetrics previous = self.naturalBaselineMetrics;
     if (metrics.ascent != previous.ascent || metrics.descent != previous.descent ||
         metrics.verticalAscent != previous.verticalAscent)
         self.hasNaturalFirstBaseline = NO;
-    if (self.hasNaturalFirstBaseline && self.lineHeightMultiple == 1.0) return;
+    if (self.hasNaturalFirstBaseline && self.lineHeightMultiple == 1.0) {
+        self.baselineMetricsFont = font;
+        return;
+    }
     CGFloat baseline = 0;
     NSTextLineFragment *line = GAFirstLineBaseline(self.textView.textLayoutManager, &baseline);
     if (!line) return;
@@ -939,6 +950,7 @@ static NSIndexSet *GAForeignCharactersToOmit(NSAttributedString *display, NSInde
         self.naturalBaselineMetrics = metrics;
         self.hasNaturalFirstBaseline = YES;
     }
+    self.baselineMetricsFont = font;
     self.textView.firstBaselineOffset = baseline - self.naturalFirstBaseline;
 }
 
@@ -955,9 +967,11 @@ static NSIndexSet *GAForeignCharactersToOmit(NSAttributedString *display, NSInde
     if (self.document != nil && self.text.length > 0 &&
         self.viewportSize.width >= 1 && self.viewportSize.height >= 1) {
         page = area.size;
-        font = (__bridge_transfer NSFont *)GACopyFontWithFeatureSettings(
-            self.document.fontBox.font, GAMultiBaseFontSize * self.textScale,
-            self.featureSettings);
+        if (!self.displayFont)
+            self.displayFont = (__bridge_transfer NSFont *)GACopyFontWithFeatureSettings(
+                self.document.fontBox.font, GAMultiBaseFontSize * self.textScale,
+                self.featureSettings);
+        font = self.displayFont;
     }
     if (font == nil || page.width < 1 || page.height < 1) {
         self.textView.hidden = YES;
