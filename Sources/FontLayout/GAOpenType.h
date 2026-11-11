@@ -90,6 +90,7 @@ class OpenType {
     bool positioning_;
     View data_;
     std::vector<Lookup> lookups_;
+    std::vector<Coverage> singlePositioningCoverages_;
     std::vector<std::vector<Feature>> branches_;
     std::vector<Script> scripts_;
 
@@ -115,6 +116,10 @@ class OpenType {
                     Trace *trace = nullptr, const Cancellation *cancellation = nullptr) const;
     void substituteLookups(Buffer &buffer, const GDEF &gdef, const std::vector<LookupStep> &steps,
                            Trace *trace = nullptr, const Cancellation *cancellation = nullptr) const;
+    bool mayPositionSingleGlyph(Glyph glyph) const {
+        return std::any_of(singlePositioningCoverages_.begin(), singlePositioningCoverages_.end(),
+                           [glyph](const Coverage &coverage) { return coverage.contains(glyph); });
+    }
     /// Returns whether the successfully executed plan owns the kern feature.
     bool position(Buffer &buffer, const GDEF &gdef, const Settings &settings,
                   const Metrics &metrics, size_t branch = 0) const;

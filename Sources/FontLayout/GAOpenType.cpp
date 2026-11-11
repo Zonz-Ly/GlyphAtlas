@@ -426,6 +426,8 @@ OpenType::OpenType(View table, bool positioning) : positioning_(positioning), da
                         }
                     }
             }
+            if (positioning && sub.type == 1 && sub.coverage)
+                singlePositioningCoverages_.push_back(sub.coverage);
             lookup.reverse |= !positioning && sub.type == 8;
             lookup.subtables.push_back(std::move(sub));
         }

@@ -1161,6 +1161,15 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
                            forKey:[content copy] cost:content.length * 2 + 128];
             }
         }
+        // Pair and attachment lookups need a second glyph. With no single
+        // positioning coverage, the only origin is zero regardless of advance.
+        if (glyphIDs.count == 1 && r.unitsPerEm > 0 &&
+            !r.gpos.mayPositionSingleGlyph(glyphIDs.firstObject.unsignedShortValue)) {
+            static NSArray<NSValue *> *zeroOrigin;
+            static dispatch_once_t once;
+            dispatch_once(&once, ^{ zeroOrigin = @[[NSValue valueWithPoint:NSZeroPoint]]; });
+            return zeroOrigin;
+        }
         Buffer items = literalBuffer(glyphVector(glyphIDs));
         if (settings.rtl)
             std::reverse(items.begin(), items.end());
