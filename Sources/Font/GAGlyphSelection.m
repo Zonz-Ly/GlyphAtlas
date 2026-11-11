@@ -45,8 +45,9 @@ GAGlyphQueryIdentity *GAGlyphQueryKey(NSString *text, NSArray<GAGlyphSelectionRu
     NSMutableArray *components = [NSMutableArray arrayWithObject:[text copy]];
     NSUInteger hash = text.hash;
     for (GAGlyphSelectionRun *run in runs) {
-        [components
-            addObject:@[ @(run.range.location), @(run.range.length), run.selection.glyphIDs ]];
+        [components addObject:@(run.range.location)];
+        [components addObject:@(run.range.length)];
+        [components addObject:run.selection.glyphIDs];
         hash = (hash * 31) ^ run.range.location;
         hash = (hash * 31) ^ run.range.length;
         for (NSNumber *glyph in run.selection.glyphIDs)
