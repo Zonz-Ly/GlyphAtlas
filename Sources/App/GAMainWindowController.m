@@ -473,17 +473,17 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     NSRange leadingSource = NSMakeRange(NSNotFound, 0);
     for (GACharacterGroup *group in snapshot.multiGroups)
         if (NSIntersectionRange(group.textRange, range).length) {
-            GACharacterGroup *original = [snapshot.multiGroupSources objectForKey:group] ?: group;
+            NSRange original = [snapshot sourceRangeForMultiGroup:group];
             if (leadingGlyphIDs.count && leadingRange.length < range.length &&
                 NSLocationInRange(leadingRange.location, group.textRange) &&
                 NSMaxRange(leadingRange) <= NSMaxRange(group.textRange)) {
                 NSUInteger offset = leadingRange.location - group.textRange.location;
-                leadingSource = NSMakeRange(original.textRange.location + offset, leadingRange.length);
+                leadingSource = NSMakeRange(original.location + offset, leadingRange.length);
             }
             if (source.location == NSNotFound) {
-                source = original.textRange;
+                source = original;
             } else {
-                if (NSMaxRange(source) != original.textRange.location) {
+                if (NSMaxRange(source) != original.location) {
                     // A missing component can leave a gap in the original
                     // text even when the preview shapes one visible cluster.
                     if (leadingSource.location == NSNotFound ||
@@ -491,7 +491,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
                         [self.sidebarViewController selectBaseForTextRange:source];
                     return;
                 }
-                source.length += original.textRange.length;
+                source.length += original.length;
             }
         }
     if (source.location == NSNotFound) return;

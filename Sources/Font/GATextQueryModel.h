@@ -38,7 +38,8 @@ GABuildDisplayGroups(NSArray<GACharacterGroup *> *groups, NSString *text,
 /// Locations of zero-width shaping boundaries in multiText.
 @property (nonatomic, copy, nonnull) NSIndexSet *multiOmissions;
 @property (nonatomic, strong, nonnull) NSArray<GACharacterGroup *> *multiGroups;
-@property (nonatomic, strong, nonnull) NSMapTable<GACharacterGroup *, GACharacterGroup *> *multiGroupSources;
+/// Maps a preview group back to its range in the original text.
+- (NSRange)sourceRangeForMultiGroup:(GACharacterGroup *)group;
 @end
 
 FOUNDATION_EXPORT GAScanDisplaySnapshot * _Nullable GABuildScanDisplaySnapshot(NSString *text,

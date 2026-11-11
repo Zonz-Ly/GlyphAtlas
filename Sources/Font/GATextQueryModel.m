@@ -418,7 +418,19 @@ NSArray<GACharacterGroup *> *GABuildDisplayGroups(NSArray<GACharacterGroup *> *g
 
 #pragma mark - Preview projection
 
+@interface GAScanDisplaySnapshot ()
+@property(nonatomic, strong) NSMapTable<GACharacterGroup *, NSNumber *> *sourceLocations;
+@end
+
 @implementation GAScanDisplaySnapshot
+
+- (NSRange)sourceRangeForMultiGroup:(GACharacterGroup *)group {
+    NSRange range = group.textRange;
+    NSNumber *location = [self.sourceLocations objectForKey:group];
+    if (location) range.location = location.unsignedIntegerValue;
+    return range;
+}
+
 @end
 
 /// A control attached to supported text can shape it without its own glyph.
@@ -439,8 +451,9 @@ GAScanDisplaySnapshot *GABuildScanDisplaySnapshot(NSString *text,
     NSMutableString *multiText = [NSMutableString string];
     NSMutableIndexSet *omissions = [NSMutableIndexSet indexSet];
     NSMutableArray<GACharacterGroup *> *multiGroups = [NSMutableArray array];
-    NSMapTable<GACharacterGroup *, GACharacterGroup *> *sources =
+    NSMapTable<GACharacterGroup *, NSNumber *> *sourceLocations =
         [NSMapTable weakToStrongObjectsMapTable];
+    NSUInteger previousSourceLocation = NSNotFound;
     NSUInteger cursor = 0;
     BOOL previousMissing = NO;
     BOOL pendingOmission = NO;
@@ -458,11 +471,13 @@ GAScanDisplaySnapshot *GABuildScanDisplaySnapshot(NSString *text,
         }
 
         GACharacterGroup *previousDisplay = multiGroups.lastObject;
-        GACharacterGroup *previousSource = previousDisplay ? [sources objectForKey:previousDisplay] : nil;
+        NSRange previousSourceRange = previousDisplay
+            ? NSMakeRange(previousSourceLocation, previousDisplay.textRange.length)
+            : NSMakeRange(NSNotFound, 0);
         NSRange cluster = [text rangeOfComposedCharacterSequenceAtIndex:range.location];
-        BOOL canMerge = !group.seeded && previousSource && !previousSource.seeded &&
-            NSMaxRange(previousSource.textRange) == range.location &&
-            previousSource.textRange.location >= cluster.location;
+        BOOL canMerge = !group.seeded && previousDisplay && !previousDisplay.seeded &&
+            NSMaxRange(previousSourceRange) == range.location &&
+            previousSourceLocation >= cluster.location;
         GAGlyphVariant *base = group.variants.firstObject;
         BOOL missing = !group.seeded && [base.glyphIDs containsObject:@0];
         BOOL layoutControl = !group.seeded && (missing || previousMissing);
@@ -475,8 +490,8 @@ GAScanDisplaySnapshot *GABuildScanDisplaySnapshot(NSString *text,
             // Keep a control with a surviving component anywhere in its original cluster.
             if (inspectedCluster != cluster.location) {
                 inspectedCluster = cluster.location;
-                clusterHasSupportedText = previousSource &&
-                    NSIntersectionRange(previousSource.textRange, cluster).length;
+                clusterHasSupportedText = previousDisplay &&
+                    NSIntersectionRange(previousSourceRange, cluster).length;
                 for (NSUInteger next = index + 1; !clusterHasSupportedText && next < groups.count; next++) {
                     GACharacterGroup *candidate = groups[next];
                     if (candidate.insertedLigature) continue;
@@ -501,8 +516,8 @@ GAScanDisplaySnapshot *GABuildScanDisplaySnapshot(NSString *text,
             continue;
         }
 
-        BOOL sameCluster = previousSource &&
-            NSIntersectionRange(previousSource.textRange, cluster).length;
+        BOOL sameCluster = previousDisplay &&
+            NSIntersectionRange(previousSourceRange, cluster).length;
         if (pendingOmission && multiText.length && !sameCluster) {
             unichar left = [multiText characterAtIndex:multiText.length - 1];
             unichar right = [text characterAtIndex:range.location];
@@ -515,29 +530,25 @@ GAScanDisplaySnapshot *GABuildScanDisplaySnapshot(NSString *text,
         pendingOmission = NO;
         NSString *groupText = [text substringWithRange:range];
         if (canMerge) {
-            previousSource.textRange = NSUnionRange(previousSource.textRange, range);
-            previousSource.text = [previousSource.text stringByAppendingString:groupText];
             previousDisplay.textRange = NSMakeRange(previousDisplay.textRange.location,
                 previousDisplay.textRange.length + range.length);
-            previousDisplay.text = previousSource.text;
-            GAGlyphVariant *mergedBase = previousSource.variants.firstObject;
+            previousDisplay.text = [previousDisplay.text stringByAppendingString:groupText];
+            GAGlyphVariant *mergedBase = previousDisplay.variants.firstObject;
             mergedBase.glyphIDs = [mergedBase.glyphIDs arrayByAddingObjectsFromArray:base.glyphIDs];
         } else {
-            GACharacterGroup *source = [[GACharacterGroup alloc] init];
-            source.text = groupText;
-            source.textRange = range;
-            source.seeded = group.seeded;
             GAGlyphVariant *layoutBase = [[GAGlyphVariant alloc] init];
             layoutBase.fontBox = base.fontBox;
             layoutBase.glyphIDs = base.glyphIDs;
-            source.variants = @[layoutBase];
 
             GACharacterGroup *display = [[GACharacterGroup alloc] init];
             display.text = groupText;
             display.textRange = NSMakeRange(multiText.length, range.length);
-            display.variants = source.variants;
+            display.variants = @[layoutBase];
             display.seeded = group.seeded;
-            [sources setObject:source forKey:display];
+            // Merging only extends the group; the original start stays fixed.
+            previousSourceLocation = range.location;
+            if (range.location != display.textRange.location)
+                [sourceLocations setObject:@(range.location) forKey:display];
             [multiGroups addObject:display];
         }
         [multiText appendString:groupText];
@@ -552,6 +563,6 @@ GAScanDisplaySnapshot *GABuildScanDisplaySnapshot(NSString *text,
     snapshot.multiText = [multiText copy];
     snapshot.multiOmissions = omissions;
     snapshot.multiGroups = multiGroups;
-    snapshot.multiGroupSources = sources;
+    snapshot.sourceLocations = sourceLocations;
     return snapshot;
 }
