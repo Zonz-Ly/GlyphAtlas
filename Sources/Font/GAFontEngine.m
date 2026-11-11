@@ -1,5 +1,6 @@
 #import "GAFontEngine.h"
 #import "FontLayout/GASubstitutionEngine.h"
+#import "FontLayout/GAGlyphLabels.h"
 #import <AppKit/AppKit.h>
 
 const CGFloat GAFontShapingSize = 200.0;
@@ -216,6 +217,7 @@ NSArray<GACharacterGroup *> *GAGroupsForScanResult(NSString *text, GARawScanResu
     CTFontRef _font;
     GAFontBox *_fontBox;
     GASubstitutionEngine *_substitutionEngine;
+    GAGlyphLabels *_glyphLabels;
     NSDictionary<NSNumber *, NSArray<NSNumber *> *> *_unicodeMap;
     NSArray<GAAllGlyphEntry *> *_allGlyphEntries;
 }
@@ -238,6 +240,7 @@ NSArray<GACharacterGroup *> *GAGroupsForScanResult(NSString *text, GARawScanResu
     if (_font == NULL)
         return nil;
     _fontURL = [url copy];
+    _glyphLabels = source ? source->_glyphLabels : [GAGlyphLabels labelsForFont:_font];
     NSArray<NSString *> *languages = CFBridgingRelease(CTFontCopySupportedLanguages(_font));
     for (NSString *language in languages) {
         if ([NSLocale characterDirectionForLanguage:language] == NSLocaleLanguageDirectionRightToLeft) {
@@ -372,40 +375,9 @@ NSArray<GACharacterGroup *> *GAGroupsForScanResult(NSString *text, GARawScanResu
     }
 }
 
-/// Checks a nonempty glyph name; the caller handles missing names.
-static BOOL GAGlyphNameLooksSynthetic(NSString *name) {
-    unichar initial = [name characterAtIndex:0];
-    if (initial < 128 && initial != 'g' && initial != 'G' && initial != 'u' && initial != 'U')
-        return NO;
-    static NSRegularExpression *gidPattern;
-    static NSRegularExpression *temporaryPattern;
-    static NSRegularExpression *variationPattern;
-    static NSRegularExpression *multiUnicodePattern;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        gidPattern = [NSRegularExpression regularExpressionWithPattern:
-            @"^(?:gid|glyph)[0-9]+$" options:NSRegularExpressionCaseInsensitive error:nil];
-        temporaryPattern = [NSRegularExpression regularExpressionWithPattern:
-            @"^uni(?:[0-9a-f]{4,6})+\\.[0-9]+$"
-            options:NSRegularExpressionCaseInsensitive error:nil];
-        variationPattern = [NSRegularExpression regularExpressionWithPattern:
-            @"^uni(?:[0-9a-f]{4,6})*_u[0-9a-f]{4,6}(?:\\.[0-9]+)?$"
-            options:NSRegularExpressionCaseInsensitive error:nil];
-        multiUnicodePattern = [NSRegularExpression regularExpressionWithPattern:
-            @"^uni(?:[0-9a-f]{4,6}){2,}$"
-            options:NSRegularExpressionCaseInsensitive error:nil];
-    });
-    NSRange range = NSMakeRange(0, name.length);
-    return [gidPattern firstMatchInString:name options:0 range:range] != nil ||
-           [temporaryPattern firstMatchInString:name options:0 range:range] != nil ||
-           [variationPattern firstMatchInString:name options:0 range:range] != nil ||
-           [multiUnicodePattern firstMatchInString:name options:0 range:range] != nil;
-}
-
-static NSString *GADisplayNameForGlyph(CTFontRef font, NSNumber *number) {
-    NSString *name = CFBridgingRelease(CTFontCopyNameForGlyph(font, number.unsignedShortValue));
-    return !name.length || GAGlyphNameLooksSynthetic(name)
-        ? [NSString stringWithFormat:@"GID %@", number] : name;
+static NSString *GADisplayLabelForGlyph(GAGlyphLabels *labels, NSNumber *number) {
+    return [labels labelForGlyph:number.unsignedIntegerValue]
+        ?: [NSString stringWithFormat:@"GID %@", number];
 }
 
 - (void)decorateVariant:(GAGlyphVariant *)variant {
@@ -419,7 +391,7 @@ static NSString *GADisplayNameForGlyph(CTFontRef font, NSNumber *number) {
         NSNumber *glyph = variant.glyphIDs.firstObject;
         // unicodeMap already stores unique aliases in ascending scalar order.
         variant.unicodeScalars = map[glyph] ?: @[];
-        variant.glyphName = GADisplayNameForGlyph(_font, glyph);
+        variant.glyphName = GADisplayLabelForGlyph(_glyphLabels, glyph);
         return;
     }
     NSMutableSet<NSNumber *> *scalars = [NSMutableSet set];
@@ -431,7 +403,7 @@ static NSString *GADisplayNameForGlyph(CTFontRef font, NSNumber *number) {
             [scalars addObject:scalar];
         }
 
-        [glyphNames addObject:GADisplayNameForGlyph(_font, glyphNumber)];
+        [glyphNames addObject:GADisplayLabelForGlyph(_glyphLabels, glyphNumber)];
     }
 
     NSArray<NSNumber *> *sortedScalars =

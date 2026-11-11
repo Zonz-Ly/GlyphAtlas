@@ -12,8 +12,10 @@
         <string>zh-Hans</string>
         <string>hsn-Hant</string>
         <string>hsn-Hans</string>
-        <string>nan-Hant</string>
-        <string>nan-Hans</string>
+        <string>nan-Hant-teochew</string>
+        <string>nan-Hant-hokkien</string>
+        <string>nan-Hans-teochew</string>
+        <string>nan-Hans-hokkien</string>
         <string>yue-Hant</string>
         <string>yue-Hans</string>
         <string>wuu-Hant</string>

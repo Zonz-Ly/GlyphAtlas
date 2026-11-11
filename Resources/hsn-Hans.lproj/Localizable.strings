@@ -2,9 +2,9 @@
 
 /* Application and window commands. */
 "About Glyph Atlas" = "关于 Glyph Atlas";
-"Hide Glyph Atlas" = "隐藏 Glyph Atlas";
-"Hide Others" = "隐藏其他";
-"Show All" = "咸显示";
+"Hide Glyph Atlas" = "把 Glyph Atlas 弆起";
+"Hide Others" = "把别个弆起";
+"Show All" = "咸现形";
 "Quit Glyph Atlas" = "退出 Glyph Atlas";
 "Services" = "服务";
 "Window" = "窗口";
@@ -13,7 +13,7 @@
 "Bring All to Front" = "随么子窗口咸摆到前头";
 "Enter Full Screen" = "进入全屏幕";
 "Help" = "骢上岭";
-"Glyph Atlas Help" = "Glyph Atlas 帮助";
+"Glyph Atlas Help" = "Glyph Atlas 了难";
 "Cancel" = "取消";
 "OK" = "要得";
 
@@ -64,7 +64,7 @@
 /* Views and glyphs. */
 "View" = "显示";
 "Show Sidebar" = "显示侧边栏";
-"Hide Sidebar" = "隐藏侧边栏";
+"Hide Sidebar" = "把侧边栏弆起";
 "Single Glyph" = "单字形";
 "Characters" = "多字符";
 "Glyph Grid" = "字形表";
@@ -78,10 +78,10 @@
 
 /* Text layout and typography. */
 "Make Text Bigger" = "放大文字";
-"Make Text Smaller" = "缩小文字";
+"Make Text Smaller" = "缩细文字";
 "Increase Leading" = "增大行距";
-"Decrease Leading" = "减小行距";
-"Default Size" = "默认大小";
+"Decrease Leading" = "减细行距";
+"Default Size" = "默认大细";
 "Text Alignment" = "文本对齐";
 "Left" = "左对齐";
 "Center" = "居中";
@@ -101,14 +101,14 @@
 "No Typographic Features" = "冇得字体排印特性";
 "Typesetting Language" = "排版语言";
 "No Selectable Languages" = "冇得可以选的语言";
-"Other" = "其他";
+"Other" = "别个";
 
 /* Bounding box and colors. */
 "Bounding Box" = "边界框";
 "Show Bounding Box" = "显示边界框";
-"Hide Bounding Box" = "隐藏边界框";
+"Hide Bounding Box" = "把边界框弆起";
 "Expand Bounding Box" = "放大边界框";
-"Shrink Bounding Box" = "缩小边界框";
+"Shrink Bounding Box" = "缩细边界框";
 "Colors" = "颜色";
 "Glyph…" = "字形…";
 "Background…" = "背景…";
@@ -123,7 +123,7 @@
 "Variable" = "可变";
 "Named Instance" = "具名实例";
 "Default" = "默认";
-"Custom" = "自己定";
+"Custom" = "自个定";
 "Use as Defaults" = "用作默认";
 "Restore Default" = "恢复默认";
 
@@ -139,11 +139,11 @@
 "Help.05" = "在字形上点两下，或者选中以后按 ⏎，就会换掉默认字形，还会列出箇只字形的替换字。想把字形加进去，就同时按住 ⇧。";
 "Help.06" = "按 ↑／↓ 在字形里头上下选，按 ⌘↑／⌘↓ 在基本字形之间跳，按 ⌥↑／⌥↓ 就到列表头一只或者最后一只。";
 "Help.07" = "按 ⌘C，就把选中的字形对应的编码字符咸拷贝下来。";
-"Help.08" = "鼠标指针停在统一码徽章上，就看得到统一码标准里头定的字符名。";
+"Help.08" = "老鼠指针停在统一码徽章上，就看得到统一码标准里头定的字符名。";
 "Help.09" = "一打开就是“字形表”。点右键换视图，或者按 ⌘1 看“单字形”、按 ⌘2 看“多字符”、按 ⌘3 看“字形表”。";
 "Help.10" = "在“多字符”里头点一下字形，就看得到替换字。点右键或者按 ⌘5，可以在横排和竖排之间换。“文本对齐”和“字体排印”也在右键菜单里头。菜单栏的“显示”里头还有别的选项。";
 "Help.11" = "在“字形表”里头点两下字形，就可以把它加到原先的文字里头。在侧边栏点一下字形，它就会在“字形表”里头闪一下。点右键就寻得到“筛选特性”。";
-"Help.12" = "用 ⌘+／⌘− 来放大或缩小文字，也可以在触控板上用两只手指捏拢、分开。在“多字符”里头，用 ⌥⌘+／⌥⌘− 或者横着捏合来调边距，用 ⌃⌘+／⌃⌘− 或者竖着捏合来调行距。按 ⌘0 就回到默认大小。";
+"Help.12" = "用 ⌘+／⌘− 来放大或缩细文字，也可以在触控板上用两只手指捏拢、分开。在“多字符”里头，用 ⌥⌘+／⌥⌘− 或者横着捏合来调边距，用 ⌃⌘+／⌃⌘− 或者竖着捏合来调行距。按 ⌘0 就回到默认大细。";
 "Help.13" = "阴影标出边界框，字形的宽高、排版的行高和行距咸看得到。按 ⌘4 就把边界框藏起来。";
 "Help.14" = "有深色模式。点到实心字形要当心，莫把眼睛晃花著。菜单栏的“颜色”里头可以改字形、边界框阴影和背景的颜色。调好就选“存下如至今的配色”。按住 ⌥ 就看得到“删除配色”。";
-"Help.15" = "在菜单栏点“用作默认”，把如至今的视图、颜色、大小、别的预览设置和窗口大小咸记下来，往后开字体就照箇套设置来。按住 ⌥ 可以改选“恢复默认”。";
+"Help.15" = "在菜单栏点“用作默认”，把如至今的视图、颜色、大细、别的预览设置和窗口大细咸记下来，往后开字体就照箇套设置来。按住 ⌥ 可以改选“恢复默认”。嗷呜～～～";

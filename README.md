@@ -14,7 +14,7 @@ A native macOS font and alternate-glyph inspector. Type text to see every altern
 ## Support
 
 - .ttf .otf .ttc .otc .woff .woff2 .dfont
-- Chinese (Mandarin, Changsha Xiang, Teochew, Cantonese, Shanghainese), Tibetan, Uyghur, Japanese, Korean, English, German, French, Spanish, Italian, Brazilian Portuguese, Russian, Vietnamese, Thai, Arabic, Hindi, Malay, Khmer, Latin, Esperanto.
+- Chinese (Mandarin, Changsha Xiang, Teochew, Hokkien, Cantonese, Shanghainese), Tibetan, Uyghur, Japanese, Korean, English, German, French, Spanish, Italian, Brazilian Portuguese, Russian, Vietnamese, Thai, Arabic, Hindi, Malay, Khmer, Latin, Esperanto.
 
 ## Build
 
