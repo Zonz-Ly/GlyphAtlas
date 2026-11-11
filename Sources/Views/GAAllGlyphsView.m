@@ -73,9 +73,11 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
     [self.highlightTimer invalidate];
     self.highlightTimer = nil;
     self.highlightIndex = NSNotFound;
-    _entries = [entries copy];
-    _pageMetrics = [NSMutableData dataWithLength:_entries.count * sizeof(GAGlyphPage)];
-    _pageMetricsValid = [NSMutableData dataWithLength:_entries.count];
+    if (_entries != entries) {
+        _entries = [entries copy];
+        _pageMetrics = [NSMutableData dataWithLength:_entries.count * sizeof(GAGlyphPage)];
+        _pageMetricsValid = [NSMutableData dataWithLength:_entries.count];
+    }
     [self setNeedsDisplay:YES];
 }
 
@@ -388,6 +390,7 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
 @interface GAAllGlyphsView ()
 @property (nonatomic, strong) GAAllGlyphsGrid *grid;
 @property (nonatomic, strong) NSArray<GAAllGlyphEntry *> *inventory;
+@property(nonatomic, copy) NSIndexSet *appliedGlyphIDs;
 @property(nonatomic, copy) NSIndexSet *pendingGlyphIDs;
 @property(nonatomic) BOOL hasPendingGlyphIDs;
 @property (nonatomic) CGFloat magnificationStartScale;
@@ -480,19 +483,24 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
 
 - (void)applyVisibleGlyphIDs:(NSIndexSet *)glyphIDs {
     NSArray<GAAllGlyphEntry *> *inventory = self.inventory ?: @[];
-    if (glyphIDs) {
-        NSMutableArray<GAAllGlyphEntry *> *entries = [NSMutableArray arrayWithCapacity:glyphIDs.count];
+    NSArray<GAAllGlyphEntry *> *entries = inventory;
+    if (glyphIDs && self.appliedGlyphIDs && [glyphIDs isEqualToIndexSet:self.appliedGlyphIDs]) {
+        // An inventory change clears the filter. Font changes invalidate page
+        // metrics separately, even when the filtered entries stay the same.
+        entries = self.grid.entries;
+    } else if (glyphIDs) {
+        NSMutableArray<GAAllGlyphEntry *> *filtered = [NSMutableArray arrayWithCapacity:glyphIDs.count];
         [glyphIDs enumerateIndexesUsingBlock:^(NSUInteger index, BOOL *stop) {
             if (index >= inventory.count) {
                 *stop = YES;
                 return;
             }
-            [entries addObject:inventory[index]];
+            [filtered addObject:inventory[index]];
         }];
-        self.grid.entries = entries;
-    } else {
-        self.grid.entries = inventory;
+        entries = filtered;
     }
+    self.appliedGlyphIDs = glyphIDs;
+    self.grid.entries = entries;
     [self.grid updateLayoutForWidth:NSWidth(self.bounds)];
 }
 
