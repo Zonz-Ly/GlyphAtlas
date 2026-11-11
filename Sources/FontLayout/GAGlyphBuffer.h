@@ -86,7 +86,7 @@ struct Budget {
     size_t remaining, maxGlyphs;
     const Cancellation *cancellation;
     unsigned pendingPolls = 0;
-    bool discovery = false;
+    bool discovery;
     explicit Budget(size_t input, const Cancellation *check = nullptr, bool isDiscovery = false)
         : remaining(1000000 + std::min<size_t>(input, 1000000) * 10000),
           maxGlyphs(std::max<size_t>(65536, std::min<size_t>(1000000, input * 64))),

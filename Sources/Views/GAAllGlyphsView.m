@@ -1,5 +1,6 @@
 #import "GAAllGlyphsView.h"
 #import "GABoundingBoxView.h"
+#import "GAAppKit.h"
 
 static const CGFloat GAAllGlyphsSideMargin = 16.0;
 static const CGFloat GAAllGlyphsVerticalMargin = 18.0;
@@ -61,6 +62,14 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
         _columns = 1;
         _topInset = GAAllGlyphsVerticalMargin;
         _highlightIndex = NSNotFound;
+        if (@available(macOS 27.0, *)) {
+            NSClickGestureRecognizer *doubleTap = [[NSClickGestureRecognizer alloc]
+                initWithTarget:self action:@selector(handleDoubleTap:)];
+            doubleTap.buttonMask = 0;
+            doubleTap.numberOfClicksRequired = 2;
+            doubleTap.cancellableByScrollGesture = YES;
+            [self addGestureRecognizer:doubleTap];
+        }
     }
     return self;
 }
@@ -313,12 +322,18 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
 }
 
 - (void)mouseDown:(NSEvent *)event {
-    if (event.clickCount == 2 && self.onDoubleClick != nil) {
-        NSPoint point = [self convertPoint:event.locationInWindow fromView:nil];
-        NSInteger index = [self indexAtPoint:point];
-        if (index >= 0) self.onDoubleClick(self.entries[(NSUInteger)index]);
-    }
+    if (event.clickCount == 2)
+        [self activateGlyphAtPoint:[self convertPoint:event.locationInWindow fromView:nil]];
     [self.window performWindowDragWithEvent:event];
+}
+
+- (void)handleDoubleTap:(NSClickGestureRecognizer *)recognizer {
+    [self activateGlyphAtPoint:[recognizer locationInView:self]];
+}
+
+- (void)activateGlyphAtPoint:(NSPoint)point {
+    NSInteger index = [self indexAtPoint:point];
+    if (index >= 0 && self.onDoubleClick) self.onDoubleClick(self.entries[(NSUInteger)index]);
 }
 
 - (void)viewDidChangeEffectiveAppearance {

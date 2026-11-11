@@ -101,11 +101,10 @@ static BOOL GASelectorDefault(NSDictionary *selector) {
 
 - (void)chooseSelector:(NSDictionary *)selector inGroup:(GAFontFeatureGroup *)group {
     BOOL selected = [self isSelectorSelected:selector inGroup:group];
-    if (group.booleanChoice) {
-        NSDictionary *other = group.selectors[selected ? 0 : 1];
-        [self setExclusiveSelector:other inGroup:group];
-    } else if (group.exclusive) {
-        [self setExclusiveSelector:selector inGroup:group];
+    BOOL booleanChoice = group.booleanChoice;
+    if (booleanChoice || group.exclusive) {
+        NSDictionary *choice = booleanChoice ? group.selectors[selected ? 0 : 1] : selector;
+        [self setExclusiveSelector:choice inGroup:group];
     } else {
         NSMutableDictionary *choices = _choices[group.identifier];
         if (!choices) _choices[group.identifier] = choices = [NSMutableDictionary dictionary];

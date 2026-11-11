@@ -70,7 +70,7 @@ class Substitution {
     Tag activeFeature_ = 0;
     std::vector<Frame *> frames_;
     std::vector<std::tuple<unsigned, uint64_t, Glyph>> active_;
-    uint64_t nextIdentity_ = 1;
+    uint64_t nextIdentity_;
 
     void splice(size_t at, Buffer inserted) {
         constexpr size_t removed = 1;
@@ -265,9 +265,8 @@ class Substitution {
     Substitution(const std::vector<Lookup> &lookups, const GDEF &gdef, SubstitutionBuffer &buffer, Trace *trace,
                  Budget *budget = nullptr, Decisions *decisions = nullptr)
         : lookups_(lookups), gdef_(gdef), buffer_(buffer), trace_(trace), decisions_(decisions),
-          ownedBudget_(buffer.size()), budget_(budget ? *budget : ownedBudget_) {
-        nextIdentity_ = buffer_.nextIdentity();
-    }
+          ownedBudget_(buffer.size()), budget_(budget ? *budget : ownedBudget_),
+          nextIdentity_(buffer_.nextIdentity()) {}
     std::vector<Rule> rules(const LookupStep &step, size_t at) {
         std::vector<Rule> result;
         const auto &lookup = lookups_[step.lookup];

@@ -919,7 +919,7 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
     std::deque<State> pending;
     std::set<std::pair<std::vector<Glyph>, bool>> visited;
     std::map<std::vector<Glyph>, std::vector<OriginEdge>> edges;
-    GASubstitutionOrigin *otherMode = nil;
+    GASubstitutionOrigin *otherMode;
     Budget budget(text.length);
     size_t queuedGlyphs = 0;
     try {

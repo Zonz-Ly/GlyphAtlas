@@ -55,7 +55,7 @@ BUNDLE="$APP/Contents"
 mkdir -p "$BUILD/bin" "$DIST"
 
 ARCH_BINARIES=()
-APP_SOURCES=("$ROOT"/Sources/{App,Font,Input,Views}/*.m)
+APP_SOURCES=("$ROOT"/Sources/{App,Font,Views}/*.m)
 for ARCH in $ARCHS; do
   ARCH_BIN="$BUILD/bin/GlyphAtlas-$ARCH"
   MODULE_CACHE="$BUILD/modulecache-clang-$ARCH"

@@ -560,8 +560,8 @@ static void GAPublishVariantBuilders(NSMapTable *builders) {
 - (BOOL)applyRawResult:(GARawScanResult *)result
                 groups:(NSArray<GACharacterGroup *> *)groups
              cancelled:(BOOL (^)(void))cancelled {
-    NSMapTable<GACharacterGroup *, NSMutableArray<GAGlyphVariant *> *> *builders = nil;
-    NSMapTable<GACharacterGroup *, NSMutableDictionary *> *indices = nil;
+    NSMapTable<GACharacterGroup *, NSMutableArray<GAGlyphVariant *> *> *builders;
+    NSMapTable<GACharacterGroup *, NSMutableDictionary *> *indices;
     for (GAScanCandidate *candidate in result.candidates) {
         if (cancelled && cancelled()) {
             GAPublishVariantBuilders(builders);
@@ -599,7 +599,7 @@ static void GAPublishVariantBuilders(NSMapTable *builders) {
         }
         NSNumber *key = indexed ? GAVariantBucket(candidate.glyphIDs, candidate.isLigature,
                                                  candidate.sourceRange) : nil;
-        GAGlyphVariant *existing = nil;
+        GAGlyphVariant *existing;
         // A bucket narrows the search; full identity still decides equality.
         for (GAGlyphVariant *variant in indexed ? buckets[key] : variants) {
             if (![variant.glyphIDs isEqualToArray:candidate.glyphIDs] ||

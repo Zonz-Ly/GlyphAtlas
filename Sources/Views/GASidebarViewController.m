@@ -1,8 +1,8 @@
 #import "GASidebarViewController.h"
-#import "Input/GAInput.h"
+#import "GAInput.h"
 #import "GAGlyphViews.h"
 #import "Font/GAUnicode.h"
-#import "GAViewMode.h"
+#import "GAAppKit.h"
 
 @interface GARowItem : NSObject
 @property (nonatomic, strong, nonnull) GACharacterGroup *group;
@@ -88,14 +88,18 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
 
 @end
 
-@interface GASidebarViewController () <NSSearchFieldDelegate,
+@interface GASidebarViewController () <NSTextFieldDelegate,
                                        NSTableViewDataSource,
                                        NSTableViewDelegate>
-@property (nonatomic, strong) GASearchField *searchField;
-@property (nonatomic, strong) GASearchField *sidebarSearchField;
-@property (nonatomic, strong) GASearchField *toolbarSearchField;
+@property (nonatomic, strong) NSTextField *inputField;
+@property (nonatomic, strong) GASearchField *sidebarInputField;
+@property (nonatomic, strong) GAGlyphInputField *toolbarInputField;
 @property (nonatomic, strong) NSLayoutConstraint *sidebarListTopConstraint;
 @property (nonatomic, strong, nullable) NSLayoutConstraint *pinnedSidebarListTopConstraint;
+@property (nonatomic, copy) NSArray<NSLayoutConstraint *> *sidebarInputConstraints;
+@property (nonatomic, copy, nullable) NSArray<NSLayoutConstraint *> *pinnedSidebarInputConstraints;
+@property (nonatomic, strong, nullable) NSLayoutConstraint *pinnedAccessoryHeightConstraint;
+@property (nonatomic) BOOL sidebarAdjustsContentInsets;
 @property (nonatomic, strong) NSTableView *tableView;
 @property (nonatomic, strong) NSScrollView *scrollView;
 @property (nonatomic, strong) NSViewController *inputAccessory;
@@ -117,7 +121,7 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
 @property (nonatomic) BOOL suppressTextChangeCallback;
 @property (nonatomic) BOOL handlingNativeInputEdit;
 @property (nonatomic) BOOL inputChangedDuringReplay;
-@property (nonatomic, strong) GASearchFieldEditor *searchFieldEditor;
+@property (nonatomic, strong) GAGlyphInputEditor *inputEditor;
 /// Rebinds the same visual row sequence, including shifted source ranges,
 /// without reloading the table, changing the selected row or scrolling.
 /// Returns NO if the inventory changed or a normal activation is pending.
@@ -179,24 +183,27 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
     self.view = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 280, 760)];
 }
 
-- (GASearchField *)newInputField {
-    GASearchField *field = [[GASearchField alloc] initWithFrame:NSZeroRect];
+- (NSTextField *)newInputFieldForToolbar:(BOOL)toolbar {
+    NSTextField *field = toolbar
+        ? [[GAGlyphInputField alloc] initWithFrame:NSZeroRect]
+        : [[GASearchField alloc] initWithFrame:NSZeroRect];
     field.translatesAutoresizingMaskIntoConstraints = NO;
-    field.placeholderString = NSLocalizedString(@"Enter text", @"Enter text");
-    field.controlSize = NSControlSizeLarge;
+    NSControlSize controlSize = NSControlSizeLarge;
+    if (toolbar) {
+        if (@available(macOS 26.0, *)) controlSize = NSControlSizeExtraLarge;
+        field.bezelStyle = NSTextFieldRoundedBezel;
+    } else {
+        field.placeholderString = NSLocalizedString(@"Enter text", @"Enter text");
+        NSSearchFieldCell *cell = (NSSearchFieldCell *)field.cell;
+        cell.searchButtonCell = nil;
+        cell.cancelButtonCell = nil;
+    }
+    field.controlSize = controlSize;
     field.font = [NSFont systemFontOfSize:13.5 weight:NSFontWeightRegular];
     // Custom selection attributes live in the field's attributed string and
     // must survive the field editor's edit cycle.
     field.allowsEditingTextAttributes = YES;
     field.delegate = self;
-    __weak typeof(self) weakSelf = self;
-    field.onFieldEditorFocus = ^{
-        [weakSelf prepareFieldEditor];
-    };
-    NSSearchFieldCell *searchCell = (NSSearchFieldCell *)field.cell;
-    // Keep the native search-field bezel, but no magnifier or clear button.
-    searchCell.searchButtonCell = nil;
-    searchCell.cancelButtonCell = nil;
     field.accessibilityLabel = NSLocalizedString(@"Enter text", @"Enter text");
     return field;
 }
@@ -204,19 +211,18 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
 - (void)viewDidLoad {
     [super viewDidLoad];
 
-    self.sidebarSearchField = [self newInputField];
-    self.searchField = self.sidebarSearchField;
-    self.searchFieldEditor = [[GASearchFieldEditor alloc] initWithFrame:NSZeroRect];
-    self.searchFieldEditor.fieldEditor = YES;
-    self.searchFieldEditor.allowsUndo = YES;
+    self.sidebarInputField = (GASearchField *)[self newInputFieldForToolbar:NO];
+    self.inputField = self.sidebarInputField;
+    self.inputEditor = [[GAGlyphInputEditor alloc] initWithFrame:NSZeroRect];
+    self.inputEditor.fieldEditor = YES;
+    self.inputEditor.allowsUndo = YES;
     [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(recordFieldEdit:)
-        name:NSTextStorageWillProcessEditingNotification object:self.searchFieldEditor.textStorage];
+        name:NSTextStorageWillProcessEditingNotification object:self.inputEditor.textStorage];
 
     GASidebarTableView *tableView = [[GASidebarTableView alloc] initWithFrame:NSZeroRect];
     tableView.sidebarController = self;
     self.tableView = tableView;
     self.tableView.autoresizingMask = NSViewWidthSizable;
-    self.tableView.usesAutomaticRowHeights = NO;
     self.tableView.rowHeight = 44;
     self.tableView.headerView = nil;
     self.tableView.style = NSTableViewStyleSourceList;
@@ -238,25 +244,25 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
     self.scrollView.autohidesScrollers = YES;
     self.scrollView.documentView = self.tableView;
     self.scrollView.contentInsets = NSEdgeInsetsMake(4, 0, 14, 0);
-    if (GAUsesMacOS26Layout()) {
+    if (@available(macOS 26.0, *)) {
         self.scrollView.drawsBackground = NO;
         self.tableView.backgroundColor = NSColor.clearColor;
     }
     self.scrollView.accessibilityLabel = NSLocalizedString(@"Text and alternate glyph list", @"Text and alternate glyph list");
 
-    [self.view addSubview:self.searchField];
+    [self.view addSubview:self.inputField];
     [self.view addSubview:self.scrollView];
 
     BOOL tahoeLayout = GAUsesMacOS26Layout();
     NSLayoutGuide *safeArea = self.view.safeAreaLayoutGuide;
     self.sidebarListTopConstraint =
-        [self.scrollView.topAnchor constraintEqualToAnchor:self.sidebarSearchField.bottomAnchor
+        [self.scrollView.topAnchor constraintEqualToAnchor:self.sidebarInputField.bottomAnchor
                                                   constant:GASidebarInputSpacing];
     [NSLayoutConstraint activateConstraints:@[
-        [self.searchField.leadingAnchor constraintEqualToAnchor:
+        [self.inputField.leadingAnchor constraintEqualToAnchor:
             tahoeLayout ? safeArea.leadingAnchor : self.view.leadingAnchor
                                                         constant:tahoeLayout ? 12 : 9],
-        [self.searchField.trailingAnchor constraintEqualToAnchor:
+        [self.inputField.trailingAnchor constraintEqualToAnchor:
             tahoeLayout ? safeArea.trailingAnchor : self.view.trailingAnchor
                                                          constant:tahoeLayout ? -12 : -9],
         self.sidebarListTopConstraint,
@@ -278,24 +284,29 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
     self.searchTopConstraint.active = NO;
     self.searchTopConstraint = nil;
     self.sidebarListTopConstraint.active = NO;
-    [self.sidebarSearchField removeFromSuperview];
+    [self.sidebarInputField removeFromSuperview];
 
     NSView *content = [[NSView alloc] initWithFrame:
         NSMakeRect(0, 0, NSWidth(self.view.bounds),
-                   self.sidebarSearchField.fittingSize.height + GASidebarInputSpacing)];
-    [content addSubview:self.sidebarSearchField];
-    [NSLayoutConstraint activateConstraints:@[
-        [self.sidebarSearchField.leadingAnchor constraintEqualToAnchor:content.leadingAnchor constant:12],
-        [self.sidebarSearchField.trailingAnchor constraintEqualToAnchor:content.trailingAnchor constant:-12],
-        [self.sidebarSearchField.topAnchor constraintEqualToAnchor:content.topAnchor],
-        [self.sidebarSearchField.bottomAnchor constraintEqualToAnchor:content.bottomAnchor
+                   self.sidebarInputField.fittingSize.height + GASidebarInputSpacing)];
+    [content addSubview:self.sidebarInputField];
+    self.sidebarInputConstraints = @[
+        [self.sidebarInputField.leadingAnchor constraintEqualToAnchor:content.leadingAnchor constant:12],
+        [self.sidebarInputField.trailingAnchor constraintEqualToAnchor:content.trailingAnchor constant:-12],
+        [self.sidebarInputField.topAnchor constraintEqualToAnchor:content.topAnchor],
+        [self.sidebarInputField.bottomAnchor constraintEqualToAnchor:content.bottomAnchor
                                                           constant:-GASidebarInputSpacing],
-    ]];
+    ];
+    [NSLayoutConstraint activateConstraints:self.sidebarInputConstraints];
 
     // Resolve at runtime so builds with an older SDK can use the public class.
     NSSplitViewItemAccessoryViewController *accessory =
         [NSClassFromString(@"NSSplitViewItemAccessoryViewController") new];
     accessory.automaticallyAppliesContentInsets = NO;
+    if (@available(macOS 26.1, *)) {
+        accessory.preferredScrollEdgeEffectStyle =
+            [NSClassFromString(@"NSScrollEdgeEffectStyle") softStyle];
+    }
     accessory.view = content;
     self.inputAccessory = accessory;
     self.sidebarListTopConstraint =
@@ -311,32 +322,79 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
     NSLayoutGuide *guide = (NSLayoutGuide *)self.view.window.contentLayoutGuide;
     if (!guide) return;
 
-    CGFloat topOffset = GAUsesMacOS26Layout() ? -8 : -1;
-    if (NSProcessInfo.processInfo.operatingSystemVersion.majorVersion >= 27)
-        topOffset = 0;
-    self.searchTopConstraint = [self.sidebarSearchField.topAnchor constraintEqualToAnchor:guide.topAnchor constant:topOffset];
+    self.searchTopConstraint = [self.sidebarInputField.topAnchor constraintEqualToAnchor:guide.topAnchor constant:-1];
     self.searchTopConstraint.active = YES;
 }
 
-- (void)setSidebarListTopPinned:(BOOL)pinned {
+- (void)setSidebarContentTopPinned:(BOOL)pinned {
+    if (pinned == (self.pinnedSidebarInputConstraints != nil)) return;
     self.pinnedSidebarListTopConstraint.active = NO;
     self.pinnedSidebarListTopConstraint = nil;
     self.sidebarListTopConstraint.active = !pinned;
     if (pinned) {
+        NSEdgeInsets insets = self.scrollView.contentInsets;
+        NSPoint origin = self.scrollView.contentView.bounds.origin;
+        self.sidebarAdjustsContentInsets = self.scrollView.automaticallyAdjustsContentInsets;
+        self.scrollView.automaticallyAdjustsContentInsets = NO;
+        self.scrollView.contentInsets = insets;
+        [self.scrollView tile];
+        [self.scrollView.contentView scrollToPoint:origin];
+        [self.scrollView reflectScrolledClipView:self.scrollView.contentView];
+        NSRect inputFrame = [self.view convertRect:self.sidebarInputField.bounds fromView:self.sidebarInputField];
+        self.searchTopConstraint.active = NO;
+        if (self.inputAccessory) {
+            NSView *host = self.inputAccessory.view;
+            self.pinnedAccessoryHeightConstraint =
+                [host.heightAnchor constraintEqualToConstant:NSHeight(host.frame)];
+            self.pinnedAccessoryHeightConstraint.active = YES;
+            [NSLayoutConstraint deactivateConstraints:self.sidebarInputConstraints];
+            [self.sidebarInputField removeFromSuperview];
+            [self.view addSubview:self.sidebarInputField positioned:NSWindowAbove relativeTo:self.scrollView];
+        }
+        CGFloat inputTop = GATopOffsetInView(self.view, inputFrame);
+        NSMutableArray<NSLayoutConstraint *> *constraints = [NSMutableArray arrayWithArray:@[
+            [self.sidebarInputField.topAnchor constraintEqualToAnchor:self.view.topAnchor constant:inputTop],
+            [self.sidebarInputField.heightAnchor constraintEqualToConstant:NSHeight(inputFrame)],
+        ]];
+        if (self.inputAccessory) {
+            [constraints addObjectsFromArray:@[
+                [self.sidebarInputField.leadingAnchor constraintEqualToAnchor:self.view.leadingAnchor
+                                                                   constant:NSMinX(inputFrame)],
+                [self.sidebarInputField.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor
+                                                                    constant:NSMaxX(inputFrame) - NSWidth(self.view.bounds)],
+            ]];
+        }
+        self.pinnedSidebarInputConstraints = constraints;
+        [NSLayoutConstraint activateConstraints:constraints];
         NSRect frame = self.scrollView.frame;
-        NSRect bounds = self.view.bounds;
-        CGFloat top = self.view.flipped ? NSMinY(frame) - NSMinY(bounds) : NSMaxY(bounds) - NSMaxY(frame);
+        CGFloat top = GATopOffsetInView(self.view, frame);
         self.pinnedSidebarListTopConstraint =
             [self.scrollView.topAnchor constraintEqualToAnchor:self.view.topAnchor constant:top];
         self.pinnedSidebarListTopConstraint.active = YES;
+    } else {
+        [NSLayoutConstraint deactivateConstraints:self.pinnedSidebarInputConstraints];
+        self.pinnedSidebarInputConstraints = nil;
+        if (self.inputAccessory) {
+            [self.sidebarInputField removeFromSuperview];
+            [self.inputAccessory.view addSubview:self.sidebarInputField];
+            [NSLayoutConstraint activateConstraints:self.sidebarInputConstraints];
+            self.pinnedAccessoryHeightConstraint.active = NO;
+            self.pinnedAccessoryHeightConstraint = nil;
+        } else {
+            [self updateSidebarTopConstraint];
+        }
+        NSPoint origin = self.scrollView.contentView.bounds.origin;
+        self.scrollView.automaticallyAdjustsContentInsets = self.sidebarAdjustsContentInsets;
+        [self.scrollView tile];
+        [self.scrollView.contentView scrollToPoint:origin];
+        [self.scrollView reflectScrolledClipView:self.scrollView.contentView];
     }
 }
 
 - (void)useInputInToolbarContainer:(NSView *)container {
-    if (container && !self.toolbarSearchField) {
-        GASearchField *field = [self newInputField];
-        field.usesUniformIdleTextColor = YES;
-        self.toolbarSearchField = field;
+    if (container && !self.toolbarInputField) {
+        GAGlyphInputField *field = (GAGlyphInputField *)[self newInputFieldForToolbar:YES];
+        self.toolbarInputField = field;
         [field setContentHuggingPriority:NSLayoutPriorityFittingSizeCompression
                           forOrientation:NSLayoutConstraintOrientationHorizontal];
         [container addSubview:field];
@@ -347,19 +405,18 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
             [field.bottomAnchor constraintEqualToAnchor:container.bottomAnchor],
         ]];
     }
-    GASearchField *input = container ? self.toolbarSearchField : self.sidebarSearchField;
-    if (input == self.searchField) return;
+    NSTextField *input = container ? self.toolbarInputField : self.sidebarInputField;
+    if (input == self.inputField) return;
     // Both controls use the same editor and undo history, one at a time.
-    self.searchField.editable = NO;
-    self.searchField.selectable = NO;
-    self.searchField = input;
-    self.sidebarSearchField.hidden = container != nil;
+    self.inputField.editable = NO;
+    self.inputField.selectable = NO;
+    self.inputField = input;
     input.editable = YES;
     [self syncDetachedInput];
 }
 
 - (void)setToolbarInputPlaceholder:(NSString *)placeholder {
-    self.toolbarSearchField.placeholderString = placeholder;
+    self.toolbarInputField.placeholderString = placeholder;
 }
 
 - (void)viewDidLayout {
@@ -368,8 +425,12 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
 }
 
 - (NSFont *)inputFont {
-    return self.searchField.font ?: [NSFont systemFontOfSize:13.5
+    return self.inputField.font ?: [NSFont systemFontOfSize:13.5
                                                          weight:NSFontWeightRegular];
+}
+
+- (NSColor *)inputTextColor {
+    return [NSColor controlTextColor];
 }
 
 /// Returns only the attributes this app understands: the default font,
@@ -377,16 +438,16 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
 /// (pasted colors, backgrounds, paragraph styles, links, attachments) is
 /// discarded.
 - (NSAttributedString *)plainCopyOfAttributedText:(NSAttributedString *)text {
-    return GANormalizedSidebarInput(text, [self inputFont], NSColor.controlTextColor);
+    return GANormalizedSidebarInput(text, [self inputFont], [self inputTextColor]);
 }
 
 - (void)prepareFieldEditor {
-    NSTextView *editor = (NSTextView *)self.searchField.currentEditor;
+    NSTextView *editor = (NSTextView *)self.inputField.currentEditor;
     if (editor == nil) {
         return;
     }
     NSFont *font = [self inputFont];
-    NSColor *color = NSColor.controlTextColor;
+    NSColor *color = [self inputTextColor];
     // Allow programmatic attributes (selection runs), but keep user edits and
     // pastes plain so external formatting cannot enter the field.
     BOOL wasSuppressed = self.suppressTextChangeCallback;
@@ -411,11 +472,6 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
                                           NSRange range, BOOL *stop) {
         // AppKit may extend a marker's attributes to adjacent pasted text.
         if (attrs[GALineBreakAttributeName] != nil) {
-            if (![attrs[NSForegroundColorAttributeName] isEqual:NSColor.secondaryLabelColor]) {
-                needsNormalization = YES;
-                *stop = YES;
-                return;
-            }
             unichar marker = GAInputSeparatorMarker([attrs[GALineBreakAttributeName] unsignedShortValue]);
             for (NSUInteger i = range.location; i < NSMaxRange(range); i++) {
                 if (!marker || [storage.string characterAtIndex:i] != marker) {
@@ -453,32 +509,32 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
 }
 
 - (NSAttributedString *)attributedText {
-    return GAModelTextFromFieldText([self plainCopyOfAttributedText:self.searchFieldEditor.textStorage]);
+    return GAModelTextFromFieldText([self plainCopyOfAttributedText:self.inputEditor.textStorage]);
 }
 
 - (NSString *)text {
-    return GAModelStringFromFieldText(self.searchFieldEditor.textStorage);
+    return GAModelStringFromFieldText(self.inputEditor.textStorage);
 }
 
 - (NSRange)inputSelectionRange {
-    NSTextView *editor = (NSTextView *)self.searchField.currentEditor;
+    NSTextView *editor = (NSTextView *)self.inputField.currentEditor;
     return editor != nil ? editor.selectedRange : NSMakeRange(NSNotFound, 0);
 }
 
 - (BOOL)isInputFocused {
-    NSText *editor = self.searchField.currentEditor;
-    return editor != nil && self.searchField.window.firstResponder == editor;
+    NSText *editor = self.inputField.currentEditor;
+    return editor != nil && self.inputField.window.firstResponder == editor;
 }
 
 - (void)setGlyphSelection:(GAGlyphSelection *)selection inRange:(NSRange)range
              registerUndo:(BOOL)registerUndo {
-    NSTextStorage *storage = self.searchFieldEditor.textStorage;
+    NSTextStorage *storage = self.inputEditor.textStorage;
     if (NSMaxRange(range) > storage.length) return;
     GAGlyphSelection *previous = [storage attribute:GAGlyphSelectionAttributeName
                                             atIndex:range.location effectiveRange:NULL];
     if (selection == previous) return;
     if (registerUndo) {
-        [self.searchFieldEditor.undoManager registerUndoWithTarget:self
+        [self.inputEditor.undoManager registerUndoWithTarget:self
             handler:^(GASidebarViewController *target) {
                 [target setGlyphSelection:previous inRange:range registerUndo:YES];
             }];
@@ -488,7 +544,7 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
 }
 
 - (void)updateGlyphSelectionsFromText:(NSAttributedString *)text ranges:(NSArray<NSValue *> *)ranges {
-    GASearchFieldEditor *editor = self.searchFieldEditor;
+    GAGlyphInputEditor *editor = self.inputEditor;
     NSTextStorage *storage = editor.textStorage;
     NSUndoManager *manager = editor.undoManager;
     BOOL registerUndo = self.handlingNativeInputEdit && manager.undoRegistrationEnabled && manager.groupingLevel > 0;
@@ -509,13 +565,15 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
 }
 
 - (void)syncDetachedInput {
-    if (self.searchField.currentEditor == nil) {
-        [self.searchField setIdleAttributedStringValue:self.searchFieldEditor.textStorage];
-    }
+    NSAttributedString *text = [self.inputEditor.textStorage copy];
+    if (self.sidebarInputField.currentEditor == nil)
+        self.sidebarInputField.attributedStringValue = text;
+    if (self.toolbarInputField.currentEditor == nil)
+        self.toolbarInputField.attributedStringValue = text;
 }
 
 - (BOOL)commitGlyphInput:(NSAttributedString *)attributedText actionName:(NSString *)actionName {
-    GASearchFieldEditor *editor = self.searchFieldEditor;
+    GAGlyphInputEditor *editor = self.inputEditor;
     if (editor.hasMarkedText) return NO;
     NSAttributedString *replacement = [self plainCopyOfAttributedText:GAFieldTextFromModelText(attributedText)];
     NSTextStorage *storage = editor.textStorage;
@@ -539,7 +597,7 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
             GAApplyInputAttributes(storage, replacement);
         }
         [editor didChangeText];
-        if (self.searchField.currentEditor == editor && selection.location != NSNotFound) {
+        if (self.inputField.currentEditor == editor && selection.location != NSNotFound) {
             NSUInteger location = MIN(selection.location, storage.length);
             editor.selectedRange = NSMakeRange(location, MIN(selection.length, storage.length - location));
         }
@@ -555,9 +613,9 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
 }
 
 - (void)replaceInputText:(NSString *)text {
-    if (![self.searchField.window makeFirstResponder:self.searchField]) return;
+    if (![self.inputField.window makeFirstResponder:self.inputField]) return;
     [self prepareFieldEditor];
-    NSTextView *editor = (NSTextView *)self.searchField.currentEditor;
+    NSTextView *editor = (NSTextView *)self.inputField.currentEditor;
     [editor insertText:text replacementRange:NSMakeRange(0, editor.string.length)];
 }
 
@@ -652,31 +710,31 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
 }
 
 - (void)focusInput {
-    NSWindow *window = self.searchField.window;
-    if (window == nil || ![window makeFirstResponder:self.searchField]) return;
+    NSWindow *window = self.inputField.window;
+    if (window == nil || ![window makeFirstResponder:self.inputField]) return;
     [self prepareFieldEditor];
 }
 
 - (void)restoreInputSelection:(NSRange)selection {
     [self focusInput];
-    NSTextView *editor = (NSTextView *)self.searchField.currentEditor;
+    NSTextView *editor = (NSTextView *)self.inputField.currentEditor;
     NSUInteger start = MIN(selection.location, editor.string.length);
     editor.selectedRange = NSMakeRange(start, MIN(selection.length, editor.string.length - start));
 }
 
 - (void)focusGlyphList {
-    BOOL inputInSidebar = self.searchField == self.sidebarSearchField;
-    [self.searchField.window makeFirstResponder:inputInSidebar ? self.tableView : nil];
+    BOOL inputInSidebar = self.inputField == self.sidebarInputField;
+    [self.inputField.window makeFirstResponder:inputInSidebar ? self.tableView : nil];
 }
 
-/// The window asks for a field editor when a control starts editing. Only the
-/// search field gets the custom editor; other controls keep the default one.
+/// The active glyph input gets the retained editor; other controls keep the
+/// window's default editor.
 - (NSTextView *)fieldEditorForControl:(id)control {
-    if (control != self.searchField) {
+    if (control != self.inputField) {
         return nil;
     }
-    NSUndoManager *manager = self.searchField.window.undoManager;
-    NSUndoManager *previousManager = self.searchFieldEditor.inputUndoManager;
+    NSUndoManager *manager = self.inputField.window.undoManager;
+    NSUndoManager *previousManager = self.inputEditor.inputUndoManager;
     if (manager != previousManager) {
         NSNotificationCenter *center = NSNotificationCenter.defaultCenter;
         for (NSNotificationName name in @[NSUndoManagerDidUndoChangeNotification,
@@ -684,13 +742,13 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
             if (previousManager) [center removeObserver:self name:name object:previousManager];
             if (manager) [center addObserver:self selector:@selector(didReplayInputEdit:) name:name object:manager];
         }
-        self.searchFieldEditor.inputUndoManager = manager;
+        self.inputEditor.inputUndoManager = manager;
     }
-    return self.searchFieldEditor;
+    return self.inputEditor;
 }
 
 - (NSString *)currentFieldText {
-    return self.searchFieldEditor.string;
+    return self.inputEditor.string;
 }
 
 - (void)didReplayInputEdit:(NSNotification *)notification {
@@ -704,13 +762,13 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
 
 - (void)recordFieldEdit:(NSNotification *)notification {
     NSTextStorage *storage = notification.object;
-    NSUndoManager *manager = self.searchFieldEditor.undoManager;
+    NSUndoManager *manager = self.inputEditor.undoManager;
     if (manager.isUndoing || manager.isRedoing) {
         self.inputChangedDuringReplay = YES;
         return;
     }
     if (!self.displayedSourceEdits || self.suppressTextChangeCallback ||
-        self.searchField.currentEditor != self.searchFieldEditor ||
+        self.inputField.currentEditor != self.inputEditor ||
         !(storage.editedMask & NSTextStorageEditedCharacters)) {
         return;
     }
@@ -752,12 +810,17 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
     self.tableView.alphaValue = dimmed ? GASidebarInactiveGlyphListAlpha : 1.0;
 }
 
+- (void)controlTextDidBeginEditing:(NSNotification *)obj {
+    if (obj.object != self.inputField) return;
+    [self prepareFieldEditor];
+}
+
 - (void)controlTextDidChange:(NSNotification *)obj {
-    if (obj.object != self.searchField || self.suppressTextChangeCallback) {
+    if (obj.object != self.inputField || self.suppressTextChangeCallback) {
         return;
     }
-    NSTextView *editor = (NSTextView *)self.searchField.currentEditor;
-    NSUndoManager *manager = self.searchFieldEditor.undoManager;
+    NSTextView *editor = (NSTextView *)self.inputField.currentEditor;
+    NSUndoManager *manager = self.inputEditor.undoManager;
     if (editor.hasMarkedText || manager.isUndoing || manager.isRedoing) {
         return;
     }
@@ -1093,7 +1156,7 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
     GAGlyphResolution *temporary = self.temporaryResolution;
     if (!temporary || self.selectedVariant != temporary.variant || self.pendingSelectionGlyphIDs)
         return nil;
-    GARowItem *oldParent = nil;
+    GARowItem *oldParent;
     for (GARowItem *row in self.rows)
         if (row.variant == temporary.parent) {
             oldParent = row;
@@ -1109,7 +1172,7 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
             group.seeded != oldParent.group.seeded ||
             group.insertedLigature != oldParent.group.insertedLigature)
             continue;
-        GAGlyphVariant *parent = nil;
+        GAGlyphVariant *parent;
         for (GAGlyphVariant *variant in group.variants) {
             // A newly persistent result takes over without a duplicate row.
             if ([variant.glyphIDs isEqual:temporary.variant.glyphIDs]) return nil;
@@ -1152,7 +1215,7 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
     NSAnimationContext.currentContext.duration = 0;
     @try {
         NSDictionary *scrollAnchor = [self captureScrollAnchor];
-        NSArray<NSNumber *> *oldGlyphIDs = nil;
+        NSArray<NSNumber *> *oldGlyphIDs;
         NSRange oldGroupRange = GARemapSourceRange(self.selectedVariantTextRange,
             GASourceEditBetween(self.displayedText, text));
         if (self.selectedVariant != nil) {
@@ -1245,7 +1308,7 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
     GASourceEdit edit = GASourceEditBetween(anchor[@"text"], self.displayedText);
     for (NSDictionary *visible in anchor[@"rows"]) {
         NSRange range = GARemapSourceRange([visible[@"range"] rangeValue], edit);
-        GACharacterGroup *group = nil;
+        GACharacterGroup *group;
         for (GACharacterGroup *candidate in self.groups)
             if (NSEqualRanges(candidate.textRange, range) &&
                 [candidate.text isEqualToString:visible[@"text"]] &&

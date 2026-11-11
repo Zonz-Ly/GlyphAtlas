@@ -37,6 +37,33 @@ typedef NS_ENUM(NSUInteger, GAMagnificationControl) {
     GAMagnificationBoundingBox,
     GAMagnificationLineHeight,
 };
+
+@interface GAMultiGlyphView (PinchTouches)
+- (void)readPinchTouches:(NSEvent *)event;
+@end
+
+// Direct touches arrive at recognizers, not through NSView's responder methods.
+// Read the pair before the native recognizer can begin and lock the operation.
+@interface GAMultiMagnificationGestureRecognizer : NSMagnificationGestureRecognizer
+@end
+@implementation GAMultiMagnificationGestureRecognizer
+- (void)touchesBeganWithEvent:(NSEvent *)event {
+    [(GAMultiGlyphView *)self.view readPinchTouches:event];
+    [super touchesBeganWithEvent:event];
+}
+- (void)touchesMovedWithEvent:(NSEvent *)event {
+    [(GAMultiGlyphView *)self.view readPinchTouches:event];
+    [super touchesMovedWithEvent:event];
+}
+- (void)touchesEndedWithEvent:(NSEvent *)event {
+    [(GAMultiGlyphView *)self.view readPinchTouches:event];
+    [super touchesEndedWithEvent:event];
+}
+- (void)touchesCancelledWithEvent:(NSEvent *)event {
+    [(GAMultiGlyphView *)self.view readPinchTouches:event];
+    [super touchesCancelledWithEvent:event];
+}
+@end
 /// Twenty zoom-outs and twenty zoom-ins: `1 / 1.12^20` to `1.12^20`.
 static CGFloat GAMultiClampTextScale(CGFloat scale) {
     CGFloat maximum = GAGlyphZoomStep10 * GAGlyphZoomStep10;
@@ -417,8 +444,6 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
 @property(nonatomic) BOOL pinchHasPair;
 @property(nonatomic) GAMagnificationControl pinchCandidate;
 @property(nonatomic) GAMagnificationControl magnificationControl;
-/// The page in the view's own coordinates, including the current page inset.
-- (NSRect)pageRect;
 @end
 
 @implementation GAMultiGlyphView
@@ -443,7 +468,7 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
         [self addSubview:textView];
 
         NSMagnificationGestureRecognizer *magnification =
-            [[NSMagnificationGestureRecognizer alloc] initWithTarget:self
+            [[GAMultiMagnificationGestureRecognizer alloc] initWithTarget:self
                                                                action:@selector(handleMagnification:)];
         [self addGestureRecognizer:magnification];
     }
@@ -653,14 +678,24 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
 }
 
 - (void)readPinchTouches:(NSEvent *)event {
-    NSArray<NSTouch *> *touches = [[event touchesMatchingPhase:NSTouchPhaseTouching inView:self] allObjects];
+    NSView *touchView = event.type == NSEventTypeDirectTouch ? nil : self;
+    NSArray<NSTouch *> *touches = [[event touchesMatchingPhase:NSTouchPhaseTouching inView:touchView] allObjects];
     self.pinchHasPair = touches.count == 2;
     if (!self.pinchHasPair) return;
     NSTouch *a = touches[0], *b = touches[1];
-    self.pinchHasPair = [a.device isEqual:b.device];
+    self.pinchHasPair = a.type == b.type;
     if (!self.pinchHasPair) return;
-    CGFloat dx = fabs(a.normalizedPosition.x - b.normalizedPosition.x) * a.deviceSize.width;
-    CGFloat dy = fabs(a.normalizedPosition.y - b.normalizedPosition.y) * a.deviceSize.height;
+    CGFloat dx, dy;
+    if (a.type == NSTouchTypeDirect) {
+        NSPoint first = [a locationInView:self], second = [b locationInView:self];
+        dx = fabs(first.x - second.x);
+        dy = fabs(first.y - second.y);
+    } else {
+        self.pinchHasPair = [a.device isEqual:b.device];
+        if (!self.pinchHasPair) return;
+        dx = fabs(a.normalizedPosition.x - b.normalizedPosition.x) * a.deviceSize.width;
+        dy = fabs(a.normalizedPosition.y - b.normalizedPosition.y) * a.deviceSize.height;
+    }
     self.pinchHasPair = dx > 0 || dy > 0;
     if (!self.pinchHasPair) return;
     CGFloat angle = atan2(dy, dx) * 180.0 / M_PI;
@@ -1002,7 +1037,7 @@ static NSIndexSet *GAForeignCharactersToOmit(NSAttributedString *display, NSInde
     self.pageContentSize = NSZeroSize;
     self.textView.firstBaselineOffset = 0;
     NSRect area = [self pageArea];
-    NSFont *font = nil;
+    NSFont *font;
     NSSize page = NSZeroSize;
     if (self.document != nil && self.text.length > 0 &&
         self.viewportSize.width >= 1 && self.viewportSize.height >= 1) {

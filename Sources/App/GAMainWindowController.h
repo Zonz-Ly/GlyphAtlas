@@ -1,5 +1,5 @@
 #import <AppKit/AppKit.h>
-#import "Views/GAViewMode.h"
+#import "Views/GAAppKit.h"
 #import "Views/GAPreviewColors.h"
 #import "Font/GAFontFeatures.h"
 

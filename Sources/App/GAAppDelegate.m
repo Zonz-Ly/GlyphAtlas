@@ -2,7 +2,7 @@
 #import "GAMainWindowController.h"
 #import "Font/GAFontResource.h"
 #import "Font/GAFontFeatures.h"
-#import "Input/GAInput.h"
+#import "Views/GAInput.h"
 #include <math.h>
 #include <sys/stat.h>
 
@@ -445,7 +445,7 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
     NSArray<NSString *> *texts = [self.preferences arrayForKey:GASavedTextsKey];
     NSString *current = menu.controller.inputText;
     BOOL canSave = menu.controller.fontURL && current.length && ![texts containsObject:current];
-    NSMenuItem *command = nil;
+    NSMenuItem *command;
     if (menu.deleting ? texts.count > 0 : canSave) {
         NSString *title = menu.deleting
             ? NSLocalizedString(@"Clear All Saved Text", @"Delete every saved text")
@@ -604,7 +604,7 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
             item.enabled = !item.hidden && controller.fontURL != nil;
         }
     }
-    NSMenuItem *separator = nil;
+    NSMenuItem *separator;
     BOOL hasVisibleItem = NO;
     for (NSMenuItem *item in menu.itemArray) {
         if (item.separatorItem) {
@@ -1476,7 +1476,7 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
     if (fontURL == nil)
         return;
     NSURL *reference = controller.fontFileReference;
-    NSError *error = nil;
+    NSError *error;
     NSURL *source = GAResolveFontFileReference(reference, fontURL, &error);
     if (!source) {
         [NSApp presentError:error];
@@ -1538,7 +1538,7 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
             return;
         NSURL *target = destination;
         if (!replace) {
-            NSError *nameError = nil;
+            NSError *nameError;
             NSString *baseName = fontURL.lastPathComponent.stringByDeletingPathExtension;
             NSString *extension = fontURL.pathExtension;
             NSUInteger suffix = 2;

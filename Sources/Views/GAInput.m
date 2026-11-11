@@ -1,7 +1,6 @@
 #import "GAInput.h"
 #import "App/GAAppDelegate.h"
 #import "Font/GAGlyphSelection.h"
-#import "Views/GAViewMode.h"
 
 #pragma mark - Native input menus
 
@@ -139,6 +138,10 @@ static void GAInputEditingDidEnd(void) {
     });
 }
 
+static void GAInputFieldDidGainFocus(NSView *view, NSText *editor) {
+    if (view.window.firstResponder == editor) GAInputEditingDidBegin();
+}
+
 #pragma mark - Numeric field editing
 
 @interface GANumericFieldEditor : NSTextView
@@ -172,13 +175,13 @@ static void GAInputEditingDidEnd(void) {
 - (void)editWithFrame:(NSRect)rect inView:(NSView *)view editor:(NSText *)editor
              delegate:(id)delegate event:(NSEvent *)event {
     [super editWithFrame:rect inView:view editor:editor delegate:delegate event:event];
-    if (view.window.firstResponder == editor) GAInputEditingDidBegin();
+    GAInputFieldDidGainFocus(view, editor);
 }
 
 - (void)selectWithFrame:(NSRect)rect inView:(NSView *)view editor:(NSText *)editor
                delegate:(id)delegate start:(NSInteger)start length:(NSInteger)length {
     [super selectWithFrame:rect inView:view editor:editor delegate:delegate start:start length:length];
-    if (view.window.firstResponder == editor) GAInputEditingDidBegin();
+    GAInputFieldDidGainFocus(view, editor);
 }
 
 - (void)endEditing:(NSText *)editor {
@@ -313,13 +316,13 @@ NSAttributedString *GAFieldTextFromModelText(NSAttributedString *modelText) {
   return field;
 }
 
-/// Converts separators before the single-line field editor turns them into
-/// spaces. The attribute distinguishes each separator from its literal symbol.
-@interface GASearchFieldEditor ()
+/// Converts separators to inline markers. The attribute distinguishes each
+/// separator from its literal symbol, independently of visual wrapping.
+@interface GAGlyphInputEditor ()
 @property (nonatomic) BOOL transitioningFieldEditor;
 @end
 
-@implementation GASearchFieldEditor
+@implementation GAGlyphInputEditor
 
 - (NSUndoManager *)undoManager {
   return self.transitioningFieldEditor ? nil : self.inputUndoManager;
@@ -363,9 +366,8 @@ NSAttributedString *GAFieldTextFromModelText(NSAttributedString *modelText) {
   return menu;
 }
 
-/// AppKit's single-line field editor does not map all four Command-arrow
-/// variants to the document start/end (Command-Down is a no-op). Handle them
-/// explicitly so the whole field behaves as one document.
+/// Map all four Command-arrow variants to the document start/end, independently
+/// of the input's current visual wrapping.
 - (void)keyDown:(NSEvent *)event {
   BOOL commandOnly =
       GAModifiersAre(event.modifierFlags, NSEventModifierFlagCommand);
@@ -383,7 +385,7 @@ NSAttributedString *GAFieldTextFromModelText(NSAttributedString *modelText) {
 }
 
 - (void)insertText:(id)string replacementRange:(NSRange)replacementRange {
-  NSString *inserted = nil;
+  NSString *inserted;
   if ([string isKindOfClass:[NSAttributedString class]]) {
     inserted = [(NSAttributedString *)string string];
   } else if ([string isKindOfClass:[NSString class]]) {
@@ -469,101 +471,101 @@ NSAttributedString *GAFieldTextFromModelText(NSAttributedString *modelText) {
 
 @end
 
-/// Keep text clear of the native bezel after removing the search button cell:
-/// 9 pt on the existing layout, 12 pt inside Tahoe's capsule.
-static const CGFloat GASearchFieldTextInset = 9.0;
+// AppKit clears and refills the editor during focus changes. Keep that
+// housekeeping out of the undo history for the retained text storage.
+static void GAWithInputEditorTransition(NSText *editor, void (^operation)(void)) {
+  GAGlyphInputEditor *input = (GAGlyphInputEditor *)editor;
+  BOOL wasTransitioning = input.transitioningFieldEditor;
+  input.transitioningFieldEditor = YES;
+  operation();
+  input.transitioningFieldEditor = wasTransitioning;
+}
 
-@interface GASearchField ()
-- (void)fieldEditorDidGainFocus;
+static void GAEndGlyphInputEditing(NSText *editor, void (^endEditing)(void)) {
+  NSTextStorage *storage = ((GAGlyphInputEditor *)editor).textStorage;
+  NSAttributedString *text = [storage copy];
+  GAWithInputEditorTransition(editor, ^{
+    endEditing();
+    GAInputEditingDidEnd();
+    [storage setAttributedString:text];
+  });
+}
+
+static NSRect GAInputRectByInsettingTextEdges(NSRect rect, NSRect bounds) {
+  const CGFloat inset = 9;
+  rect.origin.x = NSMinX(bounds) + inset;
+  rect.size.width = MAX(0, NSMaxX(bounds) - inset - NSMinX(rect));
+  return rect;
+}
+
+@interface GAGlyphInputCell : NSTextFieldCell
+@end
+
+@implementation GAGlyphInputCell
+- (void)editWithFrame:(NSRect)rect inView:(NSView *)view editor:(NSText *)editor
+             delegate:(id)delegate event:(NSEvent *)event {
+  GAWithInputEditorTransition(editor, ^{
+    [super editWithFrame:rect inView:view editor:editor delegate:delegate event:event];
+    GAInputFieldDidGainFocus(view, editor);
+  });
+}
+- (void)selectWithFrame:(NSRect)rect inView:(NSView *)view editor:(NSText *)editor
+              delegate:(id)delegate start:(NSInteger)start length:(NSInteger)length {
+  GAWithInputEditorTransition(editor, ^{
+    [super selectWithFrame:rect inView:view editor:editor delegate:delegate start:start length:length];
+    GAInputFieldDidGainFocus(view, editor);
+  });
+}
+- (void)endEditing:(NSText *)editor {
+  GAEndGlyphInputEditing(editor, ^{ [super endEditing:editor]; });
+}
+- (NSRect)titleRectForBounds:(NSRect)bounds {
+  return GAInputRectByInsettingTextEdges([super titleRectForBounds:bounds], bounds);
+}
+- (NSRect)drawingRectForBounds:(NSRect)bounds {
+  return GAInputRectByInsettingTextEdges([super drawingRectForBounds:bounds], bounds);
+}
 @end
 
 @interface GASearchFieldCell : NSSearchFieldCell
 @end
 
 @implementation GASearchFieldCell
-
-// AppKit clears and refills the editor during focus changes. Keep that
-// housekeeping out of the undo history for the retained text storage.
 - (void)editWithFrame:(NSRect)rect inView:(NSView *)view editor:(NSText *)editor
              delegate:(id)delegate event:(NSEvent *)event {
-  GASearchFieldEditor *input = (GASearchFieldEditor *)editor;
-  BOOL wasTransitioning = input.transitioningFieldEditor;
-  input.transitioningFieldEditor = YES;
-  [super editWithFrame:rect inView:view editor:editor delegate:delegate event:event];
-  if (view.window.firstResponder == editor) [(GASearchField *)view fieldEditorDidGainFocus];
-  input.transitioningFieldEditor = wasTransitioning;
+  GAWithInputEditorTransition(editor, ^{
+    [super editWithFrame:rect inView:view editor:editor delegate:delegate event:event];
+    GAInputFieldDidGainFocus(view, editor);
+  });
 }
-
 - (void)selectWithFrame:(NSRect)rect inView:(NSView *)view editor:(NSText *)editor
               delegate:(id)delegate start:(NSInteger)start length:(NSInteger)length {
-  GASearchFieldEditor *input = (GASearchFieldEditor *)editor;
-  BOOL wasTransitioning = input.transitioningFieldEditor;
-  input.transitioningFieldEditor = YES;
-  [super selectWithFrame:rect inView:view editor:editor delegate:delegate start:start length:length];
-  if (view.window.firstResponder == editor) [(GASearchField *)view fieldEditorDidGainFocus];
-  input.transitioningFieldEditor = wasTransitioning;
+  GAWithInputEditorTransition(editor, ^{
+    [super selectWithFrame:rect inView:view editor:editor delegate:delegate start:start length:length];
+    GAInputFieldDidGainFocus(view, editor);
+  });
 }
-
 - (void)endEditing:(NSText *)editor {
-  GASearchFieldEditor *input = (GASearchFieldEditor *)editor;
-  NSTextStorage *storage = input.textStorage;
-  NSAttributedString *text = [storage copy];
-  BOOL wasTransitioning = input.transitioningFieldEditor;
-  input.transitioningFieldEditor = YES;
-  [super endEditing:editor];
-  GAInputEditingDidEnd();
-  [storage setAttributedString:text];
-  input.transitioningFieldEditor = wasTransitioning;
-  GASearchField *field = (GASearchField *)self.controlView;
-  if (field.usesUniformIdleTextColor) [field setIdleAttributedStringValue:text];
-}
-
-- (NSRect)rectByInsettingTextEdges:(NSRect)rect bounds:(NSRect)bounds {
-  CGFloat inset = GAUsesMacOS26Layout() ? 12.0 : GASearchFieldTextInset;
-  rect.origin.x = NSMinX(bounds) + inset;
-  rect.size.width =
-      MAX(0, NSMaxX(bounds) - inset - NSMinX(rect));
-  return rect;
+  GAEndGlyphInputEditing(editor, ^{ [super endEditing:editor]; });
 }
 
 - (NSRect)searchTextRectForBounds:(NSRect)bounds {
-  return [self rectByInsettingTextEdges:[super searchTextRectForBounds:bounds]
-                                 bounds:bounds];
+  return GAInputRectByInsettingTextEdges([super searchTextRectForBounds:bounds], bounds);
 }
-
 - (NSRect)titleRectForBounds:(NSRect)bounds {
-  return [self rectByInsettingTextEdges:[super titleRectForBounds:bounds]
-                                 bounds:bounds];
+  return GAInputRectByInsettingTextEdges([super titleRectForBounds:bounds], bounds);
 }
-
 - (NSRect)drawingRectForBounds:(NSRect)bounds {
-  return [self rectByInsettingTextEdges:[super drawingRectForBounds:bounds]
-                                 bounds:bounds];
+  return GAInputRectByInsettingTextEdges([super drawingRectForBounds:bounds], bounds);
 }
-
 @end
 
 @implementation GASearchField
++ (Class)cellClass { return GASearchFieldCell.class; }
+@end
 
-+ (Class)cellClass {
-  return [GASearchFieldCell class];
-}
-
-- (void)fieldEditorDidGainFocus {
-  GAInputEditingDidBegin();
-  if (self.onFieldEditorFocus) self.onFieldEditorFocus();
-}
-
-- (void)setIdleAttributedStringValue:(NSAttributedString *)text {
-  if (self.usesUniformIdleTextColor) {
-    NSMutableAttributedString *display = [text mutableCopy];
-    [display removeAttribute:NSForegroundColorAttributeName range:NSMakeRange(0, display.length)];
-    self.attributedStringValue = display;
-  } else {
-    self.attributedStringValue = text;
-  }
-}
-
+@implementation GAGlyphInputField
++ (Class)cellClass { return GAGlyphInputCell.class; }
 @end
 
 /// Drops every attribute except the app font, the app foreground color,

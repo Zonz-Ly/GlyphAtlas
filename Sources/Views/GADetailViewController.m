@@ -162,7 +162,7 @@
 }
 
 - (void)updateToolbarAppearance {
-    NSScrollView *scrollView = nil;
+    NSScrollView *scrollView;
     if (self.viewMode == GAViewModeAllGlyphs) scrollView = self.allGlyphsView.scrollView;
     if (self.viewMode == GAViewModeMultiCharacter) scrollView = self.multiScrollView;
 

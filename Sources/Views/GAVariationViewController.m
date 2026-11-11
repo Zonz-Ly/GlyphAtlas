@@ -1,6 +1,6 @@
 #import "GAVariationViewController.h"
 #import "Font/GAFontResource.h"
-#import "Input/GAInput.h"
+#import "GAInput.h"
 #import <math.h>
 
 @interface GAVariationBackgroundView : NSView

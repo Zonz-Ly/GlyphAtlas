@@ -9,19 +9,15 @@ FOUNDATION_EXPORT NSNotificationName const GAInputBlankClickNotification;
 /// Let AppKit validate and end field editing outside the clicked window.
 FOUNDATION_EXPORT BOOL GAEndInputEditingOutsideWindow(NSWindow *window);
 
-/// Native controls/cells with editing-lifetime hooks only; appearance is inherited.
+/// Native numeric control with editing-lifetime hooks.
 @interface GAInputTextField : NSTextField
 @end
 
-
-/// Input-only widgets, kept independent of the sidebar list controller.
 @interface GASearchField : NSSearchField
-@property (nonatomic) BOOL usesUniformIdleTextColor;
-@property (nonatomic, copy, nullable) void (^onFieldEditorFocus)(void);
-/// Updates the idle display without changing the retained field editor storage.
-- (void)setIdleAttributedStringValue:(NSAttributedString *)text;
 @end
-@interface GASearchFieldEditor : NSTextView
+@interface GAGlyphInputField : NSTextField
+@end
+@interface GAGlyphInputEditor : NSTextView
 @property (nonatomic, weak, nullable) NSUndoManager *inputUndoManager;
 @end
 

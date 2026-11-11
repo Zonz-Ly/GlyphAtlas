@@ -13,8 +13,8 @@
         <string>hsn-Hant</string>
         <string>hsn-Hans</string>
         <string>nan-Hant-teochew</string>
-        <string>nan-Hant-hokkien</string>
         <string>nan-Hans-teochew</string>
+        <string>nan-Hant-hokkien</string>
         <string>nan-Hans-hokkien</string>
         <string>yue-Hant</string>
         <string>yue-Hans</string>
@@ -57,9 +57,9 @@
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.6</string>
+    <string>1.7</string>
     <key>CFBundleVersion</key>
-    <string>5</string>
+    <string>8</string>
     <key>LSMinimumSystemVersion</key>
     <string>12.0</string>
     <key>NSHighResolutionCapable</key>

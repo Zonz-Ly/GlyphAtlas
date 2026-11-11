@@ -17,7 +17,7 @@ NSArray<UTType *> *GAFontContentTypes(void) {
 }
 
 BOOL GAFontURLIsFont(NSURL *url) {
-    id value = nil;
+    id value;
     if (![url getResourceValue:&value forKey:NSURLContentTypeKey error:NULL]) {
         return NO;
     }
@@ -57,7 +57,7 @@ NSURL *GAResolveFontFileReference(NSURL *reference, NSURL *openedURL, NSError **
 }
 
 NSError *GACopyFontFile(NSURL *reference, NSURL *openedURL, NSURL *destination, BOOL replace) {
-    NSError *error = nil;
+    NSError *error;
     NSURL *source = GAResolveFontFileReference(reference, openedURL, &error);
     if (!source) return error;
     NSFileManager *files = [NSFileManager defaultManager];
