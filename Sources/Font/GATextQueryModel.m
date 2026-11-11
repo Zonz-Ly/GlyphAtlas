@@ -76,10 +76,21 @@ static GACharacterGroup *DisplayCopy(GACharacterGroup *group) {
     GACharacterGroup *copy = [[GACharacterGroup alloc] init];
     copy.text = group.text;
     copy.textRange = group.textRange;
-    NSMutableArray<GAGlyphVariant *> *variants = [NSMutableArray array];
+    BOOL hasLigatures = NO;
     for (GAGlyphVariant *variant in group.variants) {
-        if (!variant.isLigature)
-            [variants addObject:variant];
+        if (variant.isLigature) {
+            hasLigatures = YES;
+            break;
+        }
+    }
+    NSArray<GAGlyphVariant *> *variants = group.variants;
+    if (hasLigatures) {
+        NSMutableArray<GAGlyphVariant *> *filtered = [NSMutableArray array];
+        for (GAGlyphVariant *variant in variants) {
+            if (!variant.isLigature)
+                [filtered addObject:variant];
+        }
+        variants = filtered;
     }
     copy.variants = variants;
     return copy;
