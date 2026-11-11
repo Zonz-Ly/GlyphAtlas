@@ -159,6 +159,143 @@ static void GAMergeSelectionCandidate(GAGlyphVariant *candidate, NSMutableArray 
     [variants addObject:copy];
 }
 
+/// Inserts browsing-only combinations after the projected source and selection rows.
+static NSArray<GACharacterGroup *> *GAInsertCombinationGroups(
+    NSArray<GACharacterGroup *> *scanGroups, NSArray<GACharacterGroup *> *sourceGroups,
+    NSArray<GAGlyphVariant *> *ligatureVariants, NSString *text, BOOL (^cancelled)(void)) {
+    NSMutableDictionary<NSValue *, NSMutableArray<GAGlyphVariant *> *> *byRange =
+        [NSMutableDictionary dictionary];
+    NSMutableDictionary<NSValue *, NSNumber *> *spanLengths = [NSMutableDictionary dictionary];
+    for (GAGlyphVariant *variant in ligatureVariants) {
+        if (cancelled && cancelled())
+            return nil;
+        NSRange range = variant.sourceTextRange;
+        NSValue *rangeValue = [NSValue valueWithRange:range];
+        NSMutableArray<GAGlyphVariant *> *variants = byRange[rangeValue];
+        if (variants == nil) {
+            variants = [NSMutableArray array];
+            byRange[rangeValue] = variants;
+        }
+        [variants addObject:variant];
+    }
+    // Counting starts before the range end minus ends at/before its start
+    // handles overlapping, unordered and duplicate source groups alike.
+    // Small projections retain the cheaper direct scan.
+    BOOL indexed = scanGroups.count >= 64 && byRange.count >= 16;
+    NSMutableData *startData = indexed
+        ? [NSMutableData dataWithLength:scanGroups.count * sizeof(NSUInteger)] : nil;
+    NSMutableData *endData = indexed
+        ? [NSMutableData dataWithLength:scanGroups.count * sizeof(NSUInteger)] : nil;
+    NSUInteger *starts = startData.mutableBytes, *ends = endData.mutableBytes;
+    NSUInteger count = 0;
+    if (indexed) {
+        for (GACharacterGroup *group in scanGroups) {
+            NSRange source = group.textRange;
+            if (source.location == NSNotFound || !source.length) continue;
+            if (NSMaxRange(source) < source.location) { indexed = NO; break; }
+            starts[count] = source.location;
+            ends[count++] = NSMaxRange(source);
+        }
+        if (indexed) {
+            qsort(starts, count, sizeof(NSUInteger), GACompareSourceEndpoints);
+            qsort(ends, count, sizeof(NSUInteger), GACompareSourceEndpoints);
+        }
+    }
+    for (NSValue *rangeValue in byRange) {
+        NSRange range = rangeValue.rangeValue;
+        NSUInteger spanLength = 0;
+        if (indexed) {
+            spanLength = GASourceEndpointCount(starts, count, NSMaxRange(range), NO) -
+                         GASourceEndpointCount(ends, count, range.location, YES);
+        } else {
+            for (GACharacterGroup *group in scanGroups)
+                if (group.textRange.location != NSNotFound &&
+                    NSIntersectionRange(group.textRange, range).length > 0) spanLength++;
+        }
+        spanLengths[rangeValue] = @(spanLength);
+    }
+    // Order combination groups by the number of source character groups,
+    // then by source position. Each is inserted after its final source
+    // character below.
+    NSArray<NSValue *> *rangeOrder =
+        [byRange.allKeys sortedArrayUsingComparator:^NSComparisonResult(NSValue *a, NSValue *b) {
+          NSUInteger lengthA = spanLengths[a].unsignedIntegerValue;
+          NSUInteger lengthB = spanLengths[b].unsignedIntegerValue;
+          if (lengthA != lengthB) {
+              return lengthA < lengthB ? NSOrderedAscending : NSOrderedDescending;
+          }
+          NSRange rangeA = a.rangeValue;
+          NSRange rangeB = b.rangeValue;
+          if (rangeA.location != rangeB.location) {
+              return rangeA.location < rangeB.location ? NSOrderedAscending : NSOrderedDescending;
+          }
+          return NSOrderedSame;
+        }];
+    if (!rangeOrder.count) return sourceGroups;
+    NSMutableDictionary<NSNumber *, NSMutableArray<GACharacterGroup *> *> *ligaturesAtEnd =
+        [NSMutableDictionary dictionary];
+    NSMutableArray<NSNumber *> *endOrder = [NSMutableArray array];
+    for (NSValue *rangeValue in rangeOrder) {
+        if (cancelled && cancelled())
+            return nil;
+        NSRange range = rangeValue.rangeValue;
+        NSMutableArray<GAGlyphVariant *> *variants = byRange[rangeValue];
+        NSMutableArray<GAGlyphVariant *> *unique = [NSMutableArray array];
+        NSMutableSet<NSString *> *glyphKeys = [NSMutableSet set];
+        for (GAGlyphVariant *variant in variants) {
+            NSString *key = variant.glyphKey;
+            if ([glyphKeys containsObject:key])
+                continue;
+            [glyphKeys addObject:key];
+            [unique addObject:variant];
+        }
+        GAGlyphVariant *base = unique.firstObject;
+        for (GAGlyphVariant *variant in unique)
+            variant.base = (variant == base);
+
+        GACharacterGroup *ligatureGroup = [[GACharacterGroup alloc] init];
+        ligatureGroup.text = [text substringWithRange:range];
+        ligatureGroup.textRange = range;
+        ligatureGroup.variants = unique;
+        ligatureGroup.insertedLigature = YES;
+
+        NSNumber *end = @(NSMaxRange(range));
+        NSMutableArray<GACharacterGroup *> *atEnd = ligaturesAtEnd[end];
+        if (!atEnd) {
+            atEnd = [NSMutableArray array];
+            ligaturesAtEnd[end] = atEnd;
+            [endOrder addObject:end];
+        }
+        [atEnd addObject:ligatureGroup];
+    }
+
+    // The last source group with a matching end anchors the whole bucket.
+    // Unanchored combinations keep their first-appearance order at the end.
+    NSMutableDictionary<NSNumber *, NSNumber *> *anchors = [NSMutableDictionary dictionary];
+    [sourceGroups enumerateObjectsUsingBlock:^(GACharacterGroup *group, NSUInteger index, BOOL *stop) {
+        (void)stop;
+        NSNumber *end = @(NSMaxRange(group.textRange));
+        if (ligaturesAtEnd[end]) anchors[end] = @(index);
+    }];
+    NSMutableArray<GACharacterGroup *> *display =
+        [NSMutableArray arrayWithCapacity:sourceGroups.count + rangeOrder.count];
+    for (NSUInteger index = 0; index < sourceGroups.count; ++index) {
+        if (cancelled && cancelled()) return nil;
+        GACharacterGroup *group = sourceGroups[index];
+        [display addObject:group];
+        NSNumber *end = @(NSMaxRange(group.textRange));
+        NSNumber *anchor = anchors[end];
+        if (anchor && anchor.unsignedIntegerValue == index)
+            [display addObjectsFromArray:ligaturesAtEnd[end]];
+    }
+    for (NSNumber *end in endOrder) {
+        if (cancelled && cancelled()) return nil;
+        if (!anchors[end]) [display addObjectsFromArray:ligaturesAtEnd[end]];
+    }
+
+    return display;
+}
+
 NSArray<GACharacterGroup *> *GABuildDisplayGroups(NSArray<GACharacterGroup *> *groups,
                                                   NSString *text,
                                                   NSArray<GAGlyphSelectionRun *> *selections,
@@ -294,137 +431,7 @@ NSArray<GACharacterGroup *> *GABuildDisplayGroups(NSArray<GACharacterGroup *> *g
       return NSOrderedSame;
     }];
 
-    NSMutableDictionary<NSValue *, NSMutableArray<GAGlyphVariant *> *> *byRange =
-        [NSMutableDictionary dictionary];
-    NSMutableDictionary<NSValue *, NSNumber *> *spanLengths = [NSMutableDictionary dictionary];
-    for (GAGlyphVariant *variant in ligatureVariants) {
-        if (cancelled && cancelled())
-            return nil;
-        NSRange range = variant.sourceTextRange;
-        NSValue *rangeValue = [NSValue valueWithRange:range];
-        NSMutableArray<GAGlyphVariant *> *variants = byRange[rangeValue];
-        if (variants == nil) {
-            variants = [NSMutableArray array];
-            byRange[rangeValue] = variants;
-        }
-        [variants addObject:variant];
-    }
-    // Counting starts before the range end minus ends at/before its start
-    // handles overlapping, unordered and duplicate source groups alike.
-    // Small projections retain the cheaper direct scan.
-    BOOL indexed = groups.count >= 64 && byRange.count >= 16;
-    NSMutableData *startData = indexed
-        ? [NSMutableData dataWithLength:groups.count * sizeof(NSUInteger)] : nil;
-    NSMutableData *endData = indexed
-        ? [NSMutableData dataWithLength:groups.count * sizeof(NSUInteger)] : nil;
-    NSUInteger *starts = startData.mutableBytes, *ends = endData.mutableBytes;
-    NSUInteger count = 0;
-    if (indexed) {
-        for (GACharacterGroup *group in groups) {
-            NSRange source = group.textRange;
-            if (source.location == NSNotFound || !source.length) continue;
-            if (NSMaxRange(source) < source.location) { indexed = NO; break; }
-            starts[count] = source.location;
-            ends[count++] = NSMaxRange(source);
-        }
-        if (indexed) {
-            qsort(starts, count, sizeof(NSUInteger), GACompareSourceEndpoints);
-            qsort(ends, count, sizeof(NSUInteger), GACompareSourceEndpoints);
-        }
-    }
-    for (NSValue *rangeValue in byRange) {
-        NSRange range = rangeValue.rangeValue;
-        NSUInteger spanLength = 0;
-        if (indexed) {
-            spanLength = GASourceEndpointCount(starts, count, NSMaxRange(range), NO) -
-                         GASourceEndpointCount(ends, count, range.location, YES);
-        } else {
-            for (GACharacterGroup *group in groups)
-                if (group.textRange.location != NSNotFound &&
-                    NSIntersectionRange(group.textRange, range).length > 0) spanLength++;
-        }
-        spanLengths[rangeValue] = @(spanLength);
-    }
-    // Order combination groups by the number of source character groups,
-    // then by source position. Each is inserted after its final source
-    // character below.
-    NSArray<NSValue *> *rangeOrder =
-        [byRange.allKeys sortedArrayUsingComparator:^NSComparisonResult(NSValue *a, NSValue *b) {
-          NSUInteger lengthA = spanLengths[a].unsignedIntegerValue;
-          NSUInteger lengthB = spanLengths[b].unsignedIntegerValue;
-          if (lengthA != lengthB) {
-              return lengthA < lengthB ? NSOrderedAscending : NSOrderedDescending;
-          }
-          NSRange rangeA = a.rangeValue;
-          NSRange rangeB = b.rangeValue;
-          if (rangeA.location != rangeB.location) {
-              return rangeA.location < rangeB.location ? NSOrderedAscending : NSOrderedDescending;
-          }
-          return NSOrderedSame;
-        }];
-    if (!rangeOrder.count) return sourceGroups;
-    NSMutableDictionary<NSNumber *, NSMutableArray<GACharacterGroup *> *> *ligaturesAtEnd =
-        [NSMutableDictionary dictionary];
-    NSMutableArray<NSNumber *> *endOrder = [NSMutableArray array];
-    for (NSValue *rangeValue in rangeOrder) {
-        if (cancelled && cancelled())
-            return nil;
-        NSRange range = rangeValue.rangeValue;
-        NSMutableArray<GAGlyphVariant *> *variants = byRange[rangeValue];
-        NSMutableArray<GAGlyphVariant *> *unique = [NSMutableArray array];
-        NSMutableSet<NSString *> *glyphKeys = [NSMutableSet set];
-        for (GAGlyphVariant *variant in variants) {
-            NSString *key = variant.glyphKey;
-            if ([glyphKeys containsObject:key])
-                continue;
-            [glyphKeys addObject:key];
-            [unique addObject:variant];
-        }
-        GAGlyphVariant *base = unique.firstObject;
-        for (GAGlyphVariant *variant in unique)
-            variant.base = (variant == base);
-
-        GACharacterGroup *ligatureGroup = [[GACharacterGroup alloc] init];
-        ligatureGroup.text = [text substringWithRange:range];
-        ligatureGroup.textRange = range;
-        ligatureGroup.variants = unique;
-        ligatureGroup.insertedLigature = YES;
-
-        NSNumber *end = @(NSMaxRange(range));
-        NSMutableArray<GACharacterGroup *> *atEnd = ligaturesAtEnd[end];
-        if (!atEnd) {
-            atEnd = [NSMutableArray array];
-            ligaturesAtEnd[end] = atEnd;
-            [endOrder addObject:end];
-        }
-        [atEnd addObject:ligatureGroup];
-    }
-
-    // The last source group with a matching end anchors the whole bucket.
-    // Unanchored combinations keep their first-appearance order at the end.
-    NSMutableDictionary<NSNumber *, NSNumber *> *anchors = [NSMutableDictionary dictionary];
-    [sourceGroups enumerateObjectsUsingBlock:^(GACharacterGroup *group, NSUInteger index, BOOL *stop) {
-        (void)stop;
-        NSNumber *end = @(NSMaxRange(group.textRange));
-        if (ligaturesAtEnd[end]) anchors[end] = @(index);
-    }];
-    NSMutableArray<GACharacterGroup *> *display =
-        [NSMutableArray arrayWithCapacity:sourceGroups.count + rangeOrder.count];
-    for (NSUInteger index = 0; index < sourceGroups.count; ++index) {
-        if (cancelled && cancelled()) return nil;
-        GACharacterGroup *group = sourceGroups[index];
-        [display addObject:group];
-        NSNumber *end = @(NSMaxRange(group.textRange));
-        NSNumber *anchor = anchors[end];
-        if (anchor && anchor.unsignedIntegerValue == index)
-            [display addObjectsFromArray:ligaturesAtEnd[end]];
-    }
-    for (NSNumber *end in endOrder) {
-        if (cancelled && cancelled()) return nil;
-        if (!anchors[end]) [display addObjectsFromArray:ligaturesAtEnd[end]];
-    }
-
-    return display;
+    return GAInsertCombinationGroups(groups, sourceGroups, ligatureVariants, text, cancelled);
 }
 
 #pragma mark - Preview projection
