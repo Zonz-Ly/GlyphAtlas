@@ -151,13 +151,15 @@ static NSTextLineFragment *GAFirstLineBaseline(NSTextLayoutManager *layout, CGFl
 /// Only these group fields affect the native display copy and source mapping.
 /// Copy their values so in-place changes cannot make an old snapshot appear equal.
 static NSArray *GAMultiGroupIdentity(NSArray<GACharacterGroup *> *groups) {
-    NSMutableArray *identity = [NSMutableArray arrayWithCapacity:groups.count];
+    NSMutableArray *identity = [NSMutableArray arrayWithCapacity:groups.count * 6];
     for (GACharacterGroup *group in groups) {
-        [identity addObject:@[
-            [NSValue valueWithRange:group.textRange], group.text.copy ?: @"",
-            @(group.seeded), @(group.insertedLigature),
-            group.variants.firstObject.glyphIDs.copy ?: @[],
-        ]];
+        NSRange range = group.textRange;
+        [identity addObject:@(range.location)];
+        [identity addObject:@(range.length)];
+        [identity addObject:group.text.copy ?: @""];
+        [identity addObject:@(group.seeded)];
+        [identity addObject:@(group.insertedLigature)];
+        [identity addObject:group.variants.firstObject.glyphIDs.copy ?: @[]];
     }
     return identity;
 }
