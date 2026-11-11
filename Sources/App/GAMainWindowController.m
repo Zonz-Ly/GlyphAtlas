@@ -367,7 +367,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     self.sidebarViewController.onInputUndoRedo = ^{
         GAMainWindowController *controller = weakSelf;
         controller.pendingGlyphEdit = nil;
-        [controller.sidebarViewController selectGlyphKeyAfterNextReload:nil
+        [controller.sidebarViewController selectGlyphIDsAfterNextReload:nil
                                                              textRange:NSMakeRange(NSNotFound, 0)
                                                                 scroll:GAPendingSelectionScrollGroup];
         [controller scheduleAnalysis];
@@ -690,7 +690,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     if (range.location == NSNotFound) {
         return;
     }
-    [self.sidebarViewController selectGlyphKeyAfterNextReload:entry.glyphID.stringValue
+    [self.sidebarViewController selectGlyphIDsAfterNextReload:@[entry.glyphID]
                                                     textRange:range
                                                        scroll:GAPendingSelectionScrollGroup];
     [self scheduleAnalysis];
@@ -1374,7 +1374,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         : NSLocalizedString(@"Replace Glyph", @"Undo action for replacing a glyph");
     if (![self.sidebarViewController commitGlyphInput:attributedText actionName:actionName]) return;
     if (!insert) {
-        [self.sidebarViewController selectGlyphKeyAfterNextReload:variant.glyphKey textRange:range
+        [self.sidebarViewController selectGlyphIDsAfterNextReload:variant.glyphIDs textRange:range
             scroll:GAPendingSelectionScrollSelectedToTopIfNeeded];
     }
     [self scheduleAnalysis];

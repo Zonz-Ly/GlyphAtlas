@@ -108,10 +108,10 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
 @property (nonatomic, strong, nullable) GAGlyphVariant *selectedVariant;
 @property (nonatomic) NSRange selectedVariantTextRange;
 @property (nonatomic) BOOL suppressSelectionCallback;
-@property (nonatomic, copy, nullable) NSString *pendingSelectionGlyphKey;
+@property (nonatomic, copy, nullable) NSArray<NSNumber *> *pendingSelectionGlyphIDs;
 @property (nonatomic) NSRange pendingSelectionTextRange;
 @property (nonatomic) GAPendingSelectionScroll pendingSelectionScroll;
-@property (nonatomic, copy, nullable) NSString *lastNotifiedGlyphKey;
+@property (nonatomic, copy, nullable) NSArray<NSNumber *> *lastNotifiedGlyphIDs;
 @property (nonatomic) NSRange lastNotifiedRange;
 @property (nonatomic, strong, nullable) NSLayoutConstraint *searchTopConstraint;
 @property (nonatomic) BOOL suppressTextChangeCallback;
@@ -548,7 +548,7 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
     self.suppressTextChangeCallback = NO;
     if (registersUndo) [undoManager endUndoGrouping];
     if (applied) {
-        self.pendingSelectionGlyphKey = nil;
+        self.pendingSelectionGlyphIDs = nil;
         [self syncDetachedInput];
     }
     return applied;
@@ -561,10 +561,10 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
     [editor insertText:text replacementRange:NSMakeRange(0, editor.string.length)];
 }
 
-- (void)selectGlyphKeyAfterNextReload:(NSString *)glyphKey
+- (void)selectGlyphIDsAfterNextReload:(NSArray<NSNumber *> *)glyphIDs
                             textRange:(NSRange)textRange
                                scroll:(GAPendingSelectionScroll)scroll {
-    self.pendingSelectionGlyphKey = glyphKey;
+    self.pendingSelectionGlyphIDs = glyphIDs;
     self.pendingSelectionTextRange = textRange;
     self.pendingSelectionScroll = scroll;
 }
@@ -761,7 +761,7 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
     if (editor.hasMarkedText || manager.isUndoing || manager.isRedoing) {
         return;
     }
-    self.pendingSelectionGlyphKey = nil;
+    self.pendingSelectionGlyphIDs = nil;
     [self prepareFieldEditor];
     if (self.onTextChanged) {
         self.handlingNativeInputEdit = YES;
@@ -821,25 +821,25 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
 
 #pragma mark - Updating groups
 
-/// Restores the first row matching both the source range and glyph key.
-- (NSInteger)rowForGlyphKey:(NSString *)glyphKey textRange:(NSRange)textRange {
+/// Restores the first row matching both the source range and complete glyph sequence.
+- (NSInteger)rowForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs textRange:(NSRange)textRange {
     if (textRange.length == 0) {
         return NSNotFound;
     }
     for (NSInteger index = 0; index < (NSInteger)self.rows.count; index++) {
         GARowItem *item = self.rows[(NSUInteger)index];
         if (NSEqualRanges(item.group.textRange, textRange) &&
-            [item.variant.glyphKey isEqualToString:glyphKey]) {
+            [item.variant.glyphIDs isEqualToArray:glyphIDs]) {
             return index;
         }
     }
     return NSNotFound;
 }
 
-- (NSInteger)rowForGlyphKey:(NSString *)glyphKey inGroup:(GACharacterGroup *)group {
+- (NSInteger)rowForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs inGroup:(GACharacterGroup *)group {
     for (NSInteger index = 0; index < (NSInteger)self.rows.count; index++) {
         GARowItem *item = self.rows[index];
-        if (item.group == group && [item.variant.glyphKey isEqualToString:glyphKey]) {
+        if (item.group == group && [item.variant.glyphIDs isEqualToArray:glyphIDs]) {
             return index;
         }
     }
@@ -863,7 +863,7 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
 /// group's base row is the fallback when the clicked all-glyph GID is not one
 /// of the shaped variants.
 - (NSInteger)rowForPendingSelection {
-    if (self.pendingSelectionGlyphKey.length == 0) {
+    if (self.pendingSelectionGlyphIDs == nil) {
         return NSNotFound;
     }
     GACharacterGroup *group = [self groupForTextRange:self.pendingSelectionTextRange];
@@ -877,7 +877,7 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
     }
     if (group == nil)
         return NSNotFound;
-    NSInteger row = [self rowForGlyphKey:self.pendingSelectionGlyphKey inGroup:group];
+    NSInteger row = [self rowForGlyphIDs:self.pendingSelectionGlyphIDs inGroup:group];
     if (row != NSNotFound) {
         return row;
     }
@@ -913,7 +913,7 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
 /// Consumes the request when its query publishes, even if there is no target row.
 - (BOOL)applyPendingSelection {
     NSInteger row = [self rowForPendingSelection];
-    self.pendingSelectionGlyphKey = nil;
+    self.pendingSelectionGlyphIDs = nil;
     if (row == NSNotFound) {
         return NO;
     }
@@ -970,7 +970,7 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
 
 - (BOOL)updateGroupsWithSameRows:(NSArray<GACharacterGroup *> *)groups
                            rows:(NSArray<GARowItem *> *)rows {
-    if (self.pendingSelectionGlyphKey != nil) return NO;
+    if (self.pendingSelectionGlyphIDs != nil) return NO;
     if (rows.count != self.rows.count) return NO;
     for (NSUInteger i = 0; i < rows.count; i++) {
         GARowItem *old = self.rows[i], *updated = rows[i];
@@ -1026,7 +1026,7 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
         if (row.group != group || row.variant != variant) continue;
         NSDictionary *anchor = replacesRows ? [self captureScrollAnchor] : nil;
         self.suppressSelectionCallback = YES;
-        self.pendingSelectionGlyphKey = nil;
+        self.pendingSelectionGlyphIDs = nil;
         // Publish only the final row set. Removing an old temporary item must
         // not select/notify its parent or navigate before the target is ready.
         if (replacesRows) {
@@ -1091,7 +1091,7 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
                                     sourceText:(NSString *)text
                                       document:(GAFontDocument *)document {
     GAGlyphResolution *temporary = self.temporaryResolution;
-    if (!temporary || self.selectedVariant != temporary.variant || self.pendingSelectionGlyphKey)
+    if (!temporary || self.selectedVariant != temporary.variant || self.pendingSelectionGlyphIDs)
         return nil;
     GARowItem *oldParent = nil;
     for (GARowItem *row in self.rows)
@@ -1140,7 +1140,7 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
 }
 
 - (void)clearGroups {
-    self.pendingSelectionGlyphKey = nil;
+    self.pendingSelectionGlyphIDs = nil;
     self.displayedSourceEdits = nil;
     self.temporaryResolution = nil;
     [self setGroups:@[] sourceText:nil rows:@[]];
@@ -1152,11 +1152,11 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
     NSAnimationContext.currentContext.duration = 0;
     @try {
         NSDictionary *scrollAnchor = [self captureScrollAnchor];
-        NSString *oldGlyphKey = nil;
+        NSArray<NSNumber *> *oldGlyphIDs = nil;
         NSRange oldGroupRange = GARemapSourceRange(self.selectedVariantTextRange,
             GASourceEditBetween(self.displayedText, text));
         if (self.selectedVariant != nil) {
-            oldGlyphKey = self.selectedVariant.glyphKey;
+            oldGlyphIDs = self.selectedVariant.glyphIDs;
         } else {
             oldGroupRange = NSMakeRange(NSNotFound, 0);
         }
@@ -1171,8 +1171,8 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
         if ([self applyPendingSelection]) return;
 
         NSInteger rowToSelect = NSNotFound;
-        if (oldGlyphKey.length > 0) {
-            rowToSelect = [self rowForGlyphKey:oldGlyphKey textRange:oldGroupRange];
+        if (oldGlyphIDs != nil) {
+            rowToSelect = [self rowForGlyphIDs:oldGlyphIDs textRange:oldGroupRange];
         }
         // The selected text may have been deleted; fall back to the first base row.
         if (rowToSelect == NSNotFound) {
@@ -1225,7 +1225,7 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
         for (NSUInteger i = visible.location; i < MIN(self.rows.count, NSMaxRange(visible)); i++) {
             GARowItem *row = self.rows[i];
             [rows addObject:@{
-                @"key" : row.variant.glyphKey,
+                @"glyphIDs" : row.variant.glyphIDs,
                 @"range" : [NSValue valueWithRange:row.group.textRange],
                 @"text" : row.group.text,
                 @"ligature" : @(row.group.insertedLigature),
@@ -1254,9 +1254,9 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
                 break;
             }
         if (group == nil) continue;
-        NSInteger row = [self rowForGlyphKey:visible[@"key"] inGroup:group];
+        NSInteger row = [self rowForGlyphIDs:visible[@"glyphIDs"] inGroup:group];
         if (row == NSNotFound && group.variants.count)
-            row = [self rowForGlyphKey:group.variants.firstObject.glyphKey inGroup:group];
+            row = [self rowForGlyphIDs:group.variants.firstObject.glyphIDs inGroup:group];
         if (row == NSNotFound) continue;
         NSRect rect = [self.tableView rectOfRow:row];
         CGFloat target = NSMinY(rect) + MIN([visible[@"offset"] doubleValue], NSHeight(rect) - 1);
@@ -1282,15 +1282,15 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
     if (self.onSelectionChanged == nil) {
         return;
     }
-    NSString *key = self.selectedVariant.glyphKey;
+    NSArray<NSNumber *> *glyphIDs = self.selectedVariant.glyphIDs;
     NSRange range = self.selectedVariantTextRange;
-    BOOL same = (key == nil && self.lastNotifiedGlyphKey == nil) ||
-                ([key isEqualToString:self.lastNotifiedGlyphKey] &&
+    BOOL same = (glyphIDs == nil && self.lastNotifiedGlyphIDs == nil) ||
+                ([glyphIDs isEqualToArray:self.lastNotifiedGlyphIDs] &&
                  NSEqualRanges(range, self.lastNotifiedRange));
     if (same) {
         return;
     }
-    self.lastNotifiedGlyphKey = key;
+    self.lastNotifiedGlyphIDs = glyphIDs;
     self.lastNotifiedRange = range;
     self.onSelectionChanged(self.selectedVariant, quickReveal);
 }
@@ -1347,7 +1347,7 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
     }
     // A manual click overrides any pending auto-selection from an append or
     // activation; later list snapshots must not snap the user back.
-    self.pendingSelectionGlyphKey = nil;
+    self.pendingSelectionGlyphIDs = nil;
     [self rememberSelectedRow:row];
     if (!self.selectedVariant.isTemporary) [self clearTemporaryGlyph];
     [self notifySelection];

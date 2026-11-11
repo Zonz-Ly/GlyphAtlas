@@ -50,7 +50,7 @@ typedef NS_ENUM(NSInteger, GAPendingSelectionScroll) {
 /// Explicit selection with a scroll policy. `Group` keeps the existing
 /// group-centering rules; `SelectedToTopIfNeeded` scrolls only when the
 /// selected row is completely outside the visible area, aligning it to the top.
-- (void)selectGlyphKeyAfterNextReload:(nullable NSString *)glyphKey
+- (void)selectGlyphIDsAfterNextReload:(nullable NSArray<NSNumber *> *)glyphIDs
                             textRange:(NSRange)textRange
                                scroll:(GAPendingSelectionScroll)scroll;
 /// Appends text and optionally marks it as a selection run. Returns the range
