@@ -833,7 +833,8 @@ static NSTextAttachment *GAOmittedGlyphAttachment(void) {
 }
 
 - (NSMutableAttributedString *)displayAttributedStringForFont:(NSFont *)font
-                                                sourceIndices:(NSMutableArray<NSNumber *> *)sourceIndices {
+                                                sourceIndices:(NSMutableArray<NSNumber *> *)sourceIndices
+                                             hasSeededGroups:(BOOL)hasSeededGroups {
     NSMutableParagraphStyle *paragraph = [[NSMutableParagraphStyle alloc] init];
     paragraph.alignment = self.textAlignment;
     paragraph.baseWritingDirection = self.baseWritingDirection;
@@ -863,6 +864,8 @@ static NSTextAttachment *GAOmittedGlyphAttachment(void) {
             sourceIndices[index] = @(NSNotFound);
         }];
     }
+    if (!self.vertical && !hasSeededGroups) return display;
+
     // Descending replacements leave earlier source ranges valid even when a
     // multiple substitution expands one source character into several glyphs.
     NSArray *ordered = [self.groups
@@ -1029,7 +1032,9 @@ static NSIndexSet *GAForeignCharactersToOmit(NSAttributedString *display, NSInde
             [atomic addObject:[NSValue valueWithRange:group.textRange]];
 
     NSMutableArray<NSNumber *> *sourceIndices = [NSMutableArray arrayWithCapacity:self.text.length];
-    NSMutableAttributedString *display = [self displayAttributedStringForFont:font sourceIndices:sourceIndices];
+    NSMutableAttributedString *display = [self displayAttributedStringForFont:font
+                                                               sourceIndices:sourceIndices
+                                                            hasSeededGroups:atomic.count > 0];
     NSString *fontName = CFBridgingRelease(CTFontCopyPostScriptName((__bridge CTFontRef)font));
     NSTextLayoutManager *layout = self.textView.textLayoutManager;
     while (YES) {
