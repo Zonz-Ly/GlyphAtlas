@@ -503,7 +503,6 @@ static NSString *GADisplayNameForGlyph(CTFontRef font, NSNumber *number) {
         return a.rangeValue.location < b.rangeValue.location ? NSOrderedAscending
              : a.rangeValue.location > b.rangeValue.location ? NSOrderedDescending : NSOrderedSame;
     };
-    [ranges sortUsingComparator:order];
     NSArray<NSValue *> *roots = [ranges copy];
     __block NSUInteger root = 0;
     [content enumerateSubstringsInRange:NSMakeRange(0, content.length)
