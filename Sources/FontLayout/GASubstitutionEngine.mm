@@ -710,11 +710,24 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
         if (result)
             nextParagraphs->try_emplace(std::move(paragraph.key), std::move(result));
     }
+    [matches sortWithOptions:NSSortStable usingComparator:^NSComparisonResult(GASubstitutionMatch *a,
+                                                     GASubstitutionMatch *b) {
+      if (a.base != b.base)
+          return a.base ? NSOrderedAscending : NSOrderedDescending;
+      if (!a.base && a.sourceRange.length != b.sourceRange.length)
+          return a.sourceRange.length < b.sourceRange.length ? NSOrderedAscending
+                                                             : NSOrderedDescending;
+      if (a.sourceRange.location != b.sourceRange.location)
+          return a.sourceRange.location < b.sourceRange.location ? NSOrderedAscending
+                                                                 : NSOrderedDescending;
+      return NSOrderedSame;
+    }];
+    NSArray *ordered = [matches copy];
     if (!incomplete)
-        [self.program.cache setObject:matches
+        [self.program.cache setObject:ordered
                                forKey:queryKey
                                  cost:text.length * 2 + matches.count * 128];
-    return matches;
+    return ordered;
 }
 - (NSArray<GASubstitutionMatch *> *)discoverText:(NSString *)text
                                       selections:(NSArray<GAGlyphSelectionRun *> *)selections
@@ -730,20 +743,8 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
     try {
         std::optional<ParagraphCache> nextParagraphs;
         BOOL didExhaust = NO;
-        NSMutableArray *matches = [[self discoverContent:text selections:selections cancellation:check
-                                           nextParagraphs:nextParagraphs incomplete:didExhaust] mutableCopy];
-        [matches sortWithOptions:NSSortStable usingComparator:^NSComparisonResult(GASubstitutionMatch *a,
-                                                         GASubstitutionMatch *b) {
-          if (a.base != b.base)
-              return a.base ? NSOrderedAscending : NSOrderedDescending;
-          if (!a.base && a.sourceRange.length != b.sourceRange.length)
-              return a.sourceRange.length < b.sourceRange.length ? NSOrderedAscending
-                                                                 : NSOrderedDescending;
-          if (a.sourceRange.location != b.sourceRange.location)
-              return a.sourceRange.location < b.sourceRange.location ? NSOrderedAscending
-                                                                     : NSOrderedDescending;
-          return NSOrderedSame;
-        }];
+        NSArray *matches = [self discoverContent:text selections:selections cancellation:check
+                                           nextParagraphs:nextParagraphs incomplete:didExhaust];
         checkCancellation(check);
         if (nextParagraphs) {
             @synchronized (self) {

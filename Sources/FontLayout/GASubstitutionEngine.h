@@ -27,6 +27,7 @@ NS_ASSUME_NONNULL_BEGIN
                      sharing:(nullable GASubstitutionEngine *)source;
 /// nil indicates cancellation, distinct from a completed empty result.
 /// Incomplete results retain verified candidates but may be retried.
+/// Base matches precede substitutions and are ordered by source location.
 - (nullable NSArray<GASubstitutionMatch *> *)discoverText:(NSString *)text
                                                 selections:(NSArray<GAGlyphSelectionRun *> *)selections
                                                 incomplete:(BOOL * _Nullable)incomplete
