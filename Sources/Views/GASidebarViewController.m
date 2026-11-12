@@ -133,8 +133,8 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
     temporaryResolution:(nullable GAGlyphResolution *)temporary;
 @end
 
-// Map unchanged source spans across the edit between two published texts.
-// Intersecting spans were replaced/deleted and must not bind to another character.
+// A source edit uses the input's pre-edit coordinates. Intersecting spans were
+// replaced/deleted and must not bind to another character.
 typedef struct {
     NSRange changed;
     NSInteger shift;
@@ -965,32 +965,35 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
 /// Resolves the pending selection by text range first. An empty GID list
 /// requests the base row directly; an unavailable GID also falls back to it.
 - (NSInteger)rowForPendingSelection {
-    if (self.pendingSelectionGlyphIDs == nil) {
+    NSArray<NSNumber *> *glyphIDs = self.pendingSelectionGlyphIDs;
+    if (glyphIDs == nil) {
         return NSNotFound;
     }
-    GACharacterGroup *group = [self groupForTextRange:self.pendingSelectionTextRange];
+    NSRange range = self.pendingSelectionTextRange;
+    GACharacterGroup *group = [self groupForTextRange:range];
     if (group == nil) {
         for (GACharacterGroup *candidate in self.groups)
-            if (self.pendingSelectionTextRange.location >= candidate.textRange.location &&
-                NSMaxRange(self.pendingSelectionTextRange) <= NSMaxRange(candidate.textRange)) {
+            if (range.location >= candidate.textRange.location &&
+                NSMaxRange(range) <= NSMaxRange(candidate.textRange)) {
                 group = candidate;
                 break;
             }
     }
     if (group == nil)
         return NSNotFound;
-    NSInteger row = self.pendingSelectionGlyphIDs.count
-        ? [self rowForGlyphIDs:self.pendingSelectionGlyphIDs inGroup:group] : NSNotFound;
-    if (row != NSNotFound) {
-        return row;
-    }
+    BOOL requestsExactGlyph = glyphIDs.count > 0;
+    NSInteger baseRow = NSNotFound;
     for (NSInteger index = 0; index < (NSInteger)self.rows.count; index++) {
         GARowItem *item = self.rows[(NSUInteger)index];
-        if (item.group == group && item.variant.isBase) {
-            return index;
+        if (item.group != group) continue;
+        if (requestsExactGlyph && [item.variant.glyphIDs isEqualToArray:glyphIDs]) return index;
+        if (item.variant.isBase && baseRow == NSNotFound) {
+            if (!requestsExactGlyph) return index;
+            // Keep the first base as fallback while looking for the exact GID.
+            baseRow = index;
         }
     }
-    return NSNotFound;
+    return baseRow;
 }
 
 - (void)scrollTableToY:(CGFloat)y {
