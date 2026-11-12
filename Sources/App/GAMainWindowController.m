@@ -814,6 +814,10 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
                 [controller.sidebarViewController focusGlyphList];
             }
         }
+        if (!hidden) {
+            [currentWindow.contentView.superview layoutSubtreeIfNeeded];
+            [currentWindow invalidateCursorRectsForView:controller.titleFontNameField];
+        }
     };
     if (animate) {
         [NSAnimationContext runAnimationGroup:^(__unused NSAnimationContext *context) {
