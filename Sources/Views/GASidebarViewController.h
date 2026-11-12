@@ -10,7 +10,7 @@ typedef NS_ENUM(NSInteger, GAPendingSelectionScroll) {
 
 @interface GASidebarViewController : NSViewController
 
-/// Called after a committed native edit has prepared its pending selection.
+/// Requests analysis after native input or an append prepares its pending selection.
 @property (nonatomic, copy, nullable) void (^onTextChanged)(void);
 @property (nonatomic, copy, nullable) void (^onInputUndoRedo)(void);
 @property (nonatomic, copy, nullable) void (^onSelectionChanged)(GAGlyphVariant * _Nullable variant, BOOL quickReveal);
@@ -55,11 +55,13 @@ typedef NS_ENUM(NSInteger, GAPendingSelectionScroll) {
 - (void)selectGlyphIDsAfterNextReload:(nullable NSArray<NSNumber *> *)glyphIDs
                             textRange:(NSRange)textRange
                                scroll:(GAPendingSelectionScroll)scroll;
-/// Appends text and optionally marks it as a selection run. Returns the range
-/// of the appended text, or NSMakeRange(NSNotFound, 0) when nothing was added.
-- (NSRange)appendInputString:(NSString *)string
-                   selection:(nullable GAGlyphSelection *)selection
-                  actionName:(NSString *)actionName;
+/// Appends text with an optional selection run, prepares the requested glyph
+/// selection, requests analysis, then focuses the input. A failed edit does none
+/// of the follow-up work. Empty glyph IDs request the source group's base.
+- (void)appendInputString:(NSString *)string
+               selection:(nullable GAGlyphSelection *)selection
+       selectingGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
+              actionName:(NSString *)actionName;
 /// Returns the custom field editor when \c control is the active input, so
 /// the window can keep line breaks as marked U+23CE characters.
 - (nullable NSTextView *)fieldEditorForControl:(id _Nullable)control;

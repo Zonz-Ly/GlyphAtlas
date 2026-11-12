@@ -684,17 +684,10 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
                                                   featureSources:@[]
                                                         ligature:NO];
     }
-    NSRange range = [self.sidebarViewController appendInputString:string
-                                                       selection:selection
-                                                      actionName:NSLocalizedString(@"Add Glyph", @"Undo action for adding a glyph")];
-    if (range.location == NSNotFound) {
-        return;
-    }
-    [self.sidebarViewController selectGlyphIDsAfterNextReload:@[entry.glyphID]
-                                                    textRange:range
-                                                       scroll:GAPendingSelectionScrollGroup];
-    [self scheduleAnalysis];
-    [self.sidebarViewController focusInput];
+    [self.sidebarViewController appendInputString:string
+                                       selection:selection
+                               selectingGlyphIDs:@[entry.glyphID]
+                                      actionName:NSLocalizedString(@"Add Glyph", @"Undo action for adding a glyph")];
 }
 
 #pragma mark - Window and input focus

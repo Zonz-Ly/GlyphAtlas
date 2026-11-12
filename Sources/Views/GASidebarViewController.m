@@ -637,6 +637,14 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
     self.pendingSelectionScroll = scroll;
 }
 
+/// Native input and grid appends share the same pending-selection handoff.
+- (void)inputDidChangeSelectingGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
+                            textRange:(NSRange)range {
+    [self selectGlyphIDsAfterNextReload:glyphIDs textRange:range
+                                scroll:GAPendingSelectionScrollGroup];
+    if (self.onTextChanged) self.onTextChanged();
+}
+
 - (NSString *)selectedGlyphSourceText {
     GARowItem *row = [self selectedVariantRow];
     NSRange range = row.variant.sourceTextRange;
@@ -704,11 +712,12 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
                    modifiers:NSApp.currentEvent.modifierFlags];
 }
 
-- (NSRange)appendInputString:(NSString *)string
-                   selection:(GAGlyphSelection *)selection
-                  actionName:(NSString *)actionName {
+- (void)appendInputString:(NSString *)string
+               selection:(GAGlyphSelection *)selection
+       selectingGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
+              actionName:(NSString *)actionName {
     if (string.length == 0) {
-        return NSMakeRange(NSNotFound, 0);
+        return;
     }
     NSMutableAttributedString *text = [self.attributedText mutableCopy];
     NSRange range = NSMakeRange(text.length, string.length);
@@ -716,7 +725,9 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
     if (selection != nil) {
         [text addAttribute:GAGlyphSelectionAttributeName value:selection range:range];
     }
-    return [self commitGlyphInput:text actionName:actionName] ? range : NSMakeRange(NSNotFound, 0);
+    if (![self commitGlyphInput:text actionName:actionName]) return;
+    [self inputDidChangeSelectingGlyphIDs:glyphIDs textRange:range];
+    [self focusInput];
 }
 
 - (void)focusInput {
@@ -856,14 +867,10 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
     NSRange autoSelectionRange = self.inputAutoSelectionRange;
     self.inputAutoSelectionRange = NSMakeRange(0, 0);
     [self prepareFieldEditor];
-    [self selectGlyphIDsAfterNextReload:autoSelectionRange.length ? @[] : nil
-                             textRange:autoSelectionRange
-                                scroll:GAPendingSelectionScrollGroup];
-    if (self.onTextChanged) {
-        self.handlingNativeInputEdit = YES;
-        self.onTextChanged();
-        self.handlingNativeInputEdit = NO;
-    }
+    self.handlingNativeInputEdit = YES;
+    [self inputDidChangeSelectingGlyphIDs:autoSelectionRange.length ? @[] : nil
+                               textRange:autoSelectionRange];
+    self.handlingNativeInputEdit = NO;
 }
 
 - (BOOL)control:(NSControl *)control
