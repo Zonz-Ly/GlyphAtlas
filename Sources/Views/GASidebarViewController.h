@@ -10,9 +10,8 @@ typedef NS_ENUM(NSInteger, GAPendingSelectionScroll) {
 
 @interface GASidebarViewController : NSViewController
 
-/// A nonempty range requests its source group's base after analysis;
-/// an empty range retains the existing selection policy.
-@property (nonatomic, copy, nullable) void (^onTextChanged)(NSRange autoSelectionRange);
+/// Called after a committed native edit has prepared its pending selection.
+@property (nonatomic, copy, nullable) void (^onTextChanged)(void);
 @property (nonatomic, copy, nullable) void (^onInputUndoRedo)(void);
 @property (nonatomic, copy, nullable) void (^onSelectionChanged)(GAGlyphVariant * _Nullable variant, BOOL quickReveal);
 /// Shift+Return and Shift+double-click insert after the row's source range.
