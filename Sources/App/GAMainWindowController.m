@@ -364,11 +364,11 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     __weak typeof(self) weakSelf = self;
     [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(handleInputBlankClick:)
                                               name:GAInputBlankClickNotification object:nil];
-    self.sidebarViewController.onTextChanged = ^(NSRange insertedRange) {
+    self.sidebarViewController.onTextChanged = ^(NSRange autoSelectionRange) {
         GAMainWindowController *controller = weakSelf;
-        if (insertedRange.length) {
+        if (autoSelectionRange.length) {
             [controller.sidebarViewController selectGlyphIDsAfterNextReload:@[]
-                textRange:NSMakeRange(NSMaxRange(insertedRange) - 1, 1)
+                textRange:autoSelectionRange
                 scroll:GAPendingSelectionScrollGroup];
         }
         [controller scheduleAnalysis];

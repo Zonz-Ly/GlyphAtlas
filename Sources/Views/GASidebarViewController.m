@@ -121,7 +121,7 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
 @property (nonatomic) BOOL suppressTextChangeCallback;
 @property (nonatomic) BOOL handlingNativeInputEdit;
 @property (nonatomic) BOOL inputChangedDuringReplay;
-@property (nonatomic) NSRange inputEditedRange;
+@property (nonatomic) NSRange inputAutoSelectionRange;
 @property (nonatomic, strong) GAGlyphInputEditor *inputEditor;
 /// Rebinds the same visual row sequence, including shifted source ranges,
 /// without reloading the table, changing the selected row or scrolling.
@@ -162,6 +162,15 @@ static NSRange GARemapSourceRange(NSRange range, GASourceEdit edit) {
     if (range.location >= NSMaxRange(edit.changed))
         return NSMakeRange((NSUInteger)((NSInteger)range.location + edit.shift), range.length);
     return NSMakeRange(NSNotFound, 0);
+}
+
+static NSRange GARemapSourceRangeThroughEdits(NSRange range, NSData *recordedEdits) {
+    const GASourceEdit *edits = recordedEdits.bytes;
+    NSUInteger count = recordedEdits.length / sizeof(*edits);
+    for (NSUInteger index = 0; index < count && range.location != NSNotFound; index++) {
+        range = GARemapSourceRange(range, edits[index]);
+    }
+    return range;
 }
 
 static const CGFloat GASidebarInactiveGlyphListAlpha = 0.37;
@@ -765,7 +774,7 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
     NSTextStorage *storage = notification.object;
     NSUndoManager *manager = self.inputEditor.undoManager;
     if (manager.isUndoing || manager.isRedoing) {
-        self.inputEditedRange = NSMakeRange(0, 0);
+        self.inputAutoSelectionRange = NSMakeRange(0, 0);
         self.inputChangedDuringReplay = YES;
         return;
     }
@@ -775,7 +784,8 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
         return;
     }
     NSRange changed = storage.editedRange;
-    self.inputEditedRange = changed;
+    self.inputAutoSelectionRange = changed.length
+        ? NSMakeRange(NSMaxRange(changed) - 1, 1) : NSMakeRange(0, 0);
     if (!self.displayedSourceEdits) return;
     NSString *before = self.trackedFieldText;
     NSString *after = storage.string;
@@ -794,6 +804,22 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
         return;
     }
     GASourceEdit edit = { replaced, shift };
+    if (changed.length == 0 && replaced.length && after.length) {
+        NSRange selectedRange = GARemapSourceRangeThroughEdits(self.selectedVariantTextRange,
+                                                               self.displayedSourceEdits);
+        // Repeated deletions can remove the selected source before its query
+        // publishes. Continue from the pending target in that case.
+        BOOL followsPendingSelection = selectedRange.location == NSNotFound &&
+            self.pendingSelectionGlyphIDs != nil && self.pendingSelectionGlyphIDs.count == 0;
+        if (followsPendingSelection)
+            selectedRange = self.pendingSelectionTextRange;
+        if (selectedRange.location != NSNotFound &&
+            NSIntersectionRange(selectedRange, replaced).length) {
+            self.inputAutoSelectionRange = NSMakeRange(changed.location ? changed.location - 1 : 0, 1);
+        } else if (followsPendingSelection) {
+            self.inputAutoSelectionRange = GARemapSourceRange(selectedRange, edit);
+        }
+    }
     [self.displayedSourceEdits appendBytes:&edit length:sizeof(edit)];
     self.trackedFieldText = after;
 }
@@ -802,12 +828,7 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
     if (!self.displayedSourceEdits || ![self.trackedFieldText isEqualToString:self.currentFieldText]) {
         return NSMakeRange(NSNotFound, 0);
     }
-    const GASourceEdit *edits = self.displayedSourceEdits.bytes;
-    NSUInteger count = self.displayedSourceEdits.length / sizeof(*edits);
-    for (NSUInteger index = 0; index < count && range.location != NSNotFound; index++) {
-        range = GARemapSourceRange(range, edits[index]);
-    }
-    return range;
+    return GARemapSourceRangeThroughEdits(range, self.displayedSourceEdits);
 }
 
 - (void)setGlyphListDimmed:(BOOL)dimmed {
@@ -828,13 +849,13 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
     if (editor.hasMarkedText || manager.isUndoing || manager.isRedoing) {
         return;
     }
-    NSRange insertedRange = self.inputEditedRange;
-    self.inputEditedRange = NSMakeRange(0, 0);
+    NSRange autoSelectionRange = self.inputAutoSelectionRange;
+    self.inputAutoSelectionRange = NSMakeRange(0, 0);
     self.pendingSelectionGlyphIDs = nil;
     [self prepareFieldEditor];
     if (self.onTextChanged) {
         self.handlingNativeInputEdit = YES;
-        self.onTextChanged(insertedRange);
+        self.onTextChanged(autoSelectionRange);
         self.handlingNativeInputEdit = NO;
     }
 }
