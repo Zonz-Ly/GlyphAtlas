@@ -903,6 +903,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     if ([itemIdentifier isEqualToString:GAVariationItem]) {
         item.label = self.variationButton.accessibilityLabel;
         item.image = self.variationButton.image;
+        item.toolTip = self.variationButton.toolTip;
         item.target = self;
         item.action = @selector(showVariations:);
         item.bordered = YES;
@@ -910,6 +911,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         NSButton *button = [NSButton buttonWithImage:item.image target:self action:item.action];
         button.bezelStyle = NSBezelStyleToolbar;
         button.accessibilityLabel = item.label;
+        button.toolTip = item.toolTip;
         item.view = button;
         return item;
     }
@@ -973,12 +975,32 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     [self.variationPopover close];
     self.fontResource = resource;
     self.variationCoordinates = resource.defaultCoordinates;
+    [self updateVariationToolTip];
     self.variationButton.hidden = resource.axes.count == 0;
     if (self.sidebarHidden) [self updateToolbarVariationItem];
     [self loadDescriptor:resource.defaultDescriptor url:url fileReference:fileReference preservingSelection:NO];
 }
 
 #pragma mark - Variation controls
+
+- (void)updateVariationToolTip {
+    NSNumberFormatter *formatter = [[NSNumberFormatter alloc] init];
+    formatter.numberStyle = NSNumberFormatterDecimalStyle;
+    formatter.usesGroupingSeparator = NO;
+    formatter.maximumFractionDigits = 4;
+    NSMutableArray<NSString *> *parameters = [NSMutableArray array];
+    for (NSDictionary *axis in self.fontResource.axes) {
+        NSNumber *identifier = axis[(__bridge NSString *)kCTFontVariationAxisIdentifierKey];
+        NSString *name = axis[(__bridge NSString *)kCTFontVariationAxisNameKey];
+        NSString *value = [formatter stringFromNumber:self.variationCoordinates[identifier]];
+        [parameters addObject:[NSString stringWithFormat:@"%@: %@", name, value]];
+    }
+    NSString *toolTip = parameters.count ? [parameters componentsJoinedByString:@", "] : nil;
+    self.variationButton.toolTip = toolTip;
+    for (NSToolbarItem *item in self.window.toolbar.items) {
+        if ([item.itemIdentifier isEqualToString:GAVariationItem]) item.toolTip = toolTip;
+    }
+}
 
 - (void)showVariations:(id)sender {
     if (self.variationPopover.detached) {
@@ -998,6 +1020,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         if (self == nil) return;
         if ([self.variationCoordinates isEqualToDictionary:coordinates]) return;
         self.variationCoordinates = coordinates;
+        [self updateVariationToolTip];
         CTFontDescriptorRef descriptor = [self.fontResource copyDescriptorWithCoordinates:coordinates];
         [self loadDescriptor:descriptor url:self.fontURL fileReference:self.fontFileReference preservingSelection:YES];
         CFRelease(descriptor);
