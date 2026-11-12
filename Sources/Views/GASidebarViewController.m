@@ -121,6 +121,7 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
 @property (nonatomic) BOOL suppressTextChangeCallback;
 @property (nonatomic) BOOL handlingNativeInputEdit;
 @property (nonatomic) BOOL inputChangedDuringReplay;
+@property (nonatomic) NSRange inputEditedRange;
 @property (nonatomic, strong) GAGlyphInputEditor *inputEditor;
 /// Rebinds the same visual row sequence, including shifted source ranges,
 /// without reloading the table, changing the selected row or scrolling.
@@ -764,15 +765,18 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
     NSTextStorage *storage = notification.object;
     NSUndoManager *manager = self.inputEditor.undoManager;
     if (manager.isUndoing || manager.isRedoing) {
+        self.inputEditedRange = NSMakeRange(0, 0);
         self.inputChangedDuringReplay = YES;
         return;
     }
-    if (!self.displayedSourceEdits || self.suppressTextChangeCallback ||
+    if (self.suppressTextChangeCallback ||
         self.inputField.currentEditor != self.inputEditor ||
         !(storage.editedMask & NSTextStorageEditedCharacters)) {
         return;
     }
     NSRange changed = storage.editedRange;
+    self.inputEditedRange = changed;
+    if (!self.displayedSourceEdits) return;
     NSString *before = self.trackedFieldText;
     NSString *after = storage.string;
     NSInteger shift = storage.changeInLength;
@@ -824,11 +828,13 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
     if (editor.hasMarkedText || manager.isUndoing || manager.isRedoing) {
         return;
     }
+    NSRange insertedRange = self.inputEditedRange;
+    self.inputEditedRange = NSMakeRange(0, 0);
     self.pendingSelectionGlyphIDs = nil;
     [self prepareFieldEditor];
     if (self.onTextChanged) {
         self.handlingNativeInputEdit = YES;
-        self.onTextChanged();
+        self.onTextChanged(insertedRange);
         self.handlingNativeInputEdit = NO;
     }
 }
@@ -922,9 +928,8 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
     return nil;
 }
 
-/// Resolves the pending selection by text range first: the appended character
-/// group's base row is the fallback when the clicked all-glyph GID is not one
-/// of the shaped variants.
+/// Resolves the pending selection by text range first. An empty GID list
+/// requests the base row directly; an unavailable GID also falls back to it.
 - (NSInteger)rowForPendingSelection {
     if (self.pendingSelectionGlyphIDs == nil) {
         return NSNotFound;
@@ -940,7 +945,8 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
     }
     if (group == nil)
         return NSNotFound;
-    NSInteger row = [self rowForGlyphIDs:self.pendingSelectionGlyphIDs inGroup:group];
+    NSInteger row = self.pendingSelectionGlyphIDs.count
+        ? [self rowForGlyphIDs:self.pendingSelectionGlyphIDs inGroup:group] : NSNotFound;
     if (row != NSNotFound) {
         return row;
     }

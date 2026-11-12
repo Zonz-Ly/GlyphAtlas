@@ -10,7 +10,8 @@ typedef NS_ENUM(NSInteger, GAPendingSelectionScroll) {
 
 @interface GASidebarViewController : NSViewController
 
-@property (nonatomic, copy, nullable) void (^onTextChanged)(void);
+/// The native edit's range in the updated input; zero length means deletion.
+@property (nonatomic, copy, nullable) void (^onTextChanged)(NSRange insertedRange);
 @property (nonatomic, copy, nullable) void (^onInputUndoRedo)(void);
 @property (nonatomic, copy, nullable) void (^onSelectionChanged)(GAGlyphVariant * _Nullable variant, BOOL quickReveal);
 /// Shift+Return and Shift+double-click insert after the row's source range.
@@ -50,6 +51,7 @@ typedef NS_ENUM(NSInteger, GAPendingSelectionScroll) {
 /// Explicit selection with a scroll policy. `Group` keeps the existing
 /// group-centering rules; `SelectedToTopIfNeeded` scrolls only when the
 /// selected row is completely outside the visible area, aligning it to the top.
+/// Empty glyph IDs select the source group's base; nil cancels the request.
 - (void)selectGlyphIDsAfterNextReload:(nullable NSArray<NSNumber *> *)glyphIDs
                             textRange:(NSRange)textRange
                                scroll:(GAPendingSelectionScroll)scroll;
