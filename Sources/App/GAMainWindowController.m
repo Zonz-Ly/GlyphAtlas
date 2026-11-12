@@ -366,7 +366,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
                                               name:GAInputBlankClickNotification object:nil];
     self.sidebarViewController.onTextChanged = ^(NSRange insertedRange) {
         GAMainWindowController *controller = weakSelf;
-        if (controller.viewMode == GAViewModeSingleGlyph && insertedRange.length) {
+        if (insertedRange.length) {
             [controller.sidebarViewController selectGlyphIDsAfterNextReload:@[]
                 textRange:NSMakeRange(NSMaxRange(insertedRange) - 1, 1)
                 scroll:GAPendingSelectionScrollGroup];
