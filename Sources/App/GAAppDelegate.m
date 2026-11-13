@@ -150,6 +150,7 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
 @property (nonatomic, strong) NSMutableArray<GAMainWindowController *> *windowControllers;
 @property (nonatomic, strong) NSMutableArray<NSURL *> *pendingFontURLs;
 @property (nonatomic, strong, nullable) NSOpenPanel *openPanel;
+@property (nonatomic, strong, nullable) NSURL *pendingOpenPanelDirectory;
 @property (nonatomic, strong, nullable) NSMenu *recentMenu;
 @property(nonatomic, strong) NSMenu *editMenu;
 @property(nonatomic, strong) NSMenu *viewMenu;
@@ -226,6 +227,7 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
         return;
     }
 
+    self.pendingOpenPanelDirectory = nil;
     [self.openPanel cancel:nil];
     self.handlingOpenFiles = YES;
     for (NSString *filename in filenames) {
@@ -281,6 +283,10 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
 #pragma mark - Open panel
 
 - (void)openFont:(id)sender {
+    [self showFontOpenPanelAtDirectory:nil];
+}
+
+- (void)showFontOpenPanelAtDirectory:(NSURL *)directory {
     if (self.openPanel != nil) {
         [NSApp activateIgnoringOtherApps:YES];
         [self.openPanel makeKeyAndOrderFront:nil];
@@ -289,6 +295,7 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
     NSOpenPanel *panel = [NSOpenPanel openPanel];
     panel.allowsMultipleSelection = YES;
     panel.allowedContentTypes = GAFontContentTypes();
+    if (directory) panel.directoryURL = directory;
     NSArray<NSString *> *folderTitles = @[
         NSLocalizedString(@"Current User", @"Current user's Fonts folder button"),
         NSLocalizedString(@"All Users", @"Shared Fonts folder button"),
@@ -301,9 +308,10 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
         button.tag = folder;
         [buttons addObject:button];
     }
-    NSStackView *folders = [NSStackView stackViewWithViews:buttons];
+    NSStackView *folders = [[NSStackView alloc] initWithFrame:NSZeroRect];
+    [folders setViews:buttons inGravity:NSStackViewGravityCenter];
+    folders.autoresizingMask = NSViewWidthSizable;
     folders.spacing = 8;
-    folders.alignment = NSLayoutAttributeCenterY;
     folders.edgeInsets = NSEdgeInsetsMake(8, 0, 8, 0);
     [folders setFrameSize:folders.fittingSize];
     panel.accessoryView = folders;
@@ -314,7 +322,13 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
     __weak typeof(self) weakSelf = self;
     [panel beginWithCompletionHandler:^(NSModalResponse result) {
         __strong typeof(weakSelf) self = weakSelf;
+        NSURL *nextDirectory = self.pendingOpenPanelDirectory;
+        self.pendingOpenPanelDirectory = nil;
         self.openPanel = nil;
+        if (nextDirectory) {
+            [self showFontOpenPanelAtDirectory:nextDirectory];
+            return;
+        }
         if (result != NSModalResponseOK) return;
         for (NSURL *url in [panel.URLs copy]) {
             [self openWindowForFontURL:url];
@@ -323,7 +337,8 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
 }
 
 - (void)selectFontFolder:(NSButton *)sender {
-    self.openPanel.directoryURL = GAFontFolderURL(sender.tag);
+    self.pendingOpenPanelDirectory = GAFontFolderURL(sender.tag);
+    [self.openPanel cancel:nil];
 }
 
 #pragma mark - Recent files
