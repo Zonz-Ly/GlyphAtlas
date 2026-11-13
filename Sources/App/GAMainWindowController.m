@@ -749,7 +749,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     [sidebar addSubview:self.fontTitleView];
     self.fontTitleView.translatesAutoresizingMaskIntoConstraints = NO;
     self.pinnedSidebarTitleConstraints = @[
-        [self.fontTitleView.leadingAnchor constraintEqualToAnchor:sidebar.leadingAnchor constant:NSMinX(frame)],
+        [self.fontTitleView.leftAnchor constraintEqualToAnchor:sidebar.leftAnchor constant:NSMinX(frame)],
         [self.fontTitleView.topAnchor constraintEqualToAnchor:sidebar.topAnchor constant:GATopOffsetInView(sidebar, frame)],
         [self.fontTitleView.heightAnchor constraintEqualToConstant:NSHeight(frame)],
         [self.fontTitleView.widthAnchor constraintLessThanOrEqualToAnchor:sidebar.widthAnchor
@@ -839,8 +839,9 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     if (hidden) [self.sidebarViewController setToolbarInputPlaceholder:self.titleFontNameField.stringValue];
     while (toolbar.items.count > 0) [toolbar removeItemAtIndex:toolbar.items.count - 1];
     if (hidden) {
+        BOOL rtl = window.contentView.userInterfaceLayoutDirection == NSUserInterfaceLayoutDirectionRightToLeft;
         [toolbar insertItemWithItemIdentifier:GATextInputItem atIndex:0];
-        [toolbar insertItemWithItemIdentifier:NSToolbarFlexibleSpaceItemIdentifier atIndex:1];
+        [toolbar insertItemWithItemIdentifier:NSToolbarFlexibleSpaceItemIdentifier atIndex:rtl ? 0 : 1];
         [self updateToolbarVariationItem];
     } else {
         [toolbar insertItemWithItemIdentifier:GAFontNameItem atIndex:0];

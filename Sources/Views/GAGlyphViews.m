@@ -266,7 +266,17 @@ static NSFont *GABadgeFont(void) {
         GAUnicodeBadgeView *badge = [[GAUnicodeBadgeView alloc] initWithText:text scalar:scalar];
         badge.backgroundStyle = self.backgroundStyle;
         badge.label.rowSelected = self.isRowSelected;
+        badge.translatesAutoresizingMaskIntoConstraints = NO;
+        GAUnicodeBadgeView *previous = self.labels.lastObject;
         [self addSubview:badge];
+        [NSLayoutConstraint activateConstraints:@[
+            [badge.trailingAnchor constraintEqualToAnchor:self.trailingAnchor],
+            [badge.widthAnchor constraintEqualToConstant:badge.badgeWidth],
+            [badge.heightAnchor constraintEqualToConstant:GABadgeHeight],
+            previous
+                ? [badge.topAnchor constraintEqualToAnchor:previous.bottomAnchor constant:GABadgeGap]
+                : [badge.topAnchor constraintEqualToAnchor:self.topAnchor],
+        ]];
         [self.labels addObject:badge];
     }
     self.accessibilityLabel = [codes componentsJoinedByString:@", "];
@@ -285,17 +295,6 @@ static NSFont *GABadgeFont(void) {
     _backgroundStyle = backgroundStyle;
     for (GAUnicodeBadgeView *badge in self.labels) {
         badge.backgroundStyle = backgroundStyle;
-    }
-}
-
-- (void)layout {
-    [super layout];
-    CGFloat y = 0;
-    CGFloat width = MAX(1.0, self.bounds.size.width);
-    for (GAUnicodeBadgeView *badge in self.labels) {
-        CGFloat badgeWidth = badge.badgeWidth;
-        badge.frame = NSMakeRect(width - badgeWidth, y, badgeWidth, GABadgeHeight);
-        y += GABadgeHeight + GABadgeGap;
     }
 }
 
