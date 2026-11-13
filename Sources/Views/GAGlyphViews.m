@@ -140,7 +140,6 @@ static NSFont *GABadgeFont(void) {
         if (name.length) {
             _expansionCell = [[NSTextFieldCell alloc] initTextCell:name];
             _expansionCell.font = self.font;
-            _expansionCell.alignment = NSTextAlignmentLeft;
             _expansionCell.lineBreakMode = NSLineBreakByClipping;
         }
     }
