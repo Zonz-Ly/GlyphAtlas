@@ -209,8 +209,6 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
         cell.cancelButtonCell = nil;
     }
     field.controlSize = controlSize;
-    if (!toolbar)
-        field.font = [NSFont systemFontOfSize:13.5 weight:NSFontWeightRegular];
     // Custom selection attributes live in the field's attributed string and
     // must survive the field editor's edit cycle.
     field.allowsEditingTextAttributes = YES;
