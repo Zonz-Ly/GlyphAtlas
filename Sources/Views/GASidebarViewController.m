@@ -236,7 +236,6 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
     self.tableView.rowHeight = 44;
     self.tableView.headerView = nil;
     self.tableView.style = NSTableViewStyleSourceList;
-    self.tableView.rowSizeStyle = NSTableViewRowSizeStyleCustom;
     self.tableView.intercellSpacing = NSMakeSize(0, 0);
     self.tableView.focusRingType = NSFocusRingTypeNone;
     self.tableView.dataSource = self;
