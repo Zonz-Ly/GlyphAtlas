@@ -749,7 +749,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     [sidebar addSubview:self.fontTitleView];
     self.fontTitleView.translatesAutoresizingMaskIntoConstraints = NO;
     self.pinnedSidebarTitleConstraints = @[
-        [self.fontTitleView.leftAnchor constraintEqualToAnchor:sidebar.leftAnchor constant:NSMinX(frame)],
+        [self.fontTitleView.leadingAnchor constraintEqualToAnchor:sidebar.leadingAnchor constant:NSMinX(frame)],
         [self.fontTitleView.topAnchor constraintEqualToAnchor:sidebar.topAnchor constant:GATopOffsetInView(sidebar, frame)],
         [self.fontTitleView.heightAnchor constraintEqualToConstant:NSHeight(frame)],
         [self.fontTitleView.widthAnchor constraintLessThanOrEqualToAnchor:sidebar.widthAnchor
@@ -860,16 +860,18 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 
 - (void)updateToolbarVariationItem {
     NSToolbar *toolbar = self.window.toolbar;
-    BOOL hasItem = [toolbar.items.firstObject.itemIdentifier isEqualToString:GAVariationItem];
+    NSUInteger index = self.window.contentView.userInterfaceLayoutDirection == NSUserInterfaceLayoutDirectionRightToLeft ? 1 : 0;
+    BOOL hasItem = toolbar.items.count > index &&
+        [toolbar.items[index].itemIdentifier isEqualToString:GAVariationItem];
     BOOL needsItem = self.fontResource.axes.count > 0;
     if (needsItem && !hasItem) {
-        [toolbar insertItemWithItemIdentifier:GAVariationItem atIndex:0];
+        [toolbar insertItemWithItemIdentifier:GAVariationItem atIndex:index];
         if (@available(macOS 26.0, *))
-            [toolbar insertItemWithItemIdentifier:NSToolbarSpaceItemIdentifier atIndex:1];
+            [toolbar insertItemWithItemIdentifier:NSToolbarSpaceItemIdentifier atIndex:index + 1];
     }
     if (!needsItem && hasItem) {
-        if (@available(macOS 26.0, *)) [toolbar removeItemAtIndex:1];
-        [toolbar removeItemAtIndex:0];
+        if (@available(macOS 26.0, *)) [toolbar removeItemAtIndex:index + 1];
+        [toolbar removeItemAtIndex:index];
     }
 }
 
