@@ -326,13 +326,13 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     self.titleFontNameField = [GAFontTitleField labelWithString:@""];
     self.titleFontNameField.lineBreakMode = NSLineBreakByTruncatingTail;
     self.titleFontNameField.allowsExpansionToolTips = YES;
-    NSFont *titleBarFont = [NSFont titleBarFontOfSize:13];
+    NSFont *titleBarFont = [NSFont titleBarFontOfSize:0];
     NSFontDescriptor *titleDescriptor = [titleBarFont.fontDescriptor
         fontDescriptorByAddingAttributes:@{
             NSFontTraitsAttribute: @{NSFontWeightTrait: @(NSFontWeightMedium)},
         }];
-    self.titleFontNameField.font = [NSFont fontWithDescriptor:titleDescriptor size:13]
-        ?: [NSFont systemFontOfSize:13 weight:NSFontWeightMedium];
+    self.titleFontNameField.font = [NSFont fontWithDescriptor:titleDescriptor size:0]
+        ?: [NSFont systemFontOfSize:0 weight:NSFontWeightMedium];
     self.titleFontNameField.textColor = [NSColor windowFrameTextColor];
 
     self.variationButton = [NSButton buttonWithImage:
