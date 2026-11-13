@@ -150,7 +150,6 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
 @property (nonatomic, strong) NSMutableArray<GAMainWindowController *> *windowControllers;
 @property (nonatomic, strong) NSMutableArray<NSURL *> *pendingFontURLs;
 @property (nonatomic, strong, nullable) NSOpenPanel *openPanel;
-@property (nonatomic, strong, nullable) NSURL *pendingOpenPanelDirectory;
 @property (nonatomic, strong, nullable) NSMenu *recentMenu;
 @property(nonatomic, strong) NSMenu *editMenu;
 @property(nonatomic, strong) NSMenu *viewMenu;
@@ -227,7 +226,6 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
         return;
     }
 
-    self.pendingOpenPanelDirectory = nil;
     [self.openPanel cancel:nil];
     self.handlingOpenFiles = YES;
     for (NSString *filename in filenames) {
@@ -283,22 +281,7 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
 #pragma mark - Open panel
 
 - (void)openFont:(id)sender {
-    [self showFontOpenPanelAtDirectory:nil];
-}
-
-- (void)openFontFromFolder:(NSMenuItem *)sender {
-    [self showFontOpenPanelAtDirectory:GAFontFolderURL(sender.tag)];
-}
-
-- (void)showFontOpenPanelAtDirectory:(NSURL *)directory {
     if (self.openPanel != nil) {
-        if (directory) {
-            // Set the requested location on a fresh panel before presenting it.
-            BOOL alreadyClosing = self.pendingOpenPanelDirectory != nil;
-            self.pendingOpenPanelDirectory = directory;
-            if (!alreadyClosing) [self.openPanel cancel:nil];
-            return;
-        }
         [NSApp activateIgnoringOtherApps:YES];
         [self.openPanel makeKeyAndOrderFront:nil];
         return;
@@ -306,24 +289,41 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
     NSOpenPanel *panel = [NSOpenPanel openPanel];
     panel.allowsMultipleSelection = YES;
     panel.allowedContentTypes = GAFontContentTypes();
-    if (directory) panel.directoryURL = directory;
+    NSArray<NSString *> *folderTitles = @[
+        NSLocalizedString(@"Current User", @"Current user's Fonts folder button"),
+        NSLocalizedString(@"All Users", @"Shared Fonts folder button"),
+        NSLocalizedString(@"System Fonts", @"Built-in Fonts folder button"),
+    ];
+    NSMutableArray<NSButton *> *buttons = [NSMutableArray array];
+    for (GAFontFolder folder = GAFontFolderCurrentUser; folder <= GAFontFolderSystem; folder++) {
+        NSButton *button = [NSButton buttonWithTitle:folderTitles[folder]
+            target:self action:@selector(selectFontFolder:)];
+        button.tag = folder;
+        [buttons addObject:button];
+    }
+    NSStackView *folders = [NSStackView stackViewWithViews:buttons];
+    folders.spacing = 8;
+    folders.alignment = NSLayoutAttributeCenterY;
+    folders.edgeInsets = NSEdgeInsetsMake(8, 0, 8, 0);
+    [folders setFrameSize:folders.fittingSize];
+    panel.accessoryView = folders;
+    panel.accessoryViewDisclosed = YES;
     self.openPanel = panel;
 
     [NSApp activateIgnoringOtherApps:YES];
     __weak typeof(self) weakSelf = self;
     [panel beginWithCompletionHandler:^(NSModalResponse result) {
         __strong typeof(weakSelf) self = weakSelf;
-        NSURL *nextDirectory = self.pendingOpenPanelDirectory;
-        self.pendingOpenPanelDirectory = nil;
         self.openPanel = nil;
-        if (result != NSModalResponseOK) {
-            if (nextDirectory) [self showFontOpenPanelAtDirectory:nextDirectory];
-            return;
-        }
+        if (result != NSModalResponseOK) return;
         for (NSURL *url in [panel.URLs copy]) {
             [self openWindowForFontURL:url];
         }
     }];
+}
+
+- (void)selectFontFolder:(NSButton *)sender {
+    self.openPanel.directoryURL = GAFontFolderURL(sender.tag);
 }
 
 #pragma mark - Recent files
@@ -677,32 +677,15 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
     NSMenu *fileMenu = [[NSMenu alloc] initWithTitle:NSLocalizedString(@"File", @"File")];
     fileItem.submenu = fileMenu;
 
-    NSString *openFromTitle = NSLocalizedString(@"Open At", @"Open font folder submenu");
-    NSMenuItem *openFrom = [fileMenu addItemWithTitle:openFromTitle action:nil keyEquivalent:@""];
-    NSMenu *fontFolders = [[NSMenu alloc] initWithTitle:openFromTitle];
-    openFrom.submenu = fontFolders;
-
-    NSMenuItem *recentFolders = [fontFolders
-        addItemWithTitle:NSLocalizedString(@"Recent Location…", @"Open panel at its recent folder")
+    NSMenuItem *open = [fileMenu
+        addItemWithTitle:NSLocalizedString(@"Open…", @"Open font")
                   action:@selector(openFont:) keyEquivalent:@"o"];
-    recentFolders.target = self;
-    NSMenuItem *shortcut = [recentFolders copy];
+    open.target = self;
+    NSMenuItem *shortcut = [open copy];
     shortcut.keyEquivalent = @"n";
     shortcut.hidden = YES;
     shortcut.allowsKeyEquivalentWhenHidden = YES;
-    [fontFolders addItem:shortcut];
-
-    NSArray<NSString *> *folderTitles = @[
-        NSLocalizedString(@"Current User…", @"Open the current user's Fonts folder"),
-        NSLocalizedString(@"All Users…", @"Open the shared Fonts folder"),
-        NSLocalizedString(@"System Fonts…", @"Open the macOS system Fonts folder"),
-    ];
-    for (GAFontFolder folder = GAFontFolderCurrentUser; folder <= GAFontFolderSystem; folder++) {
-        NSMenuItem *item = [fontFolders addItemWithTitle:folderTitles[folder]
-            action:@selector(openFontFromFolder:) keyEquivalent:@""];
-        item.target = self;
-        item.tag = folder;
-    }
+    [fileMenu addItem:shortcut];
 
     NSString *recentTitle = NSLocalizedString(@"Open Recent", @"Open Recent");
     NSMenuItem *recentItem = [fileMenu addItemWithTitle:recentTitle
@@ -1392,7 +1375,7 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
     SEL action = item.action;
     // Application-level commands do not require an open font window.
     if (action == @selector(showHelp:) ||
-        action == @selector(openFont:) || action == @selector(openFontFromFolder:) ||
+        action == @selector(openFont:) ||
         action == @selector(openRecentFont:) ||
         action == @selector(clearRecentFonts:) || action == @selector(restoreOpeningSettings:)) {
         return YES;

@@ -20,11 +20,10 @@
 /* File and font operations. */
 "File" = "Dosiero";
 "Open" = "Malfermi";
-"Open At" = "Malfermi el";
-"Current User…" = "Nuna uzanto…";
-"All Users…" = "Ĉiuj uzantoj…";
-"System Fonts…" = "Enkonstruitaj…";
-"Recent Location…" = "Lasta loko…";
+"Open…" = "Malfermi…";
+"Current User" = "Nuna uzanto";
+"All Users" = "Ĉiuj uzantoj";
+"System Fonts" = "Enkonstruitaj";
 "Open Recent" = "Malfermi lastatempajn";
 "No Recent Fonts" = "Neniu lastatempe malfermita tiparo";
 "Clear Menu" = "Malplenigi menuon";
@@ -132,7 +131,7 @@
 "%@ (%.0f%%)" = "%@ (%.0f%%)";
 
 /* Help. */
-"Help.01" = "Elektu «Malfermi el» en la menubreto por malfermi tiparon rekte el tipardosierujo. Vi ankaŭ povas treni tipardosieron sur la bildsimbolon de la programo aŭ en fenestron, en kiu jam estas malfermita tiparo. Vi povas elekti Glyph Atlas kiel la aprioran programon por malfermi tipardosierojn. Vi ankaŭ povas remalfermi lastatempe malfermitajn dosierojn.";
+"Help.01" = "Elektu «Malfermi…» en la menubreto por malfermi tiparon rekte el tipardosierujo. Vi ankaŭ povas treni tipardosieron sur la bildsimbolon de la programo aŭ en fenestron, en kiu jam estas malfermita tiparo. Vi povas elekti Glyph Atlas kiel la aprioran programon por malfermi tipardosierojn. Vi ankaŭ povas remalfermi lastatempe malfermitajn dosierojn.";
 "Help.02" = "En la menubreto vi povas unuklake kopii la tiparon malfermitan en la nuna fenestro al via propra tipardosierujo. Tenu ⌥ por kopii ĝin al la tipardosierujo por ĉiuj uzantoj.";
 "Help.03" = "Kiam vi malfermas varieblan tiparon, apud la fenestrobutonoj aperas panelo kun ĝiaj parametroj. Trenu la panelon eksteren por teni ĝin malfermita. Elektu nombran valoron kaj ĝustigu ĝin per ↑/↓ aŭ ⇧↑/⇧↓.";
 "Help.04" = "Tajpu unu aŭ plurajn signojn en la flankobreto por vidi ĉiujn rilatajn glifojn. Premu ⌥⏎ por enmeti linifinon. Vi povas dekstre alklaki kaj elekti «Konservita teksto» por konservi la nunan tekston aŭ rapide enigi antaŭe konservitan tekston. Tenu ⌥ dum la menuo estas malfermita por rapide forigi konservitan tekston.";

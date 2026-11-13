@@ -20,11 +20,10 @@
 /* File and font operations. */
 "File" = "File";
 "Open" = "Open";
-"Open At" = "Open At";
-"Current User…" = "Current User…";
-"All Users…" = "All Users…";
-"System Fonts…" = "Built-in…";
-"Recent Location…" = "Recent Location…";
+"Open…" = "Open…";
+"Current User" = "Current User";
+"All Users" = "All Users";
+"System Fonts" = "Built-in";
 "Open Recent" = "Open Recent";
 "No Recent Fonts" = "No Recent Fonts";
 "Clear Menu" = "Clear Menu";
@@ -132,7 +131,7 @@
 "%@ (%.0f%%)" = "%@ (%.0f%%)";
 
 /* Help. */
-"Help.01" = "Use “Open At” in the menu bar to open a font directly from a Fonts folder. You can also drag a font onto the app icon or onto a window with a font already open, or set Glyph Atlas as the default app for opening font files. Recently opened items are supported.";
+"Help.01" = "Use “Open…” in the menu bar to open a font directly from a Fonts folder. You can also drag a font onto the app icon or onto a window with a font already open, or set Glyph Atlas as the default app for opening font files. Recently opened items are supported.";
 "Help.02" = "Use the menu bar to copy the font open in the current window to your user Fonts folder in one click. Hold ⌥ to copy it to the Fonts folder for all users.";
 "Help.03" = "When you open a variable font, a variation panel appears beside the window controls. Drag it out to keep it open. Select a numeric value and use ↑/↓ or ⇧↑/⇧↓ to adjust it.";
 "Help.04" = "Type one or more characters in the sidebar to see all associated glyphs. Use ⌥⏎ to insert a line break. You can also right-click and choose “Saved Text” to save the current text or quickly enter text you’ve saved before. Hold ⌥ in the menu bar to quickly delete saved text.";

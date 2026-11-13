@@ -20,11 +20,10 @@
 /* File and font operations. */
 "File" = "Fail";
 "Open" = "Buka";
-"Open At" = "Buka dari";
-"Current User…" = "Pengguna Semasa…";
-"All Users…" = "Semua Pengguna…";
-"System Fonts…" = "Terbina Dalam…";
-"Recent Location…" = "Lokasi Terakhir…";
+"Open…" = "Buka…";
+"Current User" = "Pengguna Semasa";
+"All Users" = "Semua Pengguna";
+"System Fonts" = "Terbina Dalam";
 "Open Recent" = "Buka Terbaharu";
 "No Recent Fonts" = "Tiada Fon Terbaharu";
 "Clear Menu" = "Kosongkan Menu";
@@ -132,7 +131,7 @@
 "%@ (%.0f%%)" = "%@ (%.0f%%)";
 
 /* Help. */
-"Help.01" = "Gunakan “Buka dari” dalam bar menu untuk membuka fon terus daripada folder fon. Anda juga boleh menyeret fail fon ke ikon app atau ke tetingkap yang sudah membuka fon, atau menetapkan Glyph Atlas sebagai app lalai untuk membuka fail fon. Item yang dibuka baru-baru ini boleh dibuka semula.";
+"Help.01" = "Gunakan “Buka…” dalam bar menu untuk membuka fon terus daripada folder fon. Anda juga boleh menyeret fail fon ke ikon app atau ke tetingkap yang sudah membuka fon, atau menetapkan Glyph Atlas sebagai app lalai untuk membuka fail fon. Item yang dibuka baru-baru ini boleh dibuka semula.";
 "Help.02" = "Gunakan bar menu untuk menyalin fon yang dibuka dalam tetingkap semasa ke folder fon pengguna anda dengan satu klik. Tekan dan tahan ⌥ untuk menyalinnya ke folder fon semua pengguna.";
 "Help.03" = "Apabila anda membuka fon boleh ubah, panel variasi muncul di sebelah kawalan tetingkap. Seret panel keluar supaya ia kekal terbuka. Pilih nilai angka dan gunakan ↑/↓ atau ⇧↑/⇧↓ untuk melaraskannya.";
 "Help.04" = "Taip satu aksara atau lebih dalam bar sisi untuk melihat semua glif yang berkaitan. Gunakan ⌥⏎ untuk menyisipkan pemisah baris. Anda juga boleh klik sekunder dan pilih “Teks Disimpan” untuk menyimpan teks semasa atau memasukkan semula teks yang pernah disimpan dengan cepat. Tekan dan tahan ⌥ dalam bar menu untuk memadam teks yang disimpan dengan cepat.";

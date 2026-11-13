@@ -21,11 +21,10 @@
 /* File and font operations. */
 "File" = "De'";
 "Open" = "poSmoH";
-"Open At" = "Daq poSmoH";
-"Current User…" = "DaH lo'wI'…";
-"All Users…" = "Hoch lo'wI'pu'…";
-"System Fonts…" = "pat pIqaD…";
-"Recent Location…" = "poch Daq…";
+"Open…" = "poSmoH…";
+"Current User" = "DaH lo'wI'";
+"All Users" = "Hoch lo'wI'pu'";
+"System Fonts" = "pat pIqaD";
 "Open Recent" = "poch poSmoH";
 "No Recent Fonts" = "poch pIqaD tu'lu'be'";
 "Clear Menu" = "tetlh chImmoH";
@@ -133,7 +132,7 @@
 "%@ (%.0f%%)" = "%@（%.0f%%）";
 
 /* Help. */
-"Help.01" = "De'wI' tetlhDaq «Daq poSmoH» wIv, pIqaD ngeHmey poSmoHlaH, pagh pIqaD Degh app 'och pagh poSmoHta'bogh pIqaD jIHHomDaq qeng 'e' laH. appvam laDlaHbogh mIw wa'DIch chenmoH 'e' tIv. pochlIj De' tetlh ngaS.";
+"Help.01" = "De'wI' tetlhDaq «poSmoH…» wIv, pIqaD ngeHmey poSmoHlaH, pagh pIqaD Degh app 'och pagh poSmoHta'bogh pIqaD jIHHomDaq qeng 'e' laH. appvam laDlaHbogh mIw wa'DIch chenmoH 'e' tIv. pochlIj De' tetlh ngaS.";
 "Help.02" = "De'wI' tetlhDaq DaH jIHHom pIqaD wa' vIp rIHlaH. ⌥ yIlo' Hoch lo'wI'pu' pIqaD vIp rIHmeH.";
 "Help.03" = "pIqaD choHlaHbogh poSmoHDI', qul Doq 'ej qul SuD bIngDaq pIqaD choHbogh pat tu'lu', 'ej pe'laH. mI' wIvDI', ↑/↓ pagh ⇧↑/⇧↓ yIlo' mI' choHmeH.";
 "Help.04" = "retlh tetlhDaq wa' pagh law' mu'tlhegh yIchel Hoch Degh qellu'bogh leghmeH. ⌥⏎ yIlo' mu'tlhegh chu'meH, 'ej nIH Degh yIlo' «motlh ghItlh» tu'meH—DaH mu'tlhegh qaw pagh motlh ghItlh yIchel. De'wI' tetlhDaq ⌥ yIlo' nom Qaw'meH.";

@@ -20,11 +20,10 @@
 /* File and font operations. */
 "File" = "Fasciculus";
 "Open" = "Aperire";
-"Open At" = "Aperire ex loco";
-"Current User…" = "Utens praesens…";
-"All Users…" = "Omnes utentes…";
-"System Fonts…" = "Insiti…";
-"Recent Location…" = "Locus nuper adhibitus…";
+"Open…" = "Aperire…";
+"Current User" = "Utens praesens";
+"All Users" = "Omnes utentes";
+"System Fonts" = "Insiti";
 "Open Recent" = "Recentia aperire";
 "No Recent Fonts" = "Nullus typus nuper apertus";
 "Clear Menu" = "Indicem vacuare";
@@ -132,7 +131,7 @@
 "%@ (%.0f%%)" = "%@ (%.0f%%)";
 
 /* Help. */
-"Help.01" = "In serie indicum elige «Aperire ex loco» ut typum e directorio typorum directe aperias. Potes etiam fasciculum ad iconem programmatis vel in fenestram trahere in qua typus iam apertus est. Glyph Atlas designare potes ut programma praefinitum ad fasciculos typorum aperiendos. Fasciculi nuper aperti iterum aperiri possunt.";
+"Help.01" = "In serie indicum elige «Aperire…» ut typum e directorio typorum directe aperias. Potes etiam fasciculum ad iconem programmatis vel in fenestram trahere in qua typus iam apertus est. Glyph Atlas designare potes ut programma praefinitum ad fasciculos typorum aperiendos. Fasciculi nuper aperti iterum aperiri possunt.";
 "Help.02" = "Ex serie indicum uno ictu typum in fenestra praesenti apertum in directorium typorum tuum copia. Clavem ⌥ tene ut typum in directorium omnibus utentibus commune copies.";
 "Help.03" = "Cum typum variabilem aperis, tabula parametrorum iuxta globulos fenestrae apparet. Tabulam extra trahe ut aperta maneat. Valorem numericum elige eumque clavibus ↑/↓ vel ⇧↑/⇧↓ compone.";
 "Help.04" = "Unum vel plura signa in tabula laterali insere ut omnes formas pertinentes videas. Clavibus ⌥⏎ lineam novam incipe. Dextro muris globulo preme et «Textus servatus» elige ut textum praesentem serves aut textum antea servatum celeriter inseras. Dum index apertus est, ⌥ tene ut textum servatum celeriter deleas.";

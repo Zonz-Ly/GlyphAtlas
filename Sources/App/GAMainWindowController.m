@@ -815,7 +815,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
             }
         }
         if (!hidden) {
-            [currentWindow.contentView.superview layoutSubtreeIfNeeded];
             [currentWindow invalidateCursorRectsForView:controller.titleFontNameField];
         }
     };

@@ -20,11 +20,10 @@
 /* File and font operations. */
 "File" = "Archivo";
 "Open" = "Abrir";
-"Open At" = "Abrir desde";
-"Current User…" = "Usuario actual…";
-"All Users…" = "Todos los usuarios…";
-"System Fonts…" = "Integrados…";
-"Recent Location…" = "Última ubicación…";
+"Open…" = "Abrir…";
+"Current User" = "Usuario actual";
+"All Users" = "Todos los usuarios";
+"System Fonts" = "Integrados";
 "Open Recent" = "Abrir recientes";
 "No Recent Fonts" = "No hay tipos de letra recientes";
 "Clear Menu" = "Vaciar menú";
@@ -132,7 +131,7 @@
 "%@ (%.0f%%)" = "%@ (%.0f%%)";
 
 /* Help. */
-"Help.01" = "Usa «Abrir desde» en la barra de menús para abrir un tipo de letra directamente desde una carpeta de tipos de letra. También puedes arrastrarlo al icono de la app o a una ventana que ya tenga abierto un tipo de letra, o configurar Glyph Atlas como la app predeterminada para abrir estos archivos. Puedes volver a abrir los archivos recientes.";
+"Help.01" = "Usa «Abrir…» en la barra de menús para abrir un tipo de letra directamente desde una carpeta de tipos de letra. También puedes arrastrarlo al icono de la app o a una ventana que ya tenga abierto un tipo de letra, o configurar Glyph Atlas como la app predeterminada para abrir estos archivos. Puedes volver a abrir los archivos recientes.";
 "Help.02" = "Desde la barra de menús, copia con un clic el tipo de letra abierto en la ventana actual a tu carpeta de tipos de letra de usuario. Mantén pulsada ⌥ para copiarlo en la carpeta de tipos de letra de todos los usuarios.";
 "Help.03" = "Al abrir un tipo de letra variable, aparece un panel de variación junto a los controles de la ventana. Arrástralo fuera para mantenerlo abierto. Selecciona un valor numérico y ajústalo con ↑/↓ o ⇧↑/⇧↓.";
 "Help.04" = "Introduce uno o varios caracteres en la barra lateral para ver todos los glifos asociados. Usa ⌥⏎ para insertar un salto de línea. También puedes hacer clic derecho y elegir «Textos guardados» para guardar el texto actual o insertar rápidamente uno que hayas guardado antes. Mantén pulsada ⌥ en la barra de menús para eliminar rápidamente los textos guardados.";

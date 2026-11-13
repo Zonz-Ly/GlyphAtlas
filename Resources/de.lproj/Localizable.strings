@@ -20,11 +20,10 @@
 /* File and font operations. */
 "File" = "Ablage";
 "Open" = "Öffnen";
-"Open At" = "Aus Ordner öffnen";
-"Current User…" = "Aktuelle:r Benutzer:in …";
-"All Users…" = "Alle Benutzer:innen …";
-"System Fonts…" = "Integriert …";
-"Recent Location…" = "Letzter Speicherort …";
+"Open…" = "Öffnen …";
+"Current User" = "Aktuelle:r Benutzer:in";
+"All Users" = "Alle Benutzer:innen";
+"System Fonts" = "Integriert";
 "Open Recent" = "Benutzte Dokumente";
 "No Recent Fonts" = "Keine zuletzt benutzten Schriften";
 "Clear Menu" = "Einträge löschen";
@@ -132,7 +131,7 @@
 "%@ (%.0f%%)" = "%@ (%.0f%%)";
 
 /* Help. */
-"Help.01" = "Wähle in der Menüleiste „Aus Ordner öffnen“, um eine Schrift direkt aus einem Schriftordner zu öffnen. Du kannst die Schrift auch auf das App-Symbol oder in ein Fenster mit einer geöffneten Schrift ziehen oder Glyph Atlas als Standard-App für Schriftdateien festlegen. Zuletzt geöffnete Dateien sind ebenfalls verfügbar.";
+"Help.01" = "Wähle in der Menüleiste „Öffnen …“, um eine Schrift direkt aus einem Schriftordner zu öffnen. Du kannst die Schrift auch auf das App-Symbol oder in ein Fenster mit einer geöffneten Schrift ziehen oder Glyph Atlas als Standard-App für Schriftdateien festlegen. Zuletzt geöffnete Dateien sind ebenfalls verfügbar.";
 "Help.02" = "Über die Menüleiste kannst du die im aktuellen Fenster geöffnete Schrift mit einem Klick in deinen Benutzerordner für Schriften kopieren. Halte ⌥ gedrückt, um die Schrift in den Schriftenordner für alle Benutzer:innen zu kopieren.";
 "Help.03" = "Beim Öffnen einer variablen Schrift erscheint neben den Fenstersteuerungen ein Variationsfenster. Ziehe es heraus, damit es geöffnet bleibt. Wähle einen Zahlenwert aus und passe ihn mit ↑/↓ oder ⇧↑/⇧↓ an.";
 "Help.04" = "Gib ein oder mehrere Zeichen in der Seitenleiste ein, um alle zugehörigen Glyphen zu sehen. Mit ⌥⏎ fügst du einen Zeilenumbruch ein. Per Rechtsklick findest du auch „Gesicherte Texte“, um den aktuellen Text zu sichern oder zuvor gesicherte Texte schnell einzufügen. Halte in der Menüleiste ⌥ gedrückt, um gesicherte Texte schnell zu löschen.";

@@ -20,11 +20,10 @@
 /* File and font operations. */
 "File" = "Arquivo";
 "Open" = "Abrir";
-"Open At" = "Abrir em";
-"Current User…" = "Usuário Atual…";
-"All Users…" = "Todos os Usuários…";
-"System Fonts…" = "Integradas…";
-"Recent Location…" = "Última Localização…";
+"Open…" = "Abrir…";
+"Current User" = "Usuário Atual";
+"All Users" = "Todos os Usuários";
+"System Fonts" = "Integradas";
 "Open Recent" = "Abrir Recente";
 "No Recent Fonts" = "Nenhuma Fonte Recente";
 "Clear Menu" = "Limpar Menu";
@@ -132,7 +131,7 @@
 "%@ (%.0f%%)" = "%@ (%.0f%%)";
 
 /* Help. */
-"Help.01" = "Use “Abrir em” na barra de menus para abrir uma fonte diretamente de uma pasta de fontes. Você também pode arrastar a fonte para o ícone do app ou para uma janela que já tenha uma fonte aberta, ou definir o Glyph Atlas como app padrão para abrir arquivos de fontes. É possível reabrir arquivos recentes.";
+"Help.01" = "Use “Abrir…” na barra de menus para abrir uma fonte diretamente de uma pasta de fontes. Você também pode arrastar a fonte para o ícone do app ou para uma janela que já tenha uma fonte aberta, ou definir o Glyph Atlas como app padrão para abrir arquivos de fontes. É possível reabrir arquivos recentes.";
 "Help.02" = "Na barra de menus, copie com um clique a fonte aberta na janela atual para a pasta de fontes do seu usuário. Mantenha ⌥ pressionado para copiar a fonte para a pasta de fontes de todos os usuários.";
 "Help.03" = "Ao abrir uma fonte variável, um painel de variações aparece ao lado dos controles da janela. Arraste-o para fora para mantê-lo aberto. Selecione um valor numérico e ajuste-o com ↑/↓ ou ⇧↑/⇧↓.";
 "Help.04" = "Digite um ou mais caracteres na barra lateral para ver todos os glifos associados. Use ⌥⏎ para inserir uma quebra de linha. Você também pode clicar com o botão direito e escolher “Textos salvos” para salvar o texto atual ou inserir rapidamente um texto salvo antes. Mantenha ⌥ pressionado na barra de menus para apagar rapidamente os textos salvos.";

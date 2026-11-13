@@ -20,11 +20,10 @@
 /* File and font operations. */
 "File" = "Fichier";
 "Open" = "Ouvrir";
-"Open At" = "Ouvrir depuis";
-"Current User…" = "Utilisateur actif…";
-"All Users…" = "Tous les utilisateurs…";
-"System Fonts…" = "Intégrées…";
-"Recent Location…" = "Dernier emplacement…";
+"Open…" = "Ouvrir…";
+"Current User" = "Utilisateur actif";
+"All Users" = "Tous les utilisateurs";
+"System Fonts" = "Intégrées";
 "Open Recent" = "Ouvrir l’élément récent";
 "No Recent Fonts" = "Aucune police récente";
 "Clear Menu" = "Effacer le menu";
@@ -132,7 +131,7 @@
 "%@ (%.0f%%)" = "%@ (%.0f %%)";
 
 /* Help. */
-"Help.01" = "Choisissez « Ouvrir depuis » dans la barre des menus pour ouvrir une police directement depuis un dossier de polices. Vous pouvez aussi faire glisser la police sur l’icône de l’app ou sur une fenêtre où une police est déjà ouverte, ou définir Glyph Atlas comme app par défaut pour ouvrir les fichiers de polices. Vous pouvez rouvrir les fichiers récents.";
+"Help.01" = "Choisissez « Ouvrir… » dans la barre des menus pour ouvrir une police directement depuis un dossier de polices. Vous pouvez aussi faire glisser la police sur l’icône de l’app ou sur une fenêtre où une police est déjà ouverte, ou définir Glyph Atlas comme app par défaut pour ouvrir les fichiers de polices. Vous pouvez rouvrir les fichiers récents.";
 "Help.02" = "Depuis la barre des menus, copiez en un clic la police ouverte dans la fenêtre actuelle vers votre dossier de polices utilisateur. Maintenez la touche ⌥ pour copier la police dans le dossier de polices de tous les utilisateurs.";
 "Help.03" = "À l’ouverture d’une police variable, un panneau de variation apparaît près des boutons de la fenêtre. Détachez-le en le faisant glisser pour le garder ouvert. Sélectionnez une valeur numérique et ajustez-la avec ↑/↓ ou ⇧↑/⇧↓.";
 "Help.04" = "Saisissez un ou plusieurs caractères dans la barre latérale pour voir tous les glyphes associés. Utilisez ⌥⏎ pour insérer un saut de ligne. Vous pouvez aussi faire un clic droit et choisir « Textes enregistrés » pour enregistrer le texte actuel ou insérer rapidement un texte déjà enregistré. Maintenez ⌥ dans la barre des menus pour supprimer rapidement les textes enregistrés.";

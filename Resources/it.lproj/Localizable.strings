@@ -20,11 +20,10 @@
 /* File and font operations. */
 "File" = "File";
 "Open" = "Apri";
-"Open At" = "Apri da";
-"Current User…" = "Utente attuale…";
-"All Users…" = "Tutti gli utenti…";
-"System Fonts…" = "Integrati…";
-"Recent Location…" = "Ultima posizione…";
+"Open…" = "Apri…";
+"Current User" = "Utente attuale";
+"All Users" = "Tutti gli utenti";
+"System Fonts" = "Integrati";
 "Open Recent" = "Apri recenti";
 "No Recent Fonts" = "Nessun font recente";
 "Clear Menu" = "Cancella menu";
@@ -132,7 +131,7 @@
 "%@ (%.0f%%)" = "%@ (%.0f%%)";
 
 /* Help. */
-"Help.01" = "Scegli “Apri da” nella barra dei menu per aprire un font direttamente da una cartella di font. Puoi anche trascinarlo sull’icona dell’app o su una finestra in cui è già aperto un font, oppure impostare Glyph Atlas come app predefinita per aprire i file dei font. Puoi riaprire anche i file recenti.";
+"Help.01" = "Scegli “Apri…” nella barra dei menu per aprire un font direttamente da una cartella di font. Puoi anche trascinarlo sull’icona dell’app o su una finestra in cui è già aperto un font, oppure impostare Glyph Atlas come app predefinita per aprire i file dei font. Puoi riaprire anche i file recenti.";
 "Help.02" = "Dalla barra dei menu puoi copiare con un clic il font aperto nella finestra attuale nella tua cartella dei font. Tieni premuto ⌥ per copiare il font nella cartella dei font di tutti gli utenti.";
 "Help.03" = "Quando apri un font variabile, accanto ai controlli della finestra appare un pannello delle variazioni. Trascinalo all’esterno per tenerlo aperto. Seleziona un valore numerico e regolalo con ↑/↓ oppure ⇧↑/⇧↓.";
 "Help.04" = "Inserisci uno o più caratteri nella barra laterale per vedere tutti i glifi associati. Usa ⌥⏎ per inserire un’interruzione di riga. Puoi anche fare clic destro e scegliere «Testi salvati» per salvare il testo attuale o inserire rapidamente un testo già salvato. Tieni premuto ⌥ nella barra dei menu per eliminare rapidamente i testi salvati.";

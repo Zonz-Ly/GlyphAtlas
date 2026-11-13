@@ -20,11 +20,10 @@
 /* File and font operations. */
 "File" = "Tệp";
 "Open" = "Mở";
-"Open At" = "Mở từ vị trí";
-"Current User…" = "Người dùng hiện tại…";
-"All Users…" = "Tất cả người dùng…";
-"System Fonts…" = "Tích hợp sẵn…";
-"Recent Location…" = "Vị trí gần đây…";
+"Open…" = "Mở…";
+"Current User" = "Người dùng hiện tại";
+"All Users" = "Tất cả người dùng";
+"System Fonts" = "Tích hợp sẵn";
 "Open Recent" = "Mở Mục gần đây";
 "No Recent Fonts" = "Không có phông chữ gần đây";
 "Clear Menu" = "Xóa Menu";
@@ -132,7 +131,7 @@
 "%@ (%.0f%%)" = "%@ (%.0f%%)";
 
 /* Help. */
-"Help.01" = "Chọn “Mở từ vị trí” trên thanh menu để mở phông chữ trực tiếp từ thư mục cài đặt phông chữ. Bạn cũng có thể kéo tệp vào biểu tượng ứng dụng hoặc vào cửa sổ đang mở một phông chữ, hay đặt Glyph Atlas làm ứng dụng mặc định để mở tệp phông chữ. Bạn có thể mở lại các tệp đã mở gần đây.";
+"Help.01" = "Chọn “Mở…” trên thanh menu để mở phông chữ trực tiếp từ thư mục cài đặt phông chữ. Bạn cũng có thể kéo tệp vào biểu tượng ứng dụng hoặc vào cửa sổ đang mở một phông chữ, hay đặt Glyph Atlas làm ứng dụng mặc định để mở tệp phông chữ. Bạn có thể mở lại các tệp đã mở gần đây.";
 "Help.02" = "Từ thanh menu, bạn có thể sao chép phông chữ đang mở trong cửa sổ hiện tại vào thư mục phông chữ của người dùng chỉ bằng một lần bấm. Giữ ⌥ để sao chép phông chữ vào thư mục phông chữ dành cho tất cả người dùng.";
 "Help.03" = "Khi bạn mở phông chữ biến thiên, một bảng biến thiên xuất hiện cạnh các nút điều khiển cửa sổ. Kéo bảng ra để giữ bảng luôn mở. Chọn một giá trị số và dùng ↑/↓ hoặc ⇧↑/⇧↓ để điều chỉnh.";
 "Help.04" = "Nhập một hoặc nhiều ký tự trong thanh bên để xem tất cả nét liên quan. Dùng ⌥⏎ để chèn dấu ngắt dòng. Bạn cũng có thể nhấp chuột phải rồi chọn “Văn bản đã lưu” để lưu văn bản hiện tại hoặc nhập nhanh văn bản đã lưu trước đó. Giữ ⌥ trên thanh menu để xóa nhanh văn bản đã lưu.";
