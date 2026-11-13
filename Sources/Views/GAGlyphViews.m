@@ -146,7 +146,11 @@ static NSFont *GABadgeFont(void) {
     if (!_expansionCell) return NSZeroRect;
     NSView *badge = self.superview;
     if (badge) contentFrame = [self convertRect:badge.bounds fromView:badge];
-    contentFrame.size.width = ceil(_expansionCell.cellSize.width) + 2 * GABadgeHorizontalPadding;
+    BOOL rtl = self.userInterfaceLayoutDirection == NSUserInterfaceLayoutDirectionRightToLeft;
+    _expansionCell.alignment = rtl ? NSTextAlignmentRight : NSTextAlignmentLeft;
+    CGFloat width = ceil(_expansionCell.cellSize.width) + 2 * GABadgeHorizontalPadding;
+    if (rtl) contentFrame.origin.x = NSMaxX(contentFrame) - width;
+    contentFrame.size.width = width;
     return contentFrame;
 }
 
