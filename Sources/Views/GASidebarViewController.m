@@ -195,7 +195,7 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
 
 - (NSTextField *)newInputFieldForToolbar:(BOOL)toolbar {
     NSTextField *field = toolbar
-        ? [GAGlyphInputField textFieldWithString:@""]
+        ? [[GAGlyphInputField alloc] initWithFrame:NSZeroRect]
         : [[GASearchField alloc] initWithFrame:NSZeroRect];
     field.translatesAutoresizingMaskIntoConstraints = NO;
     NSControlSize controlSize = NSControlSizeLarge;
