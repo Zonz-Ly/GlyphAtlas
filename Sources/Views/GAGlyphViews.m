@@ -103,7 +103,7 @@ static const CGFloat GABadgeGap = 3.0;
 static const CGFloat GABadgeHorizontalPadding = 4.0;
 
 static NSFont *GABadgeFont(void) {
-    return [NSFont labelFontOfSize:0];
+    return [NSFont monospacedDigitSystemFontOfSize:0 weight:NSFontWeightRegular];
 }
 
 @interface GAUnicodeBadgeLabel : NSTextField
