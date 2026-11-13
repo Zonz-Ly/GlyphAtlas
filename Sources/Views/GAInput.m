@@ -139,7 +139,12 @@ static void GAInputEditingDidEnd(void) {
 }
 
 static void GAInputFieldDidGainFocus(NSView *view, NSText *editor) {
-    if (view.window.firstResponder == editor) GAInputEditingDidBegin();
+    if (view.window.firstResponder == editor) {
+        if ([editor isKindOfClass:GAGlyphInputEditor.class])
+            [(NSTextView *)editor setTextContainerInset:
+                [view isKindOfClass:GAGlyphInputField.class] ? NSMakeSize(29, 0) : NSZeroSize];
+        GAInputEditingDidBegin();
+    }
 }
 
 #pragma mark - Numeric field editing
@@ -518,12 +523,6 @@ static NSRect GAInputRectByInsettingTextEdges(NSRect rect, NSRect bounds) {
 }
 - (void)endEditing:(NSText *)editor {
   GAEndGlyphInputEditing(editor, ^{ [super endEditing:editor]; });
-}
-- (NSRect)titleRectForBounds:(NSRect)bounds {
-  return GAInputRectByInsettingTextEdges([super titleRectForBounds:bounds], bounds);
-}
-- (NSRect)drawingRectForBounds:(NSRect)bounds {
-  return GAInputRectByInsettingTextEdges([super drawingRectForBounds:bounds], bounds);
 }
 @end
 

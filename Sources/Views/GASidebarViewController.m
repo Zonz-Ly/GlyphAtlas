@@ -195,7 +195,7 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
 
 - (NSTextField *)newInputFieldForToolbar:(BOOL)toolbar {
     NSTextField *field = toolbar
-        ? [[GAGlyphInputField alloc] initWithFrame:NSZeroRect]
+        ? [GAGlyphInputField textFieldWithString:@""]
         : [[GASearchField alloc] initWithFrame:NSZeroRect];
     field.translatesAutoresizingMaskIntoConstraints = NO;
     NSControlSize controlSize = NSControlSizeLarge;
@@ -209,7 +209,8 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
         cell.cancelButtonCell = nil;
     }
     field.controlSize = controlSize;
-    field.font = [NSFont systemFontOfSize:13.5 weight:NSFontWeightRegular];
+    if (!toolbar)
+        field.font = [NSFont systemFontOfSize:13.5 weight:NSFontWeightRegular];
     // Custom selection attributes live in the field's attributed string and
     // must survive the field editor's edit cycle.
     field.allowsEditingTextAttributes = YES;
@@ -577,9 +578,11 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
 - (void)syncDetachedInput {
     NSAttributedString *text = [self.inputEditor.textStorage copy];
     if (self.sidebarInputField.currentEditor == nil)
-        self.sidebarInputField.attributedStringValue = text;
-    if (self.toolbarInputField.currentEditor == nil)
-        self.toolbarInputField.attributedStringValue = text;
+        self.sidebarInputField.attributedStringValue =
+            GANormalizedSidebarInput(text, self.sidebarInputField.font, [self inputTextColor]);
+    if (self.toolbarInputField && self.toolbarInputField.currentEditor == nil)
+        self.toolbarInputField.attributedStringValue =
+            GANormalizedSidebarInput(text, self.toolbarInputField.font, [self inputTextColor]);
 }
 
 - (BOOL)commitGlyphInput:(NSAttributedString *)attributedText actionName:(NSString *)actionName {
