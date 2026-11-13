@@ -308,13 +308,19 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
         button.tag = folder;
         [buttons addObject:button];
     }
-    NSStackView *folders = [[NSStackView alloc] initWithFrame:NSZeroRect];
-    [folders setViews:buttons inGravity:NSStackViewGravityCenter];
-    folders.autoresizingMask = NSViewWidthSizable;
+    NSStackView *folders = [NSStackView stackViewWithViews:buttons];
     folders.spacing = 8;
-    folders.edgeInsets = NSEdgeInsetsMake(8, 0, 8, 0);
-    [folders setFrameSize:folders.fittingSize];
-    panel.accessoryView = folders;
+    NSView *accessory = [[NSView alloc] initWithFrame:NSZeroRect];
+    accessory.autoresizingMask = NSViewWidthSizable;
+    [accessory addSubview:folders];
+    [NSLayoutConstraint activateConstraints:@[
+        [folders.leadingAnchor constraintEqualToAnchor:accessory.layoutMarginsGuide.leadingAnchor],
+        [folders.trailingAnchor constraintLessThanOrEqualToAnchor:accessory.layoutMarginsGuide.trailingAnchor],
+        [folders.topAnchor constraintEqualToAnchor:accessory.topAnchor constant:8],
+        [folders.bottomAnchor constraintEqualToAnchor:accessory.bottomAnchor constant:-8],
+    ]];
+    [accessory setFrameSize:accessory.fittingSize];
+    panel.accessoryView = accessory;
     panel.accessoryViewDisclosed = YES;
     self.openPanel = panel;
 
