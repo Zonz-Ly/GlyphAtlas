@@ -103,7 +103,7 @@ static const CGFloat GABadgeGap = 3.0;
 static const CGFloat GABadgeHorizontalPadding = 4.0;
 
 static NSFont *GABadgeFont(void) {
-    return [NSFont monospacedDigitSystemFontOfSize:10 weight:NSFontWeightRegular];
+    return [NSFont labelFontOfSize:0];
 }
 
 @interface GAUnicodeBadgeLabel : NSTextField
@@ -359,8 +359,7 @@ static NSFont *GABadgeFont(void) {
         _nameLabel.textColor = [NSColor labelColor];
 
         _sourceLabel = [NSTextField labelWithString:@""];
-        _sourceLabel.font = [NSFont monospacedDigitSystemFontOfSize:10
-                                                            weight:NSFontWeightRegular];
+        _sourceLabel.font = [NSFont labelFontOfSize:0];
         _sourceLabel.textColor = [NSColor secondaryLabelColor];
         for (NSTextField *label in @[_nameLabel, _sourceLabel]) {
             label.translatesAutoresizingMaskIntoConstraints = NO;
@@ -424,10 +423,9 @@ static NSFont *GABadgeFont(void) {
     }
     self.nameLabel.stringValue = name;
     self.nameLabel.textColor = variant.isTemporary ? NSColor.secondaryLabelColor : NSColor.labelColor;
-    self.nameLabel.font = [NSFont systemFontOfSize:12.5
-                                           weight:variant.isBase
-                                               ? NSFontWeightBold
-                                               : NSFontWeightRegular];
+    self.nameLabel.font = variant.isBase
+        ? [NSFont boldSystemFontOfSize:0]
+        : [NSFont systemFontOfSize:0];
 
     NSArray<NSString *> *sources = variant.featureSources;
     NSString *sourceText = [sources componentsJoinedByString:@", "];

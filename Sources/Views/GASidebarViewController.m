@@ -209,6 +209,7 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
         cell.cancelButtonCell = nil;
     }
     field.controlSize = controlSize;
+    field.font = [NSFont systemFontOfSize:0];
     // Custom selection attributes live in the field's attributed string and
     // must survive the field editor's edit cycle.
     field.allowsEditingTextAttributes = YES;
@@ -434,7 +435,7 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
 }
 
 - (NSFont *)inputFont {
-    return self.inputField.font ?: [NSFont systemFontOfSize:NSFont.systemFontSize];
+    return self.inputField.font ?: [NSFont systemFontOfSize:0];
 }
 
 - (NSColor *)inputTextColor {
