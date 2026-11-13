@@ -434,8 +434,7 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
 }
 
 - (NSFont *)inputFont {
-    return self.inputField.font ?: [NSFont systemFontOfSize:13.5
-                                                         weight:NSFontWeightRegular];
+    return self.inputField.font ?: [NSFont systemFontOfSize:NSFont.systemFontSize];
 }
 
 - (NSColor *)inputTextColor {
