@@ -129,5 +129,6 @@ SCRIPT
   cp "$COMMAND" "$PACKAGE/"
   rm -f "$ZIP"
   ditto -c -k --norsrc --noextattr "$PACKAGE" "$ZIP"
+  rm -f "$COMMAND"
   echo "Archive: $ZIP"
 fi
