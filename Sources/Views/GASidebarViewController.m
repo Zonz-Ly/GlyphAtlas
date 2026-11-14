@@ -996,10 +996,16 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
     return baseRow;
 }
 
+- (NSRect)unobscuredTableVisibleRect {
+    NSClipView *clipView = self.scrollView.contentView;
+    NSRect safeRect = [self.tableView convertRect:clipView.safeAreaRect fromView:clipView];
+    return NSIntersectionRect(self.tableView.visibleRect, safeRect);
+}
+
 - (void)scrollTableToY:(CGFloat)y {
     NSClipView *clipView = self.scrollView.contentView;
     NSRect bounds = clipView.bounds;
-    bounds.origin.y += y - NSMinY(clipView.documentVisibleRect);
+    bounds.origin.y += y - NSMinY([self unobscuredTableVisibleRect]);
     [clipView scrollToPoint:[clipView constrainBoundsRect:bounds].origin];
     [self.scrollView reflectScrolledClipView:clipView];
 }
@@ -1010,7 +1016,7 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
     }
     [self.tableView layoutSubtreeIfNeeded];
     NSRect rowRect = [self.tableView rectOfRow:row];
-    if (NSIntersectsRect(rowRect, self.scrollView.contentView.documentVisibleRect)) {
+    if (NSIntersectsRect(rowRect, [self unobscuredTableVisibleRect])) {
         return;
     }
     [self scrollTableToY:NSMinY(rowRect)];
@@ -1045,7 +1051,7 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
     if (self.isViewLoaded) [self.view.window.contentView layoutSubtreeIfNeeded];
     [self.tableView layoutSubtreeIfNeeded];
     NSRect selectedRect = [self.tableView rectOfRow:row];
-    NSRect visibleRect = self.scrollView.contentView.documentVisibleRect;
+    NSRect visibleRect = [self unobscuredTableVisibleRect];
     if (NSMinY(selectedRect) >= NSMinY(visibleRect) &&
         NSMaxY(selectedRect) <= NSMaxY(visibleRect)) return;
 
@@ -1062,12 +1068,12 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
     [self.tableView rectOfRow:last];
     NSRect firstRect = [self.tableView rectOfRow:first];
     NSRect lastRect = [self.tableView rectOfRow:last];
-    visibleRect = self.scrollView.contentView.documentVisibleRect;
+    visibleRect = [self unobscuredTableVisibleRect];
     CGFloat groupCenter = (NSMinY(firstRect) + NSMaxY(lastRect)) * 0.5;
     [self scrollTableToY:groupCenter - NSHeight(visibleRect) * 0.5];
     // Only the selected row decides the minimal correction after centering.
     selectedRect = [self.tableView rectOfRow:row];
-    visibleRect = self.scrollView.contentView.documentVisibleRect;
+    visibleRect = [self unobscuredTableVisibleRect];
     if (NSMinY(selectedRect) < NSMinY(visibleRect))
         [self scrollTableToY:NSMinY(selectedRect)];
     else if (NSMaxY(selectedRect) > NSMaxY(visibleRect))
