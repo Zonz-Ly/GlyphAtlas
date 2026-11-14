@@ -839,9 +839,8 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     if (hidden) [self.sidebarViewController setToolbarInputPlaceholder:self.titleFontNameField.stringValue];
     while (toolbar.items.count > 0) [toolbar removeItemAtIndex:toolbar.items.count - 1];
     if (hidden) {
-        BOOL rtl = window.contentView.userInterfaceLayoutDirection == NSUserInterfaceLayoutDirectionRightToLeft;
         [toolbar insertItemWithItemIdentifier:GATextInputItem atIndex:0];
-        [toolbar insertItemWithItemIdentifier:NSToolbarFlexibleSpaceItemIdentifier atIndex:rtl ? 0 : 1];
+        [toolbar insertItemWithItemIdentifier:NSToolbarFlexibleSpaceItemIdentifier atIndex:1];
         [self updateToolbarVariationItem];
     } else {
         [toolbar insertItemWithItemIdentifier:GAFontNameItem atIndex:0];
@@ -860,18 +859,16 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 
 - (void)updateToolbarVariationItem {
     NSToolbar *toolbar = self.window.toolbar;
-    NSUInteger index = self.window.contentView.userInterfaceLayoutDirection == NSUserInterfaceLayoutDirectionRightToLeft ? 1 : 0;
-    BOOL hasItem = toolbar.items.count > index &&
-        [toolbar.items[index].itemIdentifier isEqualToString:GAVariationItem];
+    BOOL hasItem = [toolbar.items.firstObject.itemIdentifier isEqualToString:GAVariationItem];
     BOOL needsItem = self.fontResource.axes.count > 0;
     if (needsItem && !hasItem) {
-        [toolbar insertItemWithItemIdentifier:GAVariationItem atIndex:index];
+        [toolbar insertItemWithItemIdentifier:GAVariationItem atIndex:0];
         if (@available(macOS 26.0, *))
-            [toolbar insertItemWithItemIdentifier:NSToolbarSpaceItemIdentifier atIndex:index + 1];
+            [toolbar insertItemWithItemIdentifier:NSToolbarSpaceItemIdentifier atIndex:1];
     }
     if (!needsItem && hasItem) {
-        if (@available(macOS 26.0, *)) [toolbar removeItemAtIndex:index + 1];
-        [toolbar removeItemAtIndex:index];
+        if (@available(macOS 26.0, *)) [toolbar removeItemAtIndex:1];
+        [toolbar removeItemAtIndex:0];
     }
 }
 
