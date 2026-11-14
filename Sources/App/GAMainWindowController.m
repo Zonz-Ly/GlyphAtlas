@@ -173,7 +173,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 @property (nonatomic, strong) NSSplitViewController *splitViewController;
 @property (nonatomic, strong) NSSplitViewItem *sidebarItem;
 @property (nonatomic) CGFloat sidebarExpandedWidth;
-@property (nonatomic, strong) NSView *toolbarInputContainer;
+@property (nonatomic, strong) NSLayoutConstraint *toolbarInputWidthLimit;
 @property (nonatomic) BOOL sidebarTransitionInProgress;
 @property (nonatomic, strong) GASidebarViewController *sidebarViewController;
 @property (nonatomic, strong) GADetailViewController *detailViewController;
@@ -692,6 +692,11 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 
 #pragma mark - Window and input focus
 
+- (void)windowDidResize:(NSNotification *)notification {
+    (void)notification;
+    if (self.sidebarHidden) [self updateToolbarInputWidth];
+}
+
 - (void)windowWillEnterFullScreen:(NSNotification *)notification {
     self.windowedSize = self.window.frame.size;
     self.opensFullScreen = NO;
@@ -806,6 +811,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
             [controller.sidebarViewController setSidebarContentTopPinned:NO];
         }
         controller.sidebarTransitionInProgress = NO;
+        if (hidden) [controller updateToolbarInputWidthAfterLayout];
         if (currentWindow.firstResponder == currentWindow) {
             if (restoreSelection.location != NSNotFound) {
                 [currentWindow.contentView.superview layoutSubtreeIfNeeded];
@@ -831,16 +837,18 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 - (void)updateToolbarForHiddenSidebar:(BOOL)hidden {
     NSWindow *window = self.window;
     NSToolbar *toolbar = window.toolbar;
-    if (hidden && !self.toolbarInputContainer) {
-        self.toolbarInputContainer = [NSView new];
-        [self.toolbarInputContainer.widthAnchor constraintGreaterThanOrEqualToConstant:120].active = YES;
+    [self.sidebarViewController useInputInToolbar:hidden];
+    if (hidden) {
+        if (!self.toolbarInputWidthLimit) {
+            self.toolbarInputWidthLimit = [self.sidebarViewController.toolbarInputField.widthAnchor
+                constraintLessThanOrEqualToConstant:NSWidth(window.frame)];
+            self.toolbarInputWidthLimit.active = YES;
+        }
+        [self.sidebarViewController setToolbarInputPlaceholder:self.titleFontNameField.stringValue];
     }
-    [self.sidebarViewController useInputInToolbarContainer:hidden ? self.toolbarInputContainer : nil];
-    if (hidden) [self.sidebarViewController setToolbarInputPlaceholder:self.titleFontNameField.stringValue];
     while (toolbar.items.count > 0) [toolbar removeItemAtIndex:toolbar.items.count - 1];
     if (hidden) {
         [toolbar insertItemWithItemIdentifier:GATextInputItem atIndex:0];
-        [toolbar insertItemWithItemIdentifier:NSToolbarFlexibleSpaceItemIdentifier atIndex:1];
         [self updateToolbarVariationItem];
     } else {
         [toolbar insertItemWithItemIdentifier:GAFontNameItem atIndex:0];
@@ -863,13 +871,33 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     BOOL needsItem = self.fontResource.axes.count > 0;
     if (needsItem && !hasItem) {
         [toolbar insertItemWithItemIdentifier:GAVariationItem atIndex:0];
-        if (@available(macOS 26.0, *))
-            [toolbar insertItemWithItemIdentifier:NSToolbarSpaceItemIdentifier atIndex:1];
     }
     if (!needsItem && hasItem) {
-        if (@available(macOS 26.0, *)) [toolbar removeItemAtIndex:1];
         [toolbar removeItemAtIndex:0];
     }
+    self.toolbarInputWidthLimit.constant = NSWidth(self.window.frame);
+    if (!self.sidebarTransitionInProgress) [self updateToolbarInputWidthAfterLayout];
+}
+
+- (void)updateToolbarInputWidthAfterLayout {
+    // Toolbar item changes finish their native layout on the next run-loop turn.
+    __weak typeof(self) weakSelf = self;
+    dispatch_async(dispatch_get_main_queue(), ^{
+        GAMainWindowController *controller = weakSelf;
+        if (controller.sidebarHidden && !controller.sidebarTransitionInProgress)
+            [controller updateToolbarInputWidth];
+    });
+}
+
+- (void)updateToolbarInputWidth {
+    NSWindow *window = self.window;
+    NSTextField *field = self.sidebarViewController.toolbarInputField;
+    // Let AppKit allocate the native width first, then reserve 9 pt more
+    // without introducing a toolbar space item that changes its end margin.
+    self.toolbarInputWidthLimit.constant = NSWidth(window.frame);
+    [window.contentView.superview layoutSubtreeIfNeeded];
+    self.toolbarInputWidthLimit.constant = MAX(field.fittingSize.width, NSWidth(field.frame) - 9);
+    [window.contentView.superview layoutSubtreeIfNeeded];
 }
 
 - (NSArray<NSToolbarItemIdentifier> *)toolbarDefaultItemIdentifiers:(NSToolbar *)toolbar {
@@ -878,8 +906,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 
 - (NSArray<NSToolbarItemIdentifier> *)toolbarAllowedItemIdentifiers:(NSToolbar *)toolbar {
     return @[GAFontNameItem, NSToolbarSidebarTrackingSeparatorItemIdentifier,
-             GATextInputItem, GAVariationItem, NSToolbarSpaceItemIdentifier,
-             NSToolbarFlexibleSpaceItemIdentifier];
+             GATextInputItem, GAVariationItem];
 }
 
 - (NSSet<NSToolbarItemIdentifier> *)toolbarImmovableItemIdentifiers:(NSToolbar *)toolbar {
@@ -898,8 +925,9 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     NSToolbarItem *item = [[NSToolbarItem alloc] initWithItemIdentifier:itemIdentifier];
     if ([itemIdentifier isEqualToString:GATextInputItem]) {
         item.label = NSLocalizedString(@"Enter text", @"Enter text");
-        item.view = self.toolbarInputContainer;
-        item.bordered = YES;
+        item.view = self.sidebarViewController.toolbarInputField;
+        if (@available(macOS 26.0, *)) item.bordered = YES;
+        else item.bordered = NO;
         item.visibilityPriority = NSToolbarItemVisibilityPriorityHigh;
         return item;
     }

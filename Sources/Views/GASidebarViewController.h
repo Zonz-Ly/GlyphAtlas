@@ -68,8 +68,10 @@ typedef NS_ENUM(NSInteger, GAPendingSelectionScroll) {
 - (void)focusInput;
 /// Return focus to the glyph list or to the window when the sidebar is hidden.
 - (void)focusGlyphList;
-/// Selects the toolbar input, or the sidebar input when the container is nil.
-- (void)useInputInToolbarContainer:(nullable NSView *)container;
+/// Created when first selected for use directly in the toolbar item.
+@property (nonatomic, strong, readonly, nullable) NSTextField *toolbarInputField;
+/// Selects the toolbar input, or the sidebar input when NO.
+- (void)useInputInToolbar:(BOOL)toolbar;
 /// Shown only while the toolbar input is empty; never becomes query text.
 - (void)setToolbarInputPlaceholder:(NSString *)placeholder;
 - (void)setSidebarContentTopPinned:(BOOL)pinned;

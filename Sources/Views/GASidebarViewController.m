@@ -93,7 +93,7 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
                                        NSTableViewDelegate>
 @property (nonatomic, strong) NSTextField *inputField;
 @property (nonatomic, strong) GASearchField *sidebarInputField;
-@property (nonatomic, strong) GAGlyphInputField *toolbarInputField;
+@property (nonatomic, strong, nullable) NSTextField *toolbarInputField;
 @property (nonatomic, strong) NSLayoutConstraint *sidebarListTopConstraint;
 @property (nonatomic, strong, nullable) NSLayoutConstraint *pinnedSidebarListTopConstraint;
 @property (nonatomic, copy) NSArray<NSLayoutConstraint *> *sidebarInputConstraints;
@@ -400,21 +400,15 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
     }
 }
 
-- (void)useInputInToolbarContainer:(NSView *)container {
-    if (container && !self.toolbarInputField) {
+- (void)useInputInToolbar:(BOOL)toolbar {
+    if (toolbar && !self.toolbarInputField) {
         GAGlyphInputField *field = (GAGlyphInputField *)[self newInputFieldForToolbar:YES];
         self.toolbarInputField = field;
         [field setContentHuggingPriority:NSLayoutPriorityFittingSizeCompression
                           forOrientation:NSLayoutConstraintOrientationHorizontal];
-        [container addSubview:field];
-        [NSLayoutConstraint activateConstraints:@[
-            [field.leadingAnchor constraintEqualToAnchor:container.leadingAnchor],
-            [field.trailingAnchor constraintEqualToAnchor:container.trailingAnchor],
-            [field.topAnchor constraintEqualToAnchor:container.topAnchor],
-            [field.bottomAnchor constraintEqualToAnchor:container.bottomAnchor],
-        ]];
+        [field.widthAnchor constraintGreaterThanOrEqualToConstant:120].active = YES;
     }
-    NSTextField *input = container ? self.toolbarInputField : self.sidebarInputField;
+    NSTextField *input = toolbar ? self.toolbarInputField : self.sidebarInputField;
     if (input == self.inputField) return;
     // Both controls use the same editor and undo history, one at a time.
     self.inputField.editable = NO;
