@@ -694,7 +694,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 
 - (void)windowDidResize:(NSNotification *)notification {
     (void)notification;
-    if (self.sidebarHidden) [self updateToolbarInputWidth];
+    self.toolbarInputWidthLimit.constant = NSWidth(self.window.frame);
 }
 
 - (void)windowWillEnterFullScreen:(NSNotification *)notification {
@@ -811,7 +811,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
             [controller.sidebarViewController setSidebarContentTopPinned:NO];
         }
         controller.sidebarTransitionInProgress = NO;
-        if (hidden) [controller updateToolbarInputWidthAfterLayout];
         if (currentWindow.firstResponder == currentWindow) {
             if (restoreSelection.location != NSNotFound) {
                 [currentWindow.contentView.superview layoutSubtreeIfNeeded];
@@ -844,11 +843,20 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
                 constraintLessThanOrEqualToConstant:NSWidth(window.frame)];
             self.toolbarInputWidthLimit.active = YES;
         }
+        self.toolbarInputWidthLimit.constant = NSWidth(window.frame);
         [self.sidebarViewController setToolbarInputPlaceholder:self.titleFontNameField.stringValue];
     }
     while (toolbar.items.count > 0) [toolbar removeItemAtIndex:toolbar.items.count - 1];
     if (hidden) {
         [toolbar insertItemWithItemIdentifier:GATextInputItem atIndex:0];
+        if (@available(macOS 26.0, *)) {
+            [toolbar insertItemWithItemIdentifier:NSToolbarSpaceItemIdentifier atIndex:1];
+            if (@available(macOS 27.0, *)) {
+                [toolbar insertItemWithItemIdentifier:NSToolbarSpaceItemIdentifier atIndex:2];
+            }
+        } else {
+            [toolbar insertItemWithItemIdentifier:NSToolbarFlexibleSpaceItemIdentifier atIndex:1];
+        }
         [self updateToolbarVariationItem];
     } else {
         [toolbar insertItemWithItemIdentifier:GAFontNameItem atIndex:0];
@@ -875,29 +883,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     if (!needsItem && hasItem) {
         [toolbar removeItemAtIndex:0];
     }
-    self.toolbarInputWidthLimit.constant = NSWidth(self.window.frame);
-    if (!self.sidebarTransitionInProgress) [self updateToolbarInputWidthAfterLayout];
-}
-
-- (void)updateToolbarInputWidthAfterLayout {
-    // Toolbar item changes finish their native layout on the next run-loop turn.
-    __weak typeof(self) weakSelf = self;
-    dispatch_async(dispatch_get_main_queue(), ^{
-        GAMainWindowController *controller = weakSelf;
-        if (controller.sidebarHidden && !controller.sidebarTransitionInProgress)
-            [controller updateToolbarInputWidth];
-    });
-}
-
-- (void)updateToolbarInputWidth {
-    NSWindow *window = self.window;
-    NSTextField *field = self.sidebarViewController.toolbarInputField;
-    // Let AppKit allocate the native width first, then reserve 9 pt more
-    // without introducing a toolbar space item that changes its end margin.
-    self.toolbarInputWidthLimit.constant = NSWidth(window.frame);
-    [window.contentView.superview layoutSubtreeIfNeeded];
-    self.toolbarInputWidthLimit.constant = MAX(field.fittingSize.width, NSWidth(field.frame) - 9);
-    [window.contentView.superview layoutSubtreeIfNeeded];
 }
 
 - (NSArray<NSToolbarItemIdentifier> *)toolbarDefaultItemIdentifiers:(NSToolbar *)toolbar {
@@ -906,7 +891,8 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 
 - (NSArray<NSToolbarItemIdentifier> *)toolbarAllowedItemIdentifiers:(NSToolbar *)toolbar {
     return @[GAFontNameItem, NSToolbarSidebarTrackingSeparatorItemIdentifier,
-             GATextInputItem, GAVariationItem];
+             GATextInputItem, GAVariationItem,
+             NSToolbarSpaceItemIdentifier, NSToolbarFlexibleSpaceItemIdentifier];
 }
 
 - (NSSet<NSToolbarItemIdentifier> *)toolbarImmovableItemIdentifiers:(NSToolbar *)toolbar {
