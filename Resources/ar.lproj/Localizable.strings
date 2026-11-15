@@ -65,11 +65,8 @@
 "Show Sidebar" = "إظهار الشريط الجانبي";
 "Hide Sidebar" = "إخفاء الشريط الجانبي";
 "Navigation" = "التنقل";
-"Enable Navigation" = "تشغيل التنقل";
-"Disable Navigation" = "إيقاف التنقل";
-"Navigate Back" = "التنقل للخلف";
-"Navigate Forward" = "التنقل للأمام";
-"Back" = "رجوع";
+"Back" = "الخلف";
+"Forward" = "الأمام";
 "Single Glyph" = "صورة حرف واحدة";
 "Characters" = "الأحرف";
 "Glyph Grid" = "شبكة صور الحروف";

@@ -65,11 +65,8 @@
 "Show Sidebar" = "Hiển thị thanh bên";
 "Hide Sidebar" = "Ẩn thanh bên";
 "Navigation" = "Điều hướng";
-"Enable Navigation" = "Bật điều hướng";
-"Disable Navigation" = "Tắt điều hướng";
-"Navigate Back" = "Điều hướng lùi";
-"Navigate Forward" = "Điều hướng tiến";
-"Back" = "Quay lại";
+"Back" = "Trở lại";
+"Forward" = "Chuyển tiếp";
 "Single Glyph" = "Một nét";
 "Characters" = "Ký tự";
 "Glyph Grid" = "Lưới nét chữ";

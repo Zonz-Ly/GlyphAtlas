@@ -65,11 +65,8 @@
 "Show Sidebar" = "แสดงแถบด้านข้าง";
 "Hide Sidebar" = "ซ่อนแถบด้านข้าง";
 "Navigation" = "การนำทาง";
-"Enable Navigation" = "เปิดการนำทาง";
-"Disable Navigation" = "ปิดการนำทาง";
-"Navigate Back" = "นำทางย้อนกลับ";
-"Navigate Forward" = "นำทางไปข้างหน้า";
 "Back" = "ย้อนกลับ";
+"Forward" = "ไปข้างหน้า";
 "Single Glyph" = "รูปอักษรเดี่ยว";
 "Characters" = "อักขระ";
 "Glyph Grid" = "ตารางรูปอักษร";

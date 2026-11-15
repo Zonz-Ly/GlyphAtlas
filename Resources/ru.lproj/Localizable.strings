@@ -65,11 +65,8 @@
 "Show Sidebar" = "Показать боковое меню";
 "Hide Sidebar" = "Скрыть боковое меню";
 "Navigation" = "Навигация";
-"Enable Navigation" = "Включить навигацию";
-"Disable Navigation" = "Выключить навигацию";
-"Navigate Back" = "Перейти назад";
-"Navigate Forward" = "Перейти вперёд";
 "Back" = "Назад";
+"Forward" = "Вперед";
 "Single Glyph" = "Один глиф";
 "Characters" = "Символы";
 "Glyph Grid" = "Сетка глифов";

@@ -65,11 +65,8 @@
 "Show Sidebar" = "Montri flankbreton";
 "Hide Sidebar" = "Kaŝi flankbreton";
 "Navigation" = "Navigado";
-"Enable Navigation" = "Ŝalti navigadon";
-"Disable Navigation" = "Malŝalti navigadon";
-"Navigate Back" = "Navigi reen";
-"Navigate Forward" = "Navigi antaŭen";
 "Back" = "Reen";
+"Forward" = "Antaŭen";
 "Single Glyph" = "Unuopa glifo";
 "Characters" = "Signoj";
 "Glyph Grid" = "Glifa krado";

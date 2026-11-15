@@ -894,12 +894,13 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
         [self addGlyphFeatureFilterToMenu:menu];
         [menu addItem:NSMenuItem.separatorItem];
     } else {
-        NSMenuItem *navigation = [menu addItemWithTitle:NSLocalizedString(@"Enable Navigation", @"Enable glyph navigation")
-                                                 action:@selector(toggleGlyphNavigation:) keyEquivalent:@""];
+        NSMenuItem *navigation = [menu addItemWithTitle:NSLocalizedString(@"Navigation", @"Toggle navigation")
+                                                 action:@selector(toggleGlyphNavigation:) keyEquivalent:@"g"];
         navigation.target = self;
+        navigation.keyEquivalentModifierMask = NSEventModifierFlagControl | NSEventModifierFlagCommand;
         NSArray<NSString *> *titles = @[
-            NSLocalizedString(@"Navigate Back", @"Return to the previous navigation location"),
-            NSLocalizedString(@"Navigate Forward", @"Move to the next navigation location"),
+            NSLocalizedString(@"Back", @"Return to the previous navigation location"),
+            NSLocalizedString(@"Forward", @"Move to the next navigation location"),
         ];
         NSArray<NSString *> *keys = @[@"[", @"]"];
         SEL actions[] = {@selector(navigateBack:), @selector(navigateForward:)};
@@ -1435,9 +1436,7 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
         return controller != nil;
     }
     if (action == @selector(toggleGlyphNavigation:)) {
-        item.title = controller.glyphNavigationEnabled
-            ? NSLocalizedString(@"Disable Navigation", @"Disable glyph navigation")
-            : NSLocalizedString(@"Enable Navigation", @"Enable glyph navigation");
+        item.state = controller.glyphNavigationEnabled ? NSControlStateValueOn : NSControlStateValueOff;
         return controller.fontURL != nil;
     }
     if (controller == nil) {
