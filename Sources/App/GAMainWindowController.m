@@ -1154,6 +1154,28 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         NSMenuToolbarItem *back = [[NSMenuToolbarItem alloc] initWithItemIdentifier:itemIdentifier];
         back.label = NSLocalizedString(@"Back", @"Return to the previous glyph or view");
         back.image = [NSImage imageWithSystemSymbolName:@"chevron.backward" accessibilityDescription:back.label];
+        // The toolbar is rebuilt before the sidebar's collapsed state changes.
+        BOOL hasToolbarInput = [toolbar.items indexOfObjectPassingTest:
+            ^BOOL(NSToolbarItem *item, NSUInteger index, BOOL *stop) {
+                (void)index; (void)stop;
+                return [item.itemIdentifier isEqualToString:GATextInputItem];
+            }] != NSNotFound;
+        if (hasToolbarInput && NSProcessInfo.processInfo.operatingSystemVersion.majorVersion <= 15) {
+            NSImage *symbol = back.image;
+            NSSize size = symbol.size;
+            // Pad the image to 15 pt without scaling the arrow or changing its vertical alignment.
+            NSImage *padded = [NSImage imageWithSize:NSMakeSize(15, size.height) flipped:NO
+                drawingHandler:^BOOL(NSRect rect) {
+                    [symbol drawInRect:NSMakeRect(NSMidX(rect) - size.width / 2,
+                                                 NSMinY(rect), size.width, size.height)];
+                    return YES;
+                }];
+            padded.template = symbol.isTemplate;
+            padded.alignmentRect = NSMakeRect(0, NSMinY(symbol.alignmentRect),
+                                             15, NSHeight(symbol.alignmentRect));
+            padded.accessibilityDescription = back.label;
+            back.image = padded;
+        }
         back.target = self;
         back.action = @selector(navigateBack:);
         back.autovalidates = NO;
