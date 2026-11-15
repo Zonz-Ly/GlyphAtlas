@@ -65,6 +65,10 @@
 "Show Sidebar" = "사이드바 보기";
 "Hide Sidebar" = "사이드바 가리기";
 "Navigation" = "탐색";
+"Enable Navigation" = "탐색 켜기";
+"Disable Navigation" = "탐색 끄기";
+"Navigate Back" = "뒤로 탐색";
+"Navigate Forward" = "앞으로 탐색";
 "Back" = "뒤로";
 "Single Glyph" = "단일 글리프";
 "Characters" = "문자";

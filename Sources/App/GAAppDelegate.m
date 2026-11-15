@@ -894,9 +894,25 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
         [self addGlyphFeatureFilterToMenu:menu];
         [menu addItem:NSMenuItem.separatorItem];
     } else {
-        NSMenuItem *navigation = [menu addItemWithTitle:NSLocalizedString(@"Navigation", @"Toggle navigation")
+        NSMenuItem *navigation = [menu addItemWithTitle:NSLocalizedString(@"Enable Navigation", @"Enable glyph navigation")
                                                  action:@selector(toggleGlyphNavigation:) keyEquivalent:@""];
         navigation.target = self;
+        NSArray<NSString *> *titles = @[
+            NSLocalizedString(@"Navigate Back", @"Return to the previous navigation location"),
+            NSLocalizedString(@"Navigate Forward", @"Move to the next navigation location"),
+        ];
+        NSArray<NSString *> *keys = @[@"[", @"]"];
+        SEL actions[] = {@selector(navigateBack:), @selector(navigateForward:)};
+        unichar arrows[] = {NSLeftArrowFunctionKey, NSRightArrowFunctionKey};
+        for (NSUInteger i = 0; i < titles.count; i++) {
+            NSMenuItem *item = [menu addItemWithTitle:titles[i] action:actions[i] keyEquivalent:keys[i]];
+            item.target = self;
+            NSMenuItem *shortcut = [item copy];
+            shortcut.keyEquivalent = [NSString stringWithCharacters:&arrows[i] length:1];
+            shortcut.hidden = YES;
+            shortcut.allowsKeyEquivalentWhenHidden = YES;
+            [menu addItem:shortcut];
+        }
         [menu addItem:NSMenuItem.separatorItem];
         NSMenuItem *sidebar = [menu addItemWithTitle:NSLocalizedString(@"Hide Sidebar", @"Hide the glyph sidebar")
                                               action:@selector(toggleSidebar:) keyEquivalent:@"s"];
@@ -1204,6 +1220,14 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
     [[self controllerForViewMenu:sender.menu] setViewMode:(GAViewMode)sender.tag];
 }
 
+- (void)navigateBack:(NSMenuItem *)sender {
+    [[self controllerForViewMenu:sender.menu] navigateBack:sender];
+}
+
+- (void)navigateForward:(NSMenuItem *)sender {
+    [[self controllerForViewMenu:sender.menu] navigateForward:sender];
+}
+
 - (void)toggleGlyphNavigation:(NSMenuItem *)sender {
     GAMainWindowController *controller = [self controllerForViewMenu:sender.menu];
     [controller setGlyphNavigationEnabled:!controller.glyphNavigationEnabled];
@@ -1410,12 +1434,20 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
             : NSLocalizedString(@"Hide Sidebar", @"Hide the glyph sidebar");
         return controller != nil;
     }
+    if (action == @selector(toggleGlyphNavigation:)) {
+        item.title = controller.glyphNavigationEnabled
+            ? NSLocalizedString(@"Disable Navigation", @"Disable glyph navigation")
+            : NSLocalizedString(@"Enable Navigation", @"Enable glyph navigation");
+        return controller.fontURL != nil;
+    }
     if (controller == nil) {
         return NO;
     }
-    if (action == @selector(toggleGlyphNavigation:)) {
-        item.state = controller.glyphNavigationEnabled ? NSControlStateValueOn : NSControlStateValueOff;
-        return controller.fontURL != nil;
+    if (action == @selector(navigateBack:) || action == @selector(navigateForward:)) {
+        NSResponder *responder = NSApp.keyWindow.firstResponder;
+        if (item.hidden && [responder isKindOfClass:NSTextView.class] &&
+            [(NSTextView *)responder isFieldEditor]) return NO;
+        return action == @selector(navigateBack:) ? controller.canNavigateBack : controller.canNavigateForward;
     }
     if (action == @selector(copyToFontBook:)) {
         return controller.fontURL != nil;

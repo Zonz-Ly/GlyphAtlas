@@ -175,7 +175,7 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 @property (nonatomic, copy, nullable) NSArray<NSNumber *> *glyphIDs;
 @property (nonatomic) NSRange range;
 @property (nonatomic, copy, nullable) NSString *sourceText;
-@property (nonatomic, copy, nullable) NSString *glyphName;
+@property (nonatomic, copy, nullable) NSString *glyphLabel;
 @end
 @implementation GAGlyphNavigationStep
 @end
@@ -600,7 +600,8 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     GAGlyphNavigationStep *step = [GAGlyphNavigationStep new];
     step.mode = self.viewMode;
     step.glyphIDs = self.lastSelectedVariant.glyphIDs;
-    step.glyphName = self.lastSelectedVariant.glyphName;
+    NSNumber *scalar = GAInputScalarForGlyph([self.fontDocument unicodeScalarsForGlyphIDs:step.glyphIDs]);
+    step.glyphLabel = scalar ? GAStringFromUnicodeScalars(@[scalar]) : self.lastSelectedVariant.glyphName;
     step.range = self.sidebarViewController.selectedGlyphTextRange;
     NSString *text = self.scanSnapshot.text;
     if (step.glyphIDs && step.range.location != NSNotFound && NSMaxRange(step.range) <= text.length)
@@ -624,14 +625,26 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         [self.sidebarViewController containsGlyphIDs:step.glyphIDs textRange:step.range];
 }
 
+- (BOOL)canNavigateBack {
+    return [self canNavigateToStep:self.navigationHistory.lastObject];
+}
+
+- (BOOL)canNavigateForward {
+    return [self canNavigateToStep:self.navigationForwardHistory.lastObject];
+}
+
 - (void)updateNavigationButton {
-    BOOL enabled = [self canNavigateToStep:self.navigationHistory.lastObject];
-    self.backToolbarItem.enabled = enabled;
+    self.backToolbarItem.enabled = self.canNavigateBack;
 }
 
 - (void)navigateBack:(id)sender {
     (void)sender;
     [self navigateToStep:self.navigationHistory.lastObject];
+}
+
+- (void)navigateForward:(id)sender {
+    (void)sender;
+    [self navigateToStep:self.navigationForwardHistory.lastObject];
 }
 
 - (void)navigateToStep:(GAGlyphNavigationStep *)step {
@@ -658,7 +671,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     NSString *mode = step.mode == GAViewModeAllGlyphs ? NSLocalizedString(@"Glyph Grid", @"Glyph Grid view")
         : step.mode == GAViewModeMultiCharacter ? NSLocalizedString(@"Characters", @"Characters view")
         : NSLocalizedString(@"Single Glyph", @"Single Glyph view");
-    return step.glyphName.length ? [NSString stringWithFormat:@"%@: %@", mode, step.glyphName] : mode;
+    return step.glyphLabel.length ? [NSString stringWithFormat:@"%@: %@", mode, step.glyphLabel] : mode;
 }
 
 - (void)chooseNavigationStep:(NSMenuItem *)item {
@@ -1148,7 +1161,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         back.showsIndicator = NO;
         back.menu = [self navigationMenu];
         self.backToolbarItem = back;
-        back.enabled = [self canNavigateToStep:self.navigationHistory.lastObject];
+        back.enabled = self.canNavigateBack;
         return back;
     }
     NSToolbarItem *item = [[NSToolbarItem alloc] initWithItemIdentifier:itemIdentifier];

@@ -65,6 +65,10 @@
 "Show Sidebar" = "ཟུར་ངོས་སྟོན།";
 "Hide Sidebar" = "ཟུར་ངོས་སྦེད།";
 "Navigation" = "ལམ་སྟོན།";
+"Enable Navigation" = "ལམ་སྟོན་ཁ་ཕྱེ།";
+"Disable Navigation" = "ལམ་སྟོན་ཁ་རྒྱག";
+"Navigate Back" = "ཕྱིར་ལོག";
+"Navigate Forward" = "མདུན་སྐྱོད།";
 "Back" = "ཕྱིར་ལོག";
 "Single Glyph" = "ཡིག་དབྱིབས་གཅིག";
 "Characters" = "ཡིག་རྟགས";

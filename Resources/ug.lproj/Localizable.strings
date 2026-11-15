@@ -65,6 +65,10 @@
 "Show Sidebar" = "يانبالداقنى كۆرسەت";
 "Hide Sidebar" = "يانبالداقنى يوشۇر";
 "Navigation" = "يولباشلاش";
+"Enable Navigation" = "يولباشلاشنى ئاچ";
+"Disable Navigation" = "يولباشلاشنى تاقا";
+"Navigate Back" = "كەينىگە ماڭ";
+"Navigate Forward" = "ئالدىغا ماڭ";
 "Back" = "كەينىگە";
 "Single Glyph" = "بىر ھەرپ شەكلى";
 "Characters" = "ھەرپلەر";

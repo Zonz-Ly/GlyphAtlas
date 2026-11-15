@@ -65,6 +65,10 @@
 "Show Sidebar" = "Tunjukkan Bar Sisi";
 "Hide Sidebar" = "Sembunyikan Bar Sisi";
 "Navigation" = "Navigasi";
+"Enable Navigation" = "Aktifkan Navigasi";
+"Disable Navigation" = "Nyahaktifkan Navigasi";
+"Navigate Back" = "Navigasi Kembali";
+"Navigate Forward" = "Navigasi Maju";
 "Back" = "Kembali";
 "Single Glyph" = "Glif Tunggal";
 "Characters" = "Aksara";

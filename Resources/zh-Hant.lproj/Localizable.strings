@@ -66,6 +66,10 @@
 "Show Sidebar" = "顯示側邊欄";
 "Hide Sidebar" = "隱藏側邊欄";
 "Navigation" = "導覽";
+"Enable Navigation" = "開啟導覽";
+"Disable Navigation" = "關閉導覽";
+"Navigate Back" = "導覽返回";
+"Navigate Forward" = "導覽往前";
 "Back" = "後退";
 "Single Glyph" = "單字形";
 "Characters" = "多字元";

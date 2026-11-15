@@ -65,6 +65,10 @@
 "Show Sidebar" = "បង្ហាញរបារចំហៀង";
 "Hide Sidebar" = "លាក់របារចំហៀង";
 "Navigation" = "ការរុករក";
+"Enable Navigation" = "បើកការរុករក";
+"Disable Navigation" = "បិទការរុករក";
+"Navigate Back" = "រុករកថយក្រោយ";
+"Navigate Forward" = "រុករកទៅមុខ";
 "Back" = "ថយក្រោយ";
 "Single Glyph" = "រូបតួអក្សរតែមួយ";
 "Characters" = "តួអក្សរ";

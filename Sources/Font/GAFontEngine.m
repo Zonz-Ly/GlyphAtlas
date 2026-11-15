@@ -380,35 +380,30 @@ static NSString *GADisplayLabelForGlyph(GAGlyphLabels *labels, NSNumber *number)
         ?: [NSString stringWithFormat:@"GID %@", number];
 }
 
+- (NSArray<NSNumber *> *)unicodeScalarsForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs {
+    if (!glyphIDs.count) return @[];
+    NSDictionary<NSNumber *, NSArray<NSNumber *> *> *map = self.unicodeMap;
+    // unicodeMap already stores unique aliases in ascending scalar order.
+    if (glyphIDs.count == 1) return map[glyphIDs.firstObject] ?: @[];
+    NSMutableSet<NSNumber *> *scalars = [NSMutableSet set];
+    for (NSNumber *glyph in glyphIDs)
+        [scalars addObjectsFromArray:map[glyph] ?: @[]];
+    return [scalars.allObjects sortedArrayUsingSelector:@selector(compare:)];
+}
+
 - (void)decorateVariant:(GAGlyphVariant *)variant {
+    variant.unicodeScalars = [self unicodeScalarsForGlyphIDs:variant.glyphIDs];
     if (variant.glyphIDs.count == 0) {
-        variant.unicodeScalars = @[];
         variant.glyphName = @"";
         return;
     }
-    NSDictionary<NSNumber *, NSArray<NSNumber *> *> *map = self.unicodeMap;
     if (variant.glyphIDs.count == 1) {
-        NSNumber *glyph = variant.glyphIDs.firstObject;
-        // unicodeMap already stores unique aliases in ascending scalar order.
-        variant.unicodeScalars = map[glyph] ?: @[];
-        variant.glyphName = GADisplayLabelForGlyph(_glyphLabels, glyph);
+        variant.glyphName = GADisplayLabelForGlyph(_glyphLabels, variant.glyphIDs.firstObject);
         return;
     }
-    NSMutableSet<NSNumber *> *scalars = [NSMutableSet set];
     NSMutableArray<NSString *> *glyphNames = [NSMutableArray array];
-
-    for (NSNumber *glyphNumber in variant.glyphIDs) {
-        NSArray<NSNumber *> *mapped = map[glyphNumber];
-        for (NSNumber *scalar in mapped) {
-            [scalars addObject:scalar];
-        }
-
-        [glyphNames addObject:GADisplayLabelForGlyph(_glyphLabels, glyphNumber)];
-    }
-
-    NSArray<NSNumber *> *sortedScalars =
-        [scalars.allObjects sortedArrayUsingSelector:@selector(compare:)];
-    variant.unicodeScalars = sortedScalars;
+    for (NSNumber *glyph in variant.glyphIDs)
+        [glyphNames addObject:GADisplayLabelForGlyph(_glyphLabels, glyph)];
     variant.glyphName = [glyphNames componentsJoinedByString:@"/"];
 }
 

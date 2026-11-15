@@ -65,6 +65,10 @@
 "Show Sidebar" = "Ostende tabulam lateralem";
 "Hide Sidebar" = "Cela tabulam lateralem";
 "Navigation" = "Navigatio";
+"Enable Navigation" = "Navigationem activa";
+"Disable Navigation" = "Navigationem inactiva";
+"Navigate Back" = "Retro naviga";
+"Navigate Forward" = "Prorsum naviga";
 "Back" = "Retro";
 "Single Glyph" = "Forma singula";
 "Characters" = "Signa";

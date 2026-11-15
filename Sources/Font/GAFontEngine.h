@@ -121,6 +121,8 @@ FOUNDATION_EXPORT NSArray<GACharacterGroup *> *GAGroupsForScanResult(NSString *t
 
 /// All GIDs in the font, including glyphs without Unicode mappings.
 - (NSArray<GAAllGlyphEntry *> *)allGlyphEntries;
+/// Actual cmap aliases, sorted and deduplicated; does not add source-text hints.
+- (NSArray<NSNumber *> *)unicodeScalarsForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs;
 - (NSArray<NSString *> *)glyphFeatureTags;
 /// An empty tag returns the glyphs outside the union of the listed feature outputs.
 - (nullable NSIndexSet *)glyphOutputsForFeatureTag:(NSString *)tag

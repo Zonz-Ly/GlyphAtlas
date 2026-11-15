@@ -65,6 +65,10 @@
 "Show Sidebar" = "Show Sidebar";
 "Hide Sidebar" = "Hide Sidebar";
 "Navigation" = "Navigation";
+"Enable Navigation" = "Enable Navigation";
+"Disable Navigation" = "Disable Navigation";
+"Navigate Back" = "Navigate Back";
+"Navigate Forward" = "Navigate Forward";
 "Back" = "Back";
 "Single Glyph" = "Single Glyph";
 "Characters" = "Characters";

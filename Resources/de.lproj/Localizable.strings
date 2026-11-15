@@ -65,6 +65,10 @@
 "Show Sidebar" = "Seitenleiste einblenden";
 "Hide Sidebar" = "Seitenleiste ausblenden";
 "Navigation" = "Navigation";
+"Enable Navigation" = "Navigation aktivieren";
+"Disable Navigation" = "Navigation deaktivieren";
+"Navigate Back" = "Zurück navigieren";
+"Navigate Forward" = "Vorwärts navigieren";
 "Back" = "Zurück";
 "Single Glyph" = "Einzelne Glyphe";
 "Characters" = "Zeichen";

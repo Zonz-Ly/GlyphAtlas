@@ -66,6 +66,10 @@
 "Show Sidebar" = "retlh 'ang";
 "Hide Sidebar" = "retlh So'";
 "Navigation" = "Navigation";
+"Enable Navigation" = "Enable Navigation";
+"Disable Navigation" = "Disable Navigation";
+"Navigate Back" = "Navigate Back";
+"Navigate Forward" = "Navigate Forward";
 "Back" = "Back";
 "Single Glyph" = "wa' Degh";
 "Characters" = "mu'tlheghmey";

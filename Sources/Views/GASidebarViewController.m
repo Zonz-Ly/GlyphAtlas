@@ -123,9 +123,6 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
 @property (nonatomic) BOOL inputChangedDuringReplay;
 @property (nonatomic) NSRange inputAutoSelectionRange;
 @property (nonatomic, strong) GAGlyphInputEditor *inputEditor;
-@property (nonatomic, copy, nullable) NSArray<NSString *> *tabCycleTexts;
-@property (nonatomic) NSUInteger tabCycleIndex;
-@property (nonatomic) BOOL cyclingSavedText;
 /// Rebinds the same visual row sequence, including shifted source ranges,
 /// without reloading the table, changing the selected row or scrolling.
 /// Returns NO if the inventory changed or a normal activation is pending.
@@ -413,7 +410,6 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
     }
     NSTextField *input = toolbar ? self.toolbarInputField : self.sidebarInputField;
     if (input == self.inputField) return;
-    self.tabCycleTexts = nil;
     // Both controls use the same editor and undo history, one at a time.
     self.inputField.editable = NO;
     self.inputField.selectable = NO;
@@ -805,7 +801,6 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
 }
 
 - (void)recordFieldEdit:(NSNotification *)notification {
-    if (!self.cyclingSavedText) self.tabCycleTexts = nil;
     NSTextStorage *storage = notification.object;
     NSUndoManager *manager = self.inputEditor.undoManager;
     if (manager.isUndoing || manager.isRedoing) {
@@ -878,7 +873,6 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
 
 - (void)controlTextDidBeginEditing:(NSNotification *)obj {
     if (obj.object != self.inputField) return;
-    if (!self.cyclingSavedText) self.tabCycleTexts = nil;
     [self prepareFieldEditor];
 }
 
@@ -905,20 +899,21 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
     doCommandBySelector:(SEL)commandSelector {
     if (control == self.inputField && commandSelector == @selector(insertTab:)) {
         if (textView.hasMarkedText) return NO;
-        NSMutableArray<NSString *> *texts = [NSMutableArray array];
-        if (self.inputField == self.toolbarInputField && self.toolbarInputField.placeholderString.length)
-            [texts addObject:self.toolbarInputField.placeholderString];
-        [texts addObjectsFromArray:[NSUserDefaults.standardUserDefaults arrayForKey:GASavedTextsKey] ?: @[]];
-        if (!texts.count) return NO;
-        if (![self.tabCycleTexts isEqualToArray:texts]) {
-            self.tabCycleTexts = texts;
-            self.tabCycleIndex = 0;
+        NSMutableArray<NSString *> *texts =
+            [[NSUserDefaults.standardUserDefaults arrayForKey:GASavedTextsKey] mutableCopy]
+            ?: [NSMutableArray array];
+        if (self.inputField == self.toolbarInputField && self.toolbarInputField.placeholderString.length) {
+            NSString *fontName = self.toolbarInputField.placeholderString;
+            [texts removeObject:fontName];
+            [texts insertObject:fontName atIndex:0];
         }
-        NSString *text = texts[self.tabCycleIndex];
-        self.cyclingSavedText = YES;
-        [self replaceInputText:text];
-        self.cyclingSavedText = NO;
-        self.tabCycleIndex = (self.tabCycleIndex + 1) % texts.count;
+        if (!texts.count) {
+            NSBeep();
+            return YES;
+        }
+        NSUInteger current = [texts indexOfObject:self.text];
+        NSUInteger next = current == NSNotFound || current + 1 == texts.count ? 0 : current + 1;
+        [self replaceInputText:texts[next]];
         return YES;
     }
     if (commandSelector == @selector(cancelOperation:) ||

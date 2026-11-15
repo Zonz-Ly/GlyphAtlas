@@ -65,6 +65,10 @@
 "Show Sidebar" = "Mostrar barra lateral";
 "Hide Sidebar" = "Ocultar barra lateral";
 "Navigation" = "Navegación";
+"Enable Navigation" = "Activar navegación";
+"Disable Navigation" = "Desactivar navegación";
+"Navigate Back" = "Navegar atrás";
+"Navigate Forward" = "Navegar adelante";
 "Back" = "Atrás";
 "Single Glyph" = "Un solo glifo";
 "Characters" = "Caracteres";

@@ -65,6 +65,10 @@
 "Show Sidebar" = "サイドバーを表示";
 "Hide Sidebar" = "サイドバーを非表示";
 "Navigation" = "ナビゲーション";
+"Enable Navigation" = "ナビゲーションを有効にする";
+"Disable Navigation" = "ナビゲーションを無効にする";
+"Navigate Back" = "戻る";
+"Navigate Forward" = "進む";
 "Back" = "戻る";
 "Single Glyph" = "単一グリフ";
 "Characters" = "文字";

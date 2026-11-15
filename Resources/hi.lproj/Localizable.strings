@@ -65,6 +65,10 @@
 "Show Sidebar" = "साइडबार दिखाएँ";
 "Hide Sidebar" = "साइडबार छिपाएँ";
 "Navigation" = "नेविगेशन";
+"Enable Navigation" = "नेविगेशन चालू करें";
+"Disable Navigation" = "नेविगेशन बंद करें";
+"Navigate Back" = "पीछे जाएँ";
+"Navigate Forward" = "आगे जाएँ";
 "Back" = "पीछे";
 "Single Glyph" = "एक ग्लिफ़";
 "Characters" = "वर्ण";

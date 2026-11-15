@@ -26,6 +26,10 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)toggleSidebar;
 @property (nonatomic, readonly) BOOL glyphNavigationEnabled;
 - (void)setGlyphNavigationEnabled:(BOOL)enabled;
+@property (nonatomic, readonly) BOOL canNavigateBack;
+@property (nonatomic, readonly) BOOL canNavigateForward;
+- (void)navigateBack:(nullable id)sender;
+- (void)navigateForward:(nullable id)sender;
 - (void)toggleShowsMetrics;
 - (void)zoomIn;
 - (void)zoomOut;
