@@ -852,6 +852,26 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
     return GARemapSourceRangeThroughEdits(range, self.displayedSourceEdits);
 }
 
+- (NSRange)navigationRangeForDisplayedRange:(NSRange)range {
+    if (self.displayedSourceEdits) return [self currentInputRangeForDisplayedRange:range];
+    NSString *before = self.displayedText;
+    NSString *after = self.text;
+    if (range.location == NSNotFound || !range.length || NSMaxRange(range) > before.length)
+        return NSMakeRange(NSNotFound, 0);
+    if ([before isEqualToString:after]) return range;
+    NSString *source = [before substringWithRange:range];
+    NSRange mapped = GARemapSourceRange(range, GASourceEditBetween(before, after));
+    // Undo can replace the entire native storage. Recover only an unchanged,
+    // unique source; repeated occurrences must not silently bind elsewhere.
+    if (mapped.location != NSNotFound &&
+        NSEqualRanges([before rangeOfString:source], range) &&
+        NSEqualRanges([before rangeOfString:source options:NSBackwardsSearch], range) &&
+        NSEqualRanges([after rangeOfString:source], mapped) &&
+        NSEqualRanges([after rangeOfString:source options:NSBackwardsSearch], mapped))
+        return mapped;
+    return NSMakeRange(NSNotFound, 0);
+}
+
 - (void)setGlyphListDimmed:(BOOL)dimmed {
     self.tableView.alphaValue = dimmed ? GASidebarInactiveGlyphListAlpha : 1.0;
 }

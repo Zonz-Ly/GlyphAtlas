@@ -44,6 +44,8 @@ typedef NS_ENUM(NSInteger, GAPendingSelectionScroll) {
          fontDocument:(GAFontDocument *)document;
 /// Tracks an unchanged source span through recorded edits since the visible snapshot.
 - (NSRange)currentInputRangeForDisplayedRange:(NSRange)range;
+/// History-only recovery after native Undo drops edit tracking; requires an unambiguous surviving source.
+- (NSRange)navigationRangeForDisplayedRange:(NSRange)range;
 /// Selects an exact layout glyph sequence and source span. A miss leaves the
 /// list, selection and scroll position untouched while lazy resolution runs.
 /// Does not scroll when the selected row is already fully visible. Otherwise

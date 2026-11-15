@@ -735,7 +735,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     if (self.pendingGridNavigation) [steps addObject:self.pendingGridNavigation];
     for (GAGlyphNavigationStep *step in steps) {
         if (!step.glyphIDs || step.range.location == NSNotFound) continue;
-        NSRange range = [self.sidebarViewController currentInputRangeForDisplayedRange:step.range];
+        NSRange range = [self.sidebarViewController navigationRangeForDisplayedRange:step.range];
         if (range.location == NSNotFound || NSMaxRange(range) > text.length ||
             ![[text substringWithRange:range] isEqualToString:step.sourceText])
             range = NSMakeRange(NSNotFound, 0);
