@@ -337,6 +337,11 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
 
 - (void)setSidebarContentTopPinned:(BOOL)pinned {
     if (pinned == (self.pinnedSidebarInputConstraints != nil)) return;
+    if (pinned && !self.inputAccessory && !self.searchTopConstraint) {
+        // Defaults can collapse the sidebar before its first viewDidAppear.
+        [self updateSidebarTopConstraint];
+        [self.view.window.contentView.superview layoutSubtreeIfNeeded];
+    }
     self.pinnedSidebarListTopConstraint.active = NO;
     self.pinnedSidebarListTopConstraint = nil;
     self.sidebarListTopConstraint.active = !pinned;
