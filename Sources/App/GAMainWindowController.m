@@ -701,7 +701,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     [self.navigationHistory removeAllObjects];
     [self.navigationForwardHistory removeAllObjects];
     self.pendingGridNavigation = nil;
-    self.detailViewController.keepsToolbarTransparent = enabled;
     if (enabled) {
         __weak typeof(self) weakSelf = self;
         self.navigationContextMonitor = [NSEvent addLocalMonitorForEventsMatchingMask:NSEventMaskRightMouseDown

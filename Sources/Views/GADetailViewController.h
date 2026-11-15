@@ -13,7 +13,6 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSDictionary *)currentPreviewSettings;
 - (void)applyOpeningSettings:(nullable NSDictionary *)settings;
 @property (nonatomic) GAViewMode viewMode;
-@property (nonatomic) BOOL keepsToolbarTransparent;
 - (void)setUsesToolbarSafeArea:(BOOL)enabled;
 @property (nonatomic, copy, nullable) void (^onAllGlyphDoubleClick)(GAAllGlyphEntry *entry);
 @property(nonatomic, copy, nullable) BOOL (^onGlyphSelected)
