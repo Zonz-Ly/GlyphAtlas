@@ -1,4 +1,6 @@
 #import "GAInput.h"
+
+NSString *const GASavedTextsKey = @"GASavedTexts";
 #import "App/GAAppDelegate.h"
 #import "Font/GAGlyphSelection.h"
 

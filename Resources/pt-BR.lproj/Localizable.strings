@@ -64,6 +64,9 @@
 "View" = "Visualizar";
 "Show Sidebar" = "Mostrar Barra Lateral";
 "Hide Sidebar" = "Ocultar Barra Lateral";
+"Glyph Navigation" = "Navegação de Glifos";
+"Back" = "Voltar";
+"Forward" = "Avançar";
 "Single Glyph" = "Glifo Único";
 "Characters" = "Caracteres";
 "Glyph Grid" = "Grade de Glifos";

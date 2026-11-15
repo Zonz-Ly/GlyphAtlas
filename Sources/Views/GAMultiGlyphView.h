@@ -43,9 +43,10 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly) NSSize documentSize;
 /// Called when the text layout changes the required document size.
 @property (nonatomic, copy, nullable) void (^onContentSizeChanged)(void);
-@property(nonatomic, copy, nullable) void (^onGlyphSelected)
+/// Return YES when the glyph action consumes the event instead of window dragging.
+@property(nonatomic, copy, nullable) BOOL (^onGlyphSelected)
     (NSArray<NSNumber *> *glyphIDs, NSRange range, NSArray<NSNumber *> * _Nullable leadingGlyphIDs,
-     NSRange leadingRange);
+     NSRange leadingRange, BOOL doubleClick);
 
 - (void)setText:(NSString *)text groups:(NSArray<GACharacterGroup *> *)groups
       omissions:(NSIndexSet *)omissions;

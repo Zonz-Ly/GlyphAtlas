@@ -129,10 +129,10 @@
             weakSelf.onAllGlyphDoubleClick(entry);
         }
     };
-    self.multiView.onGlyphSelected = ^(NSArray<NSNumber *> *glyphIDs, NSRange range,
-                                      NSArray<NSNumber *> *leadingGlyphIDs, NSRange leadingRange) {
-        if (weakSelf.onGlyphSelected)
-            weakSelf.onGlyphSelected(glyphIDs, range, leadingGlyphIDs, leadingRange);
+    self.multiView.onGlyphSelected = ^BOOL(NSArray<NSNumber *> *glyphIDs, NSRange range,
+                                      NSArray<NSNumber *> *leadingGlyphIDs, NSRange leadingRange, BOOL doubleClick) {
+        return weakSelf.onGlyphSelected
+            ? weakSelf.onGlyphSelected(glyphIDs, range, leadingGlyphIDs, leadingRange, doubleClick) : NO;
     };
     self.multiView.onContentSizeChanged = ^{
         [weakSelf updateMultiLayout];
@@ -182,11 +182,17 @@
         }
     }
     NSWindow *window = self.view.window;
+    if (self.keepsToolbarTransparent) overlapsToolbar = NO;
     BOOL transparent = !overlapsToolbar;
     NSTitlebarSeparatorStyle style = overlapsToolbar
         ? NSTitlebarSeparatorStyleAutomatic : NSTitlebarSeparatorStyleNone;
     if (window.titlebarAppearsTransparent != transparent) window.titlebarAppearsTransparent = transparent;
     if (window.titlebarSeparatorStyle != style) window.titlebarSeparatorStyle = style;
+}
+
+- (void)setKeepsToolbarTransparent:(BOOL)enabled {
+    _keepsToolbarTransparent = enabled;
+    [self updateToolbarAppearance];
 }
 
 - (void)setUsesToolbarSafeArea:(BOOL)enabled {

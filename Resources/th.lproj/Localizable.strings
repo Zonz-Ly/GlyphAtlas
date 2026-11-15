@@ -64,6 +64,9 @@
 "View" = "มุมมอง";
 "Show Sidebar" = "แสดงแถบด้านข้าง";
 "Hide Sidebar" = "ซ่อนแถบด้านข้าง";
+"Glyph Navigation" = "การนำทางรูปอักษร";
+"Back" = "ย้อนกลับ";
+"Forward" = "ไปข้างหน้า";
 "Single Glyph" = "รูปอักษรเดี่ยว";
 "Characters" = "อักขระ";
 "Glyph Grid" = "ตารางรูปอักษร";

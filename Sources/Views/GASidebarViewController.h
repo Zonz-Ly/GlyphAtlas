@@ -16,6 +16,10 @@ typedef NS_ENUM(NSInteger, GAPendingSelectionScroll) {
 @property (nonatomic, copy, nullable) void (^onSelectionChanged)(GAGlyphVariant * _Nullable variant, BOOL quickReveal);
 /// Shift+Return and Shift+double-click insert after the row's source range.
 @property (nonatomic, copy, nullable) void (^onGlyphActivated)(GACharacterGroup *group, GAGlyphVariant *variant, BOOL insert);
+/// Called before an explicit list/layout selection changes, never for query publication.
+@property (nonatomic, copy, nullable) void (^onWillNavigate)(void);
+@property (nonatomic, readonly) NSRange selectedGlyphTextRange;
+- (BOOL)containsGlyphIDs:(NSArray<NSNumber *> *)glyphIDs textRange:(NSRange)range;
 @property (nonatomic, readonly) NSString *text;
 @property (nonatomic, readonly) NSString *selectedGlyphSourceText;
 @property (nonatomic, readonly) NSAttributedString *attributedText;
@@ -27,7 +31,8 @@ typedef NS_ENUM(NSInteger, GAPendingSelectionScroll) {
 
 - (void)updateGlyphSelectionsFromText:(NSAttributedString *)text
                               ranges:(NSArray<NSValue *> *)ranges;
-- (BOOL)commitGlyphInput:(NSAttributedString *)attributedText actionName:(NSString *)actionName;
+- (BOOL)commitGlyphInput:(NSAttributedString *)attributedText
+          replacingRange:(NSRange)range actionName:(NSString *)actionName;
 /// Replaces the whole input through its native editor, retaining native undo
 /// and the existing plain-text/newline conversion.
 - (void)replaceInputText:(NSString *)text;

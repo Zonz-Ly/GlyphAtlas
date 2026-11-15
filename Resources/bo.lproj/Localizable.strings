@@ -64,6 +64,9 @@
 "View" = "མཐོང་ཚུལ";
 "Show Sidebar" = "ཟུར་ངོས་སྟོན།";
 "Hide Sidebar" = "ཟུར་ངོས་སྦེད།";
+"Glyph Navigation" = "ཡིག་དབྱིབས་ལམ་སྟོན།";
+"Back" = "ཕྱིར་ལོག";
+"Forward" = "མདུན་སྐྱོད།";
 "Single Glyph" = "ཡིག་དབྱིབས་གཅིག";
 "Characters" = "ཡིག་རྟགས";
 "Glyph Grid" = "ཡིག་དབྱིབས་དྲ་མིག";

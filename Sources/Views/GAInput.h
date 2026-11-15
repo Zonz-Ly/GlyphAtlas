@@ -5,6 +5,7 @@ NS_ASSUME_NONNULL_BEGIN
 /// Object is the original NSEvent. One application-wide mouse monitor posts
 /// blank-area left-mouse-down events while editing is active.
 FOUNDATION_EXPORT NSNotificationName const GAInputBlankClickNotification;
+FOUNDATION_EXPORT NSString *const GASavedTextsKey;
 
 /// Let AppKit validate and end field editing outside the clicked window.
 FOUNDATION_EXPORT BOOL GAEndInputEditingOutsideWindow(NSWindow *window);

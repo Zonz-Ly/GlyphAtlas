@@ -64,6 +64,9 @@
 "View" = "顯示方式";
 "Show Sidebar" = "側邊欄顯示出來";
 "Hide Sidebar" = "側邊欄囥起來";
+"Glyph Navigation" = "字形導覽";
+"Back" = "後退";
+"Forward" = "前進";
 "Single Glyph" = "單字形";
 "Characters" = "多字";
 "Glyph Grid" = "字形表";

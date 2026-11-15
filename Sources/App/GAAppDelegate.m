@@ -7,7 +7,6 @@
 #include <sys/stat.h>
 
 static NSString *const GARecentFontPathsKey = @"GAPersistentRecentFontPaths";
-static NSString *const GASavedTextsKey = @"GASavedTexts";
 static NSString *const GASavedPalettesKey = @"GASavedPalettes";
 
 static const GAPreviewColorRole GAPaletteRoles[] = {
@@ -899,6 +898,9 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
                                               action:@selector(toggleSidebar:) keyEquivalent:@"s"];
         sidebar.target = self;
         sidebar.keyEquivalentModifierMask = NSEventModifierFlagControl | NSEventModifierFlagCommand;
+        NSMenuItem *navigation = [menu addItemWithTitle:NSLocalizedString(@"Glyph Navigation", @"Toggle glyph navigation")
+                                                 action:@selector(toggleGlyphNavigation:) keyEquivalent:@""];
+        navigation.target = self;
     }
 
     NSString *metricsTitle = includeZoom
@@ -1201,6 +1203,11 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
     [[self controllerForViewMenu:sender.menu] setViewMode:(GAViewMode)sender.tag];
 }
 
+- (void)toggleGlyphNavigation:(NSMenuItem *)sender {
+    GAMainWindowController *controller = [self controllerForViewMenu:sender.menu];
+    [controller setGlyphNavigationEnabled:!controller.glyphNavigationEnabled];
+}
+
 - (void)toggleSidebar:(NSMenuItem *)sender {
     [[self controllerForViewMenu:sender.menu] toggleSidebar];
 }
@@ -1404,6 +1411,10 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
     }
     if (controller == nil) {
         return NO;
+    }
+    if (action == @selector(toggleGlyphNavigation:)) {
+        item.state = controller.glyphNavigationEnabled ? NSControlStateValueOn : NSControlStateValueOff;
+        return controller.fontURL != nil;
     }
     if (action == @selector(copyToFontBook:)) {
         return controller.fontURL != nil;

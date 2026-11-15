@@ -1211,13 +1211,13 @@ static NSIndexSet *GAForeignCharactersToOmit(NSAttributedString *display, NSInde
 
 - (void)mouseDown:(NSEvent *)event {
     NSPoint point = [self convertPoint:event.locationInWindow fromView:nil];
-    [self selectGroupAtPoint:point];
-    [self.window performWindowDragWithEvent:event];
+    if (![self selectGroupAtPoint:point doubleClick:event.clickCount == 2])
+        [self.window performWindowDragWithEvent:event];
 }
 
-- (void)selectGroupAtPoint:(NSPoint)point {
+- (BOOL)selectGroupAtPoint:(NSPoint)point doubleClick:(BOOL)doubleClick {
     if (self.textView.hidden) {
-        return;
+        return NO;
     }
     NSPoint local = [self.textView convertPoint:point fromView:self];
     NSPoint containerOrigin = self.textView.textContainerOrigin;
@@ -1261,16 +1261,16 @@ static NSIndexSet *GAForeignCharactersToOmit(NSAttributedString *display, NSInde
         return YES;
     }];
     if (hitIndex == NSNotFound || hitIndex < 0 || hitIndex >= (NSInteger)self.displaySourceIndices.count) {
-        return;
+        return NO;
     }
     NSUInteger sourceIndex = self.displaySourceIndices[(NSUInteger)hitIndex].unsignedIntegerValue;
-    if (sourceIndex == NSNotFound) return;
+    if (sourceIndex == NSNotFound) return NO;
     for (GAGlyphLayoutRun *hit in self.glyphHits)
         if (NSLocationInRange(sourceIndex, hit.range)) {
-            if (self.onGlyphSelected)
-                self.onGlyphSelected(hit.glyphIDs, hit.range, hit.leadingGlyphIDs, hit.leadingRange);
-            break;
+            return self.onGlyphSelected
+                ? self.onGlyphSelected(hit.glyphIDs, hit.range, hit.leadingGlyphIDs, hit.leadingRange, doubleClick) : NO;
         }
+    return NO;
 }
 
 @end

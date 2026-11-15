@@ -64,6 +64,9 @@
 "View" = "表示";
 "Show Sidebar" = "サイドバーを表示";
 "Hide Sidebar" = "サイドバーを非表示";
+"Glyph Navigation" = "グリフナビゲーション";
+"Back" = "戻る";
+"Forward" = "進む";
 "Single Glyph" = "単一グリフ";
 "Characters" = "文字";
 "Glyph Grid" = "グリフ一覧";

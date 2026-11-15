@@ -123,6 +123,9 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
 @property (nonatomic) BOOL inputChangedDuringReplay;
 @property (nonatomic) NSRange inputAutoSelectionRange;
 @property (nonatomic, strong) GAGlyphInputEditor *inputEditor;
+@property (nonatomic, copy, nullable) NSArray<NSString *> *tabCycleTexts;
+@property (nonatomic) NSUInteger tabCycleIndex;
+@property (nonatomic) BOOL cyclingSavedText;
 /// Rebinds the same visual row sequence, including shifted source ranges,
 /// without reloading the table, changing the selected row or scrolling.
 /// Returns NO if the inventory changed or a normal activation is pending.
@@ -410,6 +413,7 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
     }
     NSTextField *input = toolbar ? self.toolbarInputField : self.sidebarInputField;
     if (input == self.inputField) return;
+    self.tabCycleTexts = nil;
     // Both controls use the same editor and undo history, one at a time.
     self.inputField.editable = NO;
     self.inputField.selectable = NO;
@@ -576,7 +580,8 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
             GANormalizedSidebarInput(text, self.toolbarInputField.font, [self inputTextColor]);
 }
 
-- (BOOL)commitGlyphInput:(NSAttributedString *)attributedText actionName:(NSString *)actionName {
+- (BOOL)commitGlyphInput:(NSAttributedString *)attributedText
+          replacingRange:(NSRange)range actionName:(NSString *)actionName {
     GAGlyphInputEditor *editor = self.inputEditor;
     if (editor.hasMarkedText) return NO;
     NSAttributedString *replacement = [self plainCopyOfAttributedText:GAFieldTextFromModelText(attributedText)];
@@ -595,7 +600,13 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
                                replacementString:changesCharacters ? replacement.string : nil];
     if (applied) {
         if (changesCharacters) {
-            self.displayedSourceEdits = nil;
+            if ([self.trackedFieldText isEqualToString:storage.string]) {
+                GASourceEdit edit = {range, (NSInteger)replacement.length - (NSInteger)storage.length};
+                [self.displayedSourceEdits appendBytes:&edit length:sizeof(edit)];
+                self.trackedFieldText = replacement.string;
+            } else {
+                self.displayedSourceEdits = nil;
+            }
             [storage replaceCharactersInRange:all withAttributedString:replacement];
         } else {
             GAApplyInputAttributes(storage, replacement);
@@ -617,7 +628,7 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
 }
 
 - (void)replaceInputText:(NSString *)text {
-    if (![self.inputField.window makeFirstResponder:self.inputField]) return;
+    if (!self.inputFocused && ![self.inputField.window makeFirstResponder:self.inputField]) return;
     [self prepareFieldEditor];
     NSTextView *editor = (NSTextView *)self.inputField.currentEditor;
     [editor insertText:text replacementRange:NSMakeRange(0, editor.string.length)];
@@ -719,7 +730,7 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
     if (selection != nil) {
         [text addAttribute:GAGlyphSelectionAttributeName value:selection range:range];
     }
-    if (![self commitGlyphInput:text actionName:actionName]) return;
+    if (![self commitGlyphInput:text replacingRange:NSMakeRange(range.location, 0) actionName:actionName]) return;
     [self inputDidChangeSelectingGlyphIDs:glyphIDs textRange:range];
     [self focusInput];
 }
@@ -794,6 +805,7 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
 }
 
 - (void)recordFieldEdit:(NSNotification *)notification {
+    if (!self.cyclingSavedText) self.tabCycleTexts = nil;
     NSTextStorage *storage = notification.object;
     NSUndoManager *manager = self.inputEditor.undoManager;
     if (manager.isUndoing || manager.isRedoing) {
@@ -846,6 +858,7 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
 
 - (void)controlTextDidBeginEditing:(NSNotification *)obj {
     if (obj.object != self.inputField) return;
+    if (!self.cyclingSavedText) self.tabCycleTexts = nil;
     [self prepareFieldEditor];
 }
 
@@ -870,6 +883,24 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
 - (BOOL)control:(NSControl *)control
     textView:(NSTextView *)textView
     doCommandBySelector:(SEL)commandSelector {
+    if (control == self.inputField && commandSelector == @selector(insertTab:)) {
+        if (textView.hasMarkedText) return NO;
+        NSMutableArray<NSString *> *texts = [NSMutableArray array];
+        if (self.inputField == self.toolbarInputField && self.toolbarInputField.placeholderString.length)
+            [texts addObject:self.toolbarInputField.placeholderString];
+        [texts addObjectsFromArray:[NSUserDefaults.standardUserDefaults arrayForKey:GASavedTextsKey] ?: @[]];
+        if (!texts.count) return YES;
+        if (![self.tabCycleTexts isEqualToArray:texts]) {
+            self.tabCycleTexts = texts;
+            self.tabCycleIndex = 0;
+        }
+        NSString *text = texts[self.tabCycleIndex];
+        self.cyclingSavedText = YES;
+        [self replaceInputText:text];
+        self.cyclingSavedText = NO;
+        self.tabCycleIndex = (self.tabCycleIndex + 1) % texts.count;
+        return YES;
+    }
     if (commandSelector == @selector(cancelOperation:) ||
         commandSelector == @selector(insertNewline:)) {
         [self focusGlyphList];
@@ -1113,6 +1144,14 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
     return YES;
 }
 
+- (NSRange)selectedGlyphTextRange {
+    return self.selectedVariant ? self.selectedVariantTextRange : NSMakeRange(NSNotFound, 0);
+}
+
+- (BOOL)containsGlyphIDs:(NSArray<NSNumber *> *)glyphIDs textRange:(NSRange)range {
+    return [self rowForGlyphIDs:glyphIDs textRange:range] != NSNotFound;
+}
+
 - (BOOL)selectGlyphIDs:(NSArray<NSNumber *> *)glyphIDs textRange:(NSRange)range {
     for (GARowItem *row in self.rows) {
         if (!NSEqualRanges(row.group.textRange, range) || ![row.variant.glyphIDs isEqual:glyphIDs])
@@ -1130,6 +1169,9 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
     for (NSUInteger index = 0; index < rows.count; index++) {
         GARowItem *row = rows[index];
         if (row.group != group || row.variant != variant) continue;
+        if ((!NSEqualRanges(self.selectedVariantTextRange, group.textRange) ||
+             ![self.selectedVariant.glyphIDs isEqualToArray:variant.glyphIDs]) && self.onWillNavigate)
+            self.onWillNavigate();
         NSDictionary *anchor = replacesRows ? [self captureScrollAnchor] : nil;
         self.suppressSelectionCallback = YES;
         self.pendingSelectionGlyphIDs = nil;
@@ -1451,6 +1493,10 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
         [self notifySelection];
         return;
     }
+    GARowItem *target = self.rows[(NSUInteger)row];
+    if ((!NSEqualRanges(self.selectedVariantTextRange, target.group.textRange) ||
+         ![self.selectedVariant.glyphIDs isEqualToArray:target.variant.glyphIDs]) && self.onWillNavigate)
+        self.onWillNavigate();
     // A manual click overrides any pending auto-selection from an append or
     // activation; later list snapshots must not snap the user back.
     self.pendingSelectionGlyphIDs = nil;

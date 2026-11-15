@@ -64,6 +64,9 @@
 "View" = "ទិដ្ឋភាព";
 "Show Sidebar" = "បង្ហាញរបារចំហៀង";
 "Hide Sidebar" = "លាក់របារចំហៀង";
+"Glyph Navigation" = "ការរុករករូបតួអក្សរ";
+"Back" = "ថយក្រោយ";
+"Forward" = "ទៅមុខ";
 "Single Glyph" = "រូបតួអក្សរតែមួយ";
 "Characters" = "តួអក្សរ";
 "Glyph Grid" = "ក្រឡាចត្រង្គរូបតួអក្សរ";

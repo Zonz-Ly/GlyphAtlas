@@ -64,6 +64,9 @@
 "View" = "عرض";
 "Show Sidebar" = "إظهار الشريط الجانبي";
 "Hide Sidebar" = "إخفاء الشريط الجانبي";
+"Glyph Navigation" = "التنقل بين صور الحروف";
+"Back" = "رجوع";
+"Forward" = "تقدم";
 "Single Glyph" = "صورة حرف واحدة";
 "Characters" = "الأحرف";
 "Glyph Grid" = "شبكة صور الحروف";

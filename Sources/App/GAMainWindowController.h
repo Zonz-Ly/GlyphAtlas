@@ -24,6 +24,8 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)loadFontAtURL:(NSURL *)url;
 - (void)setViewMode:(GAViewMode)viewMode;
 - (void)toggleSidebar;
+@property (nonatomic, readonly) BOOL glyphNavigationEnabled;
+- (void)setGlyphNavigationEnabled:(BOOL)enabled;
 - (void)toggleShowsMetrics;
 - (void)zoomIn;
 - (void)zoomOut;
