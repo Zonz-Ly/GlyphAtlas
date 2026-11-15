@@ -14,7 +14,7 @@ A native macOS font and alternate-glyph inspector. Type text to see every altern
 ## Support
 
 - .ttf .otf .ttc .otc .woff .woff2 .dfont
-- Chinese (Mandarin, Changsha Xiang, Teochew, Hokkien, Cantonese, Shanghainese), Tibetan, Uyghur, Japanese, Korean, English, German, French, Spanish, Italian, Brazilian Portuguese, Russian, Vietnamese, Thai, Arabic, Hindi, Malay, Khmer, Latin, Esperanto.
+- Chinese (Mandarin, [Changsha Xiang](https://github.com/howlingFounts), [Teochew](https://github.com/Zonz-Ly), Hokkien, Cantonese, Shanghainese), Tibetan, Uyghur, Japanese, Korean, English, German, French, Spanish, Italian, Brazilian Portuguese, Russian, Vietnamese, Thai, Arabic, Hindi, Malay, Khmer, Latin, Esperanto.
 
 ## Build
 
@@ -44,10 +44,9 @@ The default build uses the current machine's architecture. Use a flag to select 
 - Type one or more characters in the sidebar to see all associated glyphs. Use `⌥⏎` to insert a line break. You can also right-click and choose “Saved Text” to save the current text or quickly enter text you’ve saved before. Hold `⌥` in the menu bar to quickly delete saved text.
 - Double-click a glyph, or select it and press `⏎`, to replace the default glyph and show its alternates. Hold `⇧` while doing this to add the glyph.
 - Use `↑`/`↓` to move between glyphs, `⌘↑`/`⌘↓` to move between base glyphs, and `⌥↑`/`⌥↓` to jump to the first or last glyph in the list.
-- Use `⌘C` to copy all encoded characters of the selected glyph.
-- Hover over a Unicode badge to see the character name defined by the Unicode standard.
-- Glyph Grid is the default. Right-click to switch views, or press `⌘1` for Single Glyph, `⌘2` for Characters, or `⌘3` for Glyph Grid.
-- In the Characters view, click a glyph to view its alternates. Choose Vertical Layout from the shortcut menu or press `⌘5` to switch between horizontal and vertical writing. Text alignment and Typography are here too. The View menu in the menu bar has more options.
+- Hover over a Unicode badge to see the character name defined by the Unicode standard. Use `⌘C` to copy all encoded characters of the selected glyph.
+- Right-click to switch views, or press `⌘1` for Single Glyph, `⌘2` for Characters, or `⌘3` for Glyph Grid. Use `⌃⌘S` to show or hide the sidebar.
+- In the Characters view, click a glyph to view its alternates. Right-click or press `⌘5` to switch between horizontal and vertical writing. Text alignment and Typography are here too. The View menu in the menu bar has more options.
 - In Glyph Grid, double-click a glyph to add it to the existing text. Clicking a glyph in the sidebar makes it blink in Glyph Grid. Right-click to find Filter by Feature.
 - Use `⌘+`/`⌘−` to make text bigger or smaller, or pinch on the trackpad. In the Characters view, use `⌥⌘+`/`⌥⌘−` or a horizontal pinch to increase or decrease the margins, and `⌃⌘+`/`⌃⌘−` or a vertical pinch to increase or decrease leading. Press `⌘0` to restore the default size.
 - The shadow shows the bounding box, including the glyph's width and height and the layout's line height and leading. Press `⌘4` to toggle Bounding Box.
@@ -59,6 +58,6 @@ The default build uses the current machine's architecture. Use a flag to select 
 - The sidebar and the Glyph Grid filter use in-house GSUB and AAT parsers. They follow the font's own tables, so their results can differ from CoreText's processed results.
 - Glyph names come from CoreText. When CoreText returns no usable name, the app shows `GID`.
 - Glyph width comes from CoreText's horizontal advance.
-- Glyph height comes from CoreText's vertical advance when `vmtx` is present. Otherwise it uses `sTypoAscender + sTypoDescender`. If those are unavailable, or in the Characters view, it uses CoreText `ascent + descent`.
+- Glyph height comes from CoreText's vertical advance when `vmtx` is present. Otherwise it uses `sTypoAscender + abs(sTypoDescender)`. If those are unavailable, or in the Characters view, it uses CoreText `ascent + descent`.
 - The system TextView provides layout and metrics for the Characters view, reflecting how macOS actually typesets the text. The app filters missing glyphs out of the preview because TextView has no option to turn off font fallback.
 - Trackpad pinch gestures may occasionally get stuck due to a longstanding macOS issue. Here’s hoping Apple fixes it.

@@ -137,9 +137,9 @@
 "Help.04" = "Tajpu unu aŭ plurajn signojn en la flankobreto por vidi ĉiujn rilatajn glifojn. Premu ⌥⏎ por enmeti linifinon. Vi povas dekstre alklaki kaj elekti «Konservita teksto» por konservi la nunan tekston aŭ rapide enigi antaŭe konservitan tekston. Tenu ⌥ dum la menuo estas malfermita por rapide forigi konservitan tekston.";
 "Help.05" = "Duoble alklaku glifon, aŭ elektu ĝin kaj premu ⏎, por anstataŭigi la aprioran glifon kaj vidi ĝiajn alternativojn. Tenu ⇧ dum la ago por aldoni la glifon.";
 "Help.06" = "Uzu ↑/↓ por moviĝi inter glifoj, ⌘↑/⌘↓ por moviĝi inter bazaj glifoj kaj ⌥↑/⌥↓ por salti al la unua aŭ lasta glifo en la listo.";
-"Help.07" = "Premu ⌘C por kopii ĉiujn koditajn signojn de la elektita glifo.";
-"Help.08" = "Metu la musmontrilon sur Unikodan etikedon por vidi la nomon de la signo laŭ la Unikoda normo.";
-"Help.09" = "La apriora vido estas «Glifa krado». Dekstre alklaku por ŝanĝi la vidon, aŭ premu ⌘1 por «Unuopa glifo», ⌘2 por «Signoj» aŭ ⌘3 por «Glifa krado».";
+"Help.07" = "Metu la musmontrilon sur Unikodan etikedon por vidi la nomon de la signo laŭ la Unikoda normo.";
+"Help.08" = "Premu ⌘C por kopii ĉiujn koditajn signojn de la elektita glifo.";
+"Help.09" = "Dekstre alklaku por ŝanĝi la vidon, aŭ premu ⌘1 por «Unuopa glifo», ⌘2 por «Signoj» aŭ ⌘3 por «Glifa krado». Premu ⌃⌘S por montri aŭ kaŝi la flankbreton.";
 "Help.10" = "En «Signoj», alklaku glifon por vidi ĝiajn alternativojn. Dekstre alklaku aŭ premu ⌘5 por alterni inter horizontala kaj vertikala skribado. Ankaŭ disponeblas «Vicigo de teksto» kaj «Tipografio». Pliaj opcioj troviĝas en la menuo «Vido».";
 "Help.11" = "En «Glifa krado», duoble alklaku glifon por aldoni ĝin al la ekzistanta teksto. Kiam vi alklakas glifon en la flankobreto, ĝi ekbriletas en «Glifa krado». Dekstre alklaku por trovi «Filtri laŭ tipara trajto».";
 "Help.12" = "Uzu ⌘+/⌘− aŭ kunigu aŭ disigu du fingrojn sur la tuŝplato por pligrandigi aŭ malpligrandigi la tekston. En «Signoj», uzu ⌥⌘+/⌥⌘− aŭ la horizontalan geston por ŝanĝi la marĝenojn. Uzu ⌃⌘+/⌃⌘− aŭ la vertikalan geston por ŝanĝi la interlinian spacon. Premu ⌘0 por restarigi la aprioran grandon.";

@@ -137,9 +137,9 @@
 "Help.04" = "Taip satu aksara atau lebih dalam bar sisi untuk melihat semua glif yang berkaitan. Gunakan ⌥⏎ untuk menyisipkan pemisah baris. Anda juga boleh klik sekunder dan pilih “Teks Disimpan” untuk menyimpan teks semasa atau memasukkan semula teks yang pernah disimpan dengan cepat. Tekan dan tahan ⌥ dalam bar menu untuk memadam teks yang disimpan dengan cepat.";
 "Help.05" = "Klik dua kali pada glif, atau pilih glif itu dan tekan ⏎, untuk menggantikan glif lalai dan melihat glif alternatifnya. Tekan dan tahan ⇧ semasa berbuat demikian untuk menambah glif tersebut.";
 "Help.06" = "Gunakan ↑/↓ untuk bergerak antara glif, ⌘↑/⌘↓ untuk bergerak antara glif asas, dan ⌥↑/⌥↓ untuk melompat ke glif pertama atau terakhir dalam senarai.";
-"Help.07" = "Gunakan ⌘C untuk menyalin semua aksara berkod bagi glif yang dipilih.";
-"Help.08" = "Letakkan penuding di atas lencana Unicode untuk melihat nama aksara yang ditakrifkan oleh piawaian Unicode.";
-"Help.09" = "“Grid Glif” ialah paparan lalai. Klik sekunder untuk menukar paparan, atau tekan ⌘1 untuk “Glif Tunggal”, ⌘2 untuk “Aksara” atau ⌘3 untuk “Grid Glif”.";
+"Help.07" = "Letakkan penuding di atas lencana Unicode untuk melihat nama aksara yang ditakrifkan oleh piawaian Unicode.";
+"Help.08" = "Gunakan ⌘C untuk menyalin semua aksara berkod bagi glif yang dipilih.";
+"Help.09" = "Klik sekunder untuk menukar paparan, atau tekan ⌘1 untuk “Glif Tunggal”, ⌘2 untuk “Aksara” atau ⌘3 untuk “Grid Glif”. Gunakan ⌃⌘S untuk menunjukkan atau menyembunyikan bar sisi.";
 "Help.10" = "Dalam “Aksara”, klik glif untuk melihat alternatifnya. Klik sekunder atau tekan ⌘5 untuk bertukar antara tulisan mendatar dengan tulisan menegak. “Penjajaran Teks” dan “Tipografi” juga tersedia di sini. Menu “Paparan” dalam bar menu menyediakan lebih banyak pilihan.";
 "Help.11" = "Dalam “Grid Glif”, klik dua kali pada glif untuk menambahkannya pada teks sedia ada. Apabila anda mengklik glif dalam bar sisi, glif itu berkelip dalam “Grid Glif”. Klik sekunder untuk mencari “Tapis mengikut Ciri”.";
 "Help.12" = "Gunakan ⌘+/⌘− atau cubit pada trackpad untuk membesarkan atau mengecilkan teks. Dalam “Aksara”, gunakan ⌥⌘+/⌥⌘− atau gerak isyarat cubit mendatar untuk menambah atau mengurangkan jidar, dan ⌃⌘+/⌃⌘− atau gerak isyarat cubit menegak untuk menambah atau mengurangkan jarak baris. Tekan ⌘0 untuk memulihkan saiz lalai.";

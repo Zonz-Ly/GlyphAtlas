@@ -137,9 +137,9 @@
 "Help.04" = "Gib ein oder mehrere Zeichen in der Seitenleiste ein, um alle zugehörigen Glyphen zu sehen. Mit ⌥⏎ fügst du einen Zeilenumbruch ein. Per Rechtsklick findest du auch „Gesicherte Texte“, um den aktuellen Text zu sichern oder zuvor gesicherte Texte schnell einzufügen. Halte in der Menüleiste ⌥ gedrückt, um gesicherte Texte schnell zu löschen.";
 "Help.05" = "Doppelklicke auf eine Glyphe oder wähle sie aus und drücke Return, um die Standardglyphe zu ersetzen und die Alternativen dieser Glyphe anzuzeigen. Halte dabei die Umschalttaste gedrückt, um die Glyphe hinzuzufügen.";
 "Help.06" = "Mit ↑/↓ wechselst du zwischen Glyphen, mit ⌘↑/⌘↓ zwischen Basisglyphen. Mit ⌥↑/⌥↓ springst du zur ersten oder letzten Glyphe der Liste.";
-"Help.07" = "Mit ⌘C kopierst du alle codierten Zeichen der ausgewählten Glyphe.";
-"Help.08" = "Bewege den Zeiger über eine Unicode-Kennzeichnung, um den im Unicode-Standard definierten Zeichennamen zu sehen.";
-"Help.09" = "Standardmäßig ist „Glyphenraster“ aktiv. Wechsle die Ansicht per Rechtsklick oder mit ⌘1 zu „Einzelne Glyphe“, ⌘2 zu „Zeichen“ und ⌘3 zu „Glyphenraster“.";
+"Help.07" = "Bewege den Zeiger über eine Unicode-Kennzeichnung, um den im Unicode-Standard definierten Zeichennamen zu sehen.";
+"Help.08" = "Mit ⌘C kopierst du alle codierten Zeichen der ausgewählten Glyphe.";
+"Help.09" = "Wechsle die Ansicht per Rechtsklick oder mit ⌘1 zu „Einzelne Glyphe“, ⌘2 zu „Zeichen“ und ⌘3 zu „Glyphenraster“. Mit ⌃⌘S blendest du die Seitenleiste ein oder aus.";
 "Help.10" = "In „Zeichen“ zeigt ein Klick auf eine Glyphe deren Alternativen. Vertikaler Satz wird unterstützt; schalte ihn per Rechtsklick oder mit ⌘5 um. Dort findest du auch Textausrichtung und Typografie. Weitere Optionen stehen im Menü „Darstellung“.";
 "Help.11" = "Doppelklicke in „Glyphenraster“ auf eine Glyphe, um sie an den vorhandenen Text anzuhängen. Ein Klick auf eine Glyphe in der Seitenleiste lässt sie auch in der Gesamtübersicht blinken. Per Rechtsklick findest du „Nach Funktion filtern“.";
 "Help.12" = "Mit ⌘+/⌘− oder einer Pinch-Geste auf dem Trackpad vergrößerst oder verkleinerst du den Text. In „Zeichen“ ändern ⌥⌘+/⌥⌘− oder horizontales Zusammenziehen und Spreizen die Ränder; ⌃⌘+/⌃⌘− oder eine vertikale Pinch-Geste ändern den Zeilenabstand. Mit ⌘0 stellst du die Standardgröße wieder her.";

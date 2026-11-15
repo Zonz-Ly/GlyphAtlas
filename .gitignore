@@ -2,5 +2,6 @@
 dist/
 README/
 diagnostics/
+outputs/
 .DS_Store
 .gitignore
