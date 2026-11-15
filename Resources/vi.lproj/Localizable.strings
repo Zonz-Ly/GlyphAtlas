@@ -64,9 +64,8 @@
 "View" = "Xem";
 "Show Sidebar" = "Hiển thị thanh bên";
 "Hide Sidebar" = "Ẩn thanh bên";
-"Glyph Navigation" = "Điều hướng nét chữ";
+"Navigation" = "Điều hướng";
 "Back" = "Quay lại";
-"Forward" = "Tiến tới";
 "Single Glyph" = "Một nét";
 "Characters" = "Ký tự";
 "Glyph Grid" = "Lưới nét chữ";

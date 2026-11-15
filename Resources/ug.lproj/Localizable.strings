@@ -64,9 +64,8 @@
 "View" = "كۆرۈنۈش";
 "Show Sidebar" = "يانبالداقنى كۆرسەت";
 "Hide Sidebar" = "يانبالداقنى يوشۇر";
-"Glyph Navigation" = "ھەرپ شەكلى يولباشلاش";
+"Navigation" = "يولباشلاش";
 "Back" = "كەينىگە";
-"Forward" = "ئالدىغا";
 "Single Glyph" = "بىر ھەرپ شەكلى";
 "Characters" = "ھەرپلەر";
 "Glyph Grid" = "ھەرپ شەكىللىرى تورى";

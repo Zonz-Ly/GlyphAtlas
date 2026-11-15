@@ -894,13 +894,14 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
         [self addGlyphFeatureFilterToMenu:menu];
         [menu addItem:NSMenuItem.separatorItem];
     } else {
+        NSMenuItem *navigation = [menu addItemWithTitle:NSLocalizedString(@"Navigation", @"Toggle navigation")
+                                                 action:@selector(toggleGlyphNavigation:) keyEquivalent:@""];
+        navigation.target = self;
+        [menu addItem:NSMenuItem.separatorItem];
         NSMenuItem *sidebar = [menu addItemWithTitle:NSLocalizedString(@"Hide Sidebar", @"Hide the glyph sidebar")
                                               action:@selector(toggleSidebar:) keyEquivalent:@"s"];
         sidebar.target = self;
         sidebar.keyEquivalentModifierMask = NSEventModifierFlagControl | NSEventModifierFlagCommand;
-        NSMenuItem *navigation = [menu addItemWithTitle:NSLocalizedString(@"Glyph Navigation", @"Toggle glyph navigation")
-                                                 action:@selector(toggleGlyphNavigation:) keyEquivalent:@""];
-        navigation.target = self;
     }
 
     NSString *metricsTitle = includeZoom

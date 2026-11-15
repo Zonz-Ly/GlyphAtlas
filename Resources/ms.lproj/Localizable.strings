@@ -64,9 +64,8 @@
 "View" = "Paparan";
 "Show Sidebar" = "Tunjukkan Bar Sisi";
 "Hide Sidebar" = "Sembunyikan Bar Sisi";
-"Glyph Navigation" = "Navigasi Glif";
+"Navigation" = "Navigasi";
 "Back" = "Kembali";
-"Forward" = "Maju";
 "Single Glyph" = "Glif Tunggal";
 "Characters" = "Aksara";
 "Glyph Grid" = "Grid Glif";

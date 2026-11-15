@@ -64,9 +64,8 @@
 "View" = "보기";
 "Show Sidebar" = "사이드바 보기";
 "Hide Sidebar" = "사이드바 가리기";
-"Glyph Navigation" = "글리프 탐색";
+"Navigation" = "탐색";
 "Back" = "뒤로";
-"Forward" = "앞으로";
 "Single Glyph" = "단일 글리프";
 "Characters" = "문자";
 "Glyph Grid" = "글리프 격자";

@@ -64,9 +64,8 @@
 "View" = "显示方式";
 "Show Sidebar" = "掊出侧边栏";
 "Hide Sidebar" = "囥起侧边栏";
-"Glyph Navigation" = "字形导航";
+"Navigation" = "导航";
 "Back" = "后退";
-"Forward" = "前进";
 "Single Glyph" = "单字形";
 "Characters" = "加字符";
 "Glyph Grid" = "字形表";

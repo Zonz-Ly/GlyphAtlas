@@ -64,9 +64,8 @@
 "View" = "View";
 "Show Sidebar" = "Show Sidebar";
 "Hide Sidebar" = "Hide Sidebar";
-"Glyph Navigation" = "Glyph Navigation";
+"Navigation" = "Navigation";
 "Back" = "Back";
-"Forward" = "Forward";
 "Single Glyph" = "Single Glyph";
 "Characters" = "Characters";
 "Glyph Grid" = "Glyph Grid";

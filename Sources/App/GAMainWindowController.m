@@ -45,36 +45,6 @@ static NSNumber *GAInputScalarForGlyph(NSArray<NSNumber *> *scalars) {
 
 @end
 
-#pragma mark - Navigation button
-
-@interface GAGlyphNavigationButton : NSButton
-@property (nonatomic, copy) NSMenu *(^historyMenu)(void);
-@end
-
-@implementation GAGlyphNavigationButton
-
-- (NSMenu *)menuForEvent:(NSEvent *)event {
-    (void)event;
-    return self.historyMenu ? self.historyMenu() : nil;
-}
-
-- (void)rightMouseDown:(NSEvent *)event {
-    NSMenu *menu = [self menuForEvent:event];
-    if (menu.numberOfItems) [NSMenu popUpContextMenu:menu withEvent:event forView:self];
-}
-
-- (void)showHistoryForPress:(NSPressGestureRecognizer *)press {
-    if (press.state != NSGestureRecognizerStateBegan) return;
-    NSMenu *menu = self.historyMenu ? self.historyMenu() : nil;
-    if (menu.numberOfItems) {
-        [self highlight:YES];
-        [menu popUpMenuPositioningItem:nil atLocation:NSMakePoint(0, NSHeight(self.bounds)) inView:self];
-        [self highlight:NO];
-    }
-}
-
-@end
-
 #pragma mark - Drop window
 
 @interface GADropWindow : NSWindow
@@ -210,7 +180,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     return variant.isLigature ? variant.sourceTextRange : group.textRange;
 }
 
-@interface GAMainWindowController () <NSWindowDelegate, NSToolbarDelegate, NSPopoverDelegate>
+@interface GAMainWindowController () <NSWindowDelegate, NSToolbarDelegate, NSPopoverDelegate, NSMenuDelegate>
 @property (nonatomic, strong) NSSplitViewController *splitViewController;
 @property (nonatomic, strong) NSSplitViewItem *sidebarItem;
 @property (nonatomic) CGFloat sidebarExpandedWidth;
@@ -260,7 +230,8 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 @property (nonatomic) BOOL glyphNavigationEnabled;
 @property (nonatomic, strong) NSMutableArray<GAGlyphNavigationStep *> *navigationHistory;
 @property (nonatomic, strong) NSMutableArray<GAGlyphNavigationStep *> *navigationForwardHistory;
-@property (nonatomic, strong, nullable) NSToolbarItem *backToolbarItem;
+@property (nonatomic, strong, nullable) NSMenuToolbarItem *backToolbarItem;
+@property (nonatomic, strong, nullable) id navigationContextMonitor;
 @property (nonatomic) BOOL restoringNavigation;
 @property (nonatomic, strong, nullable) GAGlyphNavigationStep *pendingGridNavigation;
 @property (nonatomic) NSUInteger pendingGridNavigationGeneration;
@@ -338,6 +309,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 }
 
 - (void)dealloc {
+    if (self.navigationContextMonitor) [NSEvent removeMonitor:self.navigationContextMonitor];
     [NSNotificationCenter.defaultCenter removeObserver:self
                                                  name:GAInputBlankClickNotification object:nil];
 }
@@ -640,7 +612,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 - (void)updateNavigationButton {
     BOOL enabled = [self canNavigateToStep:self.navigationHistory.lastObject];
     self.backToolbarItem.enabled = enabled;
-    [(NSButton *)self.backToolbarItem.view setEnabled:enabled];
 }
 
 - (void)navigateBack:(id)sender {
@@ -672,7 +643,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     NSString *mode = step.mode == GAViewModeAllGlyphs ? NSLocalizedString(@"Glyph Grid", @"Glyph Grid view")
         : step.mode == GAViewModeMultiCharacter ? NSLocalizedString(@"Characters", @"Characters view")
         : NSLocalizedString(@"Single Glyph", @"Single Glyph view");
-    return step.glyphName.length ? [NSString stringWithFormat:@"%@ · %@", mode, step.glyphName] : mode;
+    return step.glyphName.length ? [NSString stringWithFormat:@"%@: %@", mode, step.glyphName] : mode;
 }
 
 - (void)chooseNavigationStep:(NSMenuItem *)item {
@@ -680,34 +651,48 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 }
 
 - (NSMenu *)navigationMenu {
-    NSMenu *menu = [[NSMenu alloc] initWithTitle:NSLocalizedString(@"Glyph Navigation", @"Toggle glyph navigation")];
+    NSMenu *menu = [[NSMenu alloc] initWithTitle:NSLocalizedString(@"Navigation", @"Toggle navigation")];
     menu.autoenablesItems = NO;
+    menu.delegate = self;
+    [self menuNeedsUpdate:menu];
+    return menu;
+}
+
+- (void)menuNeedsUpdate:(NSMenu *)menu {
+    [menu removeAllItems];
     NSArray *stacks = @[self.navigationForwardHistory, self.navigationHistory];
-    for (NSUInteger direction = 0; direction < stacks.count; direction++) {
-        NSArray<GAGlyphNavigationStep *> *steps = stacks[direction];
-        if (steps.count) {
-            NSString *title = direction == 0 ? NSLocalizedString(@"Forward", @"Forward navigation history")
-                : NSLocalizedString(@"Back", @"Return to the previous glyph or view");
-            NSMenuItem *heading = [menu addItemWithTitle:title action:nil keyEquivalent:@""];
-            heading.enabled = NO;
-            for (GAGlyphNavigationStep *step in steps.reverseObjectEnumerator) {
-                NSMenuItem *item = [menu addItemWithTitle:[self titleForNavigationStep:step]
-                    action:@selector(chooseNavigationStep:) keyEquivalent:@""];
-                item.target = self;
-                item.representedObject = step;
-                item.enabled = [self canNavigateToStep:step];
-            }
-        }
-        if (direction == 0) {
-            if (menu.numberOfItems) [menu addItem:NSMenuItem.separatorItem];
-            NSMenuItem *current = [menu addItemWithTitle:[self titleForNavigationStep:[self currentNavigationStep]]
-                action:nil keyEquivalent:@""];
-            current.state = NSControlStateValueOn;
-            current.enabled = NO;
-            if (self.navigationHistory.count) [menu addItem:NSMenuItem.separatorItem];
+    for (NSArray<GAGlyphNavigationStep *> *steps in stacks) {
+        if (menu.numberOfItems && steps.count) [menu addItem:NSMenuItem.separatorItem];
+        for (GAGlyphNavigationStep *step in steps.reverseObjectEnumerator) {
+            NSMenuItem *item = [menu addItemWithTitle:[self titleForNavigationStep:step]
+                action:@selector(chooseNavigationStep:) keyEquivalent:@""];
+            item.target = self;
+            item.representedObject = step;
+            item.enabled = [self canNavigateToStep:step];
         }
     }
-    return menu;
+}
+
+- (BOOL)validateToolbarItem:(NSToolbarItem *)item {
+    return item == self.backToolbarItem
+        ? [self canNavigateToStep:self.navigationHistory.lastObject] : YES;
+}
+
+- (NSEvent *)handleNavigationContextMenu:(NSEvent *)event {
+    if (event.window != self.window || !self.backToolbarItem) return event;
+    NSView *root = self.window.contentView.superview;
+    NSPoint point = [root convertPoint:event.locationInWindow fromView:nil];
+    NSView *hit = [root hitTest:[root convertPoint:point toView:root.superview]];
+    for (NSView *view = hit; view; view = view.superview) {
+        if (![view isKindOfClass:NSControl.class]) continue;
+        NSControl *control = (NSControl *)view;
+        if (control.target != self.backToolbarItem &&
+            !(control.target == self && control.action == @selector(navigateBack:))) continue;
+        NSMenu *menu = [self navigationMenu];
+        if (menu.numberOfItems) [NSMenu popUpContextMenu:menu withEvent:event forView:view];
+        return nil;
+    }
+    return event;
 }
 
 - (void)setGlyphNavigationEnabled:(BOOL)enabled {
@@ -717,6 +702,17 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     [self.navigationForwardHistory removeAllObjects];
     self.pendingGridNavigation = nil;
     self.detailViewController.keepsToolbarTransparent = enabled;
+    if (enabled) {
+        __weak typeof(self) weakSelf = self;
+        self.navigationContextMonitor = [NSEvent addLocalMonitorForEventsMatchingMask:NSEventMaskRightMouseDown
+            handler:^NSEvent *(NSEvent *event) {
+                GAMainWindowController *controller = weakSelf;
+                return controller ? [controller handleNavigationContextMenu:event] : event;
+            }];
+    } else {
+        [NSEvent removeMonitor:self.navigationContextMonitor];
+        self.navigationContextMonitor = nil;
+    }
     NSToolbar *toolbar = self.window.toolbar;
     if (enabled) {
         [toolbar insertItemWithItemIdentifier:GABackItem atIndex:self.sidebarHidden ? 0 : 2];
@@ -1132,32 +1128,20 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
                                              splitView:self.splitViewController.splitView
                                           dividerIndex:0];
     }
-    NSToolbarItem *item = [[NSToolbarItem alloc] initWithItemIdentifier:itemIdentifier];
     if ([itemIdentifier isEqualToString:GABackItem]) {
-        item.label = NSLocalizedString(@"Back", @"Return to the previous glyph or view");
-        item.toolTip = item.label;
-        item.image = [NSImage imageWithSystemSymbolName:@"chevron.backward" accessibilityDescription:item.label];
-        item.target = self;
-        item.action = @selector(navigateBack:);
-        item.bordered = NO;
-        item.autovalidates = NO;
-        item.enabled = [self canNavigateToStep:self.navigationHistory.lastObject];
-        GAGlyphNavigationButton *button = [GAGlyphNavigationButton buttonWithImage:item.image
-            target:self action:item.action];
-        button.bezelStyle = NSBezelStyleToolbar;
-        button.bordered = NO;
-        button.enabled = item.enabled;
-        button.accessibilityLabel = item.label;
-        __weak typeof(self) weakSelf = self;
-        button.historyMenu = ^NSMenu *{ return [weakSelf navigationMenu]; };
-        NSPressGestureRecognizer *press = [[NSPressGestureRecognizer alloc]
-            initWithTarget:button action:@selector(showHistoryForPress:)];
-        [button addGestureRecognizer:press];
-        item.view = button;
-        item.visibilityPriority = NSToolbarItemVisibilityPriorityHigh;
-        self.backToolbarItem = item;
-        return item;
+        NSMenuToolbarItem *back = [[NSMenuToolbarItem alloc] initWithItemIdentifier:itemIdentifier];
+        back.label = NSLocalizedString(@"Back", @"Return to the previous glyph or view");
+        back.image = [NSImage imageWithSystemSymbolName:@"chevron.backward" accessibilityDescription:back.label];
+        back.target = self;
+        back.action = @selector(navigateBack:);
+        back.bordered = YES;
+        back.showsIndicator = NO;
+        back.menu = [self navigationMenu];
+        self.backToolbarItem = back;
+        back.enabled = [self canNavigateToStep:self.navigationHistory.lastObject];
+        return back;
     }
+    NSToolbarItem *item = [[NSToolbarItem alloc] initWithItemIdentifier:itemIdentifier];
     if ([itemIdentifier isEqualToString:GATextInputItem]) {
         item.label = NSLocalizedString(@"Enter text", @"Enter text");
         item.view = self.sidebarViewController.toolbarInputField;
