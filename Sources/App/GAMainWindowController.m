@@ -673,11 +673,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     }
 }
 
-- (BOOL)validateToolbarItem:(NSToolbarItem *)item {
-    return item == self.backToolbarItem
-        ? [self canNavigateToStep:self.navigationHistory.lastObject] : YES;
-}
-
 - (NSEvent *)handleNavigationContextMenu:(NSEvent *)event {
     if (event.window != self.window || !self.backToolbarItem) return event;
     NSView *root = self.window.contentView.superview;
@@ -1133,6 +1128,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         back.image = [NSImage imageWithSystemSymbolName:@"chevron.backward" accessibilityDescription:back.label];
         back.target = self;
         back.action = @selector(navigateBack:);
+        back.autovalidates = NO;
         back.bordered = YES;
         back.showsIndicator = NO;
         back.menu = [self navigationMenu];
@@ -1812,7 +1808,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         self.restoringNavigation = YES;
         [self setViewMode:GAViewModeSingleGlyph];
         self.restoringNavigation = NO;
-        [self.sidebarViewController focusGlyphList];
     }
     [self updateNavigationButton];
     if (edit) {

@@ -909,7 +909,7 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
         if (self.inputField == self.toolbarInputField && self.toolbarInputField.placeholderString.length)
             [texts addObject:self.toolbarInputField.placeholderString];
         [texts addObjectsFromArray:[NSUserDefaults.standardUserDefaults arrayForKey:GASavedTextsKey] ?: @[]];
-        if (!texts.count) return YES;
+        if (!texts.count) return NO;
         if (![self.tabCycleTexts isEqualToArray:texts]) {
             self.tabCycleTexts = texts;
             self.tabCycleIndex = 0;
