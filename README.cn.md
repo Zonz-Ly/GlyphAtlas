@@ -55,7 +55,7 @@
 ## 限制
 
 - 側邊欄和全字篩選用的是自主研發的 GSUB 和 AAT 解析器，結果可能和 CoreText 整理過的不完全一致，但和字體內部一致。
-- 字形名稱來自 CoreText，當 CoreText 沒有可用名稱時顯示 GID。
+- 字形名稱由自主研發的解析器直接讀取字體的 `post` 或 CFF 表。CID-keyed CFF 字體顯示實際 CID，沒有可讀取名稱或 CID 時顯示 GID。
 - 字寬數據來自 CoreText 水平 advance。
 - 字高數據有 `vmtx` 時來自 CoreText 垂直 advance，無則使用 `sTypoAscender + abs(sTypoDescender)`，再無及多字元使用 CoreText `ascent + descent`。
 - 多字元排版及其度量由系統 TextView 提供，不可控但反映 macOS 真實效果。因無法指定不 fallback，缺字只能在結果中剔除。

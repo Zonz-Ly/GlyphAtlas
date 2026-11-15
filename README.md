@@ -56,7 +56,7 @@ The default build uses the current machine's architecture. Use a flag to select 
 ## Limitations
 
 - The sidebar and the Glyph Grid filter use in-house GSUB and AAT parsers. They follow the font's own tables, so their results can differ from CoreText's processed results.
-- Glyph names come from CoreText. When CoreText returns no usable name, the app shows `GID`.
+- Glyph names are read directly from the font's `post` or CFF table by an in-house parser. CID-keyed CFF fonts show their actual CID; when no name or CID can be read, the app shows `GID`.
 - Glyph width comes from CoreText's horizontal advance.
 - Glyph height comes from CoreText's vertical advance when `vmtx` is present. Otherwise it uses `sTypoAscender + abs(sTypoDescender)`. If those are unavailable, or in the Characters view, it uses CoreText `ascent + descent`.
 - The system TextView provides layout and metrics for the Characters view, reflecting how macOS actually typesets the text. The app filters missing glyphs out of the preview because TextView has no option to turn off font fallback.
