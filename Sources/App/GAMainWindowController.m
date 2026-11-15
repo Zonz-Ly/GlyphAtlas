@@ -49,9 +49,21 @@ static NSNumber *GAInputScalarForGlyph(NSArray<NSNumber *> *scalars) {
 
 @interface GADropWindow : NSWindow
 @property (nonatomic, copy, nullable) void (^onFontDrop)(NSURL *url);
+@property (nonatomic, copy, nullable) BOOL (^glyphDoubleClickHitTest)(NSPoint point);
+@property (nonatomic, readonly) BOOL lastMouseDownWasGlyphDoubleClick;
 @end
 
 @implementation GADropWindow
+
+- (void)sendEvent:(NSEvent *)event {
+    if (event.type == NSEventTypeLeftMouseDown) {
+        // Capture the original hit before input callbacks, reflow or navigation.
+        // Keep it through mouse-up; the next primary click replaces it.
+        _lastMouseDownWasGlyphDoubleClick = event.clickCount == 2 &&
+            self.glyphDoubleClickHitTest && self.glyphDoubleClickHitTest(event.locationInWindow);
+    }
+    [super sendEvent:event];
+}
 
 - (BOOL)performKeyEquivalent:(NSEvent *)event {
     NSEventModifierFlags flags = event.modifierFlags &
@@ -385,6 +397,9 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     [self updateSidebarAccessoryTopInsetForHiddenSidebar:NO];
 
     __weak typeof(self) weakSelf = self;
+    ((GADropWindow *)window).glyphDoubleClickHitTest = ^BOOL(NSPoint point) {
+        return [weakSelf.detailViewController containsAllGlyphAtWindowPoint:point];
+    };
     [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(handleInputBlankClick:)
                                               name:GAInputBlankClickNotification object:nil];
     self.sidebarViewController.onTextChanged = ^{
@@ -913,7 +928,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     BOOL doubleClick = (event.type == NSEventTypeLeftMouseDown ||
                         event.type == NSEventTypeLeftMouseUp) && event.clickCount == 2;
     return !(doubleClick && event.window == window &&
-             [self.detailViewController containsAllGlyphAtWindowPoint:event.locationInWindow]);
+             ((GADropWindow *)window).lastMouseDownWasGlyphDoubleClick);
 }
 
 - (void)windowDidBecomeKey:(NSNotification *)notification {
