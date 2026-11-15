@@ -667,11 +667,13 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     [self updateNavigationButton];
 }
 
-- (NSString *)titleForNavigationStep:(GAGlyphNavigationStep *)step {
+- (NSImage *)imageForNavigationStep:(GAGlyphNavigationStep *)step {
+    NSString *symbol = step.mode == GAViewModeAllGlyphs ? @"square.grid.3x3"
+        : step.mode == GAViewModeMultiCharacter ? @"text.alignleft" : @"square";
     NSString *mode = step.mode == GAViewModeAllGlyphs ? NSLocalizedString(@"Glyph Grid", @"Glyph Grid view")
         : step.mode == GAViewModeMultiCharacter ? NSLocalizedString(@"Characters", @"Characters view")
         : NSLocalizedString(@"Single Glyph", @"Single Glyph view");
-    return step.glyphLabel.length ? [NSString stringWithFormat:@"%@: %@", mode, step.glyphLabel] : mode;
+    return [NSImage imageWithSystemSymbolName:symbol accessibilityDescription:mode];
 }
 
 - (void)chooseNavigationStep:(NSMenuItem *)item {
@@ -692,8 +694,9 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     for (NSArray<GAGlyphNavigationStep *> *steps in stacks) {
         if (menu.numberOfItems && steps.count) [menu addItem:NSMenuItem.separatorItem];
         for (GAGlyphNavigationStep *step in steps.reverseObjectEnumerator) {
-            NSMenuItem *item = [menu addItemWithTitle:[self titleForNavigationStep:step]
+            NSMenuItem *item = [menu addItemWithTitle:step.glyphLabel ?: @""
                 action:@selector(chooseNavigationStep:) keyEquivalent:@""];
+            item.image = [self imageForNavigationStep:step];
             item.target = self;
             item.representedObject = step;
             item.enabled = [self canNavigateToStep:step];
