@@ -902,22 +902,18 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
 - (BOOL)control:(NSControl *)control
     textView:(NSTextView *)textView
     doCommandBySelector:(SEL)commandSelector {
-    if (control == self.inputField && commandSelector == @selector(insertTab:)) {
+    BOOL backwards = commandSelector == @selector(insertBacktab:);
+    if (control == self.inputField && (commandSelector == @selector(insertTab:) || backwards)) {
         if (textView.hasMarkedText) return NO;
-        NSMutableArray<NSString *> *texts =
-            [[NSUserDefaults.standardUserDefaults arrayForKey:GASavedTextsKey] mutableCopy]
-            ?: [NSMutableArray array];
-        if (self.inputField == self.toolbarInputField && self.toolbarInputField.placeholderString.length) {
-            NSString *fontName = self.toolbarInputField.placeholderString;
-            [texts removeObject:fontName];
-            [texts insertObject:fontName atIndex:0];
-        }
+        NSArray<NSString *> *texts = [NSUserDefaults.standardUserDefaults arrayForKey:GASavedTextsKey];
         if (!texts.count) {
             NSBeep();
             return YES;
         }
         NSUInteger current = [texts indexOfObject:self.text];
-        NSUInteger next = current == NSNotFound || current + 1 == texts.count ? 0 : current + 1;
+        NSUInteger next = backwards
+            ? (current == NSNotFound || current == 0 ? texts.count - 1 : current - 1)
+            : (current == NSNotFound || current + 1 == texts.count ? 0 : current + 1);
         [self replaceInputText:texts[next]];
         return YES;
     }
