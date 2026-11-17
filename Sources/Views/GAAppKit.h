@@ -39,6 +39,16 @@ API_AVAILABLE(macos(26.0))
 @interface NSGestureRecognizer (GAMacOS27SDKDeclarations)
 @property (getter=isCancellableByScrollGesture) BOOL cancellableByScrollGesture API_AVAILABLE(macos(27.0));
 @end
+
+typedef NS_ENUM(NSInteger, NSMenuItemImageVisibility) {
+    NSMenuItemImageVisibilityAutomatic = 0,
+    NSMenuItemImageVisibilityVisible = 1,
+    NSMenuItemImageVisibilityHidden = 2,
+} API_AVAILABLE(macos(27.0));
+
+@interface NSMenuItem (GAMacOS27SDKDeclarations)
+@property NSMenuItemImageVisibility preferredImageVisibility API_AVAILABLE(macos(27.0));
+@end
 #endif
 
 #if __MAC_OS_X_VERSION_MAX_ALLOWED < 260100
@@ -51,6 +61,19 @@ API_AVAILABLE(macos(26.1))
 @property (strong) NSScrollEdgeEffectStyle *preferredScrollEdgeEffectStyle API_AVAILABLE(macos(26.1));
 @end
 #endif
+
+NS_INLINE NSString *GAViewModeTitle(GAViewMode mode) {
+    if (mode == GAViewModeAllGlyphs) return NSLocalizedString(@"Glyph Grid", @"Glyph Grid view");
+    if (mode == GAViewModeMultiCharacter) return NSLocalizedString(@"Characters", @"Characters view");
+    return NSLocalizedString(@"Single Glyph", @"Single Glyph view");
+}
+
+NS_INLINE void GASetViewModeMenuItemImage(NSMenuItem *item, GAViewMode mode) {
+    NSString *symbol = mode == GAViewModeAllGlyphs ? @"square.grid.3x3"
+        : mode == GAViewModeMultiCharacter ? @"text.alignleft" : @"square";
+    item.image = [NSImage imageWithSystemSymbolName:symbol accessibilityDescription:GAViewModeTitle(mode)];
+    if (@available(macOS 27.0, *)) item.preferredImageVisibility = NSMenuItemImageVisibilityVisible;
+}
 
 /// Tahoe layout adjustments must not change the UI on earlier or later systems.
 NS_INLINE BOOL GAUsesMacOS26Layout(void) {

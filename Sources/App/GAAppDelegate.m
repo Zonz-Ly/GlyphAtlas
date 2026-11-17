@@ -853,6 +853,7 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
         if (matches) item.state = NSControlStateValueOn;
         item.image = GAPaletteSwatchImage(palette, appearance);
         item.image.accessibilityDescription = [self accessibilityDescriptionForPalette:palette appearance:appearance];
+        if (@available(macOS 27.0, *)) item.preferredImageVisibility = NSMenuItemImageVisibilityVisible;
     }
     if (menu.deleting) return;
     if (hasFont && current.systemState != NSControlStateValueOn && !currentIsSaved) {
@@ -875,19 +876,16 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
     NSMenu *menu = [[(includeZoom ? NSMenu.class : GAContextViewMenu.class) alloc]
         initWithTitle:NSLocalizedString(@"View", @"View")];
     // Menu order is also the shortcut order: Single ⌘1, Multi ⌘2, All ⌘3.
-    NSArray<NSString *> *modeTitles = @[NSLocalizedString(@"Single Glyph", @"Single Glyph view"),
-                                       NSLocalizedString(@"Characters", @"Characters view"),
-                                       NSLocalizedString(@"Glyph Grid", @"Glyph Grid view")];
-    NSArray<NSNumber *> *modeTags = @[@(GAViewModeSingleGlyph),
-                                      @(GAViewModeMultiCharacter),
-                                      @(GAViewModeAllGlyphs)];
+    const GAViewMode modes[] = {GAViewModeSingleGlyph, GAViewModeMultiCharacter, GAViewModeAllGlyphs};
     NSArray<NSString *> *modeKeys = @[@"1", @"2", @"3"];
-    for (NSUInteger index = 0; index < modeTitles.count; index++) {
-        NSMenuItem *item = [menu addItemWithTitle:modeTitles[index]
+    for (NSUInteger index = 0; index < modeKeys.count; index++) {
+        GAViewMode mode = modes[index];
+        NSMenuItem *item = [menu addItemWithTitle:GAViewModeTitle(mode)
                                            action:@selector(switchViewMode:)
                                     keyEquivalent:modeKeys[index]];
         item.target = self;
-        item.tag = modeTags[index].integerValue;
+        item.tag = mode;
+        if (@available(macOS 26.0, *)) GASetViewModeMenuItemImage(item, mode);
     }
     [menu addItem:[NSMenuItem separatorItem]];
     if (!includeZoom) {

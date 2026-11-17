@@ -667,15 +667,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     [self updateNavigationButton];
 }
 
-- (NSImage *)imageForNavigationStep:(GAGlyphNavigationStep *)step {
-    NSString *symbol = step.mode == GAViewModeAllGlyphs ? @"square.grid.3x3"
-        : step.mode == GAViewModeMultiCharacter ? @"text.alignleft" : @"square";
-    NSString *mode = step.mode == GAViewModeAllGlyphs ? NSLocalizedString(@"Glyph Grid", @"Glyph Grid view")
-        : step.mode == GAViewModeMultiCharacter ? NSLocalizedString(@"Characters", @"Characters view")
-        : NSLocalizedString(@"Single Glyph", @"Single Glyph view");
-    return [NSImage imageWithSystemSymbolName:symbol accessibilityDescription:mode];
-}
-
 - (void)chooseNavigationStep:(NSMenuItem *)item {
     [self navigateToStep:item.representedObject];
 }
@@ -696,7 +687,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         for (GAGlyphNavigationStep *step in steps.reverseObjectEnumerator) {
             NSMenuItem *item = [menu addItemWithTitle:step.glyphLabel ?: @""
                 action:@selector(chooseNavigationStep:) keyEquivalent:@""];
-            item.image = [self imageForNavigationStep:step];
+            GASetViewModeMenuItemImage(item, step.mode);
             item.target = self;
             item.representedObject = step;
             item.enabled = [self canNavigateToStep:step];
@@ -1121,9 +1112,13 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     }];
     BOOL hasItem = index != NSNotFound;
     BOOL needsItem = self.fontResource.axes.count > 0;
+    NSToolbarItem *leadingItem = toolbar.items.firstObject;
+    BOOL hasBack = [leadingItem.itemIdentifier isEqualToString:GABackItem];
+    if (@available(macOS 26.0, *)) {
+        if (hasBack && hasItem != needsItem) leadingItem.navigational = needsItem;
+    }
     if (needsItem && !hasItem) {
-        [toolbar insertItemWithItemIdentifier:GAVariationItem
-                                     atIndex:[toolbar.items.firstObject.itemIdentifier isEqualToString:GABackItem] ? 1 : 0];
+        [toolbar insertItemWithItemIdentifier:GAVariationItem atIndex:hasBack ? 1 : 0];
     }
     if (!needsItem && hasItem) {
         [toolbar removeItemAtIndex:index];
@@ -1163,7 +1158,14 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
                 (void)index; (void)stop;
                 return [item.itemIdentifier isEqualToString:GATextInputItem];
             }] != NSNotFound;
-        if (hasToolbarInput && NSProcessInfo.processInfo.operatingSystemVersion.majorVersion <= 15) {
+        if (@available(macOS 26.0, *)) {
+            if (!hasToolbarInput) {
+                back.image = [back.image imageWithSymbolConfiguration:
+                    [NSImageSymbolConfiguration configurationWithScale:NSImageSymbolScaleMedium]];
+            } else if (self.fontResource.axes.count > 0) {
+                back.navigational = YES;
+            }
+        } else if (hasToolbarInput && NSProcessInfo.processInfo.operatingSystemVersion.majorVersion <= 15) {
             NSImage *symbol = back.image;
             NSSize size = symbol.size;
             // Pad the image to 15 pt without scaling the arrow or changing its vertical alignment.
