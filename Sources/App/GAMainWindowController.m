@@ -1865,6 +1865,8 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         ![snapshot.text isEqualToString:self.sidebarViewController.text]) {
         return;
     }
+    // scheduleAnalysis already refreshed Back when it cleared an empty display.
+    BOOL clearedEmptyInput = snapshot.text.length == 0 && self.scanSnapshot == nil;
     [self cancelLayoutLookup];
     GAPendingGlyphEdit *edit = [self resolvedGlyphEditInSnapshot:snapshot];
     [self remapNavigationStepsForText:snapshot.text];
@@ -1881,7 +1883,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         self.restoringNavigation = YES;
         [self setViewMode:GAViewModeSingleGlyph];
         self.restoringNavigation = NO;
-    } else {
+    } else if (!clearedEmptyInput) {
         [self updateNavigationButton];
     }
     if (edit) {
