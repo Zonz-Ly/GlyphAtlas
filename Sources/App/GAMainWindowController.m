@@ -254,8 +254,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 @property (nonatomic) BOOL glyphNavigationEnabled;
 @property (nonatomic, strong) NSMutableArray<GAGlyphNavigationStep *> *navigationHistory;
 @property (nonatomic, strong) NSMutableArray<GAGlyphNavigationStep *> *navigationForwardHistory;
-@property (nonatomic, strong, nullable) NSMenuToolbarItem *backToolbarItem;
-@property (nonatomic, strong, nullable) id navigationContextMonitor;
+@property (nonatomic, strong, nullable) NSToolbarItem *backToolbarItem;
 @property (nonatomic) BOOL restoringNavigation;
 @property (nonatomic, strong, nullable) GAGlyphNavigationStep *pendingGridNavigation;
 @property (nonatomic) NSUInteger pendingGridNavigationGeneration;
@@ -333,7 +332,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 }
 
 - (void)dealloc {
-    if (self.navigationContextMonitor) [NSEvent removeMonitor:self.navigationContextMonitor];
     [NSNotificationCenter.defaultCenter removeObserver:self
                                                  name:GAInputBlankClickNotification object:nil];
 }
@@ -725,40 +723,12 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     }
 }
 
-- (NSEvent *)handleNavigationContextMenu:(NSEvent *)event {
-    if (event.window != self.window || !self.backToolbarItem) return event;
-    NSView *root = self.window.contentView.superview;
-    NSPoint point = [root convertPoint:event.locationInWindow fromView:nil];
-    NSView *hit = [root hitTest:[root convertPoint:point toView:root.superview]];
-    for (NSView *view = hit; view; view = view.superview) {
-        if (![view isKindOfClass:NSControl.class]) continue;
-        NSControl *control = (NSControl *)view;
-        if (control.target != self.backToolbarItem &&
-            !(control.target == self && control.action == @selector(navigateBack:))) continue;
-        NSMenu *menu = [self navigationMenu];
-        if (menu.numberOfItems) [NSMenu popUpContextMenu:menu withEvent:event forView:view];
-        return nil;
-    }
-    return event;
-}
-
 - (void)setGlyphNavigationEnabled:(BOOL)enabled {
     if (_glyphNavigationEnabled == enabled) return;
     _glyphNavigationEnabled = enabled;
     [self.navigationHistory removeAllObjects];
     [self.navigationForwardHistory removeAllObjects];
     self.pendingGridNavigation = nil;
-    if (enabled) {
-        __weak typeof(self) weakSelf = self;
-        self.navigationContextMonitor = [NSEvent addLocalMonitorForEventsMatchingMask:NSEventMaskRightMouseDown
-            handler:^NSEvent *(NSEvent *event) {
-                GAMainWindowController *controller = weakSelf;
-                return controller ? [controller handleNavigationContextMenu:event] : event;
-            }];
-    } else {
-        [NSEvent removeMonitor:self.navigationContextMonitor];
-        self.navigationContextMonitor = nil;
-    }
     NSToolbar *toolbar = self.window.toolbar;
     if (enabled) {
         [toolbar insertItemWithItemIdentifier:GABackItem atIndex:self.sidebarHidden ? 0 : 2];
@@ -1183,9 +1153,22 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
                                           dividerIndex:0];
     }
     if ([itemIdentifier isEqualToString:GABackItem]) {
-        NSMenuToolbarItem *back = [[NSMenuToolbarItem alloc] initWithItemIdentifier:itemIdentifier];
+        NSToolbarItem *back = [[NSToolbarItem alloc] initWithItemIdentifier:itemIdentifier];
         back.label = NSLocalizedString(@"Back", @"Return to the previous glyph or view");
-        back.image = [NSImage imageWithSystemSymbolName:@"chevron.backward" accessibilityDescription:back.label];
+        NSImage *image = [NSImage imageWithSystemSymbolName:@"chevron.backward" accessibilityDescription:back.label];
+        NSSegmentedControl *button = [NSSegmentedControl segmentedControlWithImages:@[image]
+            trackingMode:NSSegmentSwitchTrackingMomentary target:self action:@selector(navigateBack:)];
+        button.segmentStyle = NSSegmentStyleSeparated;
+        button.accessibilityLabel = back.label;
+        [button setToolTip:back.label forSegment:0];
+        NSMenu *history = [self navigationMenu];
+        [button setMenu:history forSegment:0];
+        [button setShowsMenuIndicator:NO forSegment:0];
+        button.menu = history;
+        NSMenuItem *overflow = [[NSMenuItem alloc] initWithTitle:back.label action:nil keyEquivalent:@""];
+        overflow.submenu = history;
+        back.menuFormRepresentation = overflow;
+
         // The toolbar is rebuilt before the sidebar's collapsed state changes.
         BOOL hasToolbarInput = [toolbar.items indexOfObjectPassingTest:
             ^BOOL(NSToolbarItem *item, NSUInteger index, BOOL *stop) {
@@ -1193,34 +1176,14 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
                 return [item.itemIdentifier isEqualToString:GATextInputItem];
             }] != NSNotFound;
         if (@available(macOS 26.0, *)) {
-            if (hasToolbarInput && self.fontResource.axes.count > 0) {
-                back.navigational = YES;
-            }
+            back.navigational = hasToolbarInput && self.fontResource.axes.count > 0;
         } else if (hasToolbarInput && NSProcessInfo.processInfo.operatingSystemVersion.majorVersion <= 15) {
-            // The padded image cannot inherit the segmented button's symbol configuration.
-            NSImage *symbol = [back.image imageWithSymbolConfiguration:
-                [NSImageSymbolConfiguration configurationWithPointSize:NSFont.systemFontSize
-                    weight:NSFontWeightMedium scale:NSImageSymbolScaleLarge]];
-            NSSize size = symbol.size;
-            // Keep the 15 pt alignment width stable before and after the first scroll.
-            NSImage *padded = [NSImage imageWithSize:NSMakeSize(15, size.height) flipped:NO
-                drawingHandler:^BOOL(NSRect rect) {
-                    [symbol drawInRect:NSMakeRect(NSMidX(rect) - size.width / 2,
-                                                 NSMinY(rect), size.width, size.height)];
-                    return YES;
-                }];
-            padded.template = symbol.isTemplate;
-            padded.alignmentRect = NSMakeRect(0, NSMinY(symbol.alignmentRect),
-                                             15, NSHeight(symbol.alignmentRect));
-            padded.accessibilityDescription = back.label;
-            back.image = padded;
+            // With AppKit's insets, this preserves the 43 pt button frame.
+            [button setWidth:21 forSegment:0];
         }
-        back.target = self;
-        back.action = @selector(navigateBack:);
+        [button sizeToFit];
+        back.view = button;
         back.autovalidates = NO;
-        back.bordered = YES;
-        back.showsIndicator = NO;
-        back.menu = [self navigationMenu];
         self.backToolbarItem = back;
         back.enabled = self.canNavigateBack;
         return back;
