@@ -85,6 +85,20 @@ static NSNumber *GAInputScalarForGlyph(NSArray<NSNumber *> *scalars) {
         // Keep it through mouse-up; the next primary click replaces it.
         _lastMouseDownWasGlyphDoubleClick = event.clickCount == 2 &&
             self.glyphDoubleClickHitTest && self.glyphDoubleClickHitTest(event.locationInWindow);
+    } else if (event.type == NSEventTypeRightMouseDown) {
+        NSToolbar *toolbar = self.toolbar;
+        NSUInteger index = GAIndexOfToolbarItem(toolbar, GABackItem);
+        if (index != NSNotFound) {
+            NSView *button = toolbar.items[index].view;
+            NSView *root = self.contentView.superview;
+            NSPoint point = [root convertPoint:event.locationInWindow fromView:nil];
+            NSView *hit = [root hitTest:[root convertPoint:point toView:root.superview]];
+            if (button && (hit == button || [hit isDescendantOf:button])) {
+                // Give Back its context click before the toolbar handles it.
+                [button rightMouseDown:event];
+                return;
+            }
+        }
     }
     [super sendEvent:event];
 }
