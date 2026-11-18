@@ -425,7 +425,8 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         weakSelf.lastSelectedVariant = variant;
         [weakSelf.detailViewController setVariant:variant];
         [weakSelf revealGlyphForVariant:variant quick:quickReveal];
-        if (!weakSelf.updatingSidebarFromScan) [weakSelf updateNavigationButton];
+        if (!weakSelf.updatingSidebarFromScan && !weakSelf.restoringNavigation)
+            [weakSelf updateNavigationButton];
     };
     self.sidebarViewController.onGlyphActivated = ^(GACharacterGroup *group,
                                                      GAGlyphVariant *variant, BOOL insert) {
