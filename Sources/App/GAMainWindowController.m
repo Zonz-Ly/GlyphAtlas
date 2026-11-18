@@ -78,18 +78,6 @@ static NSNumber *GAInputScalarForGlyph(NSArray<NSNumber *> *scalars) {
         return [super performKeyEquivalent:event];
     if (flags == NSEventModifierFlagCommand && (event.keyCode == 126 || event.keyCode == 125) &&
         [controller scrollFocusedPreviewToEdge:event.keyCode == 125]) return YES;
-    if (controller.viewMode == GAViewModeMultiCharacter &&
-        (flags & ~NSEventModifierFlagShift) == (NSEventModifierFlagCommand | NSEventModifierFlagControl)) {
-        NSString *key = event.charactersIgnoringModifiers;
-        if ([key isEqualToString:@"+"] || [key isEqualToString:@"="]) {
-            [controller adjustLineHeight:1];
-            return YES;
-        }
-        if ([key isEqualToString:@"-"] || [key isEqualToString:@"_"]) {
-            [controller adjustLineHeight:-1];
-            return YES;
-        }
-    }
     return [super performKeyEquivalent:event];
 }
 
