@@ -45,11 +45,7 @@ static NSNumber *GAInputScalarForGlyph(NSArray<NSNumber *> *scalars) {
 
 @end
 
-#pragma mark - Drop window
-
-@interface GAMainWindowController (PreviewKeyboardActions)
-- (BOOL)scrollFocusedPreviewToEdge:(BOOL)bottom;
-@end
+#pragma mark - Preview key bindings
 
 // Read AppKit's key binding without applying text commands to the current responder.
 @interface GAPreviewKeyBinding : NSResponder
@@ -65,6 +61,8 @@ static NSNumber *GAInputScalarForGlyph(NSArray<NSNumber *> *scalars) {
     (void)text;
 }
 @end
+
+#pragma mark - Drop window
 
 @interface GADropWindow : NSWindow
 @property (nonatomic, copy, nullable) void (^onFontDrop)(NSURL *url);
@@ -82,19 +80,6 @@ static NSNumber *GAInputScalarForGlyph(NSArray<NSNumber *> *scalars) {
             self.glyphDoubleClickHitTest && self.glyphDoubleClickHitTest(event.locationInWindow);
     }
     [super sendEvent:event];
-}
-
-- (void)keyDown:(NSEvent *)event {
-    GAMainWindowController *controller = (id)self.windowController;
-    if ([controller isKindOfClass:GAMainWindowController.class] &&
-        GAModifiersAre(event.modifierFlags, NSEventModifierFlagCommand)) {
-        GAPreviewKeyBinding *binding = [GAPreviewKeyBinding new];
-        [binding interpretKeyEvents:@[event]];
-        SEL command = binding.command;
-        if ((command == @selector(moveToBeginningOfDocument:) || command == @selector(moveToEndOfDocument:)) &&
-            [controller scrollFocusedPreviewToEdge:command == @selector(moveToEndOfDocument:)]) return;
-    }
-    [super keyDown:event];
 }
 
 - (instancetype)initWithContentRect:(NSRect)contentRect
@@ -922,8 +907,15 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 
 #pragma mark - Window and input focus
 
-- (BOOL)scrollFocusedPreviewToEdge:(BOOL)bottom {
-    return [self.detailViewController scrollFocusedPreviewToEdge:bottom];
+- (void)keyDown:(NSEvent *)event {
+    if (GAModifiersAre(event.modifierFlags, NSEventModifierFlagCommand)) {
+        GAPreviewKeyBinding *binding = [GAPreviewKeyBinding new];
+        [binding interpretKeyEvents:@[event]];
+        SEL command = binding.command;
+        if ((command == @selector(moveToBeginningOfDocument:) || command == @selector(moveToEndOfDocument:)) &&
+            [self.detailViewController scrollFocusedPreviewToEdge:command == @selector(moveToEndOfDocument:)]) return;
+    }
+    [super keyDown:event];
 }
 
 - (void)windowDidResize:(NSNotification *)notification {
