@@ -29,6 +29,7 @@ CGFloat GABoundingBoxPageFractionForScale(CGFloat startPage, CGFloat factor);
 
 /// Range of allowed clip view origins, including content insets.
 FOUNDATION_EXPORT NSRect GAScrollPositionLimits(NSScrollView *scrollView);
+FOUNDATION_EXPORT void GAScrollToVerticalEdge(NSScrollView *scrollView, BOOL bottom);
 
 /// Applies a geometry change while preserving both scrollbar positions.
 /// A missing scroll view or an axis without a scroll range is treated as centered.

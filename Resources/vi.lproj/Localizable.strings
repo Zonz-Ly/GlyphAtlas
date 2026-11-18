@@ -139,7 +139,7 @@
 "Help.03" = "Khi bạn mở phông chữ biến thiên, một bảng biến thiên xuất hiện cạnh các nút điều khiển cửa sổ. Kéo bảng ra để giữ bảng luôn mở. Chọn một giá trị số và dùng ↑/↓ hoặc ⇧↑/⇧↓ để điều chỉnh.";
 "Help.04" = "Nhập một hoặc nhiều ký tự trong thanh bên để xem tất cả nét liên quan. Dùng ⌥⏎ để chèn dấu ngắt dòng. Bạn cũng có thể nhấp chuột phải rồi chọn “Văn bản đã lưu” để lưu văn bản hiện tại hoặc nhập nhanh văn bản đã lưu trước đó. Giữ ⌥ trên thanh menu để xóa nhanh văn bản đã lưu.";
 "Help.05" = "Bấm hai lần vào một nét, hoặc chọn nét đó rồi nhấn ⏎, để thay thế nét mặc định và hiển thị các nét thay thế của nó. Giữ thêm ⇧ để thêm nét đó.";
-"Help.06" = "Dùng ↑/↓ để di chuyển giữa các nét, ⌘↑/⌘↓ để di chuyển giữa các nét cơ sở và ⌥↑/⌥↓ để chuyển đến nét đầu tiên hoặc cuối cùng trong danh sách.";
+"Help.06" = "Dùng ↑/↓ để di chuyển giữa các nét, ⌥↑/⌥↓ để di chuyển giữa các nét cơ sở và ⌘↑/⌘↓ để chuyển đến nét đầu tiên hoặc cuối cùng trong danh sách.";
 "Help.07" = "Di con trỏ lên nhãn mã Unicode để xem tên ký tự do tiêu chuẩn Unicode quy định.";
 "Help.08" = "Dùng ⌘C để sao chép tất cả ký tự được mã hóa của nét đã chọn.";
 "Help.09" = "Bấm chuột phải để chuyển chế độ xem, hoặc nhấn ⌘1 cho Một nét, ⌘2 cho Ký tự hay ⌘3 cho Lưới nét chữ. Dùng ⌃⌘S để hiện hoặc ẩn thanh bên.";

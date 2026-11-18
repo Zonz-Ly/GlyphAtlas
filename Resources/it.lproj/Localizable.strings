@@ -139,7 +139,7 @@
 "Help.03" = "Quando apri un font variabile, accanto ai controlli della finestra appare un pannello delle variazioni. Trascinalo all’esterno per tenerlo aperto. Seleziona un valore numerico e regolalo con ↑/↓ oppure ⇧↑/⇧↓.";
 "Help.04" = "Inserisci uno o più caratteri nella barra laterale per vedere tutti i glifi associati. Usa ⌥⏎ per inserire un’interruzione di riga. Puoi anche fare clic destro e scegliere «Testi salvati» per salvare il testo attuale o inserire rapidamente un testo già salvato. Tieni premuto ⌥ nella barra dei menu per eliminare rapidamente i testi salvati.";
 "Help.05" = "Fai doppio clic su un glifo, oppure selezionalo e premi A capo, per sostituire il glifo predefinito e mostrarne le alternative. Tieni premuto Maiuscole durante questa operazione per aggiungere il glifo.";
-"Help.06" = "Usa ↑/↓ per spostarti tra i glifi, ⌘↑/⌘↓ tra i glifi di base e ⌥↑/⌥↓ per passare al primo o all’ultimo glifo dell’elenco.";
+"Help.06" = "Usa ↑/↓ per spostarti tra i glifi, ⌥↑/⌥↓ tra i glifi di base e ⌘↑/⌘↓ per passare al primo o all’ultimo glifo dell’elenco.";
 "Help.07" = "Posiziona il puntatore su un’etichetta Unicode per vedere il nome del carattere definito dallo standard Unicode.";
 "Help.08" = "Usa ⌘C per copiare tutti i caratteri codificati del glifo selezionato.";
 "Help.09" = "Cambia vista con un clic secondario, oppure premi ⌘1 per “Glifo singolo”, ⌘2 per “Caratteri” o ⌘3 per “Griglia di glifi”. Usa ⌃⌘S per mostrare o nascondere la barra laterale.";

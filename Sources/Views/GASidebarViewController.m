@@ -1,6 +1,7 @@
 #import "GASidebarViewController.h"
 #import "GAInput.h"
 #import "GAGlyphViews.h"
+#import "GABoundingBoxView.h"
 #import "Font/GAUnicode.h"
 #import "GAAppKit.h"
 
@@ -32,7 +33,7 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
     return rows;
 }
 
-@interface GASidebarViewController (CommandArrowNavigation)
+@interface GASidebarViewController (TableKeyboardActions)
 - (void)selectAdjacentBaseForward:(BOOL)forward;
 - (void)activateSelectedVariantWithModifiers:(NSEventModifierFlags)modifiers;
 - (void)copySelectedGlyphEncoding;
@@ -63,9 +64,21 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
         NSBeep();
         return;
     }
-    if (commandOnly && (event.keyCode == 126 || event.keyCode == 125)) {
-        [self.sidebarController selectAdjacentBaseForward:event.keyCode == 125];
-        return;
+    if (event.keyCode == 126 || event.keyCode == 125) {
+        BOOL down = event.keyCode == 125;
+        if (GAModifiersAre(event.modifierFlags, NSEventModifierFlagOption)) {
+            [self.sidebarController selectAdjacentBaseForward:down];
+            return;
+        }
+        if (commandOnly) {
+            if (self.numberOfRows > 0) {
+                NSInteger row = down ? self.numberOfRows - 1 : 0;
+                [self selectRowIndexes:[NSIndexSet indexSetWithIndex:(NSUInteger)row]
+                    byExtendingSelection:NO];
+                GAScrollToVerticalEdge(self.enclosingScrollView, down);
+            }
+            return;
+        }
     }
     [super keyDown:event];
 }

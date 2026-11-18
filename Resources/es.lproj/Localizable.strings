@@ -139,7 +139,7 @@
 "Help.03" = "Al abrir un tipo de letra variable, aparece un panel de variación junto a los controles de la ventana. Arrástralo fuera para mantenerlo abierto. Selecciona un valor numérico y ajústalo con ↑/↓ o ⇧↑/⇧↓.";
 "Help.04" = "Introduce uno o varios caracteres en la barra lateral para ver todos los glifos asociados. Usa ⌥⏎ para insertar un salto de línea. También puedes hacer clic derecho y elegir «Textos guardados» para guardar el texto actual o insertar rápidamente uno que hayas guardado antes. Mantén pulsada ⌥ en la barra de menús para eliminar rápidamente los textos guardados.";
 "Help.05" = "Haz doble clic en un glifo, o selecciónalo y pulsa Retorno, para sustituir el glifo predeterminado y mostrar sus alternativas. Mantén pulsada la tecla Mayúsculas al hacerlo para añadir el glifo.";
-"Help.06" = "Usa ↑/↓ para moverte entre glifos, ⌘↑/⌘↓ entre glifos base y ⌥↑/⌥↓ para ir al primer o al último glifo de la lista.";
+"Help.06" = "Usa ↑/↓ para moverte entre glifos, ⌥↑/⌥↓ entre glifos base y ⌘↑/⌘↓ para ir al primer o al último glifo de la lista.";
 "Help.07" = "Sitúa el puntero sobre una etiqueta Unicode para ver el nombre del carácter definido por el estándar Unicode.";
 "Help.08" = "Usa ⌘C para copiar todos los caracteres codificados del glifo seleccionado.";
 "Help.09" = "Cambia de vista con un clic secundario, o pulsa ⌘1 para «Un solo glifo», ⌘2 para «Caracteres» o ⌘3 para «Cuadrícula de glifos». Usa ⌃⌘S para mostrar u ocultar la barra lateral.";

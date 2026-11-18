@@ -321,6 +321,7 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
 }
 
 - (void)mouseDown:(NSEvent *)event {
+    [self.window makeFirstResponder:self.enclosingScrollView];
     if (event.clickCount == 2)
         [self activateGlyphAtPoint:[self convertPoint:event.locationInWindow fromView:nil]];
     [self.window performWindowDragWithEvent:event];

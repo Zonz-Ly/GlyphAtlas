@@ -161,6 +161,19 @@
     [self updateToolbarAppearance];
 }
 
+- (BOOL)scrollFocusedPreviewToEdge:(BOOL)bottom {
+    NSScrollView *scrollView;
+    if (self.viewMode == GAViewModeAllGlyphs) scrollView = self.allGlyphsView.scrollView;
+    if (self.viewMode == GAViewModeMultiCharacter) scrollView = self.multiScrollView;
+    if (!scrollView) return NO;
+
+    NSWindow *window = self.view.window;
+    if (window.firstResponder != window && window.firstResponder != scrollView) return NO;
+    [scrollView layoutSubtreeIfNeeded];
+    GAScrollToVerticalEdge(scrollView, bottom);
+    return YES;
+}
+
 - (void)updateToolbarAppearance {
     NSScrollView *scrollView;
     if (self.viewMode == GAViewModeAllGlyphs) scrollView = self.allGlyphsView.scrollView;

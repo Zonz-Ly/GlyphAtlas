@@ -14,6 +14,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)applyOpeningSettings:(nullable NSDictionary *)settings;
 @property (nonatomic) GAViewMode viewMode;
 - (void)setUsesToolbarSafeArea:(BOOL)enabled;
+- (BOOL)scrollFocusedPreviewToEdge:(BOOL)bottom;
 @property (nonatomic, copy, nullable) void (^onAllGlyphDoubleClick)(GAAllGlyphEntry *entry);
 @property(nonatomic, copy, nullable) BOOL (^onGlyphSelected)
     (NSArray<NSNumber *> *glyphIDs, NSRange range, NSArray<NSNumber *> * _Nullable leadingGlyphIDs,

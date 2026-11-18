@@ -139,7 +139,7 @@
 "Help.03" = "Cum typum variabilem aperis, tabula parametrorum iuxta globulos fenestrae apparet. Tabulam extra trahe ut aperta maneat. Valorem numericum elige eumque clavibus ↑/↓ vel ⇧↑/⇧↓ compone.";
 "Help.04" = "Unum vel plura signa in tabula laterali insere ut omnes formas pertinentes videas. Clavibus ⌥⏎ lineam novam incipe. Dextro muris globulo preme et «Textus servatus» elige ut textum praesentem serves aut textum antea servatum celeriter inseras. Dum index apertus est, ⌥ tene ut textum servatum celeriter deleas.";
 "Help.05" = "Formam bis preme vel eam elige ac ⏎ preme ut formam praefinitam substituas et formas alternativas videas. Dum hoc agis, ⇧ tene ut formam addas.";
-"Help.06" = "Clavibus ↑/↓ inter formas, ⌘↑/⌘↓ inter formas principales moveare. Clavibus ⌥↑/⌥↓ ad primam vel ultimam indicis formam sali.";
+"Help.06" = "Clavibus ↑/↓ inter formas, ⌥↑/⌥↓ inter formas principales moveare. Clavibus ⌘↑/⌘↓ ad primam vel ultimam indicis formam sali.";
 "Help.07" = "Indicem muris super notam Unicode siste ut nomen signi a norma Unicode definitum videas.";
 "Help.08" = "Claves ⌘C preme ut omnia signa codice definita formae selectae copies.";
 "Help.09" = "Dextro muris globulo prospectum muta aut ⌘1 pro «Forma singula», ⌘2 pro «Signa» vel ⌘3 pro «Craticula formarum» preme. Claves ⌃⌘S preme ut tabulam lateralem ostendas vel celes.";

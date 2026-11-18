@@ -139,7 +139,7 @@
 "Help.03" = "Beim Öffnen einer variablen Schrift erscheint neben den Fenstersteuerungen ein Variationsfenster. Ziehe es heraus, damit es geöffnet bleibt. Wähle einen Zahlenwert aus und passe ihn mit ↑/↓ oder ⇧↑/⇧↓ an.";
 "Help.04" = "Gib ein oder mehrere Zeichen in der Seitenleiste ein, um alle zugehörigen Glyphen zu sehen. Mit ⌥⏎ fügst du einen Zeilenumbruch ein. Per Rechtsklick findest du auch „Gesicherte Texte“, um den aktuellen Text zu sichern oder zuvor gesicherte Texte schnell einzufügen. Halte in der Menüleiste ⌥ gedrückt, um gesicherte Texte schnell zu löschen.";
 "Help.05" = "Doppelklicke auf eine Glyphe oder wähle sie aus und drücke Return, um die Standardglyphe zu ersetzen und die Alternativen dieser Glyphe anzuzeigen. Halte dabei die Umschalttaste gedrückt, um die Glyphe hinzuzufügen.";
-"Help.06" = "Mit ↑/↓ wechselst du zwischen Glyphen, mit ⌘↑/⌘↓ zwischen Basisglyphen. Mit ⌥↑/⌥↓ springst du zur ersten oder letzten Glyphe der Liste.";
+"Help.06" = "Mit ↑/↓ wechselst du zwischen Glyphen, mit ⌥↑/⌥↓ zwischen Basisglyphen. Mit ⌘↑/⌘↓ springst du zur ersten oder letzten Glyphe der Liste.";
 "Help.07" = "Bewege den Zeiger über eine Unicode-Kennzeichnung, um den im Unicode-Standard definierten Zeichennamen zu sehen.";
 "Help.08" = "Mit ⌘C kopierst du alle codierten Zeichen der ausgewählten Glyphe.";
 "Help.09" = "Wechsle die Ansicht per Rechtsklick oder mit ⌘1 zu „Einzelne Glyphe“, ⌘2 zu „Zeichen“ und ⌘3 zu „Glyphenraster“. Mit ⌃⌘S blendest du die Seitenleiste ein oder aus.";

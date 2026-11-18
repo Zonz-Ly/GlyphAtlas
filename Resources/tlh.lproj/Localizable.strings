@@ -140,7 +140,7 @@
 "Help.03" = "pIqaD choHlaHbogh poSmoHDI', qul Doq 'ej qul SuD bIngDaq pIqaD choHbogh pat tu'lu', 'ej pe'laH. mI' wIvDI', ↑/↓ pagh ⇧↑/⇧↓ yIlo' mI' choHmeH.";
 "Help.04" = "retlh tetlhDaq wa' pagh law' mu'tlhegh yIchel Hoch Degh qellu'bogh leghmeH. ⌥⏎ yIlo' mu'tlhegh chu'meH, 'ej nIH Degh yIlo' «motlh ghItlh» tu'meH—DaH mu'tlhegh qaw pagh motlh ghItlh yIchel. De'wI' tetlhDaq ⌥ yIlo' nom Qaw'meH.";
 "Help.05" = "Degh yIlo' cha'logh pagh wIv 'ej ⏎ yIlo', pIqaD motlh tlhej, 'ej Degh tlhej 'agh. ⇧ yIlo' je, Deghvam chel.";
-"Help.06" = "↑/↓ yIlo' Degh Dung/bIng wIvmeH, ⌘↑/⌘↓ yIlo' pIqaD motlh Dung/bIng wIvmeH, ⌥↑/⌥↓ yIlo' Degh tetlh wa'DIch 'ej Qav Degh wIvmeH.";
+"Help.06" = "↑/↓ yIlo' Degh Dung/bIng wIvmeH, ⌥↑/⌥↓ yIlo' pIqaD motlh Dung/bIng wIvmeH, ⌘↑/⌘↓ yIlo' Degh tetlh wa'DIch 'ej Qav Degh wIvmeH.";
 "Help.07" = "UnicodeDaq 'eQway' tamDI', Unicode pat pong 'agh.";
 "Help.08" = "⌘C yIlo' wIvta'bogh Degh Hoch mI' mu'mey rIHmeH.";
 "Help.09" = "nIH Degh yIlo' choHmeH, pagh ⌘1 wa' Degh, ⌘2 law' mu'tlhegh, ⌘3 Degh tetlh yIlo'. ⌃⌘S: retlh 'ang / retlh So'.";

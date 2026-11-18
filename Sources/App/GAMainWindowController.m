@@ -47,6 +47,10 @@ static NSNumber *GAInputScalarForGlyph(NSArray<NSNumber *> *scalars) {
 
 #pragma mark - Drop window
 
+@interface GAMainWindowController (PreviewKeyboardActions)
+- (BOOL)scrollFocusedPreviewToEdge:(BOOL)bottom;
+@end
+
 @interface GADropWindow : NSWindow
 @property (nonatomic, copy, nullable) void (^onFontDrop)(NSURL *url);
 @property (nonatomic, copy, nullable) BOOL (^glyphDoubleClickHitTest)(NSPoint point);
@@ -70,10 +74,12 @@ static NSNumber *GAInputScalarForGlyph(NSArray<NSNumber *> *scalars) {
         (NSEventModifierFlagCommand | NSEventModifierFlagControl |
          NSEventModifierFlagOption | NSEventModifierFlagShift);
     GAMainWindowController *controller = (id)self.windowController;
-    if ([controller isKindOfClass:GAMainWindowController.class] &&
-        controller.viewMode == GAViewModeMultiCharacter &&
-        (flags & ~NSEventModifierFlagShift) ==
-            (NSEventModifierFlagCommand | NSEventModifierFlagControl)) {
+    if (![controller isKindOfClass:GAMainWindowController.class])
+        return [super performKeyEquivalent:event];
+    if (flags == NSEventModifierFlagCommand && (event.keyCode == 126 || event.keyCode == 125) &&
+        [controller scrollFocusedPreviewToEdge:event.keyCode == 125]) return YES;
+    if (controller.viewMode == GAViewModeMultiCharacter &&
+        (flags & ~NSEventModifierFlagShift) == (NSEventModifierFlagCommand | NSEventModifierFlagControl)) {
         NSString *key = event.charactersIgnoringModifiers;
         if ([key isEqualToString:@"+"] || [key isEqualToString:@"="]) {
             [controller adjustLineHeight:1];
@@ -944,6 +950,10 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 
 #pragma mark - Window and input focus
 
+- (BOOL)scrollFocusedPreviewToEdge:(BOOL)bottom {
+    return [self.detailViewController scrollFocusedPreviewToEdge:bottom];
+}
+
 - (void)windowDidResize:(NSNotification *)notification {
     (void)notification;
     self.toolbarInputWidthLimit.constant = NSWidth(self.window.frame);
@@ -1183,16 +1193,19 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
                 return [item.itemIdentifier isEqualToString:GATextInputItem];
             }] != NSNotFound;
         if (@available(macOS 26.0, *)) {
-            if (!hasToolbarInput) {
-                back.image = [back.image imageWithSymbolConfiguration:
-                    [NSImageSymbolConfiguration configurationWithScale:NSImageSymbolScaleMedium]];
-            } else if (self.fontResource.axes.count > 0) {
+            NSImageSymbolScale scale = hasToolbarInput ? NSImageSymbolScaleLarge : NSImageSymbolScaleMedium;
+            back.image = [back.image imageWithSymbolConfiguration:
+                [NSImageSymbolConfiguration configurationWithScale:scale]];
+            if (hasToolbarInput && self.fontResource.axes.count > 0) {
                 back.navigational = YES;
             }
         } else if (hasToolbarInput && NSProcessInfo.processInfo.operatingSystemVersion.majorVersion <= 15) {
-            NSImage *symbol = back.image;
+            // The padded image cannot inherit the segmented button's symbol configuration.
+            NSImage *symbol = [back.image imageWithSymbolConfiguration:
+                [NSImageSymbolConfiguration configurationWithPointSize:NSFont.systemFontSize
+                    weight:NSFontWeightMedium scale:NSImageSymbolScaleLarge]];
             NSSize size = symbol.size;
-            // Pad the image to 15 pt without scaling the arrow or changing its vertical alignment.
+            // Keep the 15 pt alignment width stable before and after the first scroll.
             NSImage *padded = [NSImage imageWithSize:NSMakeSize(15, size.height) flipped:NO
                 drawingHandler:^BOOL(NSRect rect) {
                     [symbol drawInRect:NSMakeRect(NSMidX(rect) - size.width / 2,

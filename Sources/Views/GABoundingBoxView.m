@@ -92,6 +92,14 @@ NSRect GAScrollPositionLimits(NSScrollView *scrollView) {
                        MAX(0, maximum.y - minimum.y));
 }
 
+void GAScrollToVerticalEdge(NSScrollView *scrollView, BOOL bottom) {
+    NSClipView *clip = scrollView.contentView;
+    NSRect limits = GAScrollPositionLimits(scrollView);
+    NSRect bounds = clip.bounds;
+    bounds.origin.y = clip.isFlipped != bottom ? NSMinY(limits) : NSMaxY(limits);
+    GAScrollToProposedBounds(scrollView, bounds);
+}
+
 static NSPoint GACaptureScrollPosition(NSScrollView *scrollView) {
     NSRect bounds = scrollView.contentView.bounds;
     if (scrollView.documentView == nil || NSWidth(bounds) <= 0 || NSHeight(bounds) <= 0)

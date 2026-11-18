@@ -139,7 +139,7 @@
 "Help.03" = "Ao abrir uma fonte variável, um painel de variações aparece ao lado dos controles da janela. Arraste-o para fora para mantê-lo aberto. Selecione um valor numérico e ajuste-o com ↑/↓ ou ⇧↑/⇧↓.";
 "Help.04" = "Digite um ou mais caracteres na barra lateral para ver todos os glifos associados. Use ⌥⏎ para inserir uma quebra de linha. Você também pode clicar com o botão direito e escolher “Textos salvos” para salvar o texto atual ou inserir rapidamente um texto salvo antes. Mantenha ⌥ pressionado na barra de menus para apagar rapidamente os textos salvos.";
 "Help.05" = "Clique duas vezes em um glifo, ou selecione-o e pressione Return, para substituir o glifo padrão e mostrar suas alternativas. Mantenha Shift pressionado ao fazer isso para adicionar o glifo.";
-"Help.06" = "Use ↑/↓ para navegar entre glifos, ⌘↑/⌘↓ entre glifos de base e ⌥↑/⌥↓ para ir ao primeiro ou ao último glifo da lista.";
+"Help.06" = "Use ↑/↓ para navegar entre glifos, ⌥↑/⌥↓ entre glifos de base e ⌘↑/⌘↓ para ir ao primeiro ou ao último glifo da lista.";
 "Help.07" = "Mantenha o cursor sobre uma etiqueta Unicode para ver o nome do caractere definido pelo padrão Unicode.";
 "Help.08" = "Use ⌘C para copiar todos os caracteres codificados do glifo selecionado.";
 "Help.09" = "Alterne a visualização com um clique secundário ou use ⌘1 para “Glifo Único”, ⌘2 para “Caracteres” e ⌘3 para “Grade de Glifos”. Use ⌃⌘S para mostrar ou ocultar a barra lateral.";
