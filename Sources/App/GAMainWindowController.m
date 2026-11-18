@@ -236,7 +236,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 @property (nonatomic) NSSize windowedSize;
 @property (nonatomic, strong, nullable) GAScanDisplaySnapshot *scanSnapshot;
 @property (nonatomic) NSUInteger scanSnapshotGeneration;
-@property (nonatomic) BOOL updatingSidebarFromScan;
 @property (nonatomic, strong, nullable) GAPendingGlyphEdit *pendingGlyphEdit;
 @property (nonatomic, strong, nullable) NSProgress *layoutLookup;
 @property (nonatomic) NSTextAlignment textAlignment;
@@ -425,8 +424,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         weakSelf.lastSelectedVariant = variant;
         [weakSelf.detailViewController setVariant:variant];
         [weakSelf revealGlyphForVariant:variant quick:quickReveal];
-        if (!weakSelf.updatingSidebarFromScan && !weakSelf.restoringNavigation)
-            [weakSelf updateNavigationButton];
+        [weakSelf updateNavigationButton];
     };
     self.sidebarViewController.onGlyphActivated = ^(GACharacterGroup *group,
                                                      GAGlyphVariant *variant, BOOL insert) {
@@ -1774,10 +1772,10 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         self.pendingWorkerDocument = self.fontDocument;
         self->_workerGeneration += 1;
     }
+    [self updateNavigationButton];
     if (text.length == 0) {
         [self clearScanDisplay];
     }
-    [self updateNavigationButton];
     dispatch_async(self.analysisQueue, ^{
         [self workerRun];
     });
@@ -1789,24 +1787,9 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     [self cancelLayoutLookup];
     self.pendingGlyphEdit = nil;
     self.scanSnapshot = nil;
-    [self updateSidebarFromScanSnapshot:nil];
+    [self.sidebarViewController clearGroups];
     [self.detailViewController setVariant:nil];
     [self.detailViewController setMultiText:@"" groups:@[] omissions:NSIndexSet.indexSet];
-}
-
-- (void)updateSidebarFromScanSnapshot:(nullable GAScanDisplaySnapshot *)snapshot {
-    // The scan flow refreshes Back after the synchronous sidebar update.
-    self.updatingSidebarFromScan = YES;
-    @try {
-        if (snapshot) {
-            [self.sidebarViewController updateGroups:snapshot.display sourceText:snapshot.text
-                                          fontDocument:self.fontDocument];
-        } else {
-            [self.sidebarViewController clearGroups];
-        }
-    } @finally {
-        self.updatingSidebarFromScan = NO;
-    }
 }
 
 #pragma mark - Worker (analysisQueue only)
@@ -1865,14 +1848,13 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         ![snapshot.text isEqualToString:self.sidebarViewController.text]) {
         return;
     }
-    // scheduleAnalysis already refreshed Back when it cleared an empty display.
-    BOOL clearedEmptyInput = snapshot.text.length == 0 && self.scanSnapshot == nil;
     [self cancelLayoutLookup];
     GAPendingGlyphEdit *edit = [self resolvedGlyphEditInSnapshot:snapshot];
     [self remapNavigationStepsForText:snapshot.text];
     self.scanSnapshot = snapshot;
     self.scanSnapshotGeneration = generation;
-    [self updateSidebarFromScanSnapshot:snapshot];
+    [self.sidebarViewController updateGroups:snapshot.display sourceText:snapshot.text
+                                  fontDocument:self.fontDocument];
     [self.detailViewController setMultiText:snapshot.multiText groups:snapshot.multiGroups
                                   omissions:snapshot.multiOmissions];
     GAGlyphNavigationStep *origin = self.pendingGridNavigation;
@@ -1883,7 +1865,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         self.restoringNavigation = YES;
         [self setViewMode:GAViewModeSingleGlyph];
         self.restoringNavigation = NO;
-    } else if (!clearedEmptyInput) {
+    } else {
         [self updateNavigationButton];
     }
     if (edit) {
