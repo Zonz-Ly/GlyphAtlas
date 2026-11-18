@@ -1110,8 +1110,12 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     BOOL needsItem = self.fontResource.axes.count > 0;
     if (hasItem == needsItem) return;
 
+    NSToolbarItem *leadingItem = toolbar.items.firstObject;
+    BOOL hasBack = [leadingItem.itemIdentifier isEqualToString:GABackItem];
+    if (@available(macOS 26.0, *)) {
+        if (hasBack) leadingItem.navigational = needsItem;
+    }
     if (needsItem) {
-        BOOL hasBack = [toolbar.items.firstObject.itemIdentifier isEqualToString:GABackItem];
         [toolbar insertItemWithItemIdentifier:GAVariationItem atIndex:hasBack ? 1 : 0];
     } else {
         [toolbar removeItemAtIndex:index];
@@ -1144,8 +1148,21 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 
     NSToolbarItem *item = [[NSToolbarItem alloc] initWithItemIdentifier:itemIdentifier];
     if ([itemIdentifier isEqualToString:GABackItem]) {
+        // The toolbar is rebuilt before the sidebar's collapsed state changes.
+        BOOL hasToolbarInput = [toolbar.items indexOfObjectPassingTest:
+            ^BOOL(NSToolbarItem *candidate, NSUInteger index, BOOL *stop) {
+                (void)index; (void)stop;
+                return [candidate.itemIdentifier isEqualToString:GATextInputItem];
+            }] != NSNotFound;
+
         item.label = NSLocalizedString(@"Back", @"Return to the previous glyph or view");
         NSImage *image = [NSImage imageWithSystemSymbolName:@"chevron.backward" accessibilityDescription:item.label];
+        if (@available(macOS 27.0, *)) {
+            if (!hasToolbarInput) {
+                image = [image imageWithSymbolConfiguration:
+                    [NSImageSymbolConfiguration configurationWithScale:NSImageSymbolScaleMedium]];
+            }
+        }
         NSSegmentedControl *button = [NSSegmentedControl segmentedControlWithImages:@[image]
             trackingMode:NSSegmentSwitchTrackingMomentary target:self action:@selector(navigateBack:)];
         button.segmentStyle = NSSegmentStyleSeparated;
@@ -1163,12 +1180,9 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         overflow.submenu = history;
         item.menuFormRepresentation = overflow;
 
-        // The toolbar is rebuilt before the sidebar's collapsed state changes.
-        if (NSProcessInfo.processInfo.operatingSystemVersion.majorVersion <= 15 &&
-            [toolbar.items indexOfObjectPassingTest:^BOOL(NSToolbarItem *candidate, NSUInteger index, BOOL *stop) {
-                (void)index; (void)stop;
-                return [candidate.itemIdentifier isEqualToString:GATextInputItem];
-            }] != NSNotFound) {
+        if (@available(macOS 26.0, *)) {
+            item.navigational = hasToolbarInput && self.fontResource.axes.count > 0;
+        } else if (hasToolbarInput && NSProcessInfo.processInfo.operatingSystemVersion.majorVersion <= 15) {
             // With AppKit's insets, this preserves the 43 pt button frame.
             [button setWidth:21 forSegment:0];
         }
