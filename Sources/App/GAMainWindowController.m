@@ -652,11 +652,13 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 
 - (void)navigateToStep:(GAGlyphNavigationStep *)step {
     if (![self canNavigateToStep:step]) return;
-    BOOL forward = [self.navigationForwardHistory containsObject:step];
+    NSUInteger index = [self.navigationForwardHistory indexOfObjectIdenticalTo:step];
+    BOOL forward = index != NSNotFound;
     NSMutableArray *source = forward ? self.navigationForwardHistory : self.navigationHistory;
-    NSMutableArray *destination = forward ? self.navigationHistory : self.navigationForwardHistory;
-    NSUInteger index = [source indexOfObjectIdenticalTo:step];
+    if (!forward) index = [source indexOfObjectIdenticalTo:step];
     if (index == NSNotFound) return;
+
+    NSMutableArray *destination = forward ? self.navigationHistory : self.navigationForwardHistory;
     self.restoringNavigation = YES;
     [self cancelLayoutLookup];
     [destination addObject:[self currentNavigationStep]];
