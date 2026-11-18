@@ -305,7 +305,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         [self.detailViewController setTypesettingLanguage:
             GAIdentifierForOpenTypeLanguage(_typesettingLanguageTag) ?: @""];
         [self setViewMode:_viewMode];
-        [self setGlyphNavigationEnabled:[settings[@"glyphNavigation"] boolValue]];
 
         __weak typeof(self) weakSelf = self;
         window.onFontDrop = ^(NSURL *url) {
@@ -322,6 +321,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         CGFloat sidebarWidth = settings[@"sidebarWidth"] ? [settings[@"sidebarWidth"] doubleValue] : 200;
         [self.splitViewController.splitView setPosition:sidebarWidth ofDividerAtIndex:0];
         if ([settings[@"sidebarHidden"] boolValue]) [self toggleSidebar];
+        [self setGlyphNavigationEnabled:[settings[@"glyphNavigation"] boolValue]];
         [window center];
     }
     return self;
