@@ -679,14 +679,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     [self navigateToStep:item.representedObject];
 }
 
-- (NSMenu *)navigationMenu {
-    NSMenu *menu = [[NSMenu alloc] initWithTitle:NSLocalizedString(@"Navigation", @"Toggle navigation")];
-    menu.autoenablesItems = NO;
-    menu.delegate = self;
-    [self menuNeedsUpdate:menu];
-    return menu;
-}
-
 - (void)menuNeedsUpdate:(NSMenu *)menu {
     [menu removeAllItems];
     NSArray *stacks = @[self.navigationForwardHistory, self.navigationHistory];
@@ -1116,15 +1108,12 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     }];
     BOOL hasItem = index != NSNotFound;
     BOOL needsItem = self.fontResource.axes.count > 0;
-    NSToolbarItem *leadingItem = toolbar.items.firstObject;
-    BOOL hasBack = [leadingItem.itemIdentifier isEqualToString:GABackItem];
-    if (@available(macOS 26.0, *)) {
-        if (hasBack && hasItem != needsItem) leadingItem.navigational = needsItem;
-    }
-    if (needsItem && !hasItem) {
+    if (hasItem == needsItem) return;
+
+    if (needsItem) {
+        BOOL hasBack = [toolbar.items.firstObject.itemIdentifier isEqualToString:GABackItem];
         [toolbar insertItemWithItemIdentifier:GAVariationItem atIndex:hasBack ? 1 : 0];
-    }
-    if (!needsItem && hasItem) {
+    } else {
         [toolbar removeItemAtIndex:index];
     }
 }
@@ -1152,43 +1141,44 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
                                              splitView:self.splitViewController.splitView
                                           dividerIndex:0];
     }
+
+    NSToolbarItem *item = [[NSToolbarItem alloc] initWithItemIdentifier:itemIdentifier];
     if ([itemIdentifier isEqualToString:GABackItem]) {
-        NSToolbarItem *back = [[NSToolbarItem alloc] initWithItemIdentifier:itemIdentifier];
-        back.label = NSLocalizedString(@"Back", @"Return to the previous glyph or view");
-        NSImage *image = [NSImage imageWithSystemSymbolName:@"chevron.backward" accessibilityDescription:back.label];
+        item.label = NSLocalizedString(@"Back", @"Return to the previous glyph or view");
+        NSImage *image = [NSImage imageWithSystemSymbolName:@"chevron.backward" accessibilityDescription:item.label];
         NSSegmentedControl *button = [NSSegmentedControl segmentedControlWithImages:@[image]
             trackingMode:NSSegmentSwitchTrackingMomentary target:self action:@selector(navigateBack:)];
         button.segmentStyle = NSSegmentStyleSeparated;
-        button.accessibilityLabel = back.label;
-        [button setToolTip:back.label forSegment:0];
-        NSMenu *history = [self navigationMenu];
+        button.accessibilityLabel = item.label;
+        [button setToolTip:item.label forSegment:0];
+
+        NSMenu *history = [[NSMenu alloc] initWithTitle:NSLocalizedString(@"Navigation", @"Toggle navigation")];
+        history.autoenablesItems = NO;
+        history.delegate = self;
+        [self menuNeedsUpdate:history];
         [button setMenu:history forSegment:0];
         [button setShowsMenuIndicator:NO forSegment:0];
         button.menu = history;
-        NSMenuItem *overflow = [[NSMenuItem alloc] initWithTitle:back.label action:nil keyEquivalent:@""];
+        NSMenuItem *overflow = [[NSMenuItem alloc] initWithTitle:item.label action:nil keyEquivalent:@""];
         overflow.submenu = history;
-        back.menuFormRepresentation = overflow;
+        item.menuFormRepresentation = overflow;
 
         // The toolbar is rebuilt before the sidebar's collapsed state changes.
-        BOOL hasToolbarInput = [toolbar.items indexOfObjectPassingTest:
-            ^BOOL(NSToolbarItem *item, NSUInteger index, BOOL *stop) {
+        if (NSProcessInfo.processInfo.operatingSystemVersion.majorVersion <= 15 &&
+            [toolbar.items indexOfObjectPassingTest:^BOOL(NSToolbarItem *candidate, NSUInteger index, BOOL *stop) {
                 (void)index; (void)stop;
-                return [item.itemIdentifier isEqualToString:GATextInputItem];
-            }] != NSNotFound;
-        if (@available(macOS 26.0, *)) {
-            back.navigational = hasToolbarInput && self.fontResource.axes.count > 0;
-        } else if (hasToolbarInput && NSProcessInfo.processInfo.operatingSystemVersion.majorVersion <= 15) {
+                return [candidate.itemIdentifier isEqualToString:GATextInputItem];
+            }] != NSNotFound) {
             // With AppKit's insets, this preserves the 43 pt button frame.
             [button setWidth:21 forSegment:0];
         }
         [button sizeToFit];
-        back.view = button;
-        back.autovalidates = NO;
-        self.backToolbarItem = back;
-        back.enabled = self.canNavigateBack;
-        return back;
+        item.view = button;
+        item.autovalidates = NO;
+        item.enabled = self.canNavigateBack;
+        self.backToolbarItem = item;
+        return item;
     }
-    NSToolbarItem *item = [[NSToolbarItem alloc] initWithItemIdentifier:itemIdentifier];
     if ([itemIdentifier isEqualToString:GATextInputItem]) {
         item.label = NSLocalizedString(@"Enter text", @"Enter text");
         item.view = self.sidebarViewController.toolbarInputField;
