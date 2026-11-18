@@ -9,6 +9,10 @@
 static NSString *const GARecentFontPathsKey = @"GAPersistentRecentFontPaths";
 static NSString *const GASavedPalettesKey = @"GASavedPalettes";
 
+static void GAAddDisabledMenuItem(NSMenu *menu, NSString *title) {
+    [menu addItemWithTitle:title action:nil keyEquivalent:@""].enabled = NO;
+}
+
 static const GAPreviewColorRole GAPaletteRoles[] = {
     GAPreviewColorGlyph, GAPreviewColorBoundingBox, GAPreviewColorBackground,
 };
@@ -382,10 +386,7 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
     [menu removeAllItems];
 
     if (urls.count == 0) {
-        NSMenuItem *empty = [menu addItemWithTitle:NSLocalizedString(@"No Recent Fonts", @"No Recent Fonts")
-                                            action:nil
-                                     keyEquivalent:@""];
-        empty.enabled = NO;
+        GAAddDisabledMenuItem(menu, NSLocalizedString(@"No Recent Fonts", @"No Recent Fonts"));
         return;
     }
 
@@ -473,9 +474,7 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
         [menu addItem:NSMenuItem.separatorItem];
     }
     if (!texts.count) {
-        NSMenuItem *empty = [menu addItemWithTitle:NSLocalizedString(@"No Saved Text", @"Empty saved text list")
-                                          action:nil keyEquivalent:@""];
-        empty.enabled = NO;
+        GAAddDisabledMenuItem(menu, NSLocalizedString(@"No Saved Text", @"Empty saved text list"));
     }
     for (NSString *text in texts) {
         [menu addSavedItemWithTitle:[self previewForSavedText:text] value:text target:self];
@@ -872,6 +871,15 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
     }
 }
 
+- (void)addZoomAlternateWithTitle:(NSString *)title action:(SEL)action
+                    keyEquivalent:(NSString *)key modifier:(NSEventModifierFlags)modifier
+                            toMenu:(NSMenu *)menu {
+    NSMenuItem *item = [menu addItemWithTitle:title action:action keyEquivalent:key];
+    item.target = self;
+    item.keyEquivalentModifierMask = NSEventModifierFlagCommand | modifier;
+    item.alternate = YES;
+}
+
 - (NSMenu *)buildViewMenuIncludingZoom:(BOOL)includeZoom {
     NSMenu *menu = [[(includeZoom ? NSMenu.class : GAContextViewMenu.class) alloc]
         initWithTitle:NSLocalizedString(@"View", @"View")];
@@ -947,35 +955,19 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
                                          action:@selector(zoomIn:)
                                   keyEquivalent:@"+"];
     zoomIn.target = self;
-    NSMenuItem *metricsZoomIn = [menu addItemWithTitle:NSLocalizedString(@"Expand Bounding Box", @"Expand the preview bounding box")
-                                                action:@selector(zoomMetricsIn:)
-                                         keyEquivalent:@"+"];
-    metricsZoomIn.target = self;
-    metricsZoomIn.keyEquivalentModifierMask =
-        NSEventModifierFlagCommand | NSEventModifierFlagOption;
-    metricsZoomIn.alternate = YES;
-    NSMenuItem *lineHeightIn = [menu addItemWithTitle:NSLocalizedString(@"Increase Leading", @"Increase preview leading")
-        action:@selector(increaseLineHeight:) keyEquivalent:@"+"];
-    lineHeightIn.target = self;
-    lineHeightIn.keyEquivalentModifierMask = NSEventModifierFlagCommand | NSEventModifierFlagControl;
-    lineHeightIn.alternate = YES;
+    [self addZoomAlternateWithTitle:NSLocalizedString(@"Expand Bounding Box", @"Expand the preview bounding box")
+        action:@selector(zoomMetricsIn:) keyEquivalent:@"+" modifier:NSEventModifierFlagOption toMenu:menu];
+    [self addZoomAlternateWithTitle:NSLocalizedString(@"Increase Leading", @"Increase preview leading")
+        action:@selector(increaseLineHeight:) keyEquivalent:@"+" modifier:NSEventModifierFlagControl toMenu:menu];
 
     NSMenuItem *zoomOut = [menu addItemWithTitle:NSLocalizedString(@"Make Text Smaller", @"Decrease the preview text size")
                                           action:@selector(zoomOut:)
                                    keyEquivalent:@"-"];
     zoomOut.target = self;
-    NSMenuItem *metricsZoomOut = [menu addItemWithTitle:NSLocalizedString(@"Shrink Bounding Box", @"Shrink the preview bounding box")
-                                                 action:@selector(zoomMetricsOut:)
-                                          keyEquivalent:@"-"];
-    metricsZoomOut.target = self;
-    metricsZoomOut.keyEquivalentModifierMask =
-        NSEventModifierFlagCommand | NSEventModifierFlagOption;
-    metricsZoomOut.alternate = YES;
-    NSMenuItem *lineHeightOut = [menu addItemWithTitle:NSLocalizedString(@"Decrease Leading", @"Decrease preview leading")
-        action:@selector(decreaseLineHeight:) keyEquivalent:@"-"];
-    lineHeightOut.target = self;
-    lineHeightOut.keyEquivalentModifierMask = NSEventModifierFlagCommand | NSEventModifierFlagControl;
-    lineHeightOut.alternate = YES;
+    [self addZoomAlternateWithTitle:NSLocalizedString(@"Shrink Bounding Box", @"Shrink the preview bounding box")
+        action:@selector(zoomMetricsOut:) keyEquivalent:@"-" modifier:NSEventModifierFlagOption toMenu:menu];
+    [self addZoomAlternateWithTitle:NSLocalizedString(@"Decrease Leading", @"Decrease preview leading")
+        action:@selector(decreaseLineHeight:) keyEquivalent:@"-" modifier:NSEventModifierFlagControl toMenu:menu];
     NSMenuItem *defaultSize = [menu addItemWithTitle:NSLocalizedString(@"Default Size", @"Reset the current view to its default size")
                                              action:@selector(resetZoom:)
                                       keyEquivalent:@"0"];
@@ -1009,19 +1001,16 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
     NSMenuItem *alignmentItem = [menu addItemWithTitle:NSLocalizedString(@"Text Alignment", @"Text Alignment")
                                                 action:nil
                                          keyEquivalent:@""];
-    NSMenu *alignmentMenu = [[NSMenu alloc] initWithTitle:NSLocalizedString(@"Text Alignment", @"Text Alignment")];
-    NSArray<NSString *> *alignmentTitles =
-        @[NSLocalizedString(@"Left", @"Left"), NSLocalizedString(@"Center", @"Center"), NSLocalizedString(@"Right", @"Right"), NSLocalizedString(@"Justified", @"Justified")];
-    NSArray<NSNumber *> *alignmentTags = @[@(NSTextAlignmentLeft),
-                                           @(NSTextAlignmentCenter),
-                                           @(NSTextAlignmentRight),
-                                           @(NSTextAlignmentJustified)];
-    for (NSUInteger index = 0; index < alignmentTitles.count; index++) {
-        NSMenuItem *item = [alignmentMenu addItemWithTitle:alignmentTitles[index]
-                                                    action:@selector(setTextAlignment:)
-                                             keyEquivalent:@""];
+    NSMenu *alignmentMenu = [[NSMenu alloc] initWithTitle:alignmentItem.title];
+    const NSTextAlignment alignments[] = {
+        NSTextAlignmentLeft, NSTextAlignmentCenter, NSTextAlignmentRight, NSTextAlignmentJustified,
+    };
+    for (NSUInteger i = 0; i < sizeof(alignments) / sizeof(*alignments); i++) {
+        NSTextAlignment alignment = alignments[i];
+        NSMenuItem *item = [alignmentMenu addItemWithTitle:[self alignmentTitle:alignment vertical:NO]
+                                                    action:@selector(setTextAlignment:) keyEquivalent:@""];
         item.target = self;
-        item.tag = alignmentTags[index].integerValue;
+        item.tag = alignment;
     }
     alignmentItem.identifier = @"TextAlignment";
     alignmentItem.submenu = alignmentMenu;
@@ -1088,6 +1077,16 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
     item.submenu = choices;
 }
 
+- (void)addGlyphFeatureFilterChoiceWithTitle:(NSString *)title tag:(NSString *)tag
+                                      toMenu:(GAGlyphFeatureFilterMenu *)menu {
+    NSMenuItem *item = [menu addItemWithTitle:title action:@selector(chooseGlyphFeatureFilter:) keyEquivalent:@""];
+    item.target = self;
+    item.representedObject = tag;
+    NSString *selectedTag = menu.controller.allGlyphFeatureTag;
+    BOOL selected = tag ? [tag isEqualToString:selectedTag] : selectedTag == nil;
+    item.state = selected ? NSControlStateValueOn : NSControlStateValueOff;
+}
+
 - (void)rebuildGlyphFeatureFilterMenu:(GAGlyphFeatureFilterMenu *)menu {
     GAMainWindowController *controller = [self controllerForViewMenu:menu];
     menu.controller = controller;
@@ -1096,30 +1095,16 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
         return;
     NSArray<NSString *> *tags = controller.allGlyphFeatureTags;
     if (!tags.count) {
-        NSMenuItem *empty = [menu addItemWithTitle:NSLocalizedString(@"No Features to Filter", @"Empty glyph filter menu")
-            action:nil keyEquivalent:@""];
-        empty.enabled = NO;
+        GAAddDisabledMenuItem(menu, NSLocalizedString(@"No Features to Filter", @"Empty glyph filter menu"));
         return;
     }
-    NSMenuItem *all = [menu addItemWithTitle:NSLocalizedString(@"All Glyphs", @"Show every glyph without filtering")
-                                    action:@selector(chooseGlyphFeatureFilter:) keyEquivalent:@""];
-    all.target = self;
-    all.state = controller.allGlyphFeatureTag ? NSControlStateValueOff : NSControlStateValueOn;
-    NSMenuItem *unfeatured = [menu addItemWithTitle:NSLocalizedString(@"No Feature", @"Glyphs outside feature outputs")
-                                           action:@selector(chooseGlyphFeatureFilter:) keyEquivalent:@""];
-    unfeatured.target = self;
-    unfeatured.representedObject = @"";
-    unfeatured.state = [controller.allGlyphFeatureTag isEqualToString:@""]
-        ? NSControlStateValueOn : NSControlStateValueOff;
+    [self addGlyphFeatureFilterChoiceWithTitle:NSLocalizedString(@"All Glyphs", @"Show every glyph without filtering")
+                                          tag:nil toMenu:menu];
+    [self addGlyphFeatureFilterChoiceWithTitle:NSLocalizedString(@"No Feature", @"Glyphs outside feature outputs")
+                                          tag:@"" toMenu:menu];
     [menu addItem:NSMenuItem.separatorItem];
-    for (NSString *tag in tags) {
-        NSMenuItem *item = [menu addItemWithTitle:tag action:@selector(chooseGlyphFeatureFilter:)
-                                  keyEquivalent:@""];
-        item.target = self;
-        item.representedObject = tag;
-        item.state = [tag isEqualToString:controller.allGlyphFeatureTag]
-            ? NSControlStateValueOn : NSControlStateValueOff;
-    }
+    for (NSString *tag in tags)
+        [self addGlyphFeatureFilterChoiceWithTitle:tag tag:tag toMenu:menu];
 }
 
 - (void)chooseGlyphFeatureFilter:(NSMenuItem *)sender {
@@ -1149,9 +1134,7 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
         }
     }
     if (!hasSelectableLanguage) {
-        NSMenuItem *empty = [menu addItemWithTitle:NSLocalizedString(@"No Selectable Languages", @"No applicable typesetting language choices")
-            action:nil keyEquivalent:@""];
-        empty.enabled = NO;
+        GAAddDisabledMenuItem(menu, NSLocalizedString(@"No Selectable Languages", @"No applicable typesetting language choices"));
         return;
     }
     NSMenuItem *standard = [menu addItemWithTitle:NSLocalizedString(@"Default", @"Default")
@@ -1361,14 +1344,13 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
     [controller applyFontFeatureChoices];
 }
 
-- (NSMenuItem *)addFeatureSelector:(NSDictionary *)selector group:(GAFontFeatureGroup *)group
-                            title:(NSString *)title toMenu:(GAFontFeaturesMenu *)menu {
+- (void)addFeatureSelector:(NSDictionary *)selector group:(GAFontFeatureGroup *)group
+                     title:(NSString *)title toMenu:(GAFontFeaturesMenu *)menu {
     NSMenuItem *item = [menu addItemWithTitle:title action:@selector(changeFontFeature:) keyEquivalent:@""];
     item.target = self;
     item.representedObject = @{@"group":group, @"selector":selector};
     item.state = [menu.controller.fontFeatures isSelectorSelected:selector inGroup:group]
         ? NSControlStateValueOn : NSControlStateValueOff;
-    return item;
 }
 
 - (void)rebuildFontFeaturesMenu:(GAFontFeaturesMenu *)menu {
@@ -1376,9 +1358,7 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
     [menu removeAllItems];
     GAFontFeatures *features = menu.controller.fontFeatures;
     if (!features.groups.count) {
-        NSMenuItem *empty = [menu addItemWithTitle:NSLocalizedString(@"No Typographic Features", @"Empty native feature catalogue")
-            action:nil keyEquivalent:@""];
-        empty.enabled = NO;
+        GAAddDisabledMenuItem(menu, NSLocalizedString(@"No Typographic Features", @"Empty native feature catalogue"));
     } else {
         // Preserve the native catalogue order within radio groups and checkbox groups.
         NSMutableArray<GAFontFeatureGroup *> *grouped = [NSMutableArray array], *other = [NSMutableArray array];

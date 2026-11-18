@@ -37,7 +37,6 @@ FOUNDATION_EXPORT const CGFloat GAFontShapingSize;
 /// Produced by a query containing explicit glyph selections.
 @property(nonatomic) BOOL fromGlyphSeed;
 @property (nonatomic) NSRange sourceTextRange;
-@property (nonatomic, readonly) NSString *glyphKey;
 @end
 
 @interface GAGlyphResolution : NSObject

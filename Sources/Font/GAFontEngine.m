@@ -15,18 +15,12 @@ const CGFloat GAFontShapingSize = 200.0;
 
 #pragma mark - GAGlyphVariant
 
-@interface GAGlyphVariant ()
-- (void)addFeatureSource:(NSString *)source;
-@end
-
 static NSString *GAFeatureSourceTag(NSString *source) {
     NSRange separator = [source rangeOfString:@" "];
     return separator.location == NSNotFound ? source : [source substringToIndex:separator.location];
 }
 
-@implementation GAGlyphVariant {
-    NSMutableArray<NSString *> *_mutableFeatureSources;
-}
+@implementation GAGlyphVariant
 
 - (instancetype)init {
     self = [super init];
@@ -36,29 +30,27 @@ static NSString *GAFeatureSourceTag(NSString *source) {
         _featureSources = @[];
         _unicodeScalars = @[];
         _glyphName = @"";
-        _mutableFeatureSources = [NSMutableArray array];
     }
     return self;
 }
 
-- (void)addFeatureSource:(NSString *)source {
-    if (source.length == 0) {
-        return;
-    }
-    NSString *tag = GAFeatureSourceTag(source);
-    for (NSString *existing in _mutableFeatureSources) {
-        if ([GAFeatureSourceTag(existing) isEqualToString:tag]) {
-            return;
-        }
-    }
-    [_mutableFeatureSources addObject:source];
-    _featureSources = [_mutableFeatureSources copy];
-}
-
 - (void)addFeatureSources:(NSArray<NSString *> *)sources {
+    NSMutableArray<NSString *> *merged = nil;
     for (NSString *source in sources) {
-        [self addFeatureSource:source];
+        if (source.length == 0) continue;
+        NSString *tag = GAFeatureSourceTag(source);
+        BOOL duplicate = NO;
+        for (NSString *existing in merged ?: _featureSources) {
+            if ([GAFeatureSourceTag(existing) isEqualToString:tag]) {
+                duplicate = YES;
+                break;
+            }
+        }
+        if (duplicate) continue;
+        if (!merged) merged = [_featureSources mutableCopy];
+        [merged addObject:source];
     }
+    if (merged) _featureSources = [merged copy];
 }
 
 - (id)copyWithZone:(NSZone *)zone {
@@ -66,7 +58,6 @@ static NSString *GAFeatureSourceTag(NSString *source) {
     copy.fontBox = self.fontBox;
     copy.glyphIDs = self.glyphIDs;
     copy.positions = self.positions;
-    copy->_mutableFeatureSources = [_mutableFeatureSources mutableCopy];
     copy->_featureSources = _featureSources;
     copy.base = self.base;
     copy.unicodeScalars = self.unicodeScalars;
@@ -78,27 +69,21 @@ static NSString *GAFeatureSourceTag(NSString *source) {
     return copy;
 }
 
-- (NSString *)glyphKey {
-    NSArray<NSNumber *> *glyphIDs = self.glyphIDs;
-    if (glyphIDs.count < 2) return glyphIDs.firstObject.stringValue ?: @"∅";
-    NSMutableArray<NSString *> *parts = [NSMutableArray arrayWithCapacity:glyphIDs.count];
-    for (NSNumber *glyph in glyphIDs) {
-        [parts addObject:glyph.stringValue];
-    }
-    return [parts componentsJoinedByString:@","];
-}
-
 @end
 
+static CGPoint GAGlyphPositionAtIndex(NSArray<NSValue *> *positions, NSUInteger index) {
+    return index < positions.count ? positions[index].pointValue : CGPointZero;
+}
+
 void GADrawGlyphVariant(GAGlyphVariant *variant, CGContextRef context) {
-    NSUInteger count = variant.glyphIDs.count;
+    NSArray<NSNumber *> *glyphIDs = variant.glyphIDs;
+    NSArray<NSValue *> *origins = variant.positions;
+    NSUInteger count = glyphIDs.count;
     CGGlyph *glyphs = calloc(count, sizeof(CGGlyph));
     CGPoint *positions = calloc(count, sizeof(CGPoint));
     for (NSUInteger index = 0; index < count; index++) {
-        glyphs[index] = (CGGlyph)variant.glyphIDs[index].unsignedShortValue;
-        positions[index] = index < variant.positions.count
-            ? variant.positions[index].pointValue
-            : CGPointZero;
+        glyphs[index] = glyphIDs[index].unsignedShortValue;
+        positions[index] = GAGlyphPositionAtIndex(origins, index);
     }
     CTFontDrawGlyphs(variant.fontBox.font, glyphs, positions, count, context);
     free(glyphs);
@@ -200,17 +185,6 @@ NSArray<GACharacterGroup *> *GAGroupsForScanResult(NSString *text, GARawScanResu
 @interface GAFontDocument ()
 - (instancetype)initWithDescriptor:(CTFontDescriptorRef)descriptor URL:(NSURL *)url
                     sourceDocument:(GAFontDocument *)source NS_DESIGNATED_INITIALIZER;
-/// Raw ink bounding box of a nonempty variant, from glyf/CFF through
-/// CTFontGetBoundingRectsForGlyphs. Returns CGRectZero for zero-ink glyphs.
-+ (CGRect)inkBoundsForVariant:(GAGlyphVariant *)variant;
-
-/// Advance width/height of a nonempty variant in font units.
-/// Width is the horizontal advance.
-/// Requires vmtx/vhea; the caller checks their presence before using this method.
-+ (CGSize)advanceInFontUnitsForVariant:(GAGlyphVariant *)variant;
-
-/// Requires a nonempty variant. Reports vmtx/vhea availability.
-+ (BOOL)hasVerticalMetricsForVariant:(GAGlyphVariant *)variant;
 @end
 
 @implementation GAFontDocument {
@@ -695,14 +669,11 @@ static void GAPublishVariantBuilders(NSMapTable *builders) {
 
 #pragma mark - Drawing
 
-+ (CGRect)inkBoundsForVariant:(GAGlyphVariant *)variant {
-    NSUInteger count = variant.glyphIDs.count;
-    CGGlyph *glyphs = calloc(count, sizeof(CGGlyph));
-    for (NSUInteger index = 0; index < count; index++) {
-        glyphs[index] = (CGGlyph)variant.glyphIDs[index].unsignedShortValue;
-    }
+/// Raw ink bounds in shaping points. Zero-ink glyphs produce CGRectZero.
+static CGRect GAInkBounds(CTFontRef font, const CGGlyph *glyphs, NSUInteger count,
+                          NSArray<NSValue *> *positions) {
     CGRect *rects = calloc(count, sizeof(CGRect));
-    CTFontGetBoundingRectsForGlyphs(variant.fontBox.font, kCTFontOrientationHorizontal, glyphs,
+    CTFontGetBoundingRectsForGlyphs(font, kCTFontOrientationHorizontal, glyphs,
                                     rects, (CFIndex)count);
 
     CGRect unionRect = CGRectNull;
@@ -711,15 +682,11 @@ static void GAPublishVariantBuilders(NSMapTable *builders) {
         if (CGRectIsNull(rect) || CGRectIsEmpty(rect)) {
             continue;
         }
-        CGPoint position = CGPointZero;
-        if (index < variant.positions.count) {
-            position = variant.positions[index].pointValue;
-        }
+        CGPoint position = GAGlyphPositionAtIndex(positions, index);
         rect.origin.x += position.x;
         rect.origin.y += position.y;
         unionRect = CGRectIsNull(unionRect) ? rect : CGRectUnion(unionRect, rect);
     }
-    free(glyphs);
     free(rects);
 
     if (CGRectIsNull(unionRect) || CGRectIsEmpty(unionRect)) {
@@ -730,15 +697,9 @@ static void GAPublishVariantBuilders(NSMapTable *builders) {
 
 /// Sum of the horizontal advances in font units. CGFont advances are raw font
 /// units and do not include the trak table's size-dependent tracking.
-static CGFloat GAAdvanceWidthInFontUnits(CTFontRef font,
-                                         NSArray<NSNumber *> *glyphIDs) {
-    NSUInteger count = glyphIDs.count;
-    if (count == 0 || font == NULL) {
+static CGFloat GAAdvanceWidthInFontUnits(CTFontRef font, const CGGlyph *glyphs, NSUInteger count) {
+    if (font == NULL) {
         return 0;
-    }
-    CGGlyph *glyphs = calloc(count, sizeof(CGGlyph));
-    for (NSUInteger index = 0; index < count; index++) {
-        glyphs[index] = (CGGlyph)glyphIDs[index].unsignedShortValue;
     }
     int *advances = calloc(count, sizeof(int));
     CGFontRef cgFont = CTFontCopyGraphicsFont(font, NULL);
@@ -751,59 +712,78 @@ static CGFloat GAAdvanceWidthInFontUnits(CTFontRef font,
         width += advances[index];
     }
     free(advances);
-    free(glyphs);
     return width;
+}
+
+static BOOL GAHasVerticalMetrics(CTFontRef font) {
+    NSData *vmtx = CFBridgingRelease(CTFontCopyTable(font, kCTFontTableVmtx, 0));
+    NSData *vhea = CFBridgingRelease(CTFontCopyTable(font, kCTFontTableVhea, 0));
+    return vmtx.length >= 4 && vhea.length >= 36;
+}
+
+/// Sum of the vertical advances in shaping points. Requires vmtx/vhea.
+static CGFloat GAVerticalAdvance(CTFontRef font, const CGGlyph *glyphs, NSUInteger count) {
+    CGSize *advances = calloc(count, sizeof(CGSize));
+    CTFontGetAdvancesForGlyphs(font, kCTFontOrientationVertical, glyphs, advances, (CFIndex)count);
+    CGFloat height = 0;
+    for (NSUInteger index = 0; index < count; index++) {
+        // CoreText puts the vertical advance in CGSize.width.
+        height += MAX(advances[index].width, advances[index].height);
+    }
+    free(advances);
+    return height;
 }
 
 + (GAGlyphPage)pageForVariant:(GAGlyphVariant *)variant
            usesVerticalMetrics:(BOOL)usesVerticalMetrics {
-    GAGlyphPage page = { CGSizeZero, 0, CGRectZero };
-    if (variant.glyphIDs.count == 0) {
-        return page;
+    NSArray<NSNumber *> *glyphIDs = variant.glyphIDs;
+    NSUInteger count = glyphIDs.count;
+    if (count == 0) {
+        return (GAGlyphPage){0};
     }
+    CGGlyph *glyphs = calloc(count, sizeof(CGGlyph));
+    for (NSUInteger index = 0; index < count; index++)
+        glyphs[index] = glyphIDs[index].unsignedShortValue;
     CTFontRef font = variant.fontBox.font;
     CGFloat unitsPerEm = CTFontGetUnitsPerEm(font);
     CGFloat shapeToUnits = unitsPerEm / GAFontShapingSize;
 
-    // inkBoundsForVariant works in shaping points; the page is in font units.
-    CGRect ink = [self inkBoundsForVariant:variant];
+    // The raw bounds are in shaping points; the page is in font units.
+    CGRect ink = GAInkBounds(font, glyphs, count, variant.positions);
     ink = CGRectMake(CGRectGetMinX(ink) * shapeToUnits,
                      CGRectGetMinY(ink) * shapeToUnits,
                      CGRectGetWidth(ink) * shapeToUnits,
                      CGRectGetHeight(ink) * shapeToUnits);
     BOOL hasInk = !CGRectIsEmpty(ink);
 
-    BOOL hasVertical = usesVerticalMetrics && [self hasVerticalMetricsForVariant:variant];
+    BOOL hasVertical = usesVerticalMetrics && GAHasVerticalMetrics(font);
     CGFloat originUnits = 0;
     if (hasVertical) {
         // CoreText exposes the per-glyph vertical origin (VORG for CFF, a
         // font-wide origin for TrueType). It is stable across variation axes
         // when the font defines no origin variation.
-        CGGlyph glyph = (CGGlyph)variant.glyphIDs.firstObject.unsignedShortValue;
         CGSize translation = CGSizeZero;
-        CTFontGetVerticalTranslationsForGlyphs(font, &glyph, &translation, 1);
+        CTFontGetVerticalTranslationsForGlyphs(font, glyphs, &translation, 1);
         originUnits = -translation.height * shapeToUnits;
     }
-    CGFloat width;
+    CGFloat width = GAAdvanceWidthInFontUnits(font, glyphs, count);
     CGFloat height;
     BOOL hasTypoMetrics = variant.fontBox.hasTypoMetrics;
     CGFloat typoDescender = fabs(variant.fontBox.typoDescender);
     if (hasVertical) {
-        CGSize advance = [self advanceInFontUnitsForVariant:variant];
-        width = advance.width;
-        height = advance.height;
+        height = GAVerticalAdvance(font, glyphs, count) * shapeToUnits;
     } else {
         // The width-only page: advance width × typographic height. It must not
         // read vmtx, so the grid and sidebar do not pay for vertical metrics.
         // OS/2 typo metrics win when present; the descender magnitude is used
         // because some fonts store it as a positive depth.
-        width = GAAdvanceWidthInFontUnits(font, variant.glyphIDs);
         if (hasTypoMetrics) {
             height = variant.fontBox.typoAscender + typoDescender;
         } else {
             height = (CTFontGetAscent(font) + CTFontGetDescent(font)) * shapeToUnits;
         }
     }
+    free(glyphs);
     if (width <= 0) {
         width = hasInk ? CGRectGetWidth(ink) : unitsPerEm * 0.01;
     }
@@ -820,41 +800,7 @@ static CGFloat GAAdvanceWidthInFontUnits(CTFontRef font,
         baseline = CTFontGetDescent(font) * shapeToUnits;
     }
 
-    page.size = CGSizeMake(width, height);
-    page.baseline = baseline;
-    page.ink = ink;
-    return page;
-}
-
-+ (BOOL)hasVerticalMetricsForVariant:(GAGlyphVariant *)variant {
-    NSData *vmtx = CFBridgingRelease(CTFontCopyTable(variant.fontBox.font,
-                                                     kCTFontTableVmtx, 0));
-    NSData *vhea = CFBridgingRelease(CTFontCopyTable(variant.fontBox.font,
-                                                     kCTFontTableVhea, 0));
-    return vmtx.length >= 4 && vhea.length >= 36;
-}
-
-+ (CGSize)advanceInFontUnitsForVariant:(GAGlyphVariant *)variant {
-    NSUInteger count = variant.glyphIDs.count;
-    CTFontRef font = variant.fontBox.font;
-    CGFloat factor = CTFontGetUnitsPerEm(font) / GAFontShapingSize;
-    CGFloat width = GAAdvanceWidthInFontUnits(font, variant.glyphIDs);
-
-    CGFloat height = 0;
-    CGGlyph *glyphs = calloc(count, sizeof(CGGlyph));
-    for (NSUInteger index = 0; index < count; index++) {
-        glyphs[index] = (CGGlyph)variant.glyphIDs[index].unsignedShortValue;
-    }
-    CGSize *vAdvances = calloc(count, sizeof(CGSize));
-    CTFontGetAdvancesForGlyphs(font, kCTFontOrientationVertical,
-                               glyphs, vAdvances, (CFIndex)count);
-    for (NSUInteger index = 0; index < count; index++) {
-        // CoreText puts the vertical advance in CGSize.width.
-        height += MAX(vAdvances[index].width, vAdvances[index].height);
-    }
-    free(vAdvances);
-    free(glyphs);
-    return CGSizeMake(width, height * factor);
+    return (GAGlyphPage){CGSizeMake(width, height), baseline, ink};
 }
 
 @end

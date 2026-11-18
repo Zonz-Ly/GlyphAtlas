@@ -65,7 +65,6 @@ class Substitution {
     SubstitutionBuffer &buffer_;
     Trace *trace_;
     Decisions *decisions_;
-    Budget ownedBudget_;
     Budget &budget_;
     Tag activeFeature_ = 0;
     std::vector<Frame *> frames_;
@@ -263,10 +262,9 @@ class Substitution {
 
   public:
     Substitution(const std::vector<Lookup> &lookups, const GDEF &gdef, SubstitutionBuffer &buffer, Trace *trace,
-                 Budget *budget = nullptr, Decisions *decisions = nullptr)
+                 Budget &budget, Decisions *decisions = nullptr)
         : lookups_(lookups), gdef_(gdef), buffer_(buffer), trace_(trace), decisions_(decisions),
-          ownedBudget_(buffer.size()), budget_(budget ? *budget : ownedBudget_),
-          nextIdentity_(buffer_.nextIdentity()) {}
+          budget_(budget), nextIdentity_(buffer_.nextIdentity()) {}
     std::vector<Rule> rules(const LookupStep &step, size_t at) {
         std::vector<Rule> result;
         const auto &lookup = lookups_[step.lookup];
@@ -348,7 +346,7 @@ void visitRuleOutputs(const std::vector<Lookup> &lookups, const GDEF &gdef,
         pending.pop_back();
         SubstitutionBuffer output = input;
         Trace found;
-        Substitution preview(lookups, gdef, output, &found, &budget, &decisions);
+        Substitution preview(lookups, gdef, output, &found, budget, &decisions);
         preview.applyRule(step, at, rule);
         visit(std::move(output), found);
         for (size_t i = decisions.selected.size(); i < decisions.counts.size(); i++)
@@ -481,7 +479,7 @@ void discover(const std::vector<Lookup> &lookups, const GDEF &gdef, Buffer &buff
             [](const Subtable &sub) { return sub.type >= 4 && sub.type <= 6; });
         for (const auto &state : states) {
             auto input = state.items;
-            Substitution matcher(lookups, gdef, input, nullptr, &budget);
+            Substitution matcher(lookups, gdef, input, nullptr, budget);
             for (size_t at = 0; branches && at < input.size(); ++at) {
                 if (cancellation)
                     budget.poll();
@@ -511,7 +509,7 @@ void discover(const std::vector<Lookup> &lookups, const GDEF &gdef, Buffer &buff
             }
             auto applied = state.items;
             Trace found;
-            Substitution(lookups, gdef, applied, &found, &budget).runStep(step, &coverage);
+            Substitution(lookups, gdef, applied, &found, budget).runStep(step, &coverage);
             record(found, state.origins);
             if (!state.focus) appliedBuffer = applied;
             if (!lastStep) {
@@ -548,7 +546,7 @@ void OpenType::substituteLookups(Buffer &buffer, const GDEF &gdef,
     } else {
         SubstitutionBuffer shared(buffer);
         Budget budget(buffer.size(), cancellation);
-        Substitution(lookups_, gdef, shared, trace, &budget).run(steps);
+        Substitution(lookups_, gdef, shared, trace, budget).run(steps);
         buffer = shared.materialize();
     }
 }

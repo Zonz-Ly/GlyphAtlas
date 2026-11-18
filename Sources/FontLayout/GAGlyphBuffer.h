@@ -122,6 +122,13 @@ struct Metrics {
     /// Optional instance-local evaluator for GPOS device/variation records.
     std::function<double(const View &)> deviceDelta;
 };
+inline void setNominalPositions(Buffer &buffer, const Metrics &metrics, bool vertical) {
+    for (auto &item : buffer) {
+        item.xOffset = item.yOffset = 0;
+        item.xAdvance = vertical ? 0 : metrics.horizontalAdvance(item.glyph);
+        item.yAdvance = vertical ? -metrics.verticalAdvance(item.glyph) : 0;
+    }
+}
 struct GDEF {
     ClassDef glyphClasses, markAttachmentClasses;
     std::vector<Coverage> markSets;

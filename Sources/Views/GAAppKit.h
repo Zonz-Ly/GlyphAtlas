@@ -19,6 +19,12 @@ NS_INLINE CGFloat GATopOffsetInView(NSView *view, NSRect rect) {
     return view.flipped ? NSMinY(rect) - NSMinY(bounds) : NSMaxY(bounds) - NSMaxY(rect);
 }
 
+NS_INLINE void GAScrollToProposedBounds(NSScrollView *scrollView, NSRect proposed) {
+    NSClipView *clip = scrollView.contentView;
+    [clip scrollToPoint:[clip constrainBoundsRect:proposed].origin];
+    [scrollView reflectScrolledClipView:clip];
+}
+
 #if __MAC_OS_X_VERSION_MAX_ALLOWED < 260000
 static const NSControlSize NSControlSizeExtraLarge API_AVAILABLE(macos(26.0)) = 4;
 

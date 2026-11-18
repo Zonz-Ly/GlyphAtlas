@@ -720,8 +720,8 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
     } else if (recognizer.state == NSGestureRecognizerStateChanged) {
         switch (self.magnificationControl) {
             case GAMagnificationBoundingBox:
-                self.sideInsetFraction = 0.5 * (1.0 - GABoundingBoxPageFractionForMagnification(
-                    self.magnificationStartPage, recognizer.magnification));
+                self.sideInsetFraction = 0.5 * (1.0 - GABoundingBoxPageFractionForScale(
+                    self.magnificationStartPage, 1.0 + recognizer.magnification));
                 break;
             case GAMagnificationLineHeight:
                 self.lineHeightMultiple = self.magnificationStartLineHeight * (1.0 + recognizer.magnification);
@@ -793,11 +793,20 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
 - (nullable NSString *)replacementBaseForOriginal:(NSString *)original
                                             glyph:(CGGlyph)glyph
                                              font:(NSFont *)font {
-    if (!self.vertical || original.length != 1) {
+    NSUInteger length = original.length;
+    if (!self.vertical || length == 0 || length > 2) return nil;
+
+    unichar first = [original characterAtIndex:0];
+    uint32_t scalar = first;
+    if (length == 2) {
+        unichar second = [original characterAtIndex:1];
+        if (!CFStringIsSurrogateHighCharacter(first) || !CFStringIsSurrogateLowCharacter(second))
+            return nil;
+        scalar = CFStringGetLongCharacterForSurrogatePair(first, second);
+    } else if (CFStringIsSurrogateHighCharacter(first) || CFStringIsSurrogateLowCharacter(first)) {
         return nil;
     }
-    unichar character = [original characterAtIndex:0];
-    BOOL rotated = GAVerticalScalarRotates((uint32_t)character);
+    BOOL rotated = GAVerticalScalarRotates(scalar);
     BOOL fullWidth = [self glyphIsFullWidth:glyph font:font];
     if (rotated && fullWidth && [self glyphForCharacter:0x5B57 font:font] != 0) {
         return @"字";

@@ -262,8 +262,7 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
     NSClipView *clipView = scrollView.contentView;
     NSRect viewport = clipView.bounds;
     viewport.origin.y += NSMidY(row) - NSMidY([self unobscuredVisibleRect]);
-    [clipView scrollToPoint:[clipView constrainBoundsRect:viewport].origin];
-    [scrollView reflectScrolledClipView:clipView];
+    GAScrollToProposedBounds(scrollView, viewport);
 }
 
 /// Locate animation: blink, hold, then fade. Append animation: one 0.2 s

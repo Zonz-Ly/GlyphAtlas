@@ -240,10 +240,10 @@
     }
     self.boundingBoxView.hidden = self.viewMode != GAViewModeSingleGlyph;
     self.allGlyphsView.hidden = self.viewMode != GAViewModeAllGlyphs;
-    self.multiScrollView.hidden = self.viewMode != GAViewModeMultiCharacter;
-    if (self.multiScrollView.hidden) self.multiView.layoutActive = NO;
-    [self updateMultiLayout];
-    self.multiView.layoutActive = !self.multiScrollView.hidden;
+    BOOL showsMulti = self.viewMode == GAViewModeMultiCharacter;
+    self.multiScrollView.hidden = !showsMulti;
+    if (showsMulti) [self updateMultiLayout];
+    self.multiView.layoutActive = showsMulti;
     [self updateToolbarAppearance];
 }
 
@@ -302,9 +302,8 @@
 /// The page occupies (1 - 2 * inset) of the viewport. Keyboard zoom scales that
 /// fraction instead of the inset so the visual step stays constant.
 - (void)scaleBoundingBoxBy:(CGFloat)factor {
-    CGFloat page = 1.0 - 2.0 * self.boundingBoxInsetFraction;
-    CGFloat minimum = 1.0 - 2.0 * GABoundingBoxMaxInsetFraction;
-    page = MIN(1.0, MAX(minimum, page * factor));
+    CGFloat page = GABoundingBoxPageFractionForScale(
+        1.0 - 2.0 * self.boundingBoxInsetFraction, factor);
     self.boundingBoxInsetFraction = (1.0 - page) * 0.5;
 }
 
@@ -361,19 +360,13 @@
 
 #pragma mark - Multi-character view
 
-- (void)scrollMultiToPoint:(NSPoint)point {
-    NSClipView *clip = self.multiScrollView.contentView;
-    NSRect bounds = clip.bounds;
-    bounds.origin = point;
-    [clip scrollToPoint:[clip constrainBoundsRect:bounds].origin];
-    [self.multiScrollView reflectScrolledClipView:clip];
-}
-
 - (void)setMultiText:(NSString *)text groups:(NSArray<GACharacterGroup *> *)groups
            omissions:(NSIndexSet *)omissions {
     NSPoint origin = self.multiScrollView.contentView.bounds.origin;
     [self.multiView setText:text groups:groups omissions:omissions];
-    [self scrollMultiToPoint:origin];
+    NSRect bounds = self.multiScrollView.contentView.bounds;
+    bounds.origin = origin;
+    GAScrollToProposedBounds(self.multiScrollView, bounds);
 }
 
 - (void)setTextAlignment:(NSTextAlignment)alignment {

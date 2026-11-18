@@ -509,7 +509,6 @@ struct LigatureFootprint {
 class Runner {
     Buffer &buffer_;
     Trace *trace_;
-    Budget ownedBudget_;
     Budget &budget_;
     uint64_t nextIdentity_ = 1;
     size_t mark_ = 0, first_ = 0, last_ = 0;
@@ -690,10 +689,8 @@ class Runner {
     }
 
   public:
-    Runner(Buffer &buffer, Trace *trace, Budget *budget = nullptr,
-           const Cancellation *cancellation = nullptr)
-        : buffer_(buffer), trace_(trace), ownedBudget_(buffer.size(), cancellation),
-          budget_(budget ? *budget : ownedBudget_) {
+    Runner(Buffer &buffer, Trace *trace, Budget &budget)
+        : buffer_(buffer), trace_(trace), budget_(budget) {
         for (auto &item : buffer_) {
             if (!item.identity)
                 item.identity = nextIdentity_++;
@@ -729,7 +726,7 @@ class Runner {
             return;
         budget_.step();
         Buffer prefix(buffer_.begin(), buffer_.begin() + cursor), before = prefix;
-        Runner trial(prefix, nullptr, &budget_);
+        Runner trial(prefix, nullptr, budget_);
         trial.mark_ = mark_;
         trial.first_ = first_;
         trial.last_ = last_;
@@ -824,7 +821,7 @@ class Runner {
         std::optional<Runner> ligatureRunner;
         if (type == 2) {
             ligatureCandidate = buffer_;
-            ligatureRunner.emplace(ligatureCandidate, trace_, &budget_);
+            ligatureRunner.emplace(ligatureCandidate, trace_, budget_);
         }
         for (size_t start = 0; start < buffer_.size(); start++) {
             budget_.step();
@@ -840,7 +837,7 @@ class Runner {
                 footprint.restore(buffer_, ligatureCandidate);
             } else {
                 Buffer candidate = buffer_;
-                Runner(candidate, trace_, &budget_).runMachine(machine, type, extended, start, &label);
+                Runner(candidate, trace_, budget_).runMachine(machine, type, extended, start, &label);
             }
         }
     }
@@ -1053,9 +1050,9 @@ void AAT::substitute(Buffer &buffer, std::optional<AATSelector> selector, bool r
                         }
                     };
                     try {
-                        Runner(candidate, &found, &discoveryBudget)
+                        Runner(candidate, &found, discoveryBudget)
                             .discover(sub.data, sub.type, extended_, label, sub.program.get());
-                        Runner(candidate, nullptr, &discoveryBudget)
+                        Runner(candidate, nullptr, discoveryBudget)
                             .run(sub.data, sub.type, extended_, sub.program.get());
                         found.changed(input, candidate, label);
                     } catch (const DiscoveryLimit &) {
@@ -1112,7 +1109,7 @@ void AAT::substitute(Buffer &buffer, std::optional<AATSelector> selector, bool r
         }
         try {
             Budget executionBudget(buffer.size(), cancellation, inventory);
-            Runner(buffer, trace, &executionBudget).run(sub.data, sub.type, extended_, sub.program.get());
+            Runner(buffer, trace, executionBudget).run(sub.data, sub.type, extended_, sub.program.get());
         } catch (const DiscoveryLimit &) {
             trace->incomplete = true;
             if (reverse) std::reverse(buffer.begin(), buffer.end());

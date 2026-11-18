@@ -6,38 +6,26 @@ static BOOL GAAppearanceIsDark(NSAppearance *appearance) {
     return [match isEqualToString:NSAppearanceNameDarkAqua];
 }
 
-NSColor *GABoundingBoxShadowColor(void) {
+static NSColor *GABoundingBoxShadowColor(void) {
     return [NSColor colorWithName:@"GABoundingBoxShadow"
                   dynamicProvider:^NSColor *(NSAppearance *appearance) {
         return [NSColor.blackColor colorWithAlphaComponent:GAAppearanceIsDark(appearance) ? 0.58 : 0.18];
     }];
 }
 
-NSColor *GABoundingBoxBackgroundColor(void) {
-    return [NSColor colorWithName:@"GABoundingBoxBackground"
-                  dynamicProvider:^NSColor *(NSAppearance *appearance) {
-        return GAAppearanceIsDark(appearance)
-            ? [NSColor colorWithSRGBRed:(60.0 / 255.0)
-                                   green:(60.0 / 255.0)
-                                    blue:(60.0 / 255.0)
-                                   alpha:1.0]
-            : [NSColor colorWithSRGBRed:(253.0 / 255.0)
-                                   green:(253.0 / 255.0)
-                                    blue:(253.0 / 255.0)
-                                   alpha:1.0];
+static NSColor *GAAdaptiveGrayColor(NSString *name, CGFloat light, CGFloat dark) {
+    return [NSColor colorWithName:name dynamicProvider:^NSColor *(NSAppearance *appearance) {
+        CGFloat component = GAAppearanceIsDark(appearance) ? dark : light;
+        return [NSColor colorWithSRGBRed:component green:component blue:component alpha:1.0];
     }];
 }
 
-NSColor *GAGlyphForegroundColor(void) {
-    return [NSColor colorWithName:@"GAGlyphForeground"
-                  dynamicProvider:^NSColor *(NSAppearance *appearance) {
-        CGFloat component = GAAppearanceIsDark(appearance)
-            ? (0xEE / 255.0) : (0x22 / 255.0);
-        return [NSColor colorWithSRGBRed:component
-                                   green:component
-                                    blue:component
-                                   alpha:1.0];
-    }];
+NSColor *GABoundingBoxBackgroundColor(void) {
+    return GAAdaptiveGrayColor(@"GABoundingBoxBackground", 253.0 / 255.0, 60.0 / 255.0);
+}
+
+static NSColor *GAGlyphForegroundColor(void) {
+    return GAAdaptiveGrayColor(@"GAGlyphForeground", 0x22 / 255.0, 0xEE / 255.0);
 }
 
 @implementation GAPreviewColors {

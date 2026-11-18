@@ -386,6 +386,21 @@ NSAttributedString *GAFieldTextFromModelText(NSAttributedString *modelText) {
   [super keyDown:event];
 }
 
+- (BOOL)insertTextWithSeparatorMarkers:(NSString *)string replacementRange:(NSRange)range {
+  if (range.location == NSNotFound) {
+    range = self.selectedRange;
+  }
+  NSMutableDictionary *attributes = [self.typingAttributes mutableCopy];
+  [attributes removeObjectForKey:GALineBreakAttributeName];
+  NSAttributedString *text = GAMarkerTextFromString(string, attributes);
+  if (![self shouldChangeTextInRange:range replacementString:text.string]) return NO;
+  [self.textStorage replaceCharactersInRange:range withAttributedString:text];
+  [self didChangeText];
+  [self setSelectedRange:NSMakeRange(range.location + text.length, 0)];
+  self.typingAttributes = attributes;
+  return YES;
+}
+
 - (void)insertText:(id)string replacementRange:(NSRange)replacementRange {
   NSString *inserted;
   if ([string isKindOfClass:[NSAttributedString class]]) {
@@ -393,30 +408,29 @@ NSAttributedString *GAFieldTextFromModelText(NSAttributedString *modelText) {
   } else if ([string isKindOfClass:[NSString class]]) {
     inserted = string;
   }
-  if (!inserted.length || !GANeedsExplicitLineBreakAttributes(inserted)) {
+  if (inserted.length && GANeedsExplicitLineBreakAttributes(inserted)) {
+    [self insertTextWithSeparatorMarkers:inserted replacementRange:replacementRange];
+  } else {
     [super insertText:string replacementRange:replacementRange];
-    return;
   }
-  NSRange range = replacementRange;
-  if (range.location == NSNotFound) {
-    range = self.selectedRange;
+}
+
+- (BOOL)readSelectionFromPasteboard:(NSPasteboard *)pasteboard type:(NSPasteboardType)type {
+  if ([type isEqualToString:NSPasteboardTypeString] || [type isEqualToString:@"NSStringPboardType"]) {
+    NSString *string = [pasteboard stringForType:type];
+    if (string.length && GANeedsExplicitLineBreakAttributes(string)) {
+      // AppKit has already set the insertion range for the drop.
+      return [self insertTextWithSeparatorMarkers:string replacementRange:self.selectedRange];
+    }
   }
-  NSMutableDictionary *attributes = [self.typingAttributes mutableCopy];
-  [attributes removeObjectForKey:GALineBreakAttributeName];
-  NSAttributedString *text = GAMarkerTextFromString(inserted, attributes);
-  if ([self shouldChangeTextInRange:range replacementString:text.string]) {
-    [self.textStorage replaceCharactersInRange:range withAttributedString:text];
-    [self didChangeText];
-    [self setSelectedRange:NSMakeRange(range.location + text.length, 0)];
-    self.typingAttributes = attributes;
-  }
+  return [super readSelectionFromPasteboard:pasteboard type:type];
 }
 
 - (void)paste:(id)sender {
   NSString *string =
       [[NSPasteboard generalPasteboard] stringForType:NSPasteboardTypeString];
   if (string.length && GANeedsExplicitLineBreakAttributes(string)) {
-    [self insertText:string replacementRange:self.selectedRange];
+    [self insertTextWithSeparatorMarkers:string replacementRange:self.selectedRange];
     return;
   }
   [super paste:sender];
@@ -483,6 +497,13 @@ static void GAWithInputEditorTransition(NSText *editor, void (^operation)(void))
   input.transitioningFieldEditor = wasTransitioning;
 }
 
+static void GABeginGlyphInputEditing(NSView *view, NSText *editor, void (^beginEditing)(void)) {
+  GAWithInputEditorTransition(editor, ^{
+    beginEditing();
+    GAInputFieldDidGainFocus(view, editor);
+  });
+}
+
 static void GAEndGlyphInputEditing(NSText *editor, void (^endEditing)(void)) {
   NSTextStorage *storage = ((GAGlyphInputEditor *)editor).textStorage;
   NSAttributedString *text = [storage copy];
@@ -506,16 +527,14 @@ static NSRect GAInputRectByInsettingTextEdges(NSRect rect, NSRect bounds) {
 @implementation GAGlyphInputCell
 - (void)editWithFrame:(NSRect)rect inView:(NSView *)view editor:(NSText *)editor
              delegate:(id)delegate event:(NSEvent *)event {
-  GAWithInputEditorTransition(editor, ^{
+  GABeginGlyphInputEditing(view, editor, ^{
     [super editWithFrame:rect inView:view editor:editor delegate:delegate event:event];
-    GAInputFieldDidGainFocus(view, editor);
   });
 }
 - (void)selectWithFrame:(NSRect)rect inView:(NSView *)view editor:(NSText *)editor
               delegate:(id)delegate start:(NSInteger)start length:(NSInteger)length {
-  GAWithInputEditorTransition(editor, ^{
+  GABeginGlyphInputEditing(view, editor, ^{
     [super selectWithFrame:rect inView:view editor:editor delegate:delegate start:start length:length];
-    GAInputFieldDidGainFocus(view, editor);
   });
 }
 - (void)endEditing:(NSText *)editor {
@@ -535,16 +554,14 @@ static NSRect GAInputRectByInsettingTextEdges(NSRect rect, NSRect bounds) {
 @implementation GASearchFieldCell
 - (void)editWithFrame:(NSRect)rect inView:(NSView *)view editor:(NSText *)editor
              delegate:(id)delegate event:(NSEvent *)event {
-  GAWithInputEditorTransition(editor, ^{
+  GABeginGlyphInputEditing(view, editor, ^{
     [super editWithFrame:rect inView:view editor:editor delegate:delegate event:event];
-    GAInputFieldDidGainFocus(view, editor);
   });
 }
 - (void)selectWithFrame:(NSRect)rect inView:(NSView *)view editor:(NSText *)editor
               delegate:(id)delegate start:(NSInteger)start length:(NSInteger)length {
-  GAWithInputEditorTransition(editor, ^{
+  GABeginGlyphInputEditing(view, editor, ^{
     [super selectWithFrame:rect inView:view editor:editor delegate:delegate start:start length:length];
-    GAInputFieldDidGainFocus(view, editor);
   });
 }
 - (void)endEditing:(NSText *)editor {

@@ -180,6 +180,12 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 @implementation GAGlyphNavigationStep
 @end
 
+static BOOL GANavigationSourceMatchesText(GAGlyphNavigationStep *step, NSString *text) {
+    return text && step.range.location != NSNotFound && step.range.length &&
+        NSMaxRange(step.range) <= text.length &&
+        [[text substringWithRange:step.range] isEqualToString:step.sourceText];
+}
+
 @interface GAPendingGlyphEdit : NSObject
 @property (nonatomic, strong) GACharacterGroup *group;
 @property (nonatomic, strong) GAGlyphVariant *variant;
@@ -619,9 +625,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     if (!step || !self.glyphNavigationEnabled || !self.fontDocument) return NO;
     if (!step.glyphIDs) return YES;
     if (![self canEditFromScanSnapshotForText:self.sidebarViewController.text]) return NO;
-    NSString *text = self.scanSnapshot.text;
-    return step.range.location != NSNotFound && NSMaxRange(step.range) <= text.length &&
-        [[text substringWithRange:step.range] isEqualToString:step.sourceText] &&
+    return GANavigationSourceMatchesText(step, self.scanSnapshot.text) &&
         [self.sidebarViewController containsGlyphIDs:step.glyphIDs textRange:step.range];
 }
 
@@ -682,6 +686,11 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 - (void)menuNeedsUpdate:(NSMenu *)menu {
     [menu removeAllItems];
     NSArray *stacks = @[self.navigationForwardHistory, self.navigationHistory];
+    BOOL canNavigate = self.glyphNavigationEnabled && self.fontDocument != nil;
+    NSString *text = canNavigate && [self canEditFromScanSnapshotForText:self.sidebarViewController.text]
+        ? self.scanSnapshot.text : nil;
+    NSMutableArray<NSMenuItem *> *glyphItems = [NSMutableArray array];
+    NSMutableSet<NSValue *> *ranges = [NSMutableSet set];
     for (NSArray<GAGlyphNavigationStep *> *steps in stacks) {
         if (menu.numberOfItems && steps.count) [menu addItem:NSMenuItem.separatorItem];
         for (GAGlyphNavigationStep *step in steps.reverseObjectEnumerator) {
@@ -690,7 +699,22 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
             GASetViewModeMenuItemImage(item, step.mode);
             item.target = self;
             item.representedObject = step;
-            item.enabled = [self canNavigateToStep:step];
+            item.enabled = canNavigate && !step.glyphIDs;
+            if (step.glyphIDs && GANavigationSourceMatchesText(step, text)) {
+                [glyphItems addObject:item];
+                [ranges addObject:[NSValue valueWithRange:step.range]];
+            }
+        }
+    }
+    if (glyphItems.count == 1) {
+        NSMenuItem *item = glyphItems.firstObject;
+        GAGlyphNavigationStep *step = item.representedObject;
+        item.enabled = [self.sidebarViewController containsGlyphIDs:step.glyphIDs textRange:step.range];
+    } else if (glyphItems.count > 1) {
+        NSDictionary *sequences = [self.sidebarViewController glyphSequencesForTextRanges:ranges];
+        for (NSMenuItem *item in glyphItems) {
+            GAGlyphNavigationStep *step = item.representedObject;
+            item.enabled = [sequences[[NSValue valueWithRange:step.range]] containsObject:step.glyphIDs];
         }
     }
 }

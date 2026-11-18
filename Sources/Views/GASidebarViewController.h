@@ -20,6 +20,7 @@ typedef NS_ENUM(NSInteger, GAPendingSelectionScroll) {
 @property (nonatomic, copy, nullable) void (^onWillNavigate)(void);
 @property (nonatomic, readonly) NSRange selectedGlyphTextRange;
 - (BOOL)containsGlyphIDs:(NSArray<NSNumber *> *)glyphIDs textRange:(NSRange)range;
+- (NSDictionary<NSValue *, NSSet<NSArray<NSNumber *> *> *> *)glyphSequencesForTextRanges:(NSSet<NSValue *> *)ranges;
 @property (nonatomic, readonly) NSString *text;
 @property (nonatomic, readonly) NSString *selectedGlyphSourceText;
 @property (nonatomic, readonly) NSAttributedString *attributedText;

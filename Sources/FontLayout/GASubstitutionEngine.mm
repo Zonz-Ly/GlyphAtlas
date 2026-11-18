@@ -856,12 +856,14 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
     std::vector<std::vector<Glyph>> sources;
     for (NSArray *candidate in candidates)
         sources.push_back(glyphVector(candidate));
+    Cancellation cancellation{[cancelled] { return cancelled() != NO; }};
     try {
+        cancellation.check();
         size_t branch = [self gsubBranch];
         // This is our executor's replay, not a trace of TextKit internals.
         // Accept it only when its final sequence and complete source agree.
         for (const auto &run : prepareText(text, r.cmap, selections, int(direction))) {
-            if (cancelled()) return nil;
+            cancellation.check();
             if (run.source.start > span.start || run.source.end < span.end) continue;
             Settings settings;
             settings.script = run.script;
@@ -885,14 +887,15 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
                     NSNumber *selector = feature[(__bridge NSString *)kCTFontFeatureSelectorIdentifierKey];
                     if (type && selector) overrides.push_back({type.unsignedIntValue, selector.unsignedIntValue});
                 }
-                r.aat.substitute(items, {}, settings.rtl, vertical, &trace, false, overrides);
+                r.aat.substitute(items, {}, settings.rtl, vertical, &trace, false, overrides, &cancellation);
             } else
-                r.gsub.substitute(items, r.gdef, settings, branch, &trace);
+                r.gsub.substitute(items, r.gdef, settings, branch, &trace, &cancellation);
             auto final = sequenceAt(items, span, settings.rtl);
             if (!final || *final != target) continue;
             auto current = target;
             std::vector<std::string> labels;
             for (auto step = trace.steps.rbegin(); step != trace.steps.rend(); ++step) {
+                cancellation.check();
                 auto after = sequenceAt(step->after, span, settings.rtl);
                 auto before = sequenceAt(step->before, span, settings.rtl);
                 if (!after || *after != current || !before) break;
@@ -903,6 +906,8 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
                 current = std::move(*before);
             }
         }
+    } catch (const QueryCancelled &) {
+        return nil;
     } catch (const InvalidTable &) {
         // An unavailable replay proceeds to independent source discovery.
     }
@@ -920,7 +925,7 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
     std::set<std::pair<std::vector<Glyph>, bool>> visited;
     std::map<std::vector<Glyph>, std::vector<OriginEdge>> edges;
     GASubstitutionOrigin *otherMode;
-    Budget budget(text.length);
+    Budget budget(text.length, &cancellation);
     size_t queuedGlyphs = 0;
     try {
         for (size_t i = 0; i < sources.size(); i++)
@@ -929,7 +934,7 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
                 queuedGlyphs += sources[i].size();
             }
         while (!pending.empty()) {
-            if (cancelled()) return nil;
+            cancellation.check();
             budget.step();
             State state = std::move(pending.front());
             pending.pop_front();
@@ -946,7 +951,8 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
                 // Static single-GID catalogue plus actual full-context matches
                 // cover contextual and multi-GID/composition sources alike.
                 for (size_t i = 0; i < state.glyphs.size(); i++)
-                    for (NSDictionary *output in [self relatedOutputs:state.glyphs[i] cancellation:nullptr]) {
+                    for (NSDictionary *output in [self relatedOutputs:state.glyphs[i] cancellation:&cancellation]) {
+                        budget.poll();
                         std::string label = [output[@"source"] UTF8String];
                         outputs.push_back({replacingGlyph(state.glyphs, i, output), label,
                                            verticalSource(label) || [output[@"vertical"] boolValue]});
@@ -975,7 +981,7 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
                                 for (bool orientation : domain.apple && r.verticalAAT
                                                             ? std::vector<bool>{false, true}
                                                             : std::vector<bool>{false}) {
-                                    if (cancelled()) return nil;
+                                    cancellation.check();
                                     budget.step();
                                     Settings settings;
                                     settings.script = run.script;
@@ -987,11 +993,12 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
                                     Trace found;
                                     found.inventory = true;
                                     try {
-                                        r.substitute(items, domain, settings, &found);
+                                        r.substitute(items, domain, settings, &found, &cancellation);
                                     } catch (const InvalidTable &) {
                                         continue;
                                     }
                                     for (const auto &change : found.changes) {
+                                        budget.poll();
                                         if (!(change.source == span) || change.inherited) continue;
                                         std::vector<Glyph> input;
                                         for (const auto &cluster : change.inputs)
@@ -1020,6 +1027,8 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
                 pending.push_back(std::move(next));
             }
         }
+    } catch (const QueryCancelled &) {
+        return nil;
     } catch (const InvalidTable &) {
         // Cycles, malformed data and excessive discovery cannot stall a click.
     }
@@ -1120,11 +1129,7 @@ std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Doma
         hasKerning = r.gpos.position(buffer, r.gdef, settings, metrics, branch);
     } catch (const InvalidTable &) {
         buffer = std::move(nominal);
-        for (auto &item : buffer) {
-            item.xAdvance = settings.vertical ? 0 : metrics.horizontalAdvance(item.glyph);
-            item.yAdvance = settings.vertical ? -metrics.verticalAdvance(item.glyph) : 0;
-            item.xOffset = item.yOffset = 0;
-        }
+        setNominalPositions(buffer, metrics, settings.vertical);
     }
     if (!hasKerning) {
         Buffer before = buffer;

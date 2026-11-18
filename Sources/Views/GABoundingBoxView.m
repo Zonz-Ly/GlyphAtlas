@@ -1,4 +1,5 @@
 #import "GABoundingBoxView.h"
+#import "GAAppKit.h"
 
 @interface GABoundingBoxView ()
 @property (nonatomic) CGFloat magnificationStartPage;
@@ -65,9 +66,9 @@ CGFloat GAClampSideInsetFraction(CGFloat fraction) {
     return MIN(GABoundingBoxMaxInsetFraction, MAX(0.0, fraction));
 }
 
-CGFloat GABoundingBoxPageFractionForMagnification(CGFloat startPage, CGFloat magnification) {
+CGFloat GABoundingBoxPageFractionForScale(CGFloat startPage, CGFloat factor) {
     CGFloat minimum = 1.0 - 2.0 * GABoundingBoxMaxInsetFraction;
-    return MIN(1.0, MAX(minimum, startPage * (1.0 + magnification)));
+    return MIN(1.0, MAX(minimum, startPage * factor));
 }
 
 NSRect GAInsetRectByFraction(NSRect rect, CGFloat fraction) {
@@ -113,8 +114,7 @@ void GAPreserveScrollPosition(NSScrollView *scrollView, void (^changes)(void)) {
     NSRect proposed = clip.bounds;
     proposed.origin = NSMakePoint(NSMinX(limits) + position.x * NSWidth(limits),
                                   NSMinY(limits) + position.y * NSHeight(limits));
-    [clip scrollToPoint:[clip constrainBoundsRect:proposed].origin];
-    [scrollView reflectScrolledClipView:clip];
+    GAScrollToProposedBounds(scrollView, proposed);
 }
 
 void GADrawPage(NSRect page, NSAppearance *appearance, GAPreviewColors *colors) {
@@ -210,8 +210,8 @@ void GADrawPage(NSRect page, NSAppearance *appearance, GAPreviewColors *colors) 
         self.magnificationStartPage = 1.0 - 2.0 * self.sideInsetFraction;
     } else if (recognizer.state == NSGestureRecognizerStateChanged) {
         // 1:1 with the gesture, like system zooming views.
-        CGFloat page = GABoundingBoxPageFractionForMagnification(
-            self.magnificationStartPage, recognizer.magnification);
+        CGFloat page = GABoundingBoxPageFractionForScale(
+            self.magnificationStartPage, 1.0 + recognizer.magnification);
         self.sideInsetFraction = (1.0 - page) * 0.5;
     }
 }

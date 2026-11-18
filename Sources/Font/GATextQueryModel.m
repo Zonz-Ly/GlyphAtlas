@@ -135,13 +135,19 @@ static NSUInteger GASourceEndpointCount(const NSUInteger *points, NSUInteger cou
     return first;
 }
 
+static NSUInteger GACountOverlappingSources(NSRange range, const NSUInteger *starts,
+                                           const NSUInteger *ends, NSUInteger count) {
+    NSUInteger beforeEnd = GASourceEndpointCount(starts, count, NSMaxRange(range), NO);
+    NSUInteger throughStart = GASourceEndpointCount(ends, count, range.location, YES);
+    return beforeEnd - throughStart;
+}
+
 static BOOL IntersectsSelection(NSRange range, NSArray<GAGlyphSelectionRun *> *runs,
                                   const NSUInteger *starts, const NSUInteger *ends,
                                   NSUInteger count) {
     if (range.location == NSNotFound || range.length == 0) return NO;
     if (starts && NSMaxRange(range) >= range.location)
-        return GASourceEndpointCount(starts, count, NSMaxRange(range), NO) >
-               GASourceEndpointCount(ends, count, range.location, YES);
+        return GACountOverlappingSources(range, starts, ends, count) != 0;
     for (GAGlyphSelectionRun *run in runs)
         if (NSIntersectionRange(range, run.range).length > 0) return YES;
     return NO;
@@ -157,6 +163,14 @@ static void GAMergeSelectionCandidate(GAGlyphVariant *candidate, NSMutableArray 
     GAGlyphVariant *copy = [document rebindVariant:candidate content:text];
     copy.base = NO;
     [variants addObject:copy];
+}
+
+static NSString *GAGlyphSequenceKey(NSArray<NSNumber *> *glyphIDs) {
+    if (glyphIDs.count < 2) return glyphIDs.firstObject.stringValue ?: @"∅";
+    NSMutableArray<NSString *> *parts = [NSMutableArray arrayWithCapacity:glyphIDs.count];
+    for (NSNumber *glyph in glyphIDs)
+        [parts addObject:glyph.stringValue];
+    return [parts componentsJoinedByString:@","];
 }
 
 /// Inserts browsing-only combinations after the projected source and selection rows.
@@ -205,8 +219,7 @@ static NSArray<GACharacterGroup *> *GAInsertCombinationGroups(
         NSRange range = rangeValue.rangeValue;
         NSUInteger spanLength = 0;
         if (indexed) {
-            spanLength = GASourceEndpointCount(starts, count, NSMaxRange(range), NO) -
-                         GASourceEndpointCount(ends, count, range.location, YES);
+            spanLength = GACountOverlappingSources(range, starts, ends, count);
         } else {
             for (GACharacterGroup *group in scanGroups)
                 if (group.textRange.location != NSNotFound &&
@@ -243,7 +256,7 @@ static NSArray<GACharacterGroup *> *GAInsertCombinationGroups(
         NSMutableArray<GAGlyphVariant *> *unique = [NSMutableArray array];
         NSMutableSet<NSString *> *glyphKeys = [NSMutableSet set];
         for (GAGlyphVariant *variant in variants) {
-            NSString *key = variant.glyphKey;
+            NSString *key = GAGlyphSequenceKey(variant.glyphIDs);
             if ([glyphKeys containsObject:key])
                 continue;
             [glyphKeys addObject:key];

@@ -24,8 +24,8 @@ FOUNDATION_EXPORT const CGFloat GAGlyphZoomStep10;
 
 /// Clamps a page inset to the range the bounding box supports.
 CGFloat GAClampSideInsetFraction(CGFloat fraction);
-/// Page fraction (1 - 2 * inset) for a pinch, 1:1 with the gesture.
-CGFloat GABoundingBoxPageFractionForMagnification(CGFloat startPage, CGFloat magnification);
+/// Scales the page fraction (1 - 2 * inset) within the supported zoom range.
+CGFloat GABoundingBoxPageFractionForScale(CGFloat startPage, CGFloat factor);
 
 /// Range of allowed clip view origins, including content insets.
 FOUNDATION_EXPORT NSRect GAScrollPositionLimits(NSScrollView *scrollView);

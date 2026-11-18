@@ -329,11 +329,7 @@ class Positioning {
         : lookups_(lookups), gdef_(gdef), metrics_(metrics), settings_(settings), buffer_(buffer),
           budget_(buffer.size()) {}
     void run(const std::vector<LookupStep> &plan) {
-        for (auto &item : buffer_) {
-            item.xOffset = item.yOffset = 0;
-            item.xAdvance = settings_.vertical ? 0 : metrics_.horizontalAdvance(item.glyph);
-            item.yAdvance = settings_.vertical ? -metrics_.verticalAdvance(item.glyph) : 0;
-        }
+        setNominalPositions(buffer_, metrics_, settings_.vertical);
         for (auto &item : buffer_)
             if (gdef_.glyphClasses.get(item.glyph) == 3) {
                 item.xAdvance = 0;
