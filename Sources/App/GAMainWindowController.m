@@ -17,6 +17,13 @@ static NSToolbarItemIdentifier const GAVariationItem = @"GAVariation";
 static NSToolbarItemIdentifier const GABackItem = @"GABack";
 static const CGFloat GAMacOS26SidebarInputTopOffset = -8;
 
+static NSUInteger GAIndexOfToolbarItem(NSToolbar *toolbar, NSToolbarItemIdentifier identifier) {
+    return [toolbar.items indexOfObjectPassingTest:^BOOL(NSToolbarItem *item, NSUInteger index, BOOL *stop) {
+        (void)index; (void)stop;
+        return [item.itemIdentifier isEqualToString:identifier];
+    }];
+}
+
 /// Prefer a non-C0/DEL mapping for input, keeping the first if none qualifies.
 static NSNumber *GAInputScalarForGlyph(NSArray<NSNumber *> *scalars) {
     for (NSNumber *scalar in scalars) {
@@ -711,12 +718,16 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     }
 }
 
-- (void)setGlyphNavigationEnabled:(BOOL)enabled {
-    if (_glyphNavigationEnabled == enabled) return;
-    _glyphNavigationEnabled = enabled;
+- (void)clearNavigationHistory {
     [self.navigationHistory removeAllObjects];
     [self.navigationForwardHistory removeAllObjects];
     self.pendingGridNavigation = nil;
+}
+
+- (void)setGlyphNavigationEnabled:(BOOL)enabled {
+    if (_glyphNavigationEnabled == enabled) return;
+    _glyphNavigationEnabled = enabled;
+    [self clearNavigationHistory];
     NSToolbar *toolbar = self.window.toolbar;
     if (enabled) {
         [toolbar insertItemWithItemIdentifier:GABackItem atIndex:self.sidebarHidden ? 0 : 2];
@@ -1105,10 +1116,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 
 - (void)updateToolbarVariationItem {
     NSToolbar *toolbar = self.window.toolbar;
-    NSUInteger index = [toolbar.items indexOfObjectPassingTest:^BOOL(NSToolbarItem *item, NSUInteger i, BOOL *stop) {
-        (void)i; (void)stop;
-        return [item.itemIdentifier isEqualToString:GAVariationItem];
-    }];
+    NSUInteger index = GAIndexOfToolbarItem(toolbar, GAVariationItem);
     BOOL hasItem = index != NSNotFound;
     BOOL needsItem = self.fontResource.axes.count > 0;
     if (hasItem == needsItem) return;
@@ -1152,11 +1160,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     NSToolbarItem *item = [[NSToolbarItem alloc] initWithItemIdentifier:itemIdentifier];
     if ([itemIdentifier isEqualToString:GABackItem]) {
         // The toolbar is rebuilt before the sidebar's collapsed state changes.
-        BOOL hasToolbarInput = [toolbar.items indexOfObjectPassingTest:
-            ^BOOL(NSToolbarItem *candidate, NSUInteger index, BOOL *stop) {
-                (void)index; (void)stop;
-                return [candidate.itemIdentifier isEqualToString:GATextInputItem];
-            }] != NSNotFound;
+        BOOL hasToolbarInput = GAIndexOfToolbarItem(toolbar, GATextInputItem) != NSNotFound;
 
         item.label = NSLocalizedString(@"Back", @"Return to the previous glyph or view");
         NSImage *image = [NSImage imageWithSystemSymbolName:@"chevron.backward" accessibilityDescription:item.label];
@@ -1274,9 +1278,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 }
 
 - (void)loadResource:(GAFontResource *)resource url:(NSURL *)url fileReference:(NSURL *)fileReference {
-    [self.navigationHistory removeAllObjects];
-    [self.navigationForwardHistory removeAllObjects];
-    self.pendingGridNavigation = nil;
+    [self clearNavigationHistory];
     [self updateNavigationButton];
     [self.variationPopover close];
     self.fontResource = resource;
