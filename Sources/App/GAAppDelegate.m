@@ -871,13 +871,14 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
     }
 }
 
-- (void)addZoomAlternateWithTitle:(NSString *)title action:(SEL)action
-                    keyEquivalent:(NSString *)key modifier:(NSEventModifierFlags)modifier
-                            toMenu:(NSMenu *)menu {
+- (NSMenuItem *)addZoomAlternateWithTitle:(NSString *)title action:(SEL)action
+                           keyEquivalent:(NSString *)key modifier:(NSEventModifierFlags)modifier
+                                   toMenu:(NSMenu *)menu {
     NSMenuItem *item = [menu addItemWithTitle:title action:action keyEquivalent:key];
     item.target = self;
     item.keyEquivalentModifierMask = NSEventModifierFlagCommand | modifier;
     item.alternate = YES;
+    return item;
 }
 
 - (NSMenu *)buildViewMenuIncludingZoom:(BOOL)includeZoom {
@@ -957,7 +958,7 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
     zoomIn.target = self;
     [self addZoomAlternateWithTitle:NSLocalizedString(@"Expand Bounding Box", @"Expand the preview bounding box")
         action:@selector(zoomMetricsIn:) keyEquivalent:@"+" modifier:NSEventModifierFlagOption toMenu:menu];
-    [self addZoomAlternateWithTitle:NSLocalizedString(@"Increase Leading", @"Increase preview leading")
+    NSMenuItem *increaseLeading = [self addZoomAlternateWithTitle:NSLocalizedString(@"Increase Leading", @"Increase preview leading")
         action:@selector(increaseLineHeight:) keyEquivalent:@"+" modifier:NSEventModifierFlagControl toMenu:menu];
 
     NSMenuItem *zoomOut = [menu addItemWithTitle:NSLocalizedString(@"Make Text Smaller", @"Decrease the preview text size")
@@ -968,6 +969,14 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
         action:@selector(zoomMetricsOut:) keyEquivalent:@"-" modifier:NSEventModifierFlagOption toMenu:menu];
     [self addZoomAlternateWithTitle:NSLocalizedString(@"Decrease Leading", @"Decrease preview leading")
         action:@selector(decreaseLineHeight:) keyEquivalent:@"-" modifier:NSEventModifierFlagControl toMenu:menu];
+
+    NSMenuItem *leadingShortcut = [increaseLeading copy];
+    leadingShortcut.keyEquivalent = @"=";
+    leadingShortcut.alternate = NO;
+    leadingShortcut.hidden = YES;
+    leadingShortcut.allowsKeyEquivalentWhenHidden = YES;
+    [menu addItem:leadingShortcut];
+
     NSMenuItem *defaultSize = [menu addItemWithTitle:NSLocalizedString(@"Default Size", @"Reset the current view to its default size")
                                              action:@selector(resetZoom:)
                                       keyEquivalent:@"0"];
