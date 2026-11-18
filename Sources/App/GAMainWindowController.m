@@ -642,7 +642,13 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 }
 
 - (void)updateNavigationButton {
-    self.backToolbarItem.enabled = self.canNavigateBack;
+    NSSegmentedControl *button = (NSSegmentedControl *)self.backToolbarItem.view;
+    if (!button) return;
+    BOOL enabled = self.canNavigateBack;
+    // Keep the control enabled so a disabled segment handles clicks in place.
+    [button setEnabled:enabled forSegment:0];
+    button.accessibilityEnabled = enabled;
+    [button.cell setAccessibilityEnabled:enabled];
 }
 
 - (void)navigateBack:(id)sender {
@@ -1189,8 +1195,8 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         [button sizeToFit];
         item.view = button;
         item.autovalidates = NO;
-        item.enabled = self.canNavigateBack;
         self.backToolbarItem = item;
+        [self updateNavigationButton];
         return item;
     }
     if ([itemIdentifier isEqualToString:GATextInputItem]) {
