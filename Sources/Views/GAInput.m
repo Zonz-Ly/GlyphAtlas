@@ -93,30 +93,12 @@ static BOOL GAIsBlankAreaClick(NSEvent *event) {
     return YES;
 }
 
-@interface GAInputClickMonitor : NSObject
-@property (nonatomic, strong) id monitor;
-+ (instancetype)sharedMonitor;
-- (void)removeMonitor;
-- (void)installMonitor;
-@end
+// Field editor callbacks and local event delivery run on the main thread.
+static id GAInputClickMonitorToken;
 
-@implementation GAInputClickMonitor
-+ (instancetype)sharedMonitor {
-    static GAInputClickMonitor *monitor;
-    static dispatch_once_t once;
-    dispatch_once(&once, ^{ monitor = [[self alloc] init]; });
-    return monitor;
-}
-
-- (void)removeMonitor {
-    if (self.monitor == nil) return;
-    [NSEvent removeMonitor:self.monitor];
-    self.monitor = nil;
-}
-
-- (void)installMonitor {
-    if (self.monitor != nil) return;
-    self.monitor = [NSEvent addLocalMonitorForEventsMatchingMask:
+static void GAInputFieldDidGainFocus(NSView *view, NSText *editor) {
+    if (view.window.firstResponder != editor || GAInputClickMonitorToken) return;
+    GAInputClickMonitorToken = [NSEvent addLocalMonitorForEventsMatchingMask:
         NSEventMaskLeftMouseDown
         handler:^NSEvent *(NSEvent *event) {
             if (GAIsBlankAreaClick(event)) {
@@ -126,22 +108,14 @@ static BOOL GAIsBlankAreaClick(NSEvent *event) {
             return event;
         }];
 }
-@end
-
-static void GAInputEditingDidBegin(void) {
-    // A repeated request is a no-op; no input identity or registry is needed.
-    [[GAInputClickMonitor sharedMonitor] installMonitor];
-}
 
 static void GAInputEditingDidEnd(void) {
     // Check later on the main queue rather than during the current focus handoff.
     dispatch_async(dispatch_get_main_queue(), ^{
-        if (!GAHasFocusedInput()) [[GAInputClickMonitor sharedMonitor] removeMonitor];
+        if (!GAInputClickMonitorToken || GAHasFocusedInput()) return;
+        [NSEvent removeMonitor:GAInputClickMonitorToken];
+        GAInputClickMonitorToken = nil;
     });
-}
-
-static void GAInputFieldDidGainFocus(NSView *view, NSText *editor) {
-    if (view.window.firstResponder == editor) GAInputEditingDidBegin();
 }
 
 #pragma mark - Numeric field editing

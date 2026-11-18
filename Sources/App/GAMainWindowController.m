@@ -705,16 +705,13 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
             }
         }
     }
-    if (glyphItems.count == 1) {
-        NSMenuItem *item = glyphItems.firstObject;
+    NSDictionary *sequences = glyphItems.count > 1
+        ? [self.sidebarViewController glyphSequencesForTextRanges:ranges] : nil;
+    for (NSMenuItem *item in glyphItems) {
         GAGlyphNavigationStep *step = item.representedObject;
-        item.enabled = [self.sidebarViewController containsGlyphIDs:step.glyphIDs textRange:step.range];
-    } else if (glyphItems.count > 1) {
-        NSDictionary *sequences = [self.sidebarViewController glyphSequencesForTextRanges:ranges];
-        for (NSMenuItem *item in glyphItems) {
-            GAGlyphNavigationStep *step = item.representedObject;
-            item.enabled = [sequences[[NSValue valueWithRange:step.range]] containsObject:step.glyphIDs];
-        }
+        item.enabled = sequences
+            ? [sequences[[NSValue valueWithRange:step.range]] containsObject:step.glyphIDs]
+            : [self.sidebarViewController containsGlyphIDs:step.glyphIDs textRange:step.range];
     }
 }
 
@@ -736,7 +733,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         if (index != NSNotFound) [toolbar removeItemAtIndex:index];
         self.backToolbarItem = nil;
     }
-    [self updateNavigationButton];
 }
 
 /// Map each saved source before the sidebar replaces its edit-coordinate baseline.
@@ -1102,7 +1098,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     }
     if (self.glyphNavigationEnabled)
         [toolbar insertItemWithItemIdentifier:GABackItem atIndex:hidden ? 0 : 2];
-    [self updateNavigationButton];
 }
 
 - (void)updateSidebarAccessoryTopInsetForHiddenSidebar:(BOOL)hidden {
@@ -1179,7 +1174,8 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         NSMenu *history = [[NSMenu alloc] initWithTitle:NSLocalizedString(@"Navigation", @"Toggle navigation")];
         history.autoenablesItems = NO;
         history.delegate = self;
-        [self menuNeedsUpdate:history];
+        if (self.navigationHistory.count || self.navigationForwardHistory.count)
+            [self menuNeedsUpdate:history];
         [button setMenu:history forSegment:0];
         [button setShowsMenuIndicator:NO forSegment:0];
         button.menu = history;
