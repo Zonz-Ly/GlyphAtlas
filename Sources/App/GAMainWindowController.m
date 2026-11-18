@@ -667,7 +667,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         [self.sidebarViewController selectGlyphIDs:step.glyphIDs textRange:step.range];
     [self setViewMode:step.mode];
     self.restoringNavigation = NO;
-    [self updateNavigationButton];
 }
 
 - (void)chooseNavigationStep:(NSMenuItem *)item {
@@ -1866,8 +1865,9 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         self.restoringNavigation = YES;
         [self setViewMode:GAViewModeSingleGlyph];
         self.restoringNavigation = NO;
+    } else {
+        [self updateNavigationButton];
     }
-    [self updateNavigationButton];
     if (edit) {
         [self editGlyphVariant:edit.variant inGroup:edit.group insert:edit.insert];
     }
