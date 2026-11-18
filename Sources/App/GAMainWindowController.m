@@ -236,6 +236,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 @property (nonatomic) NSSize windowedSize;
 @property (nonatomic, strong, nullable) GAScanDisplaySnapshot *scanSnapshot;
 @property (nonatomic) NSUInteger scanSnapshotGeneration;
+@property (nonatomic) BOOL updatingSidebarFromScan;
 @property (nonatomic, strong, nullable) GAPendingGlyphEdit *pendingGlyphEdit;
 @property (nonatomic, strong, nullable) NSProgress *layoutLookup;
 @property (nonatomic) NSTextAlignment textAlignment;
@@ -424,7 +425,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         weakSelf.lastSelectedVariant = variant;
         [weakSelf.detailViewController setVariant:variant];
         [weakSelf revealGlyphForVariant:variant quick:quickReveal];
-        [weakSelf updateNavigationButton];
+        if (!weakSelf.updatingSidebarFromScan) [weakSelf updateNavigationButton];
     };
     self.sidebarViewController.onGlyphActivated = ^(GACharacterGroup *group,
                                                      GAGlyphVariant *variant, BOOL insert) {
@@ -1853,8 +1854,14 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     [self remapNavigationStepsForText:snapshot.text];
     self.scanSnapshot = snapshot;
     self.scanSnapshotGeneration = generation;
-    [self.sidebarViewController updateGroups:snapshot.display sourceText:snapshot.text
-                                  fontDocument:self.fontDocument];
+    // Refresh Back after the published rows and any pending grid jump are applied.
+    self.updatingSidebarFromScan = YES;
+    @try {
+        [self.sidebarViewController updateGroups:snapshot.display sourceText:snapshot.text
+                                      fontDocument:self.fontDocument];
+    } @finally {
+        self.updatingSidebarFromScan = NO;
+    }
     [self.detailViewController setMultiText:snapshot.multiText groups:snapshot.multiGroups
                                   omissions:snapshot.multiOmissions];
     GAGlyphNavigationStep *origin = self.pendingGridNavigation;
