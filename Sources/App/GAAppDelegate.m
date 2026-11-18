@@ -13,6 +13,15 @@ static void GAAddDisabledMenuItem(NSMenu *menu, NSString *title) {
     [menu addItemWithTitle:title action:nil keyEquivalent:@""].enabled = NO;
 }
 
+static void GAAddHiddenShortcut(NSMenuItem *item, NSString *keyEquivalent) {
+    NSMenuItem *shortcut = [item copy];
+    shortcut.keyEquivalent = keyEquivalent;
+    shortcut.alternate = NO;
+    shortcut.hidden = YES;
+    shortcut.allowsKeyEquivalentWhenHidden = YES;
+    [item.menu addItem:shortcut];
+}
+
 static const GAPreviewColorRole GAPaletteRoles[] = {
     GAPreviewColorGlyph, GAPreviewColorBoundingBox, GAPreviewColorBackground,
 };
@@ -694,11 +703,7 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
         addItemWithTitle:NSLocalizedString(@"Open…", @"Open font")
                   action:@selector(openFont:) keyEquivalent:@"o"];
     open.target = self;
-    NSMenuItem *shortcut = [open copy];
-    shortcut.keyEquivalent = @"n";
-    shortcut.hidden = YES;
-    shortcut.allowsKeyEquivalentWhenHidden = YES;
-    [fileMenu addItem:shortcut];
+    GAAddHiddenShortcut(open, @"n");
 
     NSString *recentTitle = NSLocalizedString(@"Open Recent", @"Open Recent");
     NSMenuItem *recentItem = [fileMenu addItemWithTitle:recentTitle
@@ -915,11 +920,7 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
         for (NSUInteger i = 0; i < titles.count; i++) {
             NSMenuItem *item = [menu addItemWithTitle:titles[i] action:actions[i] keyEquivalent:keys[i]];
             item.target = self;
-            NSMenuItem *shortcut = [item copy];
-            shortcut.keyEquivalent = [NSString stringWithCharacters:&arrows[i] length:1];
-            shortcut.hidden = YES;
-            shortcut.allowsKeyEquivalentWhenHidden = YES;
-            [menu addItem:shortcut];
+            GAAddHiddenShortcut(item, [NSString stringWithCharacters:&arrows[i] length:1]);
         }
         [menu addItem:NSMenuItem.separatorItem];
         NSMenuItem *sidebar = [menu addItemWithTitle:NSLocalizedString(@"Hide Sidebar", @"Hide the glyph sidebar")
@@ -970,12 +971,7 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
     [self addZoomAlternateWithTitle:NSLocalizedString(@"Decrease Leading", @"Decrease preview leading")
         action:@selector(decreaseLineHeight:) keyEquivalent:@"-" modifier:NSEventModifierFlagControl toMenu:menu];
 
-    NSMenuItem *leadingShortcut = [increaseLeading copy];
-    leadingShortcut.keyEquivalent = @"=";
-    leadingShortcut.alternate = NO;
-    leadingShortcut.hidden = YES;
-    leadingShortcut.allowsKeyEquivalentWhenHidden = YES;
-    [menu addItem:leadingShortcut];
+    GAAddHiddenShortcut(increaseLeading, @"=");
 
     NSMenuItem *defaultSize = [menu addItemWithTitle:NSLocalizedString(@"Default Size", @"Reset the current view to its default size")
                                              action:@selector(resetZoom:)

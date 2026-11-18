@@ -161,10 +161,14 @@
     [self updateToolbarAppearance];
 }
 
+- (nullable NSScrollView *)activePreviewScrollView {
+    if (self.viewMode == GAViewModeAllGlyphs) return self.allGlyphsView.scrollView;
+    if (self.viewMode == GAViewModeMultiCharacter) return self.multiScrollView;
+    return nil;
+}
+
 - (BOOL)scrollFocusedPreviewToEdge:(BOOL)bottom {
-    NSScrollView *scrollView;
-    if (self.viewMode == GAViewModeAllGlyphs) scrollView = self.allGlyphsView.scrollView;
-    if (self.viewMode == GAViewModeMultiCharacter) scrollView = self.multiScrollView;
+    NSScrollView *scrollView = [self activePreviewScrollView];
     if (!scrollView) return NO;
 
     NSWindow *window = self.view.window;
@@ -175,10 +179,7 @@
 }
 
 - (void)updateToolbarAppearance {
-    NSScrollView *scrollView;
-    if (self.viewMode == GAViewModeAllGlyphs) scrollView = self.allGlyphsView.scrollView;
-    if (self.viewMode == GAViewModeMultiCharacter) scrollView = self.multiScrollView;
-
+    NSScrollView *scrollView = [self activePreviewScrollView];
     BOOL overlapsToolbar = NO;
     if (scrollView.automaticallyAdjustsContentInsets) {
         NSClipView *clip = scrollView.contentView;
