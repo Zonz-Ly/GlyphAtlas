@@ -51,6 +51,21 @@ static NSNumber *GAInputScalarForGlyph(NSArray<NSNumber *> *scalars) {
 - (BOOL)scrollFocusedPreviewToEdge:(BOOL)bottom;
 @end
 
+// Read AppKit's key binding without applying text commands to the current responder.
+@interface GAPreviewKeyBinding : NSResponder
+@property (nonatomic) SEL command;
+@end
+
+@implementation GAPreviewKeyBinding
+- (void)doCommandBySelector:(SEL)command {
+    self.command = command;
+}
+
+- (void)insertText:(id)text {
+    (void)text;
+}
+@end
+
 @interface GADropWindow : NSWindow
 @property (nonatomic, copy, nullable) void (^onFontDrop)(NSURL *url);
 @property (nonatomic, copy, nullable) BOOL (^glyphDoubleClickHitTest)(NSPoint point);
@@ -69,16 +84,17 @@ static NSNumber *GAInputScalarForGlyph(NSArray<NSNumber *> *scalars) {
     [super sendEvent:event];
 }
 
-- (BOOL)performKeyEquivalent:(NSEvent *)event {
-    NSEventModifierFlags flags = event.modifierFlags &
-        (NSEventModifierFlagCommand | NSEventModifierFlagControl |
-         NSEventModifierFlagOption | NSEventModifierFlagShift);
+- (void)keyDown:(NSEvent *)event {
     GAMainWindowController *controller = (id)self.windowController;
-    if (![controller isKindOfClass:GAMainWindowController.class])
-        return [super performKeyEquivalent:event];
-    if (flags == NSEventModifierFlagCommand && (event.keyCode == 126 || event.keyCode == 125) &&
-        [controller scrollFocusedPreviewToEdge:event.keyCode == 125]) return YES;
-    return [super performKeyEquivalent:event];
+    if ([controller isKindOfClass:GAMainWindowController.class] &&
+        GAModifiersAre(event.modifierFlags, NSEventModifierFlagCommand)) {
+        GAPreviewKeyBinding *binding = [GAPreviewKeyBinding new];
+        [binding interpretKeyEvents:@[event]];
+        SEL command = binding.command;
+        if ((command == @selector(moveToBeginningOfDocument:) || command == @selector(moveToEndOfDocument:)) &&
+            [controller scrollFocusedPreviewToEdge:command == @selector(moveToEndOfDocument:)]) return;
+    }
+    [super keyDown:event];
 }
 
 - (instancetype)initWithContentRect:(NSRect)contentRect
