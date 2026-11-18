@@ -1774,10 +1774,10 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         self.pendingWorkerDocument = self.fontDocument;
         self->_workerGeneration += 1;
     }
-    [self updateNavigationButton];
     if (text.length == 0) {
         [self clearScanDisplay];
     }
+    [self updateNavigationButton];
     dispatch_async(self.analysisQueue, ^{
         [self workerRun];
     });
@@ -1789,9 +1789,24 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     [self cancelLayoutLookup];
     self.pendingGlyphEdit = nil;
     self.scanSnapshot = nil;
-    [self.sidebarViewController clearGroups];
+    [self updateSidebarFromScanSnapshot:nil];
     [self.detailViewController setVariant:nil];
     [self.detailViewController setMultiText:@"" groups:@[] omissions:NSIndexSet.indexSet];
+}
+
+- (void)updateSidebarFromScanSnapshot:(nullable GAScanDisplaySnapshot *)snapshot {
+    // The scan flow refreshes Back after the synchronous sidebar update.
+    self.updatingSidebarFromScan = YES;
+    @try {
+        if (snapshot) {
+            [self.sidebarViewController updateGroups:snapshot.display sourceText:snapshot.text
+                                          fontDocument:self.fontDocument];
+        } else {
+            [self.sidebarViewController clearGroups];
+        }
+    } @finally {
+        self.updatingSidebarFromScan = NO;
+    }
 }
 
 #pragma mark - Worker (analysisQueue only)
@@ -1855,14 +1870,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     [self remapNavigationStepsForText:snapshot.text];
     self.scanSnapshot = snapshot;
     self.scanSnapshotGeneration = generation;
-    // Refresh Back after the published rows and any pending grid jump are applied.
-    self.updatingSidebarFromScan = YES;
-    @try {
-        [self.sidebarViewController updateGroups:snapshot.display sourceText:snapshot.text
-                                      fontDocument:self.fontDocument];
-    } @finally {
-        self.updatingSidebarFromScan = NO;
-    }
+    [self updateSidebarFromScanSnapshot:snapshot];
     [self.detailViewController setMultiText:snapshot.multiText groups:snapshot.multiGroups
                                   omissions:snapshot.multiOmissions];
     GAGlyphNavigationStep *origin = self.pendingGridNavigation;
