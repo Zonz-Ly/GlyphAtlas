@@ -135,15 +135,16 @@
 "%@ (%.0f%%)" = "%@（%.0f%%）";
 
 /* Help. */
-"Help.01" = "De'wI' tetlhDaq «poSmoH…» wIv, pIqaD ngeHmey poSmoHlaH, pagh pIqaD Degh app 'och pagh poSmoHta'bogh pIqaD jIHHomDaq qeng 'e' laH. appvam laDlaHbogh mIw wa'DIch chenmoH 'e' tIv. pochlIj De' tetlh ngaS.";
+"Help.01" = "De'wI' tetlhDaq «poSmoH…» wIv pagh ⌘O yIlo', pIqaD ngeHmey poSmoHlaH, pagh pIqaD Degh app 'och pagh poSmoHta'bogh pIqaD jIHHomDaq qeng 'e' laH. appvam laDlaHbogh mIw wa'DIch chenmoH 'e' tIv. pochlIj De' tetlh ngaS.";
 "Help.02" = "De'wI' tetlhDaq DaH jIHHom pIqaD wa' vIp rIHlaH. ⌥ yIlo' Hoch lo'wI'pu' pIqaD vIp rIHmeH.";
 "Help.03" = "pIqaD choHlaHbogh poSmoHDI', qul Doq 'ej qul SuD bIngDaq pIqaD choHbogh pat tu'lu', 'ej pe'laH. mI' wIvDI', ↑/↓ pagh ⇧↑/⇧↓ yIlo' mI' choHmeH.";
-"Help.04" = "retlh tetlhDaq wa' pagh law' mu'tlhegh yIchel Hoch Degh qellu'bogh leghmeH. ⌥⏎ yIlo' mu'tlhegh chu'meH, 'ej nIH Degh yIlo' «motlh ghItlh» tu'meH—DaH mu'tlhegh qaw pagh motlh ghItlh yIchel. De'wI' tetlhDaq ⌥ yIlo' nom Qaw'meH.";
+"Help.04" = "retlh tetlhDaq wa' pagh law' mu'tlhegh yIchel Hoch Degh qellu'bogh leghmeH. ⌥⏎ yIlo' mu'tlhegh chu'meH, 'ej nIH Degh yIlo' «motlh ghItlh» tu'meH—DaH mu'tlhegh qaw pagh motlh ghItlh yIchel. De'wI' tetlhDaq ⌥ yIlo' nom Qaw'meH. ⇥ je ⇧⇥ je yIlo' qawlu'bogh ghItlhmey choHmeH.";
 "Help.05" = "Degh yIlo' cha'logh pagh wIv 'ej ⏎ yIlo', pIqaD motlh tlhej, 'ej Degh tlhej 'agh. ⇧ yIlo' je, Deghvam chel.";
 "Help.06" = "↑/↓ yIlo' Degh Dung/bIng wIvmeH, ⌥↑/⌥↓ yIlo' pIqaD motlh Dung/bIng wIvmeH, ⌘↑/⌘↓ yIlo' Degh tetlh wa'DIch 'ej Qav Degh wIvmeH.";
 "Help.07" = "UnicodeDaq 'eQway' tamDI', Unicode pat pong 'agh.";
 "Help.08" = "⌘C yIlo' wIvta'bogh Degh Hoch mI' mu'mey rIHmeH.";
 "Help.09" = "nIH Degh yIlo' choHmeH, pagh ⌘1 wa' Degh, ⌘2 law' mu'tlhegh, ⌘3 Degh tetlh yIlo'. ⌃⌘S: retlh 'ang / retlh So'.";
+"Help.16" = "⌃⌘G: Navigation yIchu' pagh yIchu'Ha'. Navigation chu'lu'DI', mu'tlheghmey pagh Degh tetlhDaq Degh yI'uy'qa' wa' Degh leghmeH. ⌘] je ⌘[ je yIlo' Forward pagh Back jaHmeH; Back ghopDu' per yIlo'laH je. Back nIH yI'uy' pagh yI'uy'taH qawHaq leghmeH.";
 "Help.10" = "law' mu'tlheghDaq Degh yIlo' wa'logh, Degh tlhej legh. Sen per ngaS. nIH Degh pagh ⌘5 yIlo' choHmeH. ghItlh per 'ej pIqaD SeH naDev je tu'lu'. De'wI' tetlh «nuqneH» latlh wIv ngaS.";
 "Help.11" = "Degh tetlhDaq Degh yIlo' cha'logh, ghItlhta'bogh yIchel. Retlh tetlhDaq Degh yIlo' wa'logh, Degh tetlhDaq 'agh. NIH Degh yIlo' «SeH wIv» tu'meH.";
 "Help.12" = "⌘+/⌘− yIlo' ghItlh tInmoH/machmoH, pagh 'eQway' tlhej. Law' mu'tlheghDaq ⌥⌘+/⌥⌘− pagh 'eQway' tlhej per tInmoH/machmoH, ⌃⌘+/⌃⌘− pagh 'eQway' tlhej tlhegh tInmoH/machmoH. ⌘0 motlh tIn wIv.";

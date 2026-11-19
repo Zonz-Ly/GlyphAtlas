@@ -1599,6 +1599,7 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
             NSLocalizedString(@"Help.07", @"Unicode character name"),
             NSLocalizedString(@"Help.08", @"Copy encoded characters")],
         NSLocalizedString(@"Help.09", @"Usage paragraph 9"),
+        NSLocalizedString(@"Help.16", @"Navigation"),
         NSLocalizedString(@"Help.10", @"Usage paragraph 10"),
         NSLocalizedString(@"Help.11", @"Usage paragraph 11"),
         NSLocalizedString(@"Help.12", @"Usage paragraph 12"),

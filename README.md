@@ -38,14 +38,15 @@ The default build uses the current machine's architecture. Use a flag to select 
 
 ## Usage
 
-- Use “Open At” in the menu bar to open a font directly from a Fonts folder. You can also drag a font onto the app icon or onto a window with a font already open, or set Glyph Atlas as the default app for opening font files. Recently opened items are supported.
+- Choose “Open…” in the menu bar or press `⌘O` to open a font directly from a Fonts folder. You can also drag a font onto the app icon or onto a window with a font already open, or set Glyph Atlas as the default app for opening font files. Recently opened items are supported.
 - Use the menu bar to copy the font open in the current window to your user Fonts folder in one click. Hold `⌥` to copy it to the Fonts folder for all users.
 - When you open a variable font, a variation panel appears beside the window controls. Drag it out to keep it open. Select a numeric value and use `↑`/`↓` or `⇧↑`/`⇧↓` to adjust it.
-- Type one or more characters in the sidebar to see all associated glyphs. Use `⌥⏎` to insert a line break. You can also right-click and choose “Saved Text” to save the current text or quickly enter text you’ve saved before. Hold `⌥` in the menu bar to quickly delete saved text.
+- Type one or more characters in the sidebar to see all associated glyphs. Use `⌥⏎` to insert a line break. You can also right-click and choose “Saved Text” to save the current text or quickly enter text you’ve saved before. Hold `⌥` in the menu bar to quickly delete saved text. Use `⇥` and `⇧⇥` to cycle through saved text.
 - Double-click a glyph, or select it and press `⏎`, to replace the default glyph and show its alternates. Hold `⇧` while doing this to add the glyph.
-- Use `↑`/`↓` to move between glyphs, `⌘↑`/`⌘↓` to move between base glyphs, and `⌥↑`/`⌥↓` to jump to the first or last glyph in the list.
+- Use `↑`/`↓` to move between glyphs, `⌥↑`/`⌥↓` to move between base glyphs, and `⌘↑`/`⌘↓` to jump to the first or last glyph in the list.
 - Hover over a Unicode badge to see the character name defined by the Unicode standard. Use `⌘C` to copy all encoded characters of the selected glyph.
 - Right-click to switch views, or press `⌘1` for Single Glyph, `⌘2` for Characters, or `⌘3` for Glyph Grid. Use `⌃⌘S` to show or hide the sidebar.
+- Use `⌃⌘G` to toggle Navigation. When it is on, double-clicking a glyph in Characters or Glyph Grid opens it in Single Glyph. Use `⌘]` and `⌘[` to go forward and back, or use the Back button. Right-click or press and hold the Back button to show history.
 - In the Characters view, click a glyph to view its alternates. Right-click or press `⌘5` to switch between horizontal and vertical writing. Text alignment and Typography are here too. The View menu in the menu bar has more options.
 - In Glyph Grid, double-click a glyph to add it to the existing text. Clicking a glyph in the sidebar makes it blink in Glyph Grid. Right-click to find Filter by Feature.
 - Use `⌘+`/`⌘−` to make text bigger or smaller, or pinch on the trackpad. In the Characters view, use `⌥⌘+`/`⌥⌘−` or a horizontal pinch to increase or decrease the margins, and `⌃⌘+`/`⌃⌘−` or a vertical pinch to increase or decrease leading. Press `⌘0` to restore the default size.
@@ -56,7 +57,7 @@ The default build uses the current machine's architecture. Use a flag to select 
 ## Limitations
 
 - The sidebar and the Glyph Grid filter use in-house `GSUB` and `AAT` parsers. They follow the font's own tables, so their results can differ from CoreText's processed results.
-- Glyph names are read directly from the font's `post` or `CFF` table by an in-house parser. It shows GID when unavailable. CID-keyed CFF fonts show their actual CID.
+- Glyph names are read directly from the font's `post` and `CFF` tables by an in-house parser. It shows GID when unavailable. CID-keyed CFF fonts show their actual CID.
 - Glyph width comes from CoreText's horizontal advance.
 - Glyph height comes from CoreText's vertical advance when `vmtx` is present. Otherwise it uses `sTypoAscender + abs(sTypoDescender)`. If those are unavailable, or in the Characters view, it uses CoreText `ascent + descent`.
 - The system TextView provides layout and metrics for the Characters view, reflecting how macOS actually typesets the text. The app filters missing glyphs out of the preview because TextView has no option to turn off font fallback.
