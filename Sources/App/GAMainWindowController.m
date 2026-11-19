@@ -321,7 +321,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 @property (nonatomic) BOOL glyphNavigationEnabled;
 @property (nonatomic, strong) NSMutableArray<GAGlyphNavigationStep *> *navigationHistory;
 @property (nonatomic, strong) NSMutableArray<GAGlyphNavigationStep *> *navigationForwardHistory;
-@property (nonatomic, strong, nullable) GAGlyphNavigationStep *adjacentNavigationStep;
+@property (nonatomic, strong, nullable) GAGlyphNavigationStep *restoredNavigationStep;
 @property (nonatomic) GANavigationLocationSource navigationLocationSource;
 @property (nonatomic, strong, nullable) NSMenuToolbarItem *backToolbarItem;
 @property (nonatomic) BOOL suppressNavigationRecording;
@@ -751,10 +751,12 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 - (void)recordNavigationStep:(nullable GAGlyphNavigationStep *)step {
     if (!self.glyphNavigationEnabled || !self.fontDocument) return;
     self.layoutFirstClick = nil;
-    if (self.adjacentNavigationStep) [self.navigationHistory addObject:self.adjacentNavigationStep];
     GAGlyphNavigationStep *forwardStep = [self forwardStepToKeep];
-    if (forwardStep) [self.navigationHistory addObject:forwardStep];
-    self.adjacentNavigationStep = nil;
+    if (forwardStep) {
+        if (self.restoredNavigationStep) [self.navigationHistory addObject:self.restoredNavigationStep];
+        [self.navigationHistory addObject:forwardStep];
+    }
+    self.restoredNavigationStep = nil;
     [self.navigationForwardHistory removeAllObjects];
     step = step ?: [self currentNavigationStep];
     GAGlyphNavigationStep *last = self.navigationHistory.lastObject;
@@ -816,11 +818,12 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     self.layoutFirstClick = nil;
     self.suppressNavigationRecording = YES;
     [self cancelLayoutLookup];
-    [destination addObject:self.adjacentNavigationStep ?: [self currentNavigationStep]];
+    // A view-only restore may leave a different glyph selected in the sidebar.
+    [destination addObject:self.restoredNavigationStep ?: [self currentNavigationStep]];
     for (NSUInteger i = source.count; i > index + 1; i--)
         [destination addObject:source[i - 1]];
     [source removeObjectsInRange:NSMakeRange(index, source.count - index)];
-    self.adjacentNavigationStep = [self forwardStepToKeep] ? step : nil;
+    self.restoredNavigationStep = step;
     BOOL restoredSelection = [self navigationSelectionMatchesCurrentText:step] &&
         [self.sidebarViewController selectGlyphIDs:step.glyphIDs textRange:step.range];
     [self setViewMode:step.mode];
@@ -870,7 +873,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 - (void)clearNavigationHistory {
     [self.navigationHistory removeAllObjects];
     [self.navigationForwardHistory removeAllObjects];
-    self.adjacentNavigationStep = nil;
+    self.restoredNavigationStep = nil;
     self.navigationLocationSource = GANavigationLocationUnrecorded;
     self.layoutFirstClick = nil;
     self.pendingGridNavigation = nil;
@@ -897,7 +900,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     if (!publishing && [text isEqualToString:previousText]) return;
     NSMutableArray<GAGlyphNavigationStep *> *steps = [self.navigationHistory mutableCopy];
     [steps addObjectsFromArray:self.navigationForwardHistory];
-    if (self.adjacentNavigationStep) [steps addObject:self.adjacentNavigationStep];
+    if (self.restoredNavigationStep) [steps addObject:self.restoredNavigationStep];
     if (self.pendingGridNavigation.previousStep) [steps addObject:self.pendingGridNavigation.previousStep];
     for (GAGlyphNavigationStep *step in steps) {
         if (!step.glyphIDs) continue;
