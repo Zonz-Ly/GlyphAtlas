@@ -25,6 +25,16 @@ static NSUInteger GAIndexOfToolbarItem(NSToolbar *toolbar, NSToolbarItemIdentifi
     }];
 }
 
+static NSControl *GAToolbarItemControl(NSView *view, NSToolbarItem *item) {
+    if ([view isKindOfClass:NSControl.class] && ((NSControl *)view).target == item)
+        return (NSControl *)view;
+    for (NSView *child in view.subviews) {
+        NSControl *control = GAToolbarItemControl(child, item);
+        if (control) return control;
+    }
+    return nil;
+}
+
 /// Prefer a non-C0/DEL mapping for input, keeping the first if none qualifies.
 static NSNumber *GAInputScalarForGlyph(NSArray<NSNumber *> *scalars) {
     for (NSNumber *scalar in scalars) {
@@ -1491,13 +1501,17 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     self.variationPopover.delegate = self;
     self.variationPopover.behavior = NSPopoverBehaviorTransient;
     self.variationPopover.contentViewController = controller;
+    NSView *anchor = sender;
     if (@available(macOS 14.0, *)) {
         if ([sender isKindOfClass:NSToolbarItem.class]) {
-            [self.variationPopover showRelativeToToolbarItem:sender];
-            return;
+            anchor = GAToolbarItemControl(self.window.contentView.superview, sender);
+            if (!anchor || anchor.hiddenOrHasHiddenAncestor || NSIsEmptyRect(anchor.visibleRect)) {
+                // Overflow items keep AppKit's alternate anchor.
+                [self.variationPopover showRelativeToToolbarItem:sender];
+                return;
+            }
         }
     }
-    NSView *anchor = sender;
     [self.variationPopover showRelativeToRect:anchor.bounds ofView:anchor preferredEdge:NSRectEdgeMinY];
 }
 
