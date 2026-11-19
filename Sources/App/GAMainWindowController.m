@@ -270,7 +270,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 @property (nonatomic, strong) NSMutableArray<GAGlyphNavigationStep *> *navigationForwardHistory;
 @property (nonatomic, strong, nullable) NSMenuToolbarItem *backToolbarItem;
 @property (nonatomic) BOOL restoringNavigation;
-@property (nonatomic, strong, nullable) GAGlyphNavigationStep *pendingGridNavigation;
+@property (nonatomic) BOOL pendingGridNavigation;
 @property (nonatomic) NSUInteger pendingGridNavigationGeneration;
 @end
 
@@ -450,12 +450,11 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     };
     self.detailViewController.onAllGlyphDoubleClick = ^(GAAllGlyphEntry *entry) {
         GAMainWindowController *controller = weakSelf;
-        GAGlyphNavigationStep *origin = controller.glyphNavigationEnabled
-            ? [controller currentNavigationStep] : nil;
+        BOOL navigate = controller.glyphNavigationEnabled;
         NSUInteger generation = controller.workerGeneration;
         [controller appendAllGlyphEntry:entry];
-        if (origin && controller.workerGeneration != generation) {
-            controller.pendingGridNavigation = origin;
+        if (navigate && controller.workerGeneration != generation) {
+            controller.pendingGridNavigation = YES;
             controller.pendingGridNavigationGeneration = controller.workerGeneration;
         }
     };
@@ -533,7 +532,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 
 - (void)setViewMode:(GAViewMode)viewMode {
     if (_viewMode != viewMode) [self recordNavigation];
-    self.pendingGridNavigation = nil;
+    self.pendingGridNavigation = NO;
     [self cancelLayoutLookup];
     _viewMode = viewMode;
     self.detailViewController.viewMode = viewMode;
@@ -730,7 +729,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 - (void)clearNavigationHistory {
     [self.navigationHistory removeAllObjects];
     [self.navigationForwardHistory removeAllObjects];
-    self.pendingGridNavigation = nil;
+    self.pendingGridNavigation = NO;
 }
 
 - (void)setGlyphNavigationEnabled:(BOOL)enabled {
@@ -751,7 +750,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 - (void)remapNavigationStepsForText:(NSString *)text {
     NSMutableArray<GAGlyphNavigationStep *> *steps = [self.navigationHistory mutableCopy];
     [steps addObjectsFromArray:self.navigationForwardHistory];
-    if (self.pendingGridNavigation) [steps addObject:self.pendingGridNavigation];
     for (GAGlyphNavigationStep *step in steps) {
         if (!step.glyphIDs || step.range.location == NSNotFound) continue;
         NSRange range = [self.sidebarViewController navigationRangeForDisplayedRange:step.range];
@@ -1767,7 +1765,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 }
 
 - (void)scheduleAnalysis {
-    self.pendingGridNavigation = nil;
+    self.pendingGridNavigation = NO;
     [self cancelLayoutLookup];
     NSMutableAttributedString *attributedText =
         [self.sidebarViewController.attributedText mutableCopy];
@@ -1875,14 +1873,8 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
                                   fontDocument:self.fontDocument];
     [self.detailViewController setMultiText:snapshot.multiText groups:snapshot.multiGroups
                                   omissions:snapshot.multiOmissions];
-    GAGlyphNavigationStep *origin = self.pendingGridNavigation;
-    if (origin && self.pendingGridNavigationGeneration == generation && self.glyphNavigationEnabled) {
-        self.pendingGridNavigation = nil;
-        [self.navigationForwardHistory removeAllObjects];
-        [self.navigationHistory addObject:origin];
-        self.restoringNavigation = YES;
+    if (self.pendingGridNavigation && self.pendingGridNavigationGeneration == generation && self.glyphNavigationEnabled) {
         [self setViewMode:GAViewModeSingleGlyph];
-        self.restoringNavigation = NO;
     } else {
         [self updateNavigationButton];
     }
