@@ -772,16 +772,22 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 }
 
 - (BOOL)navigationSelectionMatchesCurrentText:(GAGlyphNavigationStep *)step {
-    return step.glyphIDs && [self canEditFromScanSnapshotForText:self.sidebarViewController.text] &&
-        GANavigationSourceMatchesText(step, self.scanSnapshot.text);
+    return step.glyphIDs && GANavigationSourceMatchesText(step, self.scanSnapshot.text) &&
+        [self canEditFromScanSnapshotForText:self.sidebarViewController.text];
+}
+
+- (nullable GAGlyphNavigationStep *)nextAvailableStepInHistory:(NSArray<GAGlyphNavigationStep *> *)history {
+    for (GAGlyphNavigationStep *step in history.reverseObjectEnumerator)
+        if ([self canNavigateToStep:step]) return step;
+    return nil;
 }
 
 - (BOOL)canNavigateBack {
-    return [self canNavigateToStep:self.navigationHistory.lastObject];
+    return [self nextAvailableStepInHistory:self.navigationHistory] != nil;
 }
 
 - (BOOL)canNavigateForward {
-    return [self canNavigateToStep:self.navigationForwardHistory.lastObject];
+    return [self nextAvailableStepInHistory:self.navigationForwardHistory] != nil;
 }
 
 - (void)updateNavigationButton {
@@ -790,12 +796,12 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 
 - (void)navigateBack:(id)sender {
     (void)sender;
-    [self navigateToStep:self.navigationHistory.lastObject];
+    [self navigateToStep:[self nextAvailableStepInHistory:self.navigationHistory]];
 }
 
 - (void)navigateForward:(id)sender {
     (void)sender;
-    [self navigateToStep:self.navigationForwardHistory.lastObject];
+    [self navigateToStep:[self nextAvailableStepInHistory:self.navigationForwardHistory]];
 }
 
 - (void)navigateToStep:(GAGlyphNavigationStep *)step {
