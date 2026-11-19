@@ -208,7 +208,6 @@ typedef NS_ENUM(NSUInteger, GAAnalysisReason) {
 };
 
 @interface GAPendingNavigation : NSObject
-@property (nonatomic) NSUInteger generation;
 @property (nonatomic) BOOL opensSingleGlyph;
 @property (nonatomic, strong, nullable) GAGlyphNavigationStep *previousStep;
 @property (nonatomic, strong, nullable) GAGlyphNavigationStep *selectionBeforeInput;
@@ -475,21 +474,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         [weakSelf editGlyphVariant:variant inGroup:group insert:insert];
     };
     self.detailViewController.onAllGlyphDoubleClick = ^(GAAllGlyphEntry *entry) {
-        GAMainWindowController *controller = weakSelf;
-        BOOL navigate = controller.glyphNavigationEnabled;
-        NSUInteger generation = controller.workerGeneration;
-        GAGlyphNavigationStep *previousStep = nil;
-        if (navigate && controller.navigationLocationSource == GANavigationLocationExplicit &&
-            ![controller.lastSelectedVariant.glyphIDs isEqualToArray:@[entry.glyphID]])
-            previousStep = [controller currentNavigationStep];
-        [controller appendAllGlyphEntry:entry];
-        if (navigate && controller.workerGeneration != generation) {
-            GAPendingNavigation *pending = [GAPendingNavigation new];
-            pending.generation = controller.workerGeneration;
-            pending.opensSingleGlyph = YES;
-            pending.previousStep = previousStep;
-            controller.pendingNavigation = pending;
-        }
+        [weakSelf appendAllGlyphEntry:entry];
     };
     self.detailViewController.onGlyphSelected = ^BOOL(NSArray<NSNumber *> *glyphIDs, NSRange range,
                                                    NSArray<NSNumber *> *leadingGlyphIDs, NSRange leadingRange,
@@ -990,10 +975,19 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
                                                   featureSources:@[]
                                                         ligature:NO];
     }
+    NSUInteger generation = self.workerGeneration;
     [self.sidebarViewController appendInputString:string
                                        selection:selection
                                selectingGlyphIDs:@[entry.glyphID]
                                       actionName:NSLocalizedString(@"Add Glyph", @"Undo action for adding a glyph")];
+    GAPendingNavigation *pending = self.pendingNavigation;
+    if (pending && self.workerGeneration != generation) {
+        GAGlyphNavigationStep *selected = pending.selectionBeforeInput;
+        pending.opensSingleGlyph = YES;
+        pending.previousStep = selected.locationSource == GANavigationLocationExplicit &&
+            ![selected.glyphIDs isEqualToArray:@[entry.glyphID]] ? selected : nil;
+        pending.selectionBeforeInput = nil;
+    }
 }
 
 #pragma mark - Window and input focus
@@ -1870,7 +1864,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         self.pendingWorkerSelections = selections;
         self.pendingWorkerDocument = self.fontDocument;
         self->_workerGeneration += 1;
-        self.pendingNavigation.generation = self->_workerGeneration;
     }
     [self updateNavigationButton];
     if (text.length == 0) {
@@ -1960,7 +1953,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
                                   omissions:snapshot.multiOmissions];
     GAPendingNavigation *pending = self.pendingNavigation;
     self.pendingNavigation = nil;
-    if (pending && pending.generation == generation && self.glyphNavigationEnabled) {
+    if (pending && self.glyphNavigationEnabled) {
         if (pending.opensSingleGlyph) {
             if (pending.previousStep) [self recordNavigationStep:pending.previousStep];
             self.navigationLocationSource = GANavigationLocationSingleGlyphJumpOrigin;

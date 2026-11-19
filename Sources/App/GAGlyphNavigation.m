@@ -62,15 +62,10 @@
     return self;
 }
 
-- (GAGlyphNavigationStep *)adjacentForwardStep {
-    return self.forwardSteps.count == 1 ? self.forwardSteps.lastObject : nil;
-}
-
 - (void)recordStep:(GAGlyphNavigationStep *)step {
-    GAGlyphNavigationStep *forward = self.adjacentForwardStep;
-    if (forward) {
+    if (_forwardSteps.count == 1) {
         if (self.restoredStep) [_backSteps addObject:self.restoredStep];
-        [_backSteps addObject:forward];
+        [_backSteps addObject:_forwardSteps.lastObject];
     }
     _restoredStep = nil;
     [_forwardSteps removeAllObjects];

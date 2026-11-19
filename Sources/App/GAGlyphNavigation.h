@@ -29,7 +29,6 @@ typedef NS_ENUM(NSUInteger, GANavigationLocationSource) {
 @property (nonatomic, strong, readonly) NSArray<GAGlyphNavigationStep *> *backSteps;
 @property (nonatomic, strong, readonly) NSArray<GAGlyphNavigationStep *> *forwardSteps;
 @property (nonatomic, strong, readonly, nullable) GAGlyphNavigationStep *restoredStep;
-@property (nonatomic, readonly, nullable) GAGlyphNavigationStep *adjacentForwardStep;
 - (void)recordStep:(GAGlyphNavigationStep *)step;
 - (BOOL)moveToStep:(GAGlyphNavigationStep *)step leavingStep:(GAGlyphNavigationStep *)current;
 - (void)clear;
