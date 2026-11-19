@@ -40,6 +40,8 @@ GABuildDisplayGroups(NSArray<GACharacterGroup *> *groups, NSString *text,
 @property (nonatomic, strong, nonnull) NSArray<GACharacterGroup *> *multiGroups;
 /// Maps a preview group back to its range in the original text.
 - (NSRange)sourceRangeForMultiGroup:(GACharacterGroup *)group;
+/// Returns the contiguous preview span for a surviving original-text range.
+- (NSRange)multiRangeForSourceRange:(NSRange)source;
 @end
 
 FOUNDATION_EXPORT GAScanDisplaySnapshot * _Nullable GABuildScanDisplaySnapshot(NSString *text,

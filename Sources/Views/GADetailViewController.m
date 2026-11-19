@@ -298,6 +298,10 @@
     [self.allGlyphsView setVisibleGlyphIDs:glyphIDs];
 }
 
+- (void)activateMultiGlyphInTextRange:(NSRange)range {
+    [self.multiView selectGlyphInTextRange:range doubleClick:YES];
+}
+
 - (void)setShowsMetrics:(BOOL)showsMetrics {
     self.boundingBoxView.showsMetrics = showsMetrics;
     self.multiView.showsMetrics = showsMetrics;

@@ -33,6 +33,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)containsAllGlyphAtWindowPoint:(NSPoint)point;
 - (void)setMultiText:(NSString *)text groups:(NSArray<GACharacterGroup *> *)groups
            omissions:(NSIndexSet *)omissions;
+- (void)activateMultiGlyphInTextRange:(NSRange)range;
 - (void)setTextAlignment:(NSTextAlignment)alignment;
 - (void)setBaseWritingDirection:(NSWritingDirection)direction;
 - (void)setTypesettingLanguage:(NSString *)language;

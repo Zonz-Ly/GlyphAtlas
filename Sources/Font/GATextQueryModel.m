@@ -456,6 +456,25 @@ NSArray<GACharacterGroup *> *GABuildDisplayGroups(NSArray<GACharacterGroup *> *g
     return range;
 }
 
+- (NSRange)multiRangeForSourceRange:(NSRange)source {
+    NSRange result = NSMakeRange(NSNotFound, 0);
+    NSUInteger next = source.location;
+    for (GACharacterGroup *group in self.multiGroups) {
+        NSRange original = [self sourceRangeForMultiGroup:group];
+        if (original.location >= NSMaxRange(source)) break;
+        NSRange overlap = NSIntersectionRange(source, original);
+        if (!overlap.length) continue;
+        NSRange display = NSMakeRange(group.textRange.location + overlap.location - original.location,
+                                      overlap.length);
+        if (overlap.location != next ||
+            (result.location != NSNotFound && NSMaxRange(result) != display.location))
+            return NSMakeRange(NSNotFound, 0);
+        result = result.location == NSNotFound ? display : NSUnionRange(result, display);
+        next = NSMaxRange(overlap);
+    }
+    return next == NSMaxRange(source) ? result : NSMakeRange(NSNotFound, 0);
+}
+
 @end
 
 /// A control attached to supported text can shape it without its own glyph.

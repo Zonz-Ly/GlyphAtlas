@@ -52,6 +52,8 @@ NS_ASSUME_NONNULL_BEGIN
       omissions:(NSIndexSet *)omissions;
 - (void)zoomTextIn;
 - (void)zoomTextOut;
+/// Reuses the current native glyph hit for a uniquely identified text span.
+- (BOOL)selectGlyphInTextRange:(NSRange)range doubleClick:(BOOL)doubleClick;
 
 @end
 

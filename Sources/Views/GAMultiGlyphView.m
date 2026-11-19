@@ -1274,12 +1274,21 @@ static NSIndexSet *GAForeignCharactersToOmit(NSAttributedString *display, NSInde
     }
     NSUInteger sourceIndex = self.displaySourceIndices[(NSUInteger)hitIndex].unsignedIntegerValue;
     if (sourceIndex == NSNotFound) return NO;
-    for (GAGlyphLayoutRun *hit in self.glyphHits)
-        if (NSLocationInRange(sourceIndex, hit.range)) {
-            return self.onGlyphSelected
-                ? self.onGlyphSelected(hit.glyphIDs, hit.range, hit.leadingGlyphIDs, hit.leadingRange, doubleClick) : NO;
+    return [self selectGlyphInTextRange:NSMakeRange(sourceIndex, 1) doubleClick:doubleClick];
+}
+
+- (BOOL)selectGlyphInTextRange:(NSRange)range doubleClick:(BOOL)doubleClick {
+    if (self.textView.hidden || range.location == NSNotFound || !range.length) return NO;
+    GAGlyphLayoutRun *match = nil;
+    for (GAGlyphLayoutRun *hit in self.glyphHits) {
+        if (hit.range.location >= NSMaxRange(range)) break;
+        if (NSIntersectionRange(range, hit.range).length) {
+            if (match) return NO;
+            match = hit;
         }
-    return NO;
+    }
+    return match && self.onGlyphSelected
+        ? self.onGlyphSelected(match.glyphIDs, match.range, match.leadingGlyphIDs, match.leadingRange, doubleClick) : NO;
 }
 
 @end

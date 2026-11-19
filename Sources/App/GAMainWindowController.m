@@ -211,6 +211,8 @@ typedef NS_ENUM(NSUInteger, GAAnalysisReason) {
 @property (nonatomic) BOOL opensSingleGlyph;
 @property (nonatomic, strong, nullable) GAGlyphNavigationStep *previousStep;
 @property (nonatomic, strong, nullable) GAGlyphNavigationStep *selectionBeforeInput;
+/// Original-text coordinates in the still-displayed snapshot.
+@property (nonatomic, strong, nullable) NSValue *layoutSourceRange;
 @end
 @implementation GAPendingNavigation
 @end
@@ -435,11 +437,12 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         if (!controller) return;
         BOOL preview = [hit isDescendantOf:controller.detailViewController.view];
         BOOL sidebar = [hit isDescendantOf:controller.sidebarViewController.view];
-        if (!preview && !sidebar) return;
-        if (controller.pendingNavigation.opensSingleGlyph || controller.pendingFilterNavigationStep)
+        BOOL layoutJump = controller.pendingNavigation.layoutSourceRange != nil;
+        if (!preview && !sidebar && !layoutJump) return;
+        if (controller.pendingNavigation.opensSingleGlyph || controller.pendingFilterNavigationStep || layoutJump)
             [controller cancelPendingNavigation];
         else
-            [controller cancelLayoutLookup];
+            [controller cancelLayoutNavigation];
         if (sidebar && [hit.enclosingScrollView.documentView isKindOfClass:NSTableView.class])
             [controller.sidebarViewController selectGlyphIDsAfterNextReload:nil
                 textRange:NSMakeRange(NSNotFound, 0) scroll:GAPendingSelectionScrollGroup];
@@ -462,7 +465,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     };
     self.sidebarViewController.onSelectionChanged = ^(GAGlyphVariant *variant, BOOL quickReveal) {
         GAMainWindowController *controller = weakSelf;
-        [controller cancelLayoutLookup];
+        [controller cancelLayoutNavigation];
         if (controller.navigationLocationSource == GANavigationLocationSingleGlyphJumpOrigin ||
             controller.navigationLocationSource == GANavigationLocationFilterChange)
             controller.navigationLocationSource = GANavigationLocationExplicit;
@@ -598,11 +601,12 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 - (void)selectLayoutGlyphIDs:(NSArray<NSNumber *> *)glyphIDs multiRange:(NSRange)range
               leadingGlyphIDs:(NSArray<NSNumber *> *)leadingGlyphIDs leadingRange:(NSRange)leadingRange
                    doubleClick:(BOOL)doubleClick {
-    if (![self canEditFromScanSnapshotForText:self.sidebarViewController.text]) return;
+    BOOL current = [self canEditFromScanSnapshotForText:self.sidebarViewController.text];
+    if (!current && (!doubleClick || !self.glyphNavigationEnabled || self.viewMode != GAViewModeMultiCharacter)) return;
     GAScanDisplaySnapshot *snapshot = self.scanSnapshot;
     GAFontDocument *document = self.fontDocument;
     if (!snapshot || !document) return;
-    [self cancelLayoutLookup];
+    [self cancelLayoutNavigation];
     NSRange source = NSMakeRange(NSNotFound, 0);
     NSRange leadingSource = NSMakeRange(NSNotFound, 0);
     for (GACharacterGroup *group in snapshot.multiGroups)
@@ -618,6 +622,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
                 source = original;
             } else {
                 if (NSMaxRange(source) != original.location) {
+                    if (!current) return;
                     // A missing component can leave a gap in the original
                     // text even when the preview shapes one visible cluster.
                     if (leadingSource.location == NSNotFound ||
@@ -630,6 +635,11 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
             }
         }
     if (source.location == NSNotFound) return;
+    if (!current) {
+        if (!self.pendingNavigation) self.pendingNavigation = [GAPendingNavigation new];
+        self.pendingNavigation.layoutSourceRange = [NSValue valueWithRange:source];
+        return;
+    }
     if ([self.sidebarViewController selectGlyphIDs:glyphIDs textRange:source]) {
         [self finishLayoutNavigationForDoubleClick:doubleClick];
         return;
@@ -895,7 +905,8 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     }
 }
 
-- (void)cancelLayoutLookup {
+- (void)cancelLayoutNavigation {
+    self.pendingNavigation.layoutSourceRange = nil;
     [self.layoutLookup cancel];
     self.layoutLookup = nil;
 }
@@ -903,7 +914,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 - (void)cancelPendingNavigation {
     if (self.pendingFilterNavigationStep) [self cancelGlyphFilterRequest];
     self.pendingNavigation = nil;
-    [self cancelLayoutLookup];
+    [self cancelLayoutNavigation];
 }
 
 - (void)toggleShowsMetrics {
@@ -972,7 +983,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 }
 
 - (void)setBaseWritingDirection:(NSWritingDirection)direction {
-    [self cancelLayoutLookup];
+    [self cancelLayoutNavigation];
     _baseWritingDirection = direction;
     [self.detailViewController setBaseWritingDirection:direction];
 }
@@ -988,7 +999,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 - (void)setTypesettingLanguageTag:(NSString *)tag {
     NSString *identifier = GAIdentifierForOpenTypeLanguage(tag);
     if (tag.length && (!identifier || ![self.typesettingLanguageTags containsObject:tag])) return;
-    [self cancelLayoutLookup];
+    [self cancelLayoutNavigation];
     _typesettingLanguageTag = tag.copy;
     [self.detailViewController setTypesettingLanguage:identifier ?: @""];
 }
@@ -1022,13 +1033,13 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 }
 
 - (void)setVerticalWriting:(BOOL)vertical {
-    [self cancelLayoutLookup];
+    [self cancelLayoutNavigation];
     _verticalWriting = vertical;
     [self.detailViewController setWritingDirectionVertical:vertical];
 }
 
 - (void)applyFontFeatureChoices {
-    [self cancelLayoutLookup];
+    [self cancelLayoutNavigation];
     [self.detailViewController setFeatureSettings:self.fontFeatures.settings ?: @[]];
 }
 
@@ -1520,7 +1531,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 }
 
 - (void)windowWillClose:(NSNotification *)notification {
-    [self cancelLayoutLookup];
+    [self cancelLayoutNavigation];
     if (notification.object == self.window) {
         self.sidebarTransitionInProgress = NO;
         [self cancelGlyphFilterRequest];
@@ -1562,7 +1573,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
                 return;
             }
             GAGlyphVariant *selected = preserve ? self.lastSelectedVariant : nil;
-            [self cancelLayoutLookup];
+            [self cancelLayoutNavigation];
             self.pendingGlyphEdit = nil;
             self.fontDocument = document;
             self->_fontFileReference = fileReference;
@@ -1806,23 +1817,27 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     self.pendingGlyphEdit = edit;
 }
 
-/// Resolve against the new rows while the sidebar still has the old source map.
+/// Map a surviving source before publication resets the sidebar's edit baseline.
+- (NSRange)mappedSourceRange:(NSRange)source inText:(NSString *)text {
+    if (source.location == NSNotFound || !source.length ||
+        NSMaxRange(source) > self.scanSnapshot.text.length) {
+        return NSMakeRange(NSNotFound, 0);
+    }
+    NSRange mapped = [self.sidebarViewController currentInputRangeForDisplayedRange:source];
+    if (mapped.location == NSNotFound || NSMaxRange(mapped) > text.length ||
+        ![[self.scanSnapshot.text substringWithRange:source]
+            isEqualToString:[text substringWithRange:mapped]]) {
+        return NSMakeRange(NSNotFound, 0);
+    }
+    return mapped;
+}
+
 - (GAPendingGlyphEdit *)resolvedGlyphEditInSnapshot:(GAScanDisplaySnapshot *)snapshot {
     GAPendingGlyphEdit *edit = self.pendingGlyphEdit;
     self.pendingGlyphEdit = nil;
     if (!edit) return nil;
-
-    NSRange source = GAExactGlyphSourceRange(edit.variant, edit.group);
-    if (source.location == NSNotFound || !source.length ||
-        NSMaxRange(source) > self.scanSnapshot.text.length) {
-        return nil;
-    }
-    NSRange mapped = [self.sidebarViewController currentInputRangeForDisplayedRange:source];
-    if (mapped.location == NSNotFound || NSMaxRange(mapped) > snapshot.text.length ||
-        ![[self.scanSnapshot.text substringWithRange:source]
-            isEqualToString:[snapshot.text substringWithRange:mapped]]) {
-        return nil;
-    }
+    NSRange mapped = [self mappedSourceRange:GAExactGlyphSourceRange(edit.variant, edit.group) inText:snapshot.text];
+    if (mapped.location == NSNotFound) return nil;
 
     GAPendingGlyphEdit *match;
     for (GACharacterGroup *group in snapshot.display) {
@@ -1956,7 +1971,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 /// Main-thread-only reset for an empty input.
 - (void)clearScanDisplay {
     [self updateNavigationSourcesForText:@"" publishing:YES];
-    [self cancelLayoutLookup];
+    [self cancelLayoutNavigation];
     self.pendingGlyphEdit = nil;
     self.scanSnapshot = nil;
     [self.sidebarViewController clearGroups];
@@ -2020,7 +2035,10 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         ![snapshot.text isEqualToString:self.sidebarViewController.text]) {
         return;
     }
-    [self cancelLayoutLookup];
+    NSValue *layoutSource = self.pendingNavigation.layoutSourceRange;
+    NSRange layoutTarget = layoutSource
+        ? [self mappedSourceRange:layoutSource.rangeValue inText:snapshot.text] : NSMakeRange(NSNotFound, 0);
+    [self cancelLayoutNavigation];
     GAPendingGlyphEdit *edit = [self resolvedGlyphEditInSnapshot:snapshot];
     [self updateNavigationSourcesForText:snapshot.text publishing:YES];
     self.navigationInputReplay = NO;
@@ -2039,7 +2057,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
             else [self.navigation recordStep:nil];
             self.navigationLocationSource = GANavigationLocationSingleGlyphJumpOrigin;
             [self setViewMode:GAViewModeSingleGlyph];
-        } else if (self.lastSelectedVariant &&
+        } else if (pending.selectionBeforeInput && self.lastSelectedVariant &&
                    ![[self sidebarNavigationStep] matchesLocation:pending.selectionBeforeInput]) {
             if (pending.previousStep.glyphIDs) [self recordNavigationStep:pending.previousStep];
             self.navigationLocationSource = GANavigationLocationExplicit;
@@ -2049,6 +2067,9 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     [self updateNavigationButton];
     if (edit) {
         [self editGlyphVariant:edit.variant inGroup:edit.group insert:edit.insert];
+    } else if (layoutTarget.location != NSNotFound && self.glyphNavigationEnabled &&
+               self.viewMode == GAViewModeMultiCharacter) {
+        [self.detailViewController activateMultiGlyphInTextRange:[snapshot multiRangeForSourceRange:layoutTarget]];
     }
 }
 
