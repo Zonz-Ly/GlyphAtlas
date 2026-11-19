@@ -430,6 +430,7 @@ static NSArray<GAGlyphLayoutRun *> *GAReadDisplayGlyphRuns(
 @property (nonatomic, copy, readonly) NSArray<GACharacterGroup *> *groups;
 @property (nonatomic, copy) NSIndexSet *omissions;
 @property(nonatomic, copy) NSArray<GAGlyphLayoutRun *> *glyphHits;
+@property(nonatomic, strong, nullable) NSEvent *firstGlyphClick;
 @property (nonatomic) NSSize pageContentSize;
 @property (nonatomic) CGFloat magnificationStartTextScale;
 @property(nonatomic) CGFloat magnificationStartPage;
@@ -1221,11 +1222,13 @@ static NSIndexSet *GAForeignCharactersToOmit(NSAttributedString *display, NSInde
 - (void)mouseDown:(NSEvent *)event {
     [self.window makeFirstResponder:self.enclosingScrollView];
     NSPoint point = [self convertPoint:event.locationInWindow fromView:nil];
-    if (![self selectGroupAtPoint:point doubleClick:event.clickCount == 2])
+    NSEvent *firstClick = event.clickCount == 2 ? self.firstGlyphClick : nil;
+    self.firstGlyphClick = nil;
+    if (![self selectGroupAtPoint:point event:event firstClick:firstClick])
         [self.window performWindowDragWithEvent:event];
 }
 
-- (BOOL)selectGroupAtPoint:(NSPoint)point doubleClick:(BOOL)doubleClick {
+- (BOOL)selectGroupAtPoint:(NSPoint)point event:(NSEvent *)event firstClick:(NSEvent *)firstClick {
     if (self.textView.hidden) {
         return NO;
     }
@@ -1277,8 +1280,13 @@ static NSIndexSet *GAForeignCharactersToOmit(NSAttributedString *display, NSInde
     if (sourceIndex == NSNotFound) return NO;
     for (GAGlyphLayoutRun *hit in self.glyphHits)
         if (NSLocationInRange(sourceIndex, hit.range)) {
+            if (event.clickCount == 1) {
+                self.firstGlyphClick = event;
+                firstClick = event;
+            }
             return self.onGlyphSelected
-                ? self.onGlyphSelected(hit.glyphIDs, hit.range, hit.leadingGlyphIDs, hit.leadingRange, doubleClick) : NO;
+                ? self.onGlyphSelected(hit.glyphIDs, hit.range, hit.leadingGlyphIDs, hit.leadingRange,
+                                       event.clickCount == 2, firstClick) : NO;
         }
     return NO;
 }

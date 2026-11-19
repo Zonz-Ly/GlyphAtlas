@@ -18,7 +18,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, copy, nullable) void (^onAllGlyphDoubleClick)(GAAllGlyphEntry *entry);
 @property(nonatomic, copy, nullable) BOOL (^onGlyphSelected)
     (NSArray<NSNumber *> *glyphIDs, NSRange range, NSArray<NSNumber *> * _Nullable leadingGlyphIDs,
-     NSRange leadingRange, BOOL doubleClick);
+     NSRange leadingRange, BOOL doubleClick, NSEvent * _Nullable firstClick);
 
 - (void)setVariant:(nullable GAGlyphVariant *)variant;
 - (void)setFontDocument:(nullable GAFontDocument *)document;

@@ -920,6 +920,10 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
         for (NSUInteger i = 0; i < titles.count; i++) {
             NSMenuItem *item = [menu addItemWithTitle:titles[i] action:actions[i] keyEquivalent:keys[i]];
             item.target = self;
+            if (item.action == @selector(navigateForward:)) {
+                item.hidden = YES;
+                item.allowsKeyEquivalentWhenHidden = YES;
+            }
             GAAddHiddenShortcut(item, [NSString stringWithCharacters:&arrows[i] length:1]);
         }
         [menu addItem:NSMenuItem.separatorItem];
@@ -1427,7 +1431,10 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
     }
     if (action == @selector(navigateBack:) || action == @selector(navigateForward:)) {
         NSResponder *responder = NSApp.keyWindow.firstResponder;
-        if (item.hidden && [responder isKindOfClass:NSTextView.class] &&
+        NSString *key = item.keyEquivalent;
+        unichar character = key.length == 1 ? [key characterAtIndex:0] : 0;
+        BOOL arrowShortcut = character == NSLeftArrowFunctionKey || character == NSRightArrowFunctionKey;
+        if (arrowShortcut && [responder isKindOfClass:NSTextView.class] &&
             [(NSTextView *)responder isFieldEditor]) return NO;
         return action == @selector(navigateBack:) ? controller.canNavigateBack : controller.canNavigateForward;
     }
