@@ -439,7 +439,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         BOOL sidebar = [hit isDescendantOf:controller.sidebarViewController.view];
         BOOL layoutJump = controller.pendingNavigation.layoutSourceRange != nil;
         if (!preview && !sidebar && !layoutJump) return;
-        if (controller.pendingNavigation.opensSingleGlyph || controller.pendingFilterNavigationStep || layoutJump)
+        if (controller.pendingNavigation.opensSingleGlyph || controller.pendingFilterNavigationStep)
             [controller cancelPendingNavigation];
         else
             [controller cancelLayoutNavigation];

@@ -65,8 +65,8 @@
 "Show Sidebar" = "侧边栏显示出来";
 "Hide Sidebar" = "侧边栏囥起来";
 "Navigation" = "导航";
-"Back" = "返回";
-"Forward" = "前进";
+"Back" = "转去";
+"Forward" = "往前头";
 "Single Glyph" = "单字形";
 "Characters" = "多字";
 "Glyph Grid" = "字形表";

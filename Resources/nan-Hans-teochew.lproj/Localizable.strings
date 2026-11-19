@@ -46,8 +46,8 @@
 
 /* Editing and saved text. */
 "Edit" = "编辑";
-"Undo" = "转去";
-"Redo" = "转来";
+"Undo" = "撤掉";
+"Redo" = "重来";
 "Cut" = "绞落来";
 "Copy" = "拷贝";
 "Paste" = "搭起去";
@@ -65,8 +65,8 @@
 "Show Sidebar" = "掊出侧边栏";
 "Hide Sidebar" = "囥起侧边栏";
 "Navigation" = "导航";
-"Back" = "返回";
-"Forward" = "前进";
+"Back" = "转去";
+"Forward" = "转来";
 "Single Glyph" = "单字形";
 "Characters" = "加字符";
 "Glyph Grid" = "字形表";
