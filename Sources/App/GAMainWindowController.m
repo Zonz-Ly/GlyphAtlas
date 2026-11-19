@@ -565,10 +565,11 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 }
 
 - (void)revealGlyphForVariant:(GAGlyphVariant *)variant quick:(BOOL)quick {
-    if (self.viewMode != GAViewModeAllGlyphs || variant.glyphIDs.count == 0) {
-        return;
-    }
-    [self.detailViewController revealAllGlyphID:variant.glyphIDs.firstObject quick:quick];
+    if (self.viewMode != GAViewModeAllGlyphs) return;
+    NSNumber *glyphID = self.restoredNavigationStep.mode == GAViewModeAllGlyphs
+        ? self.restoredNavigationStep.glyphIDs.firstObject : nil;
+    glyphID = glyphID ?: variant.glyphIDs.firstObject;
+    if (glyphID) [self.detailViewController revealAllGlyphID:glyphID quick:quick];
 }
 
 - (NSArray<NSString *> *)allGlyphFeatureTags {
