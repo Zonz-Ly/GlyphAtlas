@@ -433,11 +433,15 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     ((GADropWindow *)window).onPrimaryClick = ^(NSView *hit) {
         GAMainWindowController *controller = weakSelf;
         if (!controller) return;
-        if ([hit isDescendantOf:controller.detailViewController.view]) {
-            controller.previewHandlesEdgeShortcuts = controller.viewMode != GAViewModeSingleGlyph;
-        } else if ([hit isDescendantOf:controller.sidebarViewController.view]) {
-            controller.previewHandlesEdgeShortcuts = NO;
-        }
+        BOOL preview = [hit isDescendantOf:controller.detailViewController.view];
+        BOOL sidebar = [hit isDescendantOf:controller.sidebarViewController.view];
+        if (!preview && !sidebar) return;
+        [controller cancelLayoutLookup];
+        if (controller.pendingNavigation.opensSingleGlyph) controller.pendingNavigation = nil;
+        if (sidebar && [hit.enclosingScrollView.documentView isKindOfClass:NSTableView.class])
+            [controller.sidebarViewController selectGlyphIDsAfterNextReload:nil
+                textRange:NSMakeRange(NSNotFound, 0) scroll:GAPendingSelectionScrollGroup];
+        controller.previewHandlesEdgeShortcuts = preview && controller.viewMode != GAViewModeSingleGlyph;
     };
     ((GADropWindow *)window).glyphDoubleClickHitTest = ^BOOL(NSPoint point) {
         return [weakSelf.detailViewController containsAllGlyphAtWindowPoint:point];
@@ -553,8 +557,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 
 - (void)setViewMode:(GAViewMode)viewMode {
     if (_viewMode != viewMode) [self recordNavigation];
-    self.pendingNavigation = nil;
-    [self cancelLayoutLookup];
+    [self cancelPendingNavigation];
     _viewMode = viewMode;
     self.detailViewController.viewMode = viewMode;
     [self revealGlyphForVariant:self.lastSelectedVariant];
@@ -656,7 +659,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 
 - (void)recordNavigation {
     if (self.suppressNavigationRecording) return;
-    if (!self.pendingNavigation.opensSingleGlyph) self.pendingNavigation = nil;
+    [self cancelPendingNavigation];
     [self recordNavigationStep:nil];
     self.navigationLocationSource = GANavigationLocationExplicit;
 }
@@ -685,7 +688,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 
 - (nullable GAGlyphNavigationStep *)nextNavigationStepForward:(BOOL)forward {
     NSArray<GAGlyphNavigationStep *> *history = forward ? self.navigation.forwardSteps : self.navigation.backSteps;
-    BOOL skipMulti = !forward && self.viewMode == GAViewModeMultiCharacter;
+    BOOL skipMulti = self.viewMode == GAViewModeMultiCharacter;
     for (GAGlyphNavigationStep *step in history.reverseObjectEnumerator)
         if ((!skipMulti || step.mode != GAViewModeMultiCharacter) && [self canNavigateToStep:step]) return step;
     return nil;
@@ -716,9 +719,8 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 - (void)navigateToStep:(GAGlyphNavigationStep *)step {
     if (![self canNavigateToStep:step]) return;
     if (![self.navigation moveToStep:step leavingStep:[self currentNavigationStep]]) return;
-    self.pendingNavigation = nil;
     self.suppressNavigationRecording = YES;
-    [self cancelLayoutLookup];
+    [self cancelPendingNavigation];
     BOOL restoredSelection = [self navigationSelectionMatchesCurrentText:step] &&
         [self.sidebarViewController selectGlyphIDs:step.glyphIDs textRange:step.range];
     [self setViewMode:step.mode];
@@ -823,6 +825,11 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 - (void)cancelLayoutLookup {
     [self.layoutLookup cancel];
     self.layoutLookup = nil;
+}
+
+- (void)cancelPendingNavigation {
+    self.pendingNavigation = nil;
+    [self cancelLayoutLookup];
 }
 
 - (void)toggleShowsMetrics {
