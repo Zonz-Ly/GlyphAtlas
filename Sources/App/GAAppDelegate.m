@@ -920,10 +920,6 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
         for (NSUInteger i = 0; i < titles.count; i++) {
             NSMenuItem *item = [menu addItemWithTitle:titles[i] action:actions[i] keyEquivalent:keys[i]];
             item.target = self;
-            if (item.action == @selector(navigateForward:)) {
-                item.hidden = YES;
-                item.allowsKeyEquivalentWhenHidden = YES;
-            }
             GAAddHiddenShortcut(item, [NSString stringWithCharacters:&arrows[i] length:1]);
         }
         [menu addItem:NSMenuItem.separatorItem];
