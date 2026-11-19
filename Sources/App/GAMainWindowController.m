@@ -506,7 +506,10 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         GAMainWindowController *controller = weakSelf;
         BOOL navigate = controller.glyphNavigationEnabled;
         NSUInteger generation = controller.workerGeneration;
-        GAGlyphNavigationStep *previousStep = navigate ? [controller explicitNavigationStep] : nil;
+        GAGlyphNavigationStep *previousStep = nil;
+        if (navigate && controller.navigationLocationSource == GANavigationLocationExplicit &&
+            ![controller.lastSelectedVariant.glyphIDs isEqualToArray:@[entry.glyphID]])
+            previousStep = [controller currentNavigationStep];
         [controller appendAllGlyphEntry:entry];
         if (navigate && controller.workerGeneration != generation) {
             GAPendingGridNavigation *pending = [GAPendingGridNavigation new];
@@ -677,11 +680,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 - (BOOL)applyLayoutSelection:(BOOL (^)(void))select
                   doubleClick:(BOOL)doubleClick firstClick:(NSEvent *)firstClick {
     BOOL opensSingleGlyph = doubleClick && self.glyphNavigationEnabled;
-    BOOL followsFirstSelection = firstClick && firstClick == self.layoutFirstClick;
-    GAGlyphNavigationStep *previousStep = opensSingleGlyph && !followsFirstSelection
-        ? [self explicitNavigationStep] : nil;
-    GAGlyphVariant *previousVariant = self.lastSelectedVariant;
-    NSRange previousRange = self.sidebarViewController.selectedGlyphTextRange;
     GAGlyphNavigationStep *previousLast = [self forwardStepToKeep] ?: self.navigationHistory.lastObject;
     BOOL wasSuppressingRecording = self.suppressNavigationRecording;
     self.suppressNavigationRecording = wasSuppressingRecording || opensSingleGlyph;
@@ -690,18 +688,16 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     if (!selected) return NO;
 
     if (opensSingleGlyph && self.lastSelectedVariant) {
-        // Merge the first mouse-down only if it did not leave an independent location.
+        // The first mouse-down selected immediately. Merge its provisional step
+        // only when AppKit identifies this as the same double-click.
         GAGlyphNavigationStep *origin = self.layoutClickOrigin;
-        if (followsFirstSelection && origin && origin == self.navigationHistory.lastObject &&
-            origin.locationSource != GANavigationLocationExplicit)
+        if (firstClick && firstClick == self.layoutFirstClick && origin && origin == self.navigationHistory.lastObject)
             [self.navigationHistory removeLastObject];
-        [self openSingleGlyphFromPreviewKeepingStep:previousStep];
-    } else if (!doubleClick && firstClick &&
-               (previousVariant != self.lastSelectedVariant ||
-                !NSEqualRanges(previousRange, self.sidebarViewController.selectedGlyphTextRange))) {
+        [self setViewMode:GAViewModeSingleGlyph];
+    } else if (!doubleClick && firstClick && self.navigationForwardHistory.count == 0 &&
+               previousLast != self.navigationHistory.lastObject) {
         self.layoutFirstClick = firstClick;
-        self.layoutClickOrigin = self.navigationForwardHistory.count == 0 &&
-            previousLast != self.navigationHistory.lastObject ? self.navigationHistory.lastObject : nil;
+        self.layoutClickOrigin = self.navigationHistory.lastObject;
     }
     return YES;
 }
@@ -720,16 +716,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     if (step.glyphIDs && step.range.location != NSNotFound && NSMaxRange(step.range) <= text.length)
         step.sourceText = [text substringWithRange:step.range];
     return step;
-}
-
-- (nullable GAGlyphNavigationStep *)explicitNavigationStep {
-    return self.navigationLocationSource == GANavigationLocationExplicit ? [self currentNavigationStep] : nil;
-}
-
-- (void)openSingleGlyphFromPreviewKeepingStep:(nullable GAGlyphNavigationStep *)previousStep {
-    if (previousStep) [self recordNavigationStep:previousStep];
-    self.navigationLocationSource = GANavigationLocationSingleGlyphJumpOrigin;
-    [self setViewMode:GAViewModeSingleGlyph];
 }
 
 - (nullable GAGlyphNavigationStep *)forwardStepToKeep {
@@ -2006,7 +1992,9 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
                                   omissions:snapshot.multiOmissions];
     GAPendingGridNavigation *pending = self.pendingGridNavigation;
     if (pending && pending.generation == generation && self.glyphNavigationEnabled) {
-        [self openSingleGlyphFromPreviewKeepingStep:pending.previousStep];
+        if (pending.previousStep) [self recordNavigationStep:pending.previousStep];
+        self.navigationLocationSource = GANavigationLocationSingleGlyphJumpOrigin;
+        [self setViewMode:GAViewModeSingleGlyph];
     } else {
         [self updateNavigationButton];
     }
