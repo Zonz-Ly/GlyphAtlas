@@ -81,10 +81,14 @@
 }
 
 - (BOOL)canReplaceGridOrigin:(GAGlyphNavigationStep *)origin {
-    GAGlyphNavigationStep *neighbor = self.forwardSteps.lastObject;
-    return origin.mode == GAViewModeAllGlyphs && !origin.filterChange &&
-        neighbor && neighbor.mode != GAViewModeAllGlyphs &&
-        [origin.glyphIDs isEqualToArray:neighbor.glyphIDs];
+    if (origin.mode != GAViewModeAllGlyphs || origin.filterChange) return NO;
+    if (!origin.glyphIDs.count) return YES;
+    for (NSArray<GAGlyphNavigationStep *> *steps in @[self.forwardSteps, self.backSteps]) {
+        GAGlyphNavigationStep *neighbor = steps.lastObject;
+        if (neighbor && neighbor.mode != GAViewModeAllGlyphs &&
+            [origin.glyphIDs isEqualToArray:neighbor.glyphIDs]) return YES;
+    }
+    return NO;
 }
 
 - (BOOL)moveToStep:(GAGlyphNavigationStep *)step leavingStep:(GAGlyphNavigationStep *)current {

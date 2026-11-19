@@ -26,7 +26,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong, readonly, nullable) GAGlyphNavigationStep *restoredStep;
 /// Start a new navigation, optionally omitting the departing location.
 - (void)recordStep:(nullable GAGlyphNavigationStep *)step;
-/// Only the nearest forward entry (above the current position in the menu) can pair with the grid.
+/// Either adjacent glyph view can pair with the grid when its content matches.
+/// An unlocated ordinary grid is superseded by the selected glyph's grid origin.
 - (BOOL)canReplaceGridOrigin:(GAGlyphNavigationStep *)origin;
 - (BOOL)moveToStep:(GAGlyphNavigationStep *)step leavingStep:(GAGlyphNavigationStep *)current;
 - (void)clear;
