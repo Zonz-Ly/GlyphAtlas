@@ -1065,10 +1065,10 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
                                       actionName:NSLocalizedString(@"Add Glyph", @"Undo action for adding a glyph")];
     GAPendingNavigation *pending = self.pendingNavigation;
     if (pending && self.workerGeneration != generation) {
-        GAGlyphNavigationStep *selected = pending.selectionBeforeInput;
+        GAGlyphNavigationStep *origin = pending.previousStep;
         pending.opensSingleGlyph = YES;
-        pending.previousStep = (selected.locationSource == GANavigationLocationExplicit || selected.filterChange) &&
-            ![selected.glyphIDs isEqualToArray:@[entry.glyphID]] ? selected : nil;
+        pending.previousStep = (origin.locationSource == GANavigationLocationExplicit || origin.filterChange) &&
+            ![origin.glyphIDs isEqualToArray:@[entry.glyphID]] ? origin : nil;
         pending.selectionBeforeInput = nil;
     }
 }
