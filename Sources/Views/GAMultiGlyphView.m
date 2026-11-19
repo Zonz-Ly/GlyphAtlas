@@ -1220,7 +1220,6 @@ static NSIndexSet *GAForeignCharactersToOmit(NSAttributedString *display, NSInde
 #pragma mark - Hit testing
 
 - (void)mouseDown:(NSEvent *)event {
-    [self.window makeFirstResponder:self.enclosingScrollView];
     NSPoint point = [self convertPoint:event.locationInWindow fromView:nil];
     NSEvent *firstClick = event.clickCount == 2 ? self.firstGlyphClick : nil;
     self.firstGlyphClick = nil;

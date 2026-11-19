@@ -73,11 +73,18 @@ static NSNumber *GAInputScalarForGlyph(NSArray<NSNumber *> *scalars) {
 
 @interface GADropWindow : NSWindow
 @property (nonatomic, copy, nullable) void (^onFontDrop)(NSURL *url);
+@property (nonatomic, copy, nullable) void (^onPrimaryClick)(NSView *hitView);
 @property (nonatomic, copy, nullable) BOOL (^glyphDoubleClickHitTest)(NSPoint point);
 @property (nonatomic, readonly) BOOL lastMouseDownWasGlyphDoubleClick;
 @end
 
 @implementation GADropWindow
+
+- (nullable NSView *)viewAtWindowPoint:(NSPoint)point {
+    NSView *root = self.contentView.superview;
+    NSPoint rootPoint = [root convertPoint:point fromView:nil];
+    return [root hitTest:[root convertPoint:rootPoint toView:root.superview]];
+}
 
 - (void)sendEvent:(NSEvent *)event {
     if (event.type == NSEventTypeLeftMouseDown) {
@@ -85,14 +92,17 @@ static NSNumber *GAInputScalarForGlyph(NSArray<NSNumber *> *scalars) {
         // Keep it through mouse-up; the next primary click replaces it.
         _lastMouseDownWasGlyphDoubleClick = event.clickCount == 2 &&
             self.glyphDoubleClickHitTest && self.glyphDoubleClickHitTest(event.locationInWindow);
+        void (^handleClick)(NSView *) = self.onPrimaryClick;
+        if (handleClick) {
+            NSView *hit = [self viewAtWindowPoint:event.locationInWindow];
+            if (hit) handleClick(hit);
+        }
     } else if (event.type == NSEventTypeRightMouseDown) {
         NSToolbar *toolbar = self.toolbar;
         NSUInteger index = GAIndexOfToolbarItem(toolbar, GABackItem);
         if (index != NSNotFound) {
             NSMenuToolbarItem *back = (NSMenuToolbarItem *)toolbar.items[index];
-            NSView *root = self.contentView.superview;
-            NSPoint point = [root convertPoint:event.locationInWindow fromView:nil];
-            NSView *hit = [root hitTest:[root convertPoint:point toView:root.superview]];
+            NSView *hit = [self viewAtWindowPoint:event.locationInWindow];
             for (NSView *view = hit; view; view = view.superview) {
                 if ([view isKindOfClass:NSControl.class] && ((NSControl *)view).target == back) {
                     // The generated button is not exposed through the item's view.
@@ -275,6 +285,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 @property(nonatomic) NSWritingDirection baseWritingDirection;
 @property(nonatomic, copy) NSString *typesettingLanguageTag;
 @property (nonatomic, strong, nullable) GAGlyphVariant *lastSelectedVariant;
+@property (nonatomic) BOOL previewHandlesEdgeShortcuts;
 @property (nonatomic) BOOL glyphNavigationEnabled;
 @property (nonatomic, strong) NSMutableArray<GAGlyphNavigationStep *> *navigationHistory;
 @property (nonatomic, strong) NSMutableArray<GAGlyphNavigationStep *> *navigationForwardHistory;
@@ -434,6 +445,15 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     [self updateSidebarAccessoryTopInsetForHiddenSidebar:NO];
 
     __weak typeof(self) weakSelf = self;
+    ((GADropWindow *)window).onPrimaryClick = ^(NSView *hit) {
+        GAMainWindowController *controller = weakSelf;
+        if (!controller) return;
+        if ([hit isDescendantOf:controller.detailViewController.view]) {
+            controller.previewHandlesEdgeShortcuts = controller.viewMode != GAViewModeSingleGlyph;
+        } else if ([hit isDescendantOf:controller.sidebarViewController.view]) {
+            controller.previewHandlesEdgeShortcuts = NO;
+        }
+    };
     ((GADropWindow *)window).glyphDoubleClickHitTest = ^BOOL(NSPoint point) {
         return [weakSelf.detailViewController containsAllGlyphAtWindowPoint:point];
     };
@@ -449,6 +469,10 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     };
     self.sidebarViewController.onWillNavigate = ^{
         [weakSelf recordNavigation];
+    };
+    self.sidebarViewController.onScrollPreviewToEdge = ^BOOL(BOOL bottom) {
+        return weakSelf.previewHandlesEdgeShortcuts &&
+            [weakSelf.detailViewController scrollPreviewToEdge:bottom requireFocus:NO];
     };
     self.sidebarViewController.onSelectionChanged = ^(GAGlyphVariant *variant, BOOL quickReveal) {
         [weakSelf cancelLayoutLookup];
@@ -985,7 +1009,8 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         [binding interpretKeyEvents:@[event]];
         SEL command = binding.command;
         if ((command == @selector(moveToBeginningOfDocument:) || command == @selector(moveToEndOfDocument:)) &&
-            [self.detailViewController scrollFocusedPreviewToEdge:command == @selector(moveToEndOfDocument:)]) return;
+            [self.detailViewController scrollPreviewToEdge:command == @selector(moveToEndOfDocument:)
+                                              requireFocus:YES]) return;
     }
     [super keyDown:event];
 }

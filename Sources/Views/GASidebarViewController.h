@@ -18,6 +18,7 @@ typedef NS_ENUM(NSInteger, GAPendingSelectionScroll) {
 @property (nonatomic, copy, nullable) void (^onGlyphActivated)(GACharacterGroup *group, GAGlyphVariant *variant, BOOL insert);
 /// Called before an explicit list/layout selection changes, never for query publication.
 @property (nonatomic, copy, nullable) void (^onWillNavigate)(void);
+@property (nonatomic, copy, nullable) BOOL (^onScrollPreviewToEdge)(BOOL bottom);
 @property (nonatomic, readonly) NSRange selectedGlyphTextRange;
 - (BOOL)containsGlyphIDs:(NSArray<NSNumber *> *)glyphIDs textRange:(NSRange)range;
 - (NSDictionary<NSValue *, NSSet<NSArray<NSNumber *> *> *> *)glyphSequencesForTextRanges:(NSSet<NSValue *> *)ranges;

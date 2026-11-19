@@ -71,6 +71,8 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
             return;
         }
         if (commandOnly) {
+            BOOL (^scrollPreview)(BOOL) = self.sidebarController.onScrollPreviewToEdge;
+            if (scrollPreview && scrollPreview(down)) return;
             if (self.numberOfRows > 0) {
                 NSInteger row = down ? self.numberOfRows - 1 : 0;
                 [self selectRowIndexes:[NSIndexSet indexSetWithIndex:(NSUInteger)row]
