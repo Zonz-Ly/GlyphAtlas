@@ -168,12 +168,12 @@
     return nil;
 }
 
-- (BOOL)scrollPreviewToEdge:(BOOL)bottom requireFocus:(BOOL)requireFocus {
+- (BOOL)scrollFocusedPreviewToEdge:(BOOL)bottom {
     NSScrollView *scrollView = [self activePreviewScrollView];
     if (!scrollView) return NO;
 
     NSWindow *window = self.view.window;
-    if (requireFocus && window.firstResponder != window && window.firstResponder != scrollView) return NO;
+    if (window.firstResponder != window && window.firstResponder != scrollView) return NO;
     [scrollView layoutSubtreeIfNeeded];
     GAScrollToVerticalEdge(scrollView, bottom);
     return YES;

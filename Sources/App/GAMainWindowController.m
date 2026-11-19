@@ -275,7 +275,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 @property(nonatomic) NSWritingDirection baseWritingDirection;
 @property(nonatomic, copy) NSString *typesettingLanguageTag;
 @property (nonatomic, strong, nullable) GAGlyphVariant *lastSelectedVariant;
-@property (nonatomic) BOOL previewHandlesEdgeShortcuts;
 @property (nonatomic) BOOL glyphNavigationEnabled;
 @property (nonatomic, strong) GAGlyphNavigationHistory *navigation;
 @property (nonatomic) GANavigationLocationSource navigationLocationSource;
@@ -444,7 +443,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         if (sidebar && [hit.enclosingScrollView.documentView isKindOfClass:NSTableView.class])
             [controller.sidebarViewController selectGlyphIDsAfterNextReload:nil
                 textRange:NSMakeRange(NSNotFound, 0) scroll:GAPendingSelectionScrollGroup];
-        controller.previewHandlesEdgeShortcuts = preview && controller.viewMode != GAViewModeSingleGlyph;
     };
     ((GADropWindow *)window).glyphDoubleClickHitTest = ^BOOL(NSPoint point) {
         return [weakSelf.detailViewController containsAllGlyphAtWindowPoint:point];
@@ -461,10 +459,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     };
     self.sidebarViewController.onWillNavigate = ^{
         [weakSelf recordNavigation];
-    };
-    self.sidebarViewController.onScrollPreviewToEdge = ^BOOL(BOOL bottom) {
-        return weakSelf.previewHandlesEdgeShortcuts &&
-            [weakSelf.detailViewController scrollPreviewToEdge:bottom requireFocus:NO];
     };
     self.sidebarViewController.onSelectionChanged = ^(GAGlyphVariant *variant, BOOL quickReveal) {
         GAMainWindowController *controller = weakSelf;
@@ -1077,13 +1071,12 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 #pragma mark - Window and input focus
 
 - (void)keyDown:(NSEvent *)event {
-    if (GAModifiersAre(event.modifierFlags, NSEventModifierFlagCommand)) {
+    if (self.sidebarHidden && GAModifiersAre(event.modifierFlags, NSEventModifierFlagCommand)) {
         GAPreviewKeyBinding *binding = [GAPreviewKeyBinding new];
         [binding interpretKeyEvents:@[event]];
         SEL command = binding.command;
         if ((command == @selector(moveToBeginningOfDocument:) || command == @selector(moveToEndOfDocument:)) &&
-            [self.detailViewController scrollPreviewToEdge:command == @selector(moveToEndOfDocument:)
-                                              requireFocus:YES]) return;
+            [self.detailViewController scrollFocusedPreviewToEdge:command == @selector(moveToEndOfDocument:)]) return;
     }
     [super keyDown:event];
 }
