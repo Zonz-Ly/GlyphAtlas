@@ -205,6 +205,7 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 @property (nonatomic) NSUInteger generation;
 @property (nonatomic) BOOL opensSingleGlyph;
 @property (nonatomic, strong, nullable) GAGlyphNavigationStep *previousStep;
+@property (nonatomic, strong, nullable) GAGlyphNavigationStep *selectionBeforeInput;
 @end
 @implementation GAPendingNavigation
 @end
@@ -446,7 +447,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     self.sidebarViewController.onInputUndoRedo = ^{
         GAMainWindowController *controller = weakSelf;
         controller.pendingGlyphEdit = nil;
-        [controller scheduleAnalysisForInputReplay:YES recordingSelection:NO];
+        [controller scheduleAnalysisForInputReplay:YES recordingSelection:YES];
     };
     self.sidebarViewController.onWillNavigate = ^{
         [weakSelf recordNavigation];
@@ -689,7 +690,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 
 - (void)recordNavigation {
     if (self.suppressNavigationRecording) return;
-    self.pendingNavigation = nil;
+    if (!self.pendingNavigation.opensSingleGlyph) self.pendingNavigation = nil;
     [self recordNavigationStep:nil];
     self.navigationLocationSource = GANavigationLocationExplicit;
 }
@@ -825,6 +826,8 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     [steps addObjectsFromArray:self.navigation.forwardSteps];
     if (self.navigation.restoredStep) [steps addObject:self.navigation.restoredStep];
     if (self.pendingNavigation.previousStep) [steps addObject:self.pendingNavigation.previousStep];
+    GAGlyphNavigationStep *selection = self.pendingNavigation.selectionBeforeInput;
+    if (selection && selection != self.pendingNavigation.previousStep) [steps addObject:selection];
     for (GAGlyphNavigationStep *step in steps) {
         if (!step.glyphIDs) continue;
         NSValue *recovered = self.navigationInputReplay ? step.sourceRecoveryRanges[text] : nil;
@@ -1862,12 +1865,12 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 }
 
 - (void)scheduleAnalysisForInputReplay:(BOOL)replaying recordingSelection:(BOOL)recordSelection {
-    GAGlyphNavigationStep *origin = self.pendingNavigation.opensSingleGlyph
-        ? nil : self.pendingNavigation.previousStep;
+    GAPendingNavigation *previous = self.pendingNavigation.opensSingleGlyph ? nil : self.pendingNavigation;
     self.pendingNavigation = nil;
     if (recordSelection && self.glyphNavigationEnabled && self.fontDocument) {
         GAPendingNavigation *pending = [GAPendingNavigation new];
-        pending.previousStep = origin ?: [self.navigation.restoredStep copy] ?: [self currentNavigationStep];
+        pending.selectionBeforeInput = previous.selectionBeforeInput ?: [self currentNavigationStep];
+        pending.previousStep = previous.previousStep ?: [self.navigation.restoredStep copy] ?: pending.selectionBeforeInput;
         self.pendingNavigation = pending;
     }
     self.layoutFirstClick = nil;
@@ -1990,7 +1993,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
             self.navigationLocationSource = GANavigationLocationSingleGlyphJumpOrigin;
             [self setViewMode:GAViewModeSingleGlyph];
         } else if (self.lastSelectedVariant &&
-                   ![[self currentNavigationStep] matchesLocation:pending.previousStep]) {
+                   ![[self currentNavigationStep] matchesLocation:pending.selectionBeforeInput]) {
             if (pending.previousStep.glyphIDs) [self recordNavigationStep:pending.previousStep];
             self.navigationLocationSource = GANavigationLocationExplicit;
             [self revealGlyphForVariant:self.lastSelectedVariant];
