@@ -1,0 +1,38 @@
+#import <Foundation/Foundation.h>
+#import "Views/GAAppKit.h"
+
+NS_ASSUME_NONNULL_BEGIN
+
+typedef NS_ENUM(NSUInteger, GANavigationLocationSource) {
+    GANavigationLocationUnrecorded,
+    GANavigationLocationExplicit,
+    GANavigationLocationSingleGlyphJumpOrigin,
+};
+
+@interface GAGlyphNavigationStep : NSObject
+@property (nonatomic) GAViewMode mode;
+@property (nonatomic) GANavigationLocationSource locationSource;
+@property (nonatomic, copy, nullable) NSArray<NSNumber *> *glyphIDs;
+@property (nonatomic) NSRange range;
+@property (nonatomic, copy, nullable) NSString *sourceText;
+@property (nonatomic, copy, nullable) NSString *glyphLabel;
+@property (nonatomic, strong, nullable) NSMutableDictionary<NSString *, NSValue *> *sourceRecoveryRanges;
+@property (nonatomic, readonly) BOOL allowsViewOnly;
+- (BOOL)matchesLocation:(nullable GAGlyphNavigationStep *)other;
+- (BOOL)matchesSourceInText:(nullable NSString *)text;
+- (BOOL)matchesSourceAtRange:(NSRange)range inText:(nullable NSString *)text;
+- (void)rememberSourceRange:(NSRange)range inText:(NSString *)text;
+@end
+
+/// Positions on either side of the current view, including unavailable sources.
+@interface GAGlyphNavigationHistory : NSObject
+@property (nonatomic, strong, readonly) NSMutableArray<GAGlyphNavigationStep *> *backSteps;
+@property (nonatomic, strong, readonly) NSMutableArray<GAGlyphNavigationStep *> *forwardSteps;
+@property (nonatomic, strong, readonly, nullable) GAGlyphNavigationStep *restoredStep;
+@property (nonatomic, readonly, nullable) GAGlyphNavigationStep *adjacentForwardStep;
+- (void)recordStep:(GAGlyphNavigationStep *)step;
+- (BOOL)moveToStep:(GAGlyphNavigationStep *)step leavingStep:(GAGlyphNavigationStep *)current;
+- (void)clear;
+@end
+
+NS_ASSUME_NONNULL_END
