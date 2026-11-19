@@ -7,10 +7,13 @@ typedef NS_ENUM(NSUInteger, GANavigationLocationSource) {
     GANavigationLocationUnrecorded,
     GANavigationLocationExplicit,
     GANavigationLocationSingleGlyphJumpOrigin,
+    GANavigationLocationFilterChange,
 };
 
 @interface GAGlyphNavigationStep : NSObject <NSCopying>
 @property (nonatomic) GAViewMode mode;
+@property (nonatomic, copy, nullable) NSString *filterTag;
+@property (nonatomic) BOOL filterChange;
 @property (nonatomic) GANavigationLocationSource locationSource;
 @property (nonatomic, copy, nullable) NSArray<NSNumber *> *glyphIDs;
 @property (nonatomic) NSRange range;

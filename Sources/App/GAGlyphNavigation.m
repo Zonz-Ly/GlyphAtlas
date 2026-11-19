@@ -5,6 +5,8 @@
 - (id)copyWithZone:(NSZone *)zone {
     GAGlyphNavigationStep *step = [[[self class] allocWithZone:zone] init];
     step.mode = self.mode;
+    step.filterTag = self.filterTag;
+    step.filterChange = self.filterChange;
     step.locationSource = self.locationSource;
     step.glyphIDs = self.glyphIDs;
     step.range = self.range;
@@ -16,6 +18,8 @@
 
 - (BOOL)matchesLocation:(GAGlyphNavigationStep *)other {
     if (!other || self.mode != other.mode) return NO;
+    if (self.mode == GAViewModeAllGlyphs && self.filterTag != other.filterTag &&
+        ![self.filterTag isEqualToString:other.filterTag]) return NO;
     if (!self.glyphIDs && !other.glyphIDs) return YES;
     return [self.glyphIDs isEqualToArray:other.glyphIDs] &&
         NSEqualRanges(self.range, other.range) &&
@@ -72,8 +76,11 @@
     GAGlyphNavigationStep *last = self.backSteps.lastObject;
     if (![step matchesLocation:last])
         [_backSteps addObject:step];
-    else if (step.locationSource == GANavigationLocationExplicit)
-        last.locationSource = GANavigationLocationExplicit;
+    else {
+        if (step.locationSource == GANavigationLocationExplicit)
+            last.locationSource = GANavigationLocationExplicit;
+        if (step.filterChange) last.filterChange = YES;
+    }
 }
 
 - (BOOL)moveToStep:(GAGlyphNavigationStep *)step leavingStep:(GAGlyphNavigationStep *)current {

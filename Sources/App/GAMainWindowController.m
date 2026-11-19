@@ -252,6 +252,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 @property (nonatomic, strong) dispatch_queue_t glyphFilterQueue;
 @property (nonatomic, strong, nullable) NSProgress *glyphFilterRequest;
 @property (nonatomic, copy, nullable) NSString *pendingGlyphFilterTag;
+@property (nonatomic, strong, nullable) GAGlyphNavigationStep *pendingFilterNavigationStep;
 @property (nonatomic, copy, readwrite, nullable) NSString *allGlyphFeatureTag;
 @property (nonatomic, weak, nullable) GAFontDocument *appliedGlyphFilterDocument;
 @property(nonatomic, strong, nullable) GATextQueryModel *queryModel;
@@ -436,8 +437,10 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         BOOL preview = [hit isDescendantOf:controller.detailViewController.view];
         BOOL sidebar = [hit isDescendantOf:controller.sidebarViewController.view];
         if (!preview && !sidebar) return;
-        [controller cancelLayoutLookup];
-        if (controller.pendingNavigation.opensSingleGlyph) controller.pendingNavigation = nil;
+        if (controller.pendingNavigation.opensSingleGlyph || controller.pendingFilterNavigationStep)
+            [controller cancelPendingNavigation];
+        else
+            [controller cancelLayoutLookup];
         if (sidebar && [hit.enclosingScrollView.documentView isKindOfClass:NSTableView.class])
             [controller.sidebarViewController selectGlyphIDsAfterNextReload:nil
                 textRange:NSMakeRange(NSNotFound, 0) scroll:GAPendingSelectionScrollGroup];
@@ -466,7 +469,8 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     self.sidebarViewController.onSelectionChanged = ^(GAGlyphVariant *variant, BOOL quickReveal) {
         GAMainWindowController *controller = weakSelf;
         [controller cancelLayoutLookup];
-        if (controller.navigationLocationSource == GANavigationLocationSingleGlyphJumpOrigin)
+        if (controller.navigationLocationSource == GANavigationLocationSingleGlyphJumpOrigin ||
+            controller.navigationLocationSource == GANavigationLocationFilterChange)
             controller.navigationLocationSource = GANavigationLocationExplicit;
         controller.lastSelectedVariant = variant;
         [controller.detailViewController setVariant:variant];
@@ -519,17 +523,25 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     return self.fontDocument.glyphFeatureTags ?: @[];
 }
 
-- (void)filterAllGlyphsByFeature:(NSString *)tag {
+- (BOOL)glyphFilterMatchesTag:(NSString *)tag {
+    return (tag == self.allGlyphFeatureTag || [tag isEqualToString:self.allGlyphFeatureTag]) &&
+        (!tag || self.appliedGlyphFilterDocument == self.fontDocument);
+}
+
+- (void)cancelGlyphFilterRequest {
     [self.glyphFilterRequest cancel];
     self.glyphFilterRequest = nil;
-    self.pendingGlyphFilterTag = tag;
+    self.pendingGlyphFilterTag = nil;
+    self.pendingFilterNavigationStep = nil;
+}
+
+- (void)loadGlyphFilter:(NSString *)tag completion:(void (^)(NSString *, NSIndexSet *))completion {
+    [self cancelGlyphFilterRequest];
     if (!tag) {
-        self.allGlyphFeatureTag = nil;
-        self.appliedGlyphFilterDocument = nil;
-        [self.detailViewController setAllGlyphVisibleIDs:nil];
-        [self revealGlyphForVariant:self.lastSelectedVariant];
+        completion(nil, nil);
         return;
     }
+    self.pendingGlyphFilterTag = tag;
     GAFontDocument *document = self.fontDocument;
     NSProgress *request = [NSProgress discreteProgressWithTotalUnitCount:1];
     self.glyphFilterRequest = request;
@@ -540,19 +552,46 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         dispatch_async(dispatch_get_main_queue(), ^{
             __strong typeof(weakSelf) self = weakSelf;
             if (!self || request.cancelled || self.glyphFilterRequest != request ||
-                self.fontDocument != document)
-                return;
-            self.glyphFilterRequest = nil;
-            self.pendingGlyphFilterTag = nil;
-            // Keep a complete result for this font when the new query fails.
+                self.fontDocument != document) return;
+            [self cancelGlyphFilterRequest];
+            // Retain the current grid if this font's query cannot provide a result.
             if (!outputs && (!self.allGlyphFeatureTag || self.appliedGlyphFilterDocument == document))
                 return;
-            self.allGlyphFeatureTag = outputs ? tag : nil;
-            self.appliedGlyphFilterDocument = outputs ? document : nil;
-            [self.detailViewController setAllGlyphVisibleIDs:outputs];
-            [self revealGlyphForVariant:self.lastSelectedVariant];
+            completion(outputs ? tag : nil, outputs);
         });
     });
+}
+
+- (void)applyGlyphFilter:(NSString *)tag outputs:(NSIndexSet *)outputs {
+    self.allGlyphFeatureTag = tag;
+    self.appliedGlyphFilterDocument = tag ? self.fontDocument : nil;
+    [self.detailViewController setAllGlyphVisibleIDs:outputs];
+}
+
+- (void)filterAllGlyphsByFeature:(NSString *)tag {
+    [self filterAllGlyphsByFeature:tag recordingNavigation:YES];
+}
+
+- (void)filterAllGlyphsByFeature:(NSString *)tag recordingNavigation:(BOOL)recording {
+    [self cancelPendingNavigation];
+    __weak typeof(self) weakSelf = self;
+    [self loadGlyphFilter:tag completion:^(NSString *appliedTag, NSIndexSet *outputs) {
+        GAMainWindowController *controller = weakSelf;
+        if (!controller) return;
+        BOOL changed = recording && controller.viewMode == GAViewModeAllGlyphs &&
+            ![controller glyphFilterMatchesTag:appliedTag];
+        if (changed) {
+            GAGlyphNavigationStep *origin = [controller.navigation.restoredStep copy] ?: [controller currentNavigationStep];
+            origin.filterTag = controller.allGlyphFeatureTag;
+            origin.filterChange = YES;
+            origin.locationSource = GANavigationLocationExplicit;
+            [controller recordNavigationStep:origin];
+        }
+        [controller applyGlyphFilter:appliedTag outputs:outputs];
+        if (changed) controller.navigationLocationSource = GANavigationLocationFilterChange;
+        [controller revealGlyphForVariant:controller.lastSelectedVariant];
+        [controller updateNavigationButton];
+    }];
 }
 
 - (void)setViewMode:(GAViewMode)viewMode {
@@ -646,7 +685,9 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 - (GAGlyphNavigationStep *)currentNavigationStep {
     GAGlyphNavigationStep *step = [GAGlyphNavigationStep new];
     step.mode = self.viewMode;
+    if (self.viewMode == GAViewModeAllGlyphs) step.filterTag = self.allGlyphFeatureTag;
     step.locationSource = self.navigationLocationSource;
+    step.filterChange = self.navigationLocationSource == GANavigationLocationFilterChange;
     step.glyphIDs = self.lastSelectedVariant.glyphIDs;
     NSNumber *scalar = GAInputScalarForGlyph([self.fontDocument unicodeScalarsForGlyphIDs:step.glyphIDs]);
     step.glyphLabel = scalar ? GAStringFromUnicodeScalars(@[scalar]) : self.lastSelectedVariant.glyphName;
@@ -675,6 +716,8 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 
 - (BOOL)canNavigateToStep:(GAGlyphNavigationStep *)step sequences:(NSDictionary *)sequences {
     if (!step || !self.glyphNavigationEnabled || !self.fontDocument) return NO;
+    if (step.mode == GAViewModeAllGlyphs && step.filterTag.length &&
+        ![self.allGlyphFeatureTags containsObject:step.filterTag]) return NO;
     return step.allowsViewOnly ||
         ([self navigationSelectionMatchesCurrentText:step] &&
          (sequences ? [sequences[[NSValue valueWithRange:step.range]] containsObject:step.glyphIDs]
@@ -718,15 +761,37 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 
 - (void)navigateToStep:(GAGlyphNavigationStep *)step {
     if (![self canNavigateToStep:step]) return;
+    [self cancelPendingNavigation];
+    [self cancelGlyphFilterRequest];
+    if (step.mode == GAViewModeAllGlyphs && ![self glyphFilterMatchesTag:step.filterTag]) {
+        __weak typeof(self) weakSelf = self;
+        [self loadGlyphFilter:step.filterTag completion:^(NSString *tag, NSIndexSet *outputs) {
+            GAMainWindowController *controller = weakSelf;
+            if (!controller || (tag != step.filterTag && ![tag isEqualToString:step.filterTag])) return;
+            [controller restoreNavigationToStep:step filterOutputs:outputs];
+        }];
+        if (self.glyphFilterRequest) self.pendingFilterNavigationStep = step;
+        return;
+    }
+    [self restoreNavigationToStep:step filterOutputs:nil];
+}
+
+- (void)restoreNavigationToStep:(GAGlyphNavigationStep *)step filterOutputs:(NSIndexSet *)outputs {
+    if (![self canNavigateToStep:step]) return;
     if (![self.navigation moveToStep:step leavingStep:[self currentNavigationStep]]) return;
     self.suppressNavigationRecording = YES;
     [self cancelPendingNavigation];
+    if (step.mode == GAViewModeAllGlyphs && ![self glyphFilterMatchesTag:step.filterTag])
+        [self applyGlyphFilter:step.filterTag outputs:outputs];
     BOOL restoredSelection = [self navigationSelectionMatchesCurrentText:step] &&
         [self.sidebarViewController selectGlyphIDs:step.glyphIDs textRange:step.range];
     [self setViewMode:step.mode];
-    self.navigationLocationSource = restoredSelection &&
-        step.locationSource == GANavigationLocationSingleGlyphJumpOrigin
-        ? GANavigationLocationSingleGlyphJumpOrigin : GANavigationLocationExplicit;
+    if (step.filterChange)
+        self.navigationLocationSource = GANavigationLocationFilterChange;
+    else
+        self.navigationLocationSource = restoredSelection &&
+            step.locationSource == GANavigationLocationSingleGlyphJumpOrigin
+            ? GANavigationLocationSingleGlyphJumpOrigin : GANavigationLocationExplicit;
     self.suppressNavigationRecording = NO;
 }
 
@@ -748,9 +813,19 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
             NSMenuItem *item = [menu addItemWithTitle:step.glyphLabel ?: @""
                 action:@selector(chooseNavigationStep:) keyEquivalent:@""];
             GASetViewModeMenuItemImage(item, step.mode);
+            if (step.filterChange) {
+                if (!step.filterTag)
+                    item.title = NSLocalizedString(@"All Glyphs", @"Show every glyph without filtering");
+                else if (!step.filterTag.length)
+                    item.title = NSLocalizedString(@"No Feature", @"Glyphs outside feature outputs");
+                else
+                    item.title = step.filterTag;
+                item.image = [NSImage imageWithSystemSymbolName:@"line.3.horizontal.decrease"
+                    accessibilityDescription:NSLocalizedString(@"Filter by Feature", @"Glyph Grid feature output filter")];
+            }
             item.target = self;
             item.representedObject = step;
-            item.enabled = canNavigate && step.allowsViewOnly;
+            item.enabled = canNavigate && step.allowsViewOnly && [self canNavigateToStep:step];
             if (!item.enabled && step.glyphIDs && [step matchesSourceInText:text]) {
                 [glyphItems addObject:item];
                 [ranges addObject:[NSValue valueWithRange:step.range]];
@@ -765,6 +840,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 }
 
 - (void)clearNavigationHistory {
+    if (self.pendingFilterNavigationStep) [self cancelGlyphFilterRequest];
     [self.navigation clear];
     self.navigationLocationSource = GANavigationLocationUnrecorded;
     self.pendingNavigation = nil;
@@ -828,6 +904,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 }
 
 - (void)cancelPendingNavigation {
+    if (self.pendingFilterNavigationStep) [self cancelGlyphFilterRequest];
     self.pendingNavigation = nil;
     [self cancelLayoutLookup];
 }
@@ -993,7 +1070,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     if (pending && self.workerGeneration != generation) {
         GAGlyphNavigationStep *selected = pending.selectionBeforeInput;
         pending.opensSingleGlyph = YES;
-        pending.previousStep = selected.locationSource == GANavigationLocationExplicit &&
+        pending.previousStep = (selected.locationSource == GANavigationLocationExplicit || selected.filterChange) &&
             ![selected.glyphIDs isEqualToArray:@[entry.glyphID]] ? selected : nil;
         pending.selectionBeforeInput = nil;
     }
@@ -1367,6 +1444,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 }
 
 - (void)loadResource:(GAFontResource *)resource url:(NSURL *)url fileReference:(NSURL *)fileReference {
+    [self cancelGlyphFilterRequest];
     [self clearNavigationHistory];
     [self updateNavigationButton];
     [self.variationPopover close];
@@ -1451,9 +1529,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     [self cancelLayoutLookup];
     if (notification.object == self.window) {
         self.sidebarTransitionInProgress = NO;
-        [self.glyphFilterRequest cancel];
-        self.glyphFilterRequest = nil;
-        self.pendingGlyphFilterTag = nil;
+        [self cancelGlyphFilterRequest];
         @synchronized (self) {
             self.fontLoadGeneration += 1;
         }
@@ -1468,6 +1544,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 - (void)loadDescriptor:(CTFontDescriptorRef)descriptor
                    url:(NSURL *)url fileReference:(NSURL *)fileReference
    preservingSelection:(BOOL)preserve {
+    [self cancelPendingNavigation];
     CTFontDescriptorRef retained = (CTFontDescriptorRef)CFRetain(descriptor);
     NSUInteger request;
     @synchronized (self) { request = ++self.fontLoadGeneration; }
@@ -1530,12 +1607,12 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
             if (preserve && (filter.length || self.allGlyphFeatureTag.length)) {
                 NSArray<NSString *> *tags = self.allGlyphFeatureTags;
                 if (self.allGlyphFeatureTag.length && ![tags containsObject:self.allGlyphFeatureTag])
-                    [self filterAllGlyphsByFeature:nil];
+                    [self filterAllGlyphsByFeature:nil recordingNavigation:NO];
                 if (filter.length && ![tags containsObject:filter])
                     filter = self.allGlyphFeatureTag;
             }
             if (!preserve || filter || self.allGlyphFeatureTag || self.glyphFilterRequest)
-                [self filterAllGlyphsByFeature:preserve ? filter : nil];
+                [self filterAllGlyphsByFeature:preserve ? filter : nil recordingNavigation:NO];
             if (!preserve && self.onFontLoaded != nil) self.onFontLoaded(document.fontURL ?: url);
             NSString *displayName = self.fontResource.usesFamilyName ? self.fontResource.name : document.fullName;
             self.window.title = displayName;
