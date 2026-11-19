@@ -46,7 +46,12 @@
 
 @end
 
-@implementation GAGlyphNavigationHistory
+@implementation GAGlyphNavigationHistory {
+    NSMutableArray<GAGlyphNavigationStep *> *_backSteps;
+    NSMutableArray<GAGlyphNavigationStep *> *_forwardSteps;
+}
+@synthesize backSteps = _backSteps;
+@synthesize forwardSteps = _forwardSteps;
 
 - (instancetype)init {
     self = [super init];
@@ -64,26 +69,30 @@
 - (void)recordStep:(GAGlyphNavigationStep *)step {
     GAGlyphNavigationStep *forward = self.adjacentForwardStep;
     if (forward) {
-        if (self.restoredStep) [self.backSteps addObject:self.restoredStep];
-        [self.backSteps addObject:forward];
+        if (self.restoredStep) [_backSteps addObject:self.restoredStep];
+        [_backSteps addObject:forward];
     }
     _restoredStep = nil;
-    [self.forwardSteps removeAllObjects];
+    [_forwardSteps removeAllObjects];
     GAGlyphNavigationStep *last = self.backSteps.lastObject;
     if (![step matchesLocation:last])
-        [self.backSteps addObject:step];
+        [_backSteps addObject:step];
     else if (step.locationSource == GANavigationLocationExplicit)
         last.locationSource = GANavigationLocationExplicit;
+}
+
+- (void)removeLastStepIfIdenticalTo:(GAGlyphNavigationStep *)step {
+    if (step && step == self.backSteps.lastObject) [_backSteps removeLastObject];
 }
 
 - (BOOL)moveToStep:(GAGlyphNavigationStep *)step leavingStep:(GAGlyphNavigationStep *)current {
     NSUInteger index = [self.forwardSteps indexOfObjectIdenticalTo:step];
     BOOL forward = index != NSNotFound;
-    NSMutableArray *source = forward ? self.forwardSteps : self.backSteps;
+    NSMutableArray *source = forward ? _forwardSteps : _backSteps;
     if (!forward) index = [source indexOfObjectIdenticalTo:step];
     if (index == NSNotFound) return NO;
 
-    NSMutableArray *destination = forward ? self.backSteps : self.forwardSteps;
+    NSMutableArray *destination = forward ? _backSteps : _forwardSteps;
     // View-only navigation can retain a different selection in the sidebar.
     [destination addObject:self.restoredStep ?: current];
     for (NSUInteger i = source.count; i > index + 1; i--)
@@ -94,8 +103,8 @@
 }
 
 - (void)clear {
-    [self.backSteps removeAllObjects];
-    [self.forwardSteps removeAllObjects];
+    [_backSteps removeAllObjects];
+    [_forwardSteps removeAllObjects];
     _restoredStep = nil;
 }
 

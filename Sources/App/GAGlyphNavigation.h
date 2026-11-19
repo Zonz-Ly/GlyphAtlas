@@ -26,11 +26,12 @@ typedef NS_ENUM(NSUInteger, GANavigationLocationSource) {
 
 /// Positions on either side of the current view, including unavailable sources.
 @interface GAGlyphNavigationHistory : NSObject
-@property (nonatomic, strong, readonly) NSMutableArray<GAGlyphNavigationStep *> *backSteps;
-@property (nonatomic, strong, readonly) NSMutableArray<GAGlyphNavigationStep *> *forwardSteps;
+@property (nonatomic, strong, readonly) NSArray<GAGlyphNavigationStep *> *backSteps;
+@property (nonatomic, strong, readonly) NSArray<GAGlyphNavigationStep *> *forwardSteps;
 @property (nonatomic, strong, readonly, nullable) GAGlyphNavigationStep *restoredStep;
 @property (nonatomic, readonly, nullable) GAGlyphNavigationStep *adjacentForwardStep;
 - (void)recordStep:(GAGlyphNavigationStep *)step;
+- (void)removeLastStepIfIdenticalTo:(nullable GAGlyphNavigationStep *)step;
 - (BOOL)moveToStep:(GAGlyphNavigationStep *)step leavingStep:(GAGlyphNavigationStep *)current;
 - (void)clear;
 @end

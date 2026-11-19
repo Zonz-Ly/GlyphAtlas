@@ -201,6 +201,12 @@ static NSRange GAFindUniqueSubstring(NSString *haystack, NSString *needle) {
 
 #pragma mark - Main window
 
+typedef NS_ENUM(NSUInteger, GAAnalysisReason) {
+    GAAnalysisRefresh,
+    GAAnalysisInput,
+    GAAnalysisUndoRedo,
+};
+
 @interface GAPendingNavigation : NSObject
 @property (nonatomic) NSUInteger generation;
 @property (nonatomic) BOOL opensSingleGlyph;
@@ -442,12 +448,12 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(handleInputBlankClick:)
                                               name:GAInputBlankClickNotification object:nil];
     self.sidebarViewController.onTextChanged = ^{
-        [weakSelf scheduleAnalysisForInputReplay:NO recordingSelection:YES];
+        [weakSelf scheduleAnalysisForReason:GAAnalysisInput];
     };
     self.sidebarViewController.onInputUndoRedo = ^{
         GAMainWindowController *controller = weakSelf;
         controller.pendingGlyphEdit = nil;
-        [controller scheduleAnalysisForInputReplay:YES recordingSelection:YES];
+        [controller scheduleAnalysisForReason:GAAnalysisUndoRedo];
     };
     self.sidebarViewController.onWillNavigate = ^{
         [weakSelf recordNavigation];
@@ -660,9 +666,8 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     if (opensSingleGlyph && self.lastSelectedVariant) {
         // The first mouse-down selected immediately. Merge its provisional step
         // only when AppKit identifies this as the same double-click.
-        GAGlyphNavigationStep *origin = self.layoutClickOrigin;
-        if (firstClick && firstClick == self.layoutFirstClick && origin && origin == self.navigation.backSteps.lastObject)
-            [self.navigation.backSteps removeLastObject];
+        if (firstClick && firstClick == self.layoutFirstClick)
+            [self.navigation removeLastStepIfIdenticalTo:self.layoutClickOrigin];
         [self setViewMode:GAViewModeSingleGlyph];
     } else if (!doubleClick && firstClick && self.navigation.forwardSteps.count == 0 &&
                previousLast != self.navigation.backSteps.lastObject) {
@@ -1540,7 +1545,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
                 // worker could consume the pending text before this reset.
                 dispatch_async(dispatch_get_main_queue(), ^{
                     if (request == self.fontLoadGeneration && self.fontDocument == document) {
-                        [self scheduleAnalysis];
+                        [self scheduleAnalysisForReason:GAAnalysisRefresh];
                     }
                 });
             });
@@ -1842,7 +1847,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         [self.sidebarViewController selectGlyphIDsAfterNextReload:variant.glyphIDs textRange:range
             scroll:GAPendingSelectionScrollSelectedToTopIfNeeded];
     }
-    [self scheduleAnalysis];
+    [self scheduleAnalysisForReason:GAAnalysisInput];
 }
 
 #pragma mark - Analysis
@@ -1860,21 +1865,17 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     }
 }
 
-- (void)scheduleAnalysis {
-    [self scheduleAnalysisForInputReplay:NO recordingSelection:NO];
-}
-
-- (void)scheduleAnalysisForInputReplay:(BOOL)replaying recordingSelection:(BOOL)recordSelection {
+- (void)scheduleAnalysisForReason:(GAAnalysisReason)reason {
     GAPendingNavigation *previous = self.pendingNavigation.opensSingleGlyph ? nil : self.pendingNavigation;
     self.pendingNavigation = nil;
-    if (recordSelection && self.glyphNavigationEnabled && self.fontDocument) {
+    if (reason != GAAnalysisRefresh && self.glyphNavigationEnabled && self.fontDocument) {
         GAPendingNavigation *pending = [GAPendingNavigation new];
         pending.selectionBeforeInput = previous.selectionBeforeInput ?: [self currentNavigationStep];
         pending.previousStep = previous.previousStep ?: [self.navigation.restoredStep copy] ?: pending.selectionBeforeInput;
         self.pendingNavigation = pending;
     }
     self.layoutFirstClick = nil;
-    self.navigationInputReplay = replaying;
+    self.navigationInputReplay = reason == GAAnalysisUndoRedo;
     [self cancelLayoutLookup];
     NSMutableAttributedString *attributedText =
         [self.sidebarViewController.attributedText mutableCopy];
