@@ -3,18 +3,10 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-typedef NS_ENUM(NSUInteger, GANavigationLocationSource) {
-    GANavigationLocationUnrecorded,
-    GANavigationLocationExplicit,
-    GANavigationLocationSingleGlyphJumpOrigin,
-    GANavigationLocationFilterChange,
-};
-
 @interface GAGlyphNavigationStep : NSObject <NSCopying>
 @property (nonatomic) GAViewMode mode;
 @property (nonatomic, copy, nullable) NSString *filterTag;
 @property (nonatomic) BOOL filterChange;
-@property (nonatomic) GANavigationLocationSource locationSource;
 @property (nonatomic, copy, nullable) NSArray<NSNumber *> *glyphIDs;
 @property (nonatomic) NSRange range;
 @property (nonatomic, copy, nullable) NSString *sourceText;
@@ -34,6 +26,8 @@ typedef NS_ENUM(NSUInteger, GANavigationLocationSource) {
 @property (nonatomic, strong, readonly, nullable) GAGlyphNavigationStep *restoredStep;
 /// Start a new navigation, optionally omitting the departing location.
 - (void)recordStep:(nullable GAGlyphNavigationStep *)step;
+/// Only the nearest forward entry (above the current position in the menu) can pair with the grid.
+- (BOOL)canReplaceGridOrigin:(GAGlyphNavigationStep *)origin;
 - (BOOL)moveToStep:(GAGlyphNavigationStep *)step leavingStep:(GAGlyphNavigationStep *)current;
 - (void)clear;
 @end

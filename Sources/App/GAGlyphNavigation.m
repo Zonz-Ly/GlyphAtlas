@@ -7,7 +7,6 @@
     step.mode = self.mode;
     step.filterTag = self.filterTag;
     step.filterChange = self.filterChange;
-    step.locationSource = self.locationSource;
     step.glyphIDs = self.glyphIDs;
     step.range = self.range;
     step.sourceText = self.sourceText;
@@ -77,11 +76,15 @@
     GAGlyphNavigationStep *last = self.backSteps.lastObject;
     if (![step matchesLocation:last])
         [_backSteps addObject:step];
-    else {
-        if (step.locationSource == GANavigationLocationExplicit)
-            last.locationSource = GANavigationLocationExplicit;
-        if (step.filterChange) last.filterChange = YES;
-    }
+    else if (step.filterChange)
+        last.filterChange = YES;
+}
+
+- (BOOL)canReplaceGridOrigin:(GAGlyphNavigationStep *)origin {
+    GAGlyphNavigationStep *neighbor = self.forwardSteps.lastObject;
+    return origin.mode == GAViewModeAllGlyphs && !origin.filterChange &&
+        neighbor && neighbor.mode != GAViewModeAllGlyphs &&
+        [origin.glyphIDs isEqualToArray:neighbor.glyphIDs];
 }
 
 - (BOOL)moveToStep:(GAGlyphNavigationStep *)step leavingStep:(GAGlyphNavigationStep *)current {
