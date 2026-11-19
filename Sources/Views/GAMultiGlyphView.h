@@ -46,7 +46,7 @@ NS_ASSUME_NONNULL_BEGIN
 /// Return YES when the glyph action consumes the event instead of window dragging.
 @property(nonatomic, copy, nullable) BOOL (^onGlyphSelected)
     (NSArray<NSNumber *> *glyphIDs, NSRange range, NSArray<NSNumber *> * _Nullable leadingGlyphIDs,
-     NSRange leadingRange, BOOL doubleClick, NSEvent * _Nullable firstClick);
+     NSRange leadingRange, BOOL doubleClick);
 
 - (void)setText:(NSString *)text groups:(NSArray<GACharacterGroup *> *)groups
       omissions:(NSIndexSet *)omissions;

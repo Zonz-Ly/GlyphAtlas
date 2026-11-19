@@ -131,9 +131,9 @@
     };
     self.multiView.onGlyphSelected = ^BOOL(NSArray<NSNumber *> *glyphIDs, NSRange range,
                                       NSArray<NSNumber *> *leadingGlyphIDs, NSRange leadingRange,
-                                      BOOL doubleClick, NSEvent *firstClick) {
+                                      BOOL doubleClick) {
         return weakSelf.onGlyphSelected
-            ? weakSelf.onGlyphSelected(glyphIDs, range, leadingGlyphIDs, leadingRange, doubleClick, firstClick) : NO;
+            ? weakSelf.onGlyphSelected(glyphIDs, range, leadingGlyphIDs, leadingRange, doubleClick) : NO;
     };
     self.multiView.onContentSizeChanged = ^{
         [weakSelf updateMultiLayout];

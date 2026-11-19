@@ -281,8 +281,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 @property (nonatomic) GANavigationLocationSource navigationLocationSource;
 @property (nonatomic, strong, nullable) NSMenuToolbarItem *backToolbarItem;
 @property (nonatomic) BOOL suppressNavigationRecording;
-@property (nonatomic, weak, nullable) NSEvent *layoutFirstClick;
-@property (nonatomic, weak, nullable) GAGlyphNavigationStep *layoutClickOrigin;
 @property (nonatomic, strong, nullable) GAPendingNavigation *pendingNavigation;
 @property (nonatomic) BOOL navigationInputReplay;
 @end
@@ -495,11 +493,11 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     };
     self.detailViewController.onGlyphSelected = ^BOOL(NSArray<NSNumber *> *glyphIDs, NSRange range,
                                                    NSArray<NSNumber *> *leadingGlyphIDs, NSRange leadingRange,
-                                                   BOOL doubleClick, NSEvent *firstClick) {
+                                                   BOOL doubleClick) {
         GAMainWindowController *controller = weakSelf;
         [controller selectLayoutGlyphIDs:glyphIDs multiRange:range
                        leadingGlyphIDs:leadingGlyphIDs leadingRange:leadingRange
-                           doubleClick:doubleClick firstClick:firstClick];
+                           doubleClick:doubleClick];
         return doubleClick && controller.glyphNavigationEnabled;
     };
 }
@@ -580,7 +578,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 
 - (void)selectLayoutGlyphIDs:(NSArray<NSNumber *> *)glyphIDs multiRange:(NSRange)range
               leadingGlyphIDs:(NSArray<NSNumber *> *)leadingGlyphIDs leadingRange:(NSRange)leadingRange
-                   doubleClick:(BOOL)doubleClick firstClick:(NSEvent *)firstClick {
+                   doubleClick:(BOOL)doubleClick {
     if (![self canEditFromScanSnapshotForText:self.sidebarViewController.text]) return;
     GAScanDisplaySnapshot *snapshot = self.scanSnapshot;
     GAFontDocument *document = self.fontDocument;
@@ -603,21 +601,20 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
                 if (NSMaxRange(source) != original.location) {
                     // A missing component can leave a gap in the original
                     // text even when the preview shapes one visible cluster.
-                    [self applyLayoutSelection:^BOOL{
-                        if (leadingSource.location == NSNotFound ||
-                            ![self.sidebarViewController selectGlyphIDs:leadingGlyphIDs textRange:leadingSource])
-                            [self.sidebarViewController selectBaseForTextRange:source];
-                        return YES;
-                    } doubleClick:doubleClick firstClick:firstClick];
+                    if (leadingSource.location == NSNotFound ||
+                        ![self.sidebarViewController selectGlyphIDs:leadingGlyphIDs textRange:leadingSource])
+                        [self.sidebarViewController selectBaseForTextRange:source];
+                    [self finishLayoutNavigationForDoubleClick:doubleClick];
                     return;
                 }
                 source.length += original.length;
             }
         }
     if (source.location == NSNotFound) return;
-    if ([self applyLayoutSelection:^BOOL{
-        return [self.sidebarViewController selectGlyphIDs:glyphIDs textRange:source];
-    } doubleClick:doubleClick firstClick:firstClick]) return;
+    if ([self.sidebarViewController selectGlyphIDs:glyphIDs textRange:source]) {
+        [self finishLayoutNavigationForDoubleClick:doubleClick];
+        return;
+    }
     BOOL vertical = self.verticalWriting;
     NSWritingDirection direction = self.baseWritingDirection;
     NSString *languageTag = self.typesettingLanguageTag;
@@ -640,41 +637,20 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
                 self.baseWritingDirection != direction ||
                 ![self.typesettingLanguageTag isEqualToString:languageTag] ||
                 ![(self.fontFeatures.replaySettings ?: @[]) isEqualToArray:features]) return;
-            [self applyLayoutSelection:^BOOL{
-                if (resolution)
-                    [self.sidebarViewController showGlyphResolution:resolution];
-                else if (leadingSource.location == NSNotFound ||
-                         ![self.sidebarViewController selectGlyphIDs:leadingGlyphIDs textRange:leadingSource])
-                    [self.sidebarViewController selectBaseForTextRange:source];
-                if (self.layoutLookup == progress) self.layoutLookup = nil;
-                return YES;
-            } doubleClick:doubleClick firstClick:firstClick];
+            if (resolution)
+                [self.sidebarViewController showGlyphResolution:resolution];
+            else if (leadingSource.location == NSNotFound ||
+                     ![self.sidebarViewController selectGlyphIDs:leadingGlyphIDs textRange:leadingSource])
+                [self.sidebarViewController selectBaseForTextRange:source];
+            if (self.layoutLookup == progress) self.layoutLookup = nil;
+            [self finishLayoutNavigationForDoubleClick:doubleClick];
         });
     });
 }
 
-- (BOOL)applyLayoutSelection:(BOOL (^)(void))select
-                  doubleClick:(BOOL)doubleClick firstClick:(NSEvent *)firstClick {
-    BOOL opensSingleGlyph = doubleClick && self.glyphNavigationEnabled;
-    GAGlyphNavigationStep *previousLast = self.navigation.adjacentForwardStep ?: self.navigation.backSteps.lastObject;
-    BOOL wasSuppressingRecording = self.suppressNavigationRecording;
-    self.suppressNavigationRecording = wasSuppressingRecording || opensSingleGlyph;
-    BOOL selected = select();
-    self.suppressNavigationRecording = wasSuppressingRecording;
-    if (!selected) return NO;
-
-    if (opensSingleGlyph && self.lastSelectedVariant) {
-        // The first mouse-down selected immediately. Merge its provisional step
-        // only when AppKit identifies this as the same double-click.
-        if (firstClick && firstClick == self.layoutFirstClick)
-            [self.navigation removeLastStepIfIdenticalTo:self.layoutClickOrigin];
+- (void)finishLayoutNavigationForDoubleClick:(BOOL)doubleClick {
+    if (doubleClick && self.glyphNavigationEnabled && self.lastSelectedVariant)
         [self setViewMode:GAViewModeSingleGlyph];
-    } else if (!doubleClick && firstClick && self.navigation.forwardSteps.count == 0 &&
-               previousLast != self.navigation.backSteps.lastObject) {
-        self.layoutFirstClick = firstClick;
-        self.layoutClickOrigin = self.navigation.backSteps.lastObject;
-    }
-    return YES;
 }
 
 #pragma mark - Glyph navigation
@@ -702,7 +678,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 
 - (void)recordNavigationStep:(nullable GAGlyphNavigationStep *)step {
     if (!self.glyphNavigationEnabled || !self.fontDocument) return;
-    self.layoutFirstClick = nil;
     [self.navigation recordStep:step ?: [self currentNavigationStep]];
 }
 
@@ -755,7 +730,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     if (![self canNavigateToStep:step]) return;
     if (![self.navigation moveToStep:step leavingStep:[self currentNavigationStep]]) return;
     self.pendingNavigation = nil;
-    self.layoutFirstClick = nil;
     self.suppressNavigationRecording = YES;
     [self cancelLayoutLookup];
     BOOL restoredSelection = [self navigationSelectionMatchesCurrentText:step] &&
@@ -804,7 +778,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 - (void)clearNavigationHistory {
     [self.navigation clear];
     self.navigationLocationSource = GANavigationLocationUnrecorded;
-    self.layoutFirstClick = nil;
     self.pendingNavigation = nil;
     self.navigationInputReplay = NO;
 }
@@ -1874,7 +1847,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         pending.previousStep = previous.previousStep ?: [self.navigation.restoredStep copy] ?: pending.selectionBeforeInput;
         self.pendingNavigation = pending;
     }
-    self.layoutFirstClick = nil;
     self.navigationInputReplay = reason == GAAnalysisUndoRedo;
     [self cancelLayoutLookup];
     NSMutableAttributedString *attributedText =

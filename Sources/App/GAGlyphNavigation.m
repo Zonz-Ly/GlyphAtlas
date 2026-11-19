@@ -81,10 +81,6 @@
         last.locationSource = GANavigationLocationExplicit;
 }
 
-- (void)removeLastStepIfIdenticalTo:(GAGlyphNavigationStep *)step {
-    if (step && step == self.backSteps.lastObject) [_backSteps removeLastObject];
-}
-
 - (BOOL)moveToStep:(GAGlyphNavigationStep *)step leavingStep:(GAGlyphNavigationStep *)current {
     NSUInteger index = [self.forwardSteps indexOfObjectIdenticalTo:step];
     BOOL forward = index != NSNotFound;
