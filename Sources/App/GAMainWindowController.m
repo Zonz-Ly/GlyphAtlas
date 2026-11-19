@@ -576,7 +576,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
             controller.viewMode == GAViewModeAllGlyphs &&
             ![controller glyphFilterMatchesTag:appliedTag];
         if (changed) {
-            GAGlyphNavigationStep *origin = [controller.navigation.restoredStep copy] ?: [controller currentNavigationStep];
+            GAGlyphNavigationStep *origin = [controller currentNavigationStep];
             [controller.navigation recordStep:origin.filterChange ? origin : nil];
         }
         [controller applyGlyphFilter:appliedTag outputs:outputs];
@@ -675,6 +675,12 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 #pragma mark - Glyph navigation
 
 - (GAGlyphNavigationStep *)currentNavigationStep {
+    return [self.navigation.restoredStep copy] ?: [self sidebarNavigationStep];
+}
+
+// Input change detection needs the sidebar selection even when a historical
+// grid location remains visible after its source has disappeared.
+- (GAGlyphNavigationStep *)sidebarNavigationStep {
     GAGlyphNavigationStep *step = [GAGlyphNavigationStep new];
     step.mode = self.viewMode;
     if (self.viewMode == GAViewModeAllGlyphs) step.filterTag = self.allGlyphFeatureTag;
@@ -1911,15 +1917,14 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 
 - (void)scheduleAnalysisForReason:(GAAnalysisReason)reason {
     GAPendingNavigation *previous = self.pendingNavigation.opensSingleGlyph ? nil : self.pendingNavigation;
-    self.pendingNavigation = nil;
+    [self cancelPendingNavigation];
     if (reason != GAAnalysisRefresh && self.glyphNavigationEnabled && self.fontDocument) {
         GAPendingNavigation *pending = [GAPendingNavigation new];
-        pending.selectionBeforeInput = previous.selectionBeforeInput ?: [self currentNavigationStep];
-        pending.previousStep = previous.previousStep ?: [self.navigation.restoredStep copy] ?: pending.selectionBeforeInput;
+        pending.selectionBeforeInput = previous.selectionBeforeInput ?: [self sidebarNavigationStep];
+        pending.previousStep = previous.previousStep ?: [self currentNavigationStep];
         self.pendingNavigation = pending;
     }
     self.navigationInputReplay = reason == GAAnalysisUndoRedo;
-    [self cancelLayoutLookup];
     NSMutableAttributedString *attributedText =
         [self.sidebarViewController.attributedText mutableCopy];
     NSArray<NSValue *> *changedRanges;
@@ -2032,11 +2037,13 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     self.pendingNavigation = nil;
     if (pending && self.glyphNavigationEnabled) {
         if (pending.opensSingleGlyph) {
+            // The newly selected grid glyph becomes the origin of this jump.
             if (pending.previousStep) [self recordNavigationStep:pending.previousStep];
+            else [self.navigation recordStep:nil];
             self.navigationLocationSource = GANavigationLocationSingleGlyphJumpOrigin;
             [self setViewMode:GAViewModeSingleGlyph];
         } else if (self.lastSelectedVariant &&
-                   ![[self currentNavigationStep] matchesLocation:pending.selectionBeforeInput]) {
+                   ![[self sidebarNavigationStep] matchesLocation:pending.selectionBeforeInput]) {
             if (pending.previousStep.glyphIDs) [self recordNavigationStep:pending.previousStep];
             self.navigationLocationSource = GANavigationLocationExplicit;
             [self revealGlyphForVariant:self.lastSelectedVariant];
