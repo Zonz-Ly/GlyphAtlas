@@ -1396,6 +1396,8 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     if (![itemIdentifier isEqualToString:GAFontNameItem]) return nil;
     item.label = NSLocalizedString(@"Font Name", @"Font Name");
     item.view = self.fontTitleView;
+    // Explicitly opt out of toolbar glass on macOS 26 and later.
+    item.bordered = NO;
     CGFloat titleHeight = MAX(22, self.titleFontNameField.fittingSize.height);
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
