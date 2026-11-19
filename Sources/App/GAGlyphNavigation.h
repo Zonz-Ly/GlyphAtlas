@@ -9,7 +9,7 @@ typedef NS_ENUM(NSUInteger, GANavigationLocationSource) {
     GANavigationLocationSingleGlyphJumpOrigin,
 };
 
-@interface GAGlyphNavigationStep : NSObject
+@interface GAGlyphNavigationStep : NSObject <NSCopying>
 @property (nonatomic) GAViewMode mode;
 @property (nonatomic) GANavigationLocationSource locationSource;
 @property (nonatomic, copy, nullable) NSArray<NSNumber *> *glyphIDs;

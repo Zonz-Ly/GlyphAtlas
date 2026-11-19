@@ -2,6 +2,18 @@
 
 @implementation GAGlyphNavigationStep
 
+- (id)copyWithZone:(NSZone *)zone {
+    GAGlyphNavigationStep *step = [[[self class] allocWithZone:zone] init];
+    step.mode = self.mode;
+    step.locationSource = self.locationSource;
+    step.glyphIDs = self.glyphIDs;
+    step.range = self.range;
+    step.sourceText = self.sourceText;
+    step.glyphLabel = self.glyphLabel;
+    step.sourceRecoveryRanges = [self.sourceRecoveryRanges mutableCopy];
+    return step;
+}
+
 - (BOOL)matchesLocation:(GAGlyphNavigationStep *)other {
     if (!other || self.mode != other.mode) return NO;
     if (!self.glyphIDs && !other.glyphIDs) return YES;
