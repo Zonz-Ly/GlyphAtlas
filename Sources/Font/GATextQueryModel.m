@@ -165,14 +165,6 @@ static void GAMergeSelectionCandidate(GAGlyphVariant *candidate, NSMutableArray 
     [variants addObject:copy];
 }
 
-static NSString *GAGlyphSequenceKey(NSArray<NSNumber *> *glyphIDs) {
-    if (glyphIDs.count < 2) return glyphIDs.firstObject.stringValue ?: @"∅";
-    NSMutableArray<NSString *> *parts = [NSMutableArray arrayWithCapacity:glyphIDs.count];
-    for (NSNumber *glyph in glyphIDs)
-        [parts addObject:glyph.stringValue];
-    return [parts componentsJoinedByString:@","];
-}
-
 /// Inserts browsing-only combinations after the projected source and selection rows.
 static NSArray<GACharacterGroup *> *GAInsertCombinationGroups(
     NSArray<GACharacterGroup *> *scanGroups, NSArray<GACharacterGroup *> *sourceGroups,
@@ -254,9 +246,11 @@ static NSArray<GACharacterGroup *> *GAInsertCombinationGroups(
         NSRange range = rangeValue.rangeValue;
         NSMutableArray<GAGlyphVariant *> *variants = byRange[rangeValue];
         NSMutableArray<GAGlyphVariant *> *unique = [NSMutableArray array];
-        NSMutableSet<NSString *> *glyphKeys = [NSMutableSet set];
+        NSMutableSet *glyphKeys = [NSMutableSet set];
         for (GAGlyphVariant *variant in variants) {
-            NSString *key = GAGlyphSequenceKey(variant.glyphIDs);
+            NSArray<NSNumber *> *glyphIDs = variant.glyphIDs;
+            id key = glyphIDs.count < 2 ? ((id)glyphIDs.firstObject ?: @"∅")
+                : [glyphIDs componentsJoinedByString:@","];
             if ([glyphKeys containsObject:key])
                 continue;
             [glyphKeys addObject:key];

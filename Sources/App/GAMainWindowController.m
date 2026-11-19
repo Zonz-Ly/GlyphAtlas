@@ -709,17 +709,12 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 }
 
 - (BOOL)canNavigateToStep:(GAGlyphNavigationStep *)step {
-    return [self canNavigateToStep:step sequences:nil];
-}
-
-- (BOOL)canNavigateToStep:(GAGlyphNavigationStep *)step sequences:(NSDictionary *)sequences {
     if (!step || !self.glyphNavigationEnabled || !self.fontDocument) return NO;
     if (step.mode == GAViewModeAllGlyphs && step.filterTag.length &&
         ![self.allGlyphFeatureTags containsObject:step.filterTag]) return NO;
     return step.allowsViewOnly ||
         ([self navigationSelectionMatchesCurrentText:step] &&
-         (sequences ? [sequences[[NSValue valueWithRange:step.range]] containsObject:step.glyphIDs]
-                    : [self.sidebarViewController containsGlyphIDs:step.glyphIDs textRange:step.range]));
+         [self.sidebarViewController containsGlyphIDs:step.glyphIDs textRange:step.range]);
 }
 
 - (BOOL)navigationSelectionMatchesCurrentText:(GAGlyphNavigationStep *)step {
@@ -804,10 +799,11 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         ? self.scanSnapshot.text : nil;
     NSMutableArray<NSMenuItem *> *glyphItems = [NSMutableArray array];
     NSMutableSet<NSValue *> *ranges = [NSMutableSet set];
-    NSArray<GAGlyphNavigationStep *> *back = self.navigation.backSteps.reverseObjectEnumerator.allObjects;
-    for (NSArray<GAGlyphNavigationStep *> *steps in @[self.navigation.forwardSteps, back]) {
+    NSArray<GAGlyphNavigationStep *> *forward = self.navigation.forwardSteps;
+    for (NSArray<GAGlyphNavigationStep *> *steps in @[forward, self.navigation.backSteps]) {
         if (menu.numberOfItems && steps.count) [menu addItem:NSMenuItem.separatorItem];
-        for (GAGlyphNavigationStep *step in steps) {
+        NSEnumerator *orderedSteps = steps == forward ? steps.objectEnumerator : steps.reverseObjectEnumerator;
+        for (GAGlyphNavigationStep *step in orderedSteps) {
             NSMenuItem *item = [menu addItemWithTitle:step.glyphLabel ?: @""
                 action:@selector(chooseNavigationStep:) keyEquivalent:@""];
             GASetViewModeMenuItemImage(item, step.mode);
@@ -823,8 +819,8 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
             }
             item.target = self;
             item.representedObject = step;
-            item.enabled = canNavigate && step.allowsViewOnly && [self canNavigateToStep:step];
-            if (!item.enabled && step.glyphIDs && [step matchesSourceInText:text]) {
+            item.enabled = step.allowsViewOnly && [self canNavigateToStep:step];
+            if (!step.allowsViewOnly && [step matchesSourceInText:text]) {
                 [glyphItems addObject:item];
                 [ranges addObject:[NSValue valueWithRange:step.range]];
             }
@@ -833,7 +829,10 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     NSDictionary *sequences = glyphItems.count > 1
         ? [self.sidebarViewController glyphSequencesForTextRanges:ranges] : nil;
     for (NSMenuItem *item in glyphItems) {
-        item.enabled = [self canNavigateToStep:item.representedObject sequences:sequences];
+        GAGlyphNavigationStep *step = item.representedObject;
+        item.enabled = sequences
+            ? [sequences[[NSValue valueWithRange:step.range]] containsObject:step.glyphIDs]
+            : [self.sidebarViewController containsGlyphIDs:step.glyphIDs textRange:step.range];
     }
 }
 
@@ -1335,7 +1334,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         item.showsIndicator = NO;
         item.target = self;
         item.action = @selector(navigateBack:);
-        item.bordered = YES;
 
         if (@available(macOS 26.0, *)) {
             item.navigational = hasToolbarInput && self.fontResource.axes.count > 0;
@@ -1387,7 +1385,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     if (![itemIdentifier isEqualToString:GAFontNameItem]) return nil;
     item.label = NSLocalizedString(@"Font Name", @"Font Name");
     item.view = self.fontTitleView;
-    item.bordered = NO;
     CGFloat titleHeight = MAX(22, self.titleFontNameField.fittingSize.height);
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
