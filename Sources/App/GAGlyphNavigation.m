@@ -73,6 +73,7 @@
     }
     _restoredStep = nil;
     [_forwardSteps removeAllObjects];
+    if (!step) return;
     GAGlyphNavigationStep *last = self.backSteps.lastObject;
     if (![step matchesLocation:last])
         [_backSteps addObject:step];

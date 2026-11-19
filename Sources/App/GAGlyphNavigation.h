@@ -32,7 +32,8 @@ typedef NS_ENUM(NSUInteger, GANavigationLocationSource) {
 @property (nonatomic, strong, readonly) NSArray<GAGlyphNavigationStep *> *backSteps;
 @property (nonatomic, strong, readonly) NSArray<GAGlyphNavigationStep *> *forwardSteps;
 @property (nonatomic, strong, readonly, nullable) GAGlyphNavigationStep *restoredStep;
-- (void)recordStep:(GAGlyphNavigationStep *)step;
+/// Start a new navigation, optionally omitting the departing location.
+- (void)recordStep:(nullable GAGlyphNavigationStep *)step;
 - (BOOL)moveToStep:(GAGlyphNavigationStep *)step leavingStep:(GAGlyphNavigationStep *)current;
 - (void)clear;
 @end

@@ -578,14 +578,12 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     [self loadGlyphFilter:tag completion:^(NSString *appliedTag, NSIndexSet *outputs) {
         GAMainWindowController *controller = weakSelf;
         if (!controller) return;
-        BOOL changed = recording && controller.viewMode == GAViewModeAllGlyphs &&
+        BOOL changed = recording && controller.glyphNavigationEnabled &&
+            controller.viewMode == GAViewModeAllGlyphs &&
             ![controller glyphFilterMatchesTag:appliedTag];
         if (changed) {
             GAGlyphNavigationStep *origin = [controller.navigation.restoredStep copy] ?: [controller currentNavigationStep];
-            origin.filterTag = controller.allGlyphFeatureTag;
-            origin.filterChange = YES;
-            origin.locationSource = GANavigationLocationExplicit;
-            [controller recordNavigationStep:origin];
+            [controller.navigation recordStep:origin.filterChange ? origin : nil];
         }
         [controller applyGlyphFilter:appliedTag outputs:outputs];
         if (changed) controller.navigationLocationSource = GANavigationLocationFilterChange;
