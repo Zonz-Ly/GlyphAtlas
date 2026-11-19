@@ -278,7 +278,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 @property (nonatomic) BOOL glyphNavigationEnabled;
 @property (nonatomic, strong) NSMutableArray<GAGlyphNavigationStep *> *navigationHistory;
 @property (nonatomic, strong) NSMutableArray<GAGlyphNavigationStep *> *navigationForwardHistory;
-@property (nonatomic, strong, nullable) GAGlyphNavigationStep *navigationPosition;
 @property (nonatomic, strong, nullable) NSMenuToolbarItem *backToolbarItem;
 @property (nonatomic) BOOL suppressNavigationRecording;
 @property (nonatomic, weak, nullable) NSEvent *layoutFirstClick;
@@ -633,7 +632,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 - (BOOL)applyLayoutSelection:(BOOL (^)(void))select
                   doubleClick:(BOOL)doubleClick firstClick:(NSEvent *)firstClick {
     BOOL opensSingleGlyph = doubleClick && self.glyphNavigationEnabled;
-    GAGlyphNavigationStep *previousLast = self.navigationForwardHistory.firstObject ?: self.navigationHistory.lastObject;
+    GAGlyphNavigationStep *previousLast = self.navigationHistory.lastObject;
     BOOL wasSuppressingRecording = self.suppressNavigationRecording;
     self.suppressNavigationRecording = wasSuppressingRecording || opensSingleGlyph;
     BOOL selected = select();
@@ -647,8 +646,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         if (firstClick && firstClick == self.layoutFirstClick && origin && origin == self.navigationHistory.lastObject)
             [self.navigationHistory removeLastObject];
         [self setViewMode:GAViewModeSingleGlyph];
-    } else if (!doubleClick && firstClick && self.navigationForwardHistory.count == 0 &&
-               previousLast != self.navigationHistory.lastObject) {
+    } else if (!doubleClick && firstClick && previousLast != self.navigationHistory.lastObject) {
         self.layoutFirstClick = firstClick;
         self.layoutClickOrigin = self.navigationHistory.lastObject;
     }
@@ -673,13 +671,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 - (void)recordNavigation {
     if (!self.glyphNavigationEnabled || self.suppressNavigationRecording || !self.fontDocument) return;
     self.layoutFirstClick = nil;
-    if (self.navigationPosition) {
-        // The restored position sits between the older and newer steps.
-        [self.navigationHistory addObject:self.navigationPosition];
-        [self.navigationHistory addObjectsFromArray:self.navigationForwardHistory.reverseObjectEnumerator.allObjects];
-        [self.navigationForwardHistory removeAllObjects];
-        self.navigationPosition = nil;
-    }
+    [self.navigationForwardHistory removeAllObjects];
     GAGlyphNavigationStep *step = [self currentNavigationStep];
     if (![step matchesLocation:self.navigationHistory.lastObject])
         [self.navigationHistory addObject:step];
@@ -727,11 +719,10 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     self.layoutFirstClick = nil;
     self.suppressNavigationRecording = YES;
     [self cancelLayoutLookup];
-    [destination addObject:self.navigationPosition ?: [self currentNavigationStep]];
+    [destination addObject:[self currentNavigationStep]];
     for (NSUInteger i = source.count; i > index + 1; i--)
         [destination addObject:source[i - 1]];
     [source removeObjectsInRange:NSMakeRange(index, source.count - index)];
-    self.navigationPosition = self.navigationForwardHistory.count ? step : nil;
     if (step.glyphIDs)
         [self.sidebarViewController selectGlyphIDs:step.glyphIDs textRange:step.range];
     [self setViewMode:step.mode];
@@ -739,9 +730,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 }
 
 - (void)chooseNavigationStep:(NSMenuItem *)item {
-    GAGlyphNavigationStep *step = item.representedObject;
-    if ([self.navigationHistory indexOfObjectIdenticalTo:step] != NSNotFound)
-        [self navigateToStep:step];
+    [self navigateToStep:item.representedObject];
 }
 
 - (void)menuNeedsUpdate:(NSMenu *)menu {
@@ -751,16 +740,19 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         ? self.scanSnapshot.text : nil;
     NSMutableArray<NSMenuItem *> *glyphItems = [NSMutableArray array];
     NSMutableSet<NSValue *> *ranges = [NSMutableSet set];
-    for (GAGlyphNavigationStep *step in self.navigationHistory.reverseObjectEnumerator) {
-        NSMenuItem *item = [menu addItemWithTitle:step.glyphLabel ?: @""
-            action:@selector(chooseNavigationStep:) keyEquivalent:@""];
-        GASetViewModeMenuItemImage(item, step.mode);
-        item.target = self;
-        item.representedObject = step;
-        item.enabled = canNavigate && !step.glyphIDs;
-        if (step.glyphIDs && GANavigationSourceMatchesText(step, text)) {
-            [glyphItems addObject:item];
-            [ranges addObject:[NSValue valueWithRange:step.range]];
+    for (NSArray<GAGlyphNavigationStep *> *steps in @[self.navigationForwardHistory, self.navigationHistory]) {
+        if (menu.numberOfItems && steps.count) [menu addItem:NSMenuItem.separatorItem];
+        for (GAGlyphNavigationStep *step in steps.reverseObjectEnumerator) {
+            NSMenuItem *item = [menu addItemWithTitle:step.glyphLabel ?: @""
+                action:@selector(chooseNavigationStep:) keyEquivalent:@""];
+            GASetViewModeMenuItemImage(item, step.mode);
+            item.target = self;
+            item.representedObject = step;
+            item.enabled = canNavigate && !step.glyphIDs;
+            if (step.glyphIDs && GANavigationSourceMatchesText(step, text)) {
+                [glyphItems addObject:item];
+                [ranges addObject:[NSValue valueWithRange:step.range]];
+            }
         }
     }
     NSDictionary *sequences = glyphItems.count > 1
@@ -776,7 +768,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 - (void)clearNavigationHistory {
     [self.navigationHistory removeAllObjects];
     [self.navigationForwardHistory removeAllObjects];
-    self.navigationPosition = nil;
     self.layoutFirstClick = nil;
     self.pendingGridNavigation = NO;
 }
@@ -799,7 +790,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 - (void)remapNavigationStepsForText:(NSString *)text {
     NSMutableArray<GAGlyphNavigationStep *> *steps = [self.navigationHistory mutableCopy];
     [steps addObjectsFromArray:self.navigationForwardHistory];
-    if (self.navigationPosition) [steps addObject:self.navigationPosition];
     for (GAGlyphNavigationStep *step in steps) {
         if (!step.glyphIDs || step.range.location == NSNotFound) continue;
         NSRange range = [self.sidebarViewController navigationRangeForDisplayedRange:step.range];
@@ -1228,7 +1218,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         NSMenu *history = [[NSMenu alloc] initWithTitle:NSLocalizedString(@"Navigation", @"Toggle navigation")];
         history.autoenablesItems = NO;
         history.delegate = self;
-        if (self.navigationHistory.count)
+        if (self.navigationHistory.count || self.navigationForwardHistory.count)
             [self menuNeedsUpdate:history];
         item.menu = history;
         item.showsIndicator = NO;
