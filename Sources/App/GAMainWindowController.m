@@ -632,7 +632,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 - (BOOL)applyLayoutSelection:(BOOL (^)(void))select
                   doubleClick:(BOOL)doubleClick firstClick:(NSEvent *)firstClick {
     BOOL opensSingleGlyph = doubleClick && self.glyphNavigationEnabled;
-    GAGlyphNavigationStep *previousLast = self.navigationHistory.lastObject;
+    GAGlyphNavigationStep *previousLast = [self forwardStepToKeep] ?: self.navigationHistory.lastObject;
     BOOL wasSuppressingRecording = self.suppressNavigationRecording;
     self.suppressNavigationRecording = wasSuppressingRecording || opensSingleGlyph;
     BOOL selected = select();
@@ -646,7 +646,8 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         if (firstClick && firstClick == self.layoutFirstClick && origin && origin == self.navigationHistory.lastObject)
             [self.navigationHistory removeLastObject];
         [self setViewMode:GAViewModeSingleGlyph];
-    } else if (!doubleClick && firstClick && previousLast != self.navigationHistory.lastObject) {
+    } else if (!doubleClick && firstClick && self.navigationForwardHistory.count == 0 &&
+               previousLast != self.navigationHistory.lastObject) {
         self.layoutFirstClick = firstClick;
         self.layoutClickOrigin = self.navigationHistory.lastObject;
     }
@@ -668,9 +669,16 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     return step;
 }
 
+- (nullable GAGlyphNavigationStep *)forwardStepToKeep {
+    // Returning to the adjacent step leaves just the position we came from.
+    return self.navigationForwardHistory.count == 1 ? self.navigationForwardHistory.lastObject : nil;
+}
+
 - (void)recordNavigation {
     if (!self.glyphNavigationEnabled || self.suppressNavigationRecording || !self.fontDocument) return;
     self.layoutFirstClick = nil;
+    GAGlyphNavigationStep *forwardStep = [self forwardStepToKeep];
+    if (forwardStep) [self.navigationHistory addObject:forwardStep];
     [self.navigationForwardHistory removeAllObjects];
     GAGlyphNavigationStep *step = [self currentNavigationStep];
     if (![step matchesLocation:self.navigationHistory.lastObject])
