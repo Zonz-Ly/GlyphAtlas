@@ -74,9 +74,17 @@ static BOOL GAPairedGlyphViews(GAGlyphNavigationStep *first, GAGlyphNavigationSt
 }
 
 - (void)recordStep:(GAGlyphNavigationStep *)step {
+    BOOL replaceOrigin = self.restoredStep && step.glyphIDs.count && [step matchesLocation:self.restoredStep] &&
+        [self canReplaceBrowsingOrigin:step];
+    GAGlyphNavigationStep *visit = self.forwardSteps.lastObject;
+    // Keep the completed single-glyph visit, without repeating the returned browsing position.
+    if (visit.mode == GAViewModeSingleGlyph && GAPairedGlyphViews(self.restoredStep, visit)) {
+        [self appendStep:self.restoredStep];
+        [self appendStep:visit];
+    }
     _restoredStep = nil;
     [_forwardSteps removeAllObjects];
-    [self appendStep:step];
+    if (!replaceOrigin) [self appendStep:step];
 }
 
 - (void)appendStep:(GAGlyphNavigationStep *)step {
@@ -94,19 +102,14 @@ static BOOL GAPairedGlyphViews(GAGlyphNavigationStep *first, GAGlyphNavigationSt
         last.filterChange = YES;
 }
 
-- (NSArray<GAGlyphNavigationStep *> *)adjacentGlyphVisit {
-    GAGlyphNavigationStep *neighbor = self.forwardSteps.lastObject;
-    return GAPairedGlyphViews(self.restoredStep, neighbor) ? @[self.restoredStep, neighbor] : nil;
+- (void)finishAtStep:(GAGlyphNavigationStep *)step {
+    if (!self.restoredStep && [step matchesLocation:self.backSteps.lastObject])
+        [_backSteps removeLastObject];
 }
 
-- (void)beginGlyphJumpWithVisit:(NSArray<GAGlyphNavigationStep *> *)visit {
-    [self recordStep:nil];
-    for (GAGlyphNavigationStep *step in visit) [self appendStep:step];
-}
-
-- (BOOL)canReplaceGridOrigin:(GAGlyphNavigationStep *)origin {
-    if (origin.mode != GAViewModeAllGlyphs || origin.filterChange) return NO;
-    if (!origin.glyphIDs.count) return YES;
+- (BOOL)canReplaceBrowsingOrigin:(GAGlyphNavigationStep *)origin {
+    if (origin.mode == GAViewModeSingleGlyph || origin.filterChange) return NO;
+    if (origin.mode == GAViewModeAllGlyphs && !origin.glyphIDs.count) return YES;
     for (NSArray<GAGlyphNavigationStep *> *steps in @[self.forwardSteps, self.backSteps]) {
         GAGlyphNavigationStep *neighbor = steps.lastObject;
         if (GAPairedGlyphViews(origin, neighbor)) return YES;
