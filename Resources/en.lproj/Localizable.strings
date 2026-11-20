@@ -140,10 +140,9 @@
 "Help.04" = "Type one or more characters in the sidebar to see all associated glyphs. Use ⌥⏎ to insert a line break. You can also right-click and choose “Saved Text” to save the current text or quickly enter text you’ve saved before. Hold ⌥ in the menu bar to quickly delete saved text. Use ⇥ and ⇧⇥ to cycle through previously saved text.";
 "Help.05" = "Double-click a glyph, or select it and press ⏎, to replace the default glyph and show its alternates. Hold ⇧ while doing this to add the glyph.";
 "Help.06" = "Use ↑/↓ to move between glyphs, ⌥↑/⌥↓ to move between base glyphs, and ⌘↑/⌘↓ to jump to the first or last glyph in the list.";
-"Help.07" = "Hover over a Unicode badge to see the character name defined by the Unicode standard.";
-"Help.08" = "Use ⌘C to copy all encoded characters of the selected glyph.";
-"Help.09" = "Right-click to switch views, or press ⌘1 for Single Glyph, ⌘2 for Characters, or ⌘3 for Glyph Grid. Use ⌃⌘S to show or hide the sidebar.";
-"Help.16" = "Use ⌃⌘G to toggle Navigation. When Navigation is on, double-clicking a glyph in Characters or Glyph Grid opens it in Single Glyph. Use ⌘] and ⌘[ to go forward and back, or use the Back button. Right-click or press and hold the Back button to show history.";
+"Help.07" = "Hover over a Unicode badge to see the character name defined by the Unicode standard. Use ⌘C to copy all encoded characters of the selected glyph.";
+"Help.08" = "Right-click to switch views, or press ⌘1 for Single Glyph, ⌘2 for Characters, or ⌘3 for Glyph Grid. Use ⌃⌘S to show or hide the sidebar.";
+"Help.09" = "Use ⌃⌘G to toggle Navigation. When Navigation is on, double-clicking a glyph in Characters or Glyph Grid opens it in Single Glyph. Use ⌘] and ⌘[ to go forward and back, or use the Back button. Right-click or press and hold the Back button to show history.";
 "Help.10" = "In the Characters view, click a glyph to view its alternates. Right-click or press ⌘5 to switch between horizontal and vertical writing. Text alignment and Typography are here too. The “View” menu in the menu bar has more options.";
 "Help.11" = "In Glyph Grid, double-click a glyph to add it to the existing text. Clicking a glyph in the sidebar makes it blink in Glyph Grid. Right-click to find “Filter by Feature”.";
 "Help.12" = "Use ⌘+/⌘− to make text bigger or smaller, or pinch on the trackpad. In the Characters view, use ⌥⌘+/⌥⌘− or a horizontal pinch to increase or decrease the margins, and ⌃⌘+/⌃⌘− or a vertical pinch to increase or decrease leading. Press ⌘0 to restore the default size.";

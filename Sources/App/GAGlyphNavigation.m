@@ -15,14 +15,17 @@
     return step;
 }
 
-- (BOOL)matchesLocation:(GAGlyphNavigationStep *)other {
+- (BOOL)matchesViewAndGlyphs:(GAGlyphNavigationStep *)other {
     if (!other || self.mode != other.mode) return NO;
     if (self.mode == GAViewModeAllGlyphs && self.filterTag != other.filterTag &&
         ![self.filterTag isEqualToString:other.filterTag]) return NO;
-    if (!self.glyphIDs && !other.glyphIDs) return YES;
-    return [self.glyphIDs isEqualToArray:other.glyphIDs] &&
+    return self.glyphIDs == other.glyphIDs || [self.glyphIDs isEqualToArray:other.glyphIDs];
+}
+
+- (BOOL)matchesLocation:(GAGlyphNavigationStep *)other {
+    return [self matchesViewAndGlyphs:other] && (!self.glyphIDs || (
         NSEqualRanges(self.range, other.range) &&
-        (self.sourceText == other.sourceText || [self.sourceText isEqualToString:other.sourceText]);
+        (self.sourceText == other.sourceText || [self.sourceText isEqualToString:other.sourceText])));
 }
 
 - (BOOL)matchesSourceInText:(NSString *)text {
@@ -49,6 +52,11 @@
 
 @end
 
+static BOOL GAPairedGlyphViews(GAGlyphNavigationStep *first, GAGlyphNavigationStep *second) {
+    return first && second && first.mode != second.mode && first.glyphIDs.count &&
+        [first.glyphIDs isEqualToArray:second.glyphIDs];
+}
+
 @implementation GAGlyphNavigationHistory {
     NSMutableArray<GAGlyphNavigationStep *> *_backSteps;
     NSMutableArray<GAGlyphNavigationStep *> *_forwardSteps;
@@ -66,18 +74,34 @@
 }
 
 - (void)recordStep:(GAGlyphNavigationStep *)step {
-    if (_forwardSteps.count == 1) {
-        if (self.restoredStep) [_backSteps addObject:self.restoredStep];
-        [_backSteps addObject:_forwardSteps.lastObject];
-    }
     _restoredStep = nil;
     [_forwardSteps removeAllObjects];
+    [self appendStep:step];
+}
+
+- (void)appendStep:(GAGlyphNavigationStep *)step {
     if (!step) return;
     GAGlyphNavigationStep *last = self.backSteps.lastObject;
-    if (![step matchesLocation:last])
+    if (step.mode == GAViewModeAllGlyphs && [step matchesViewAndGlyphs:last] &&
+        (step.range.location == NSNotFound || last.range.location == NSNotFound)) {
+        // A lost input source still points to the same grid glyph. Prefer a live source.
+        GAGlyphNavigationStep *merged = step.range.location == NSNotFound ? last : step;
+        merged.filterChange = step.filterChange || last.filterChange;
+        _backSteps[_backSteps.count - 1] = merged;
+    } else if (![step matchesLocation:last])
         [_backSteps addObject:step];
     else if (step.filterChange)
         last.filterChange = YES;
+}
+
+- (NSArray<GAGlyphNavigationStep *> *)adjacentGlyphVisit {
+    GAGlyphNavigationStep *neighbor = self.forwardSteps.lastObject;
+    return GAPairedGlyphViews(self.restoredStep, neighbor) ? @[self.restoredStep, neighbor] : nil;
+}
+
+- (void)beginGlyphJumpWithVisit:(NSArray<GAGlyphNavigationStep *> *)visit {
+    [self recordStep:nil];
+    for (GAGlyphNavigationStep *step in visit) [self appendStep:step];
 }
 
 - (BOOL)canReplaceGridOrigin:(GAGlyphNavigationStep *)origin {
@@ -85,8 +109,7 @@
     if (!origin.glyphIDs.count) return YES;
     for (NSArray<GAGlyphNavigationStep *> *steps in @[self.forwardSteps, self.backSteps]) {
         GAGlyphNavigationStep *neighbor = steps.lastObject;
-        if (neighbor && neighbor.mode != GAViewModeAllGlyphs &&
-            [origin.glyphIDs isEqualToArray:neighbor.glyphIDs]) return YES;
+        if (GAPairedGlyphViews(origin, neighbor)) return YES;
     }
     return NO;
 }
