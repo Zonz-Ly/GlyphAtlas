@@ -815,6 +815,9 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
                     item.title = step.filterTag;
                 item.image = [NSImage imageWithSystemSymbolName:@"line.3.horizontal.decrease"
                     accessibilityDescription:NSLocalizedString(@"Filter by Feature", @"Glyph Grid feature output filter")];
+            } else if (step.mode == GAViewModeAllGlyphs && step.filterTag != nil) {
+                item.image = [NSImage imageWithSystemSymbolName:@"square.grid.2x2"
+                    accessibilityDescription:GAViewModeTitle(step.mode)];
             }
             item.target = self;
             item.representedObject = step;
@@ -1067,8 +1070,9 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     if (pending && self.workerGeneration != generation) {
         GAGlyphNavigationStep *origin = pending.previousStep;
         pending.opensSingleGlyph = YES;
-        pending.previousStep = ![origin.glyphIDs isEqualToArray:@[entry.glyphID]] &&
-            ![self.navigation canReplaceGridOrigin:origin] ? origin : nil;
+        pending.previousStep = origin.filterChange ||
+            (![origin.glyphIDs isEqualToArray:@[entry.glyphID]] &&
+             ![self.navigation canReplaceGridOrigin:origin]) ? origin : nil;
         pending.selectionBeforeInput = nil;
     }
 }
@@ -2043,10 +2047,11 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     self.pendingNavigation = nil;
     if (pending && self.glyphNavigationEnabled) {
         if (pending.opensSingleGlyph) {
-            // The newly selected grid glyph becomes the origin of this jump.
-            if (pending.previousStep) [self recordNavigationStep:pending.previousStep];
+            // Keep a directly preceding filter's presentation on the new glyph origin.
+            if (pending.previousStep && !pending.previousStep.filterChange)
+                [self recordNavigationStep:pending.previousStep];
             else [self.navigation recordStep:nil];
-            self.navigationFilterChange = NO;
+            self.navigationFilterChange = pending.previousStep.filterChange;
             [self setViewMode:GAViewModeSingleGlyph];
         } else if (pending.selectionBeforeInput && self.lastSelectedVariant &&
                    ![[self sidebarNavigationStep] matchesLocation:pending.selectionBeforeInput]) {
