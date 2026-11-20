@@ -279,6 +279,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 @property (nonatomic, strong, nullable) GAGlyphVariant *lastSelectedVariant;
 @property (nonatomic) BOOL glyphNavigationEnabled;
 @property (nonatomic, strong) GAGlyphNavigationHistory *navigation;
+/// A fresh filter action awaiting its navigation record, not a restored history item.
 @property (nonatomic) BOOL navigationFilterChange;
 @property (nonatomic, strong, nullable) NSMenuToolbarItem *backToolbarItem;
 @property (nonatomic) BOOL suppressNavigationRecording;
@@ -680,7 +681,9 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 #pragma mark - Glyph navigation
 
 - (GAGlyphNavigationStep *)currentNavigationStep {
-    return [self.navigation.restoredStep copy] ?: [self sidebarNavigationStep];
+    GAGlyphNavigationStep *step = [self.navigation.restoredStep copy] ?: [self sidebarNavigationStep];
+    step.filterChange = self.navigationFilterChange;
+    return step;
 }
 
 // Input change detection needs the sidebar selection even when a historical
@@ -689,7 +692,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     GAGlyphNavigationStep *step = [GAGlyphNavigationStep new];
     step.mode = self.viewMode;
     if (self.viewMode == GAViewModeAllGlyphs) step.filterTag = self.allGlyphFeatureTag;
-    step.filterChange = self.navigationFilterChange;
     step.glyphIDs = self.lastSelectedVariant.glyphIDs;
     NSNumber *scalar = GAInputScalarForGlyph([self.fontDocument unicodeScalarsForGlyphIDs:step.glyphIDs]);
     step.glyphLabel = scalar ? GAStringFromUnicodeScalars(@[scalar]) : self.lastSelectedVariant.glyphName;
@@ -783,7 +785,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     if ([self navigationSelectionMatchesCurrentText:step])
         [self.sidebarViewController selectGlyphIDs:step.glyphIDs textRange:step.range];
     [self setViewMode:step.mode];
-    self.navigationFilterChange = step.filterChange;
+    self.navigationFilterChange = NO;
     self.suppressNavigationRecording = NO;
 }
 
