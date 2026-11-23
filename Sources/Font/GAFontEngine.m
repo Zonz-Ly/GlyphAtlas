@@ -405,15 +405,18 @@ static NSString *GADisplayLabelForGlyph(GAGlyphLabels *labels, NSNumber *number)
                             cancelled:(BOOL (^)(void))cancelled {
     NSMutableArray<GAGlyphVariant *> *parents = [NSMutableArray array];
     NSMutableArray *sequences = [NSMutableArray array];
+    NSMutableArray *components = [NSMutableArray array];
     for (GACharacterGroup *group in groups) {
         if (!NSEqualRanges(group.textRange, range)) continue;
         for (GAGlyphVariant *variant in group.variants) {
             [parents addObject:variant];
             [sequences addObject:variant.glyphIDs];
+            [components addObject:variant.markComponents];
         }
     }
     GASubstitutionOrigin *source = [_substitutionEngine originForGlyphIDs:glyphIDs
         sourceRange:range text:text selections:selections candidates:sequences
+        candidateComponents:components
         vertical:vertical featureSettings:featureSettings
         baseWritingDirection:direction
         languageTag:languageTag

@@ -410,6 +410,7 @@ struct OriginEdge {
     std::vector<Glyph> glyphs;
     std::string feature;
     bool vertical;
+    std::vector<int> components{};
 };
 GASubstitutionOrigin *origin(NSUInteger index, const std::vector<std::string> &features,
                              const std::vector<int> &components = {}) {
@@ -890,6 +891,21 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
                    baseWritingDirection:(NSInteger)direction
                             languageTag:(NSString *)languageTag
                                   cancelled:(BOOL (^)(void))cancelled {
+    return [self originForGlyphIDs:glyphIDs sourceRange:sourceRange text:text selections:selections
+        candidates:candidates candidateComponents:nil vertical:vertical featureSettings:featureSettings
+        baseWritingDirection:direction languageTag:languageTag cancelled:cancelled];
+}
+- (GASubstitutionOrigin *)originForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
+                                sourceRange:(NSRange)sourceRange
+                                       text:(NSString *)text
+                                 selections:(NSArray<GAGlyphSelectionRun *> *)selections
+                                 candidates:(NSArray<NSArray<NSNumber *> *> *)candidates
+                        candidateComponents:(NSArray<NSArray<NSNumber *> *> *)candidateComponents
+                                   vertical:(BOOL)vertical
+                            featureSettings:(NSArray<NSDictionary *> *)featureSettings
+                       baseWritingDirection:(NSInteger)direction
+                                languageTag:(NSString *)languageTag
+                                  cancelled:(BOOL (^)(void))cancelled {
     if (!sourceRange.length || NSMaxRange(sourceRange) > text.length || !candidates.count)
         return nil;
     const auto &r = *self.program->resource;
@@ -898,6 +914,9 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
     std::vector<std::vector<Glyph>> sources;
     for (NSArray *candidate in candidates)
         sources.push_back(glyphVector(candidate));
+    std::vector<std::vector<int>> sourceComponents(sources.size());
+    for (size_t i=0;i<sourceComponents.size() && candidateComponents;++i)
+        for (NSNumber *c in candidateComponents[i]) sourceComponents[i].push_back(c.intValue);
     Cancellation cancellation{[cancelled] { return cancelled() != NO; }};
     try {
         cancellation.check();
@@ -944,7 +963,8 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
                 if (*before == current) continue;
                 labels.insert(labels.begin(), step->feature);
                 for (size_t i = 0; i < sources.size(); i++)
-                    if (*before == sources[i])
+                    if (*before == sources[i] && (!candidateComponents ||
+                        componentsAt(step->before,span,settings.rtl)==sourceComponents[i]))
                         return origin(i, labels, componentsAt(items, span, settings.rtl));
                 current = std::move(*before);
             }
@@ -963,17 +983,19 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
         size_t source;
         bool vertical;
         std::vector<std::string> labels;
+        std::vector<int> components{};
     };
     std::deque<State> pending;
-    std::set<std::pair<std::vector<Glyph>, bool>> visited;
-    std::map<std::vector<Glyph>, std::vector<OriginEdge>> edges;
+    using SequenceKey = std::pair<std::vector<Glyph>, std::vector<int>>;
+    std::set<std::pair<SequenceKey, bool>> visited;
+    std::map<SequenceKey, std::vector<OriginEdge>> edges;
     GASubstitutionOrigin *otherMode;
     Budget budget(text.length, &cancellation);
     size_t queuedGlyphs = 0;
     try {
         for (size_t i = 0; i < sources.size(); i++)
-            if (visited.emplace(sources[i], false).second) {
-                pending.push_back({sources[i], i, false, {}});
+            if (visited.emplace(SequenceKey{sources[i],sourceComponents[i]}, false).second) {
+                pending.push_back({sources[i], i, false, {},sourceComponents[i]});
                 queuedGlyphs += sources[i].size();
             }
         while (!pending.empty()) {
@@ -983,12 +1005,12 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
             pending.pop_front();
             queuedGlyphs -= state.glyphs.size();
             if (state.glyphs == target) {
-                if (state.vertical == bool(vertical)) return origin(state.source, state.labels);
-                if (!otherMode) otherMode = origin(state.source, state.labels);
+                if (state.vertical == bool(vertical)) return origin(state.source, state.labels,state.components);
+                if (!otherMode) otherMode = origin(state.source, state.labels,state.components);
                 continue;
             }
             if (otherMode && !vertical && state.vertical) continue;
-            auto [entry, inserted] = edges.emplace(state.glyphs, std::vector<OriginEdge>{});
+            auto [entry, inserted] = edges.emplace(SequenceKey{state.glyphs,state.components}, std::vector<OriginEdge>{});
             auto &outputs = entry->second;
             if (inserted) {
                 // Static single-GID catalogue plus actual full-context matches
@@ -998,7 +1020,8 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
                         budget.poll();
                         std::string label = [output[@"source"] UTF8String];
                         outputs.push_back({replacingGlyph(state.glyphs, i, output), label,
-                                           verticalSource(label) || [output[@"vertical"] boolValue]});
+                                           verticalSource(label) || [output[@"vertical"] boolValue],
+                                           replacingComponents(componentArray(state.components),i,[output[@"glyphs"] count])});
                     }
                 NSMutableArray *seedRuns = [NSMutableArray array];
                 for (GAGlyphSelectionRun *selection in selections)
@@ -1008,7 +1031,8 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
                 seed.range = sourceRange;
                 seed.selection = [[GAGlyphSelection alloc]
                     initWithSourceText:[text substringWithRange:sourceRange]
-                    glyphIDs:glyphArray(state.glyphs) featureSources:@[] ligature:NO];
+                    glyphIDs:glyphArray(state.glyphs) markComponents:componentArray(state.components)
+                    featureSources:@[] ligature:NO];
                 [seedRuns addObject:seed];
                 [seedRuns sortUsingComparator:^NSComparisonResult(GAGlyphSelectionRun *a,
                                                                    GAGlyphSelectionRun *b) {
@@ -1047,13 +1071,15 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
                                         for (const auto &cluster : change.inputs)
                                             input.insert(input.end(), cluster.glyphs.begin(), cluster.glyphs.end());
                                         auto output = change.glyphs;
+                                        auto components = change.markComponents;
                                         if (settings.rtl) {
                                             std::reverse(input.begin(), input.end());
                                             std::reverse(output.begin(), output.end());
+                                            std::reverse(components.begin(), components.end());
                                         }
                                         if (input == state.glyphs)
                                             outputs.push_back({std::move(output), change.feature,
-                                                verticalSource(change.feature) || change.vertical});
+                                                verticalSource(change.feature) || change.vertical,std::move(components)});
                                     }
                                 }
                             });
@@ -1062,11 +1088,11 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
             for (const auto &output : outputs) {
                 budget.step();
                 bool containsVertical = state.vertical || output.vertical;
-                if (output.glyphs.empty() || output.glyphs == state.glyphs ||
-                    !visited.emplace(output.glyphs, containsVertical).second) continue;
+                if (output.glyphs.empty() || (output.glyphs == state.glyphs && output.components==state.components) ||
+                    !visited.emplace(SequenceKey{output.glyphs,output.components}, containsVertical).second) continue;
                 budget.growth(queuedGlyphs + output.glyphs.size());
                 queuedGlyphs += output.glyphs.size();
-                State next{output.glyphs, state.source, containsVertical, state.labels};
+                State next{output.glyphs, state.source, containsVertical, state.labels,output.components};
                 next.labels.push_back(output.feature);
                 pending.push_back(std::move(next));
             }

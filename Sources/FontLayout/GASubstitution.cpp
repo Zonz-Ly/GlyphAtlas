@@ -129,17 +129,17 @@ class Substitution {
         ligature.source = merged;
         // match() returns component positions in increasing buffer order.
         size_t componentIndex = 0;
+        unsigned componentStart = 0, componentEnd = 0;
         for (size_t pos = positions->front(); pos <= positions->back(); pos++) {
-            if (pos == (*positions)[componentIndex])
+            if (pos == (*positions)[componentIndex]) {
+                componentStart = componentEnd;
+                componentEnd += std::max<size_t>(1, buffer_[pos].components.size());
                 ++componentIndex;
-            else {
-                auto original = buffer_[pos].source;
-                unsigned component = 0;
-                for (unsigned i = 0; i < ligature.components.size(); i++)
-                    if (ligature.components[i].start <= original.start)
-                        component = i;
+            } else {
                 auto &item = buffer_.edit(pos);
-                item.component = int(component);
+                unsigned relative = item.component >= 0 ? unsigned(item.component)
+                                                       : componentEnd - componentStart - 1;
+                item.component = int(componentStart + std::min(relative,componentEnd-componentStart-1));
                 item.source = merged;
             }
         }

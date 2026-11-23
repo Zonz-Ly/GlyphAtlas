@@ -133,6 +133,24 @@ static void checkGlyphEntryPoints(NSString *dir) {
         require(single && multiple && deletion,@"Seed derivation fixture incomplete");
     }
 }
+static void checkFallback(GAFontDocument *doc, GAFontDocument *varied) {
+    NSArray *disabled=@[@{(__bridge NSString *)kCTFontOpenTypeFeatureTag:@"liga",(__bridge NSString *)kCTFontOpenTypeFeatureValue:@0}];
+    GASubstitutionEngine *engine=[[GASubstitutionEngine alloc] initWithFont:doc.fontBox.font coordinates:nil sharing:nil];
+    GASubstitutionOrigin *o=[engine originForGlyphIDs:target() sourceRange:NSMakeRange(0,3) text:@"f\u0301i"
+        selections:@[] candidates:@[@[@1,@4,@2]] vertical:NO featureSettings:disabled
+        baseWritingDirection:-1 languageTag:@"" cancelled:^BOOL { return NO; }];
+    require([o.markComponents isEqual:@[@-1,@0]],@"BFS lost newly discovered component");
+    GACharacterGroup *group=[[GACharacterGroup alloc] init]; group.text=@"f\u0301i"; group.textRange=NSMakeRange(0,3);
+    GAGlyphVariant *parent=[[GAGlyphVariant alloc] init]; parent.fontBox=doc.fontBox; parent.glyphIDs=@[@1,@4,@2]; group.variants=@[parent];
+    GAGlyphResolution *resolution=[doc resolveGlyphIDs:target() textRange:group.textRange text:group.text selections:@[] groups:@[group]
+        vertical:NO featureSettings:disabled baseWritingDirection:-1 languageTag:@"" cancelled:^BOOL { return NO; }];
+    require(resolution.variant.temporary && [resolution.variant.markComponents isEqual:@[@-1,@0]],@"Temporary BFS candidate lost context");
+    GAGlyphVariant *rebound=[varied rebindVariant:resolution.variant content:group.text];
+    require([points(rebound.positions,varied) isEqual:@[@[@0,@0],@[@100,@500]]],@"BFS rebind lost anchor");
+    o=[engine originForGlyphIDs:target() sourceRange:group.textRange text:group.text selections:@[] candidates:@[target()]
+        vertical:NO featureSettings:disabled baseWritingDirection:-1 languageTag:@"" cancelled:^BOOL { return NO; }];
+    require(o && !o.markComponents.count,@"Unknown BFS source gained guessed components");
+}
 int main(int argc,const char *argv[]) {
     @autoreleasepool {
         require(argc==2,@"Expected fixture directory");
@@ -171,6 +189,7 @@ int main(int argc,const char *argv[]) {
         checkDeduplication(doc,raw);
         checkSelections(doc);
         checkGlyphEntryPoints(dir);
+        checkFallback(doc,varied);
         GASubstitutionEngine *engine=[[GASubstitutionEngine alloc] initWithFont:doc.fontBox.font coordinates:nil sharing:nil];
         GASubstitutionOrigin *origin=[engine originForGlyphIDs:target() sourceRange:NSMakeRange(0,3)
             text:text selections:@[] candidates:@[@[@1,@4,@2]] vertical:NO featureSettings:@[]

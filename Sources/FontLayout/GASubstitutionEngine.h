@@ -51,6 +51,17 @@ NS_ASSUME_NONNULL_BEGIN
                                                 text:(NSString *)text
                                           selections:(NSArray<GAGlyphSelectionRun *> *)selections
                                           candidates:(NSArray<NSArray<NSNumber *> *> *)candidates
+                                 candidateComponents:(nullable NSArray<NSArray<NSNumber *> *> *)components
+                                            vertical:(BOOL)vertical
+                                     featureSettings:(NSArray<NSDictionary *> *)featureSettings
+                                baseWritingDirection:(NSInteger)direction
+                                         languageTag:(NSString *)languageTag
+                                           cancelled:(BOOL (^)(void))cancelled;
+- (nullable GASubstitutionOrigin *)originForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
+                                         sourceRange:(NSRange)sourceRange
+                                                text:(NSString *)text
+                                          selections:(NSArray<GAGlyphSelectionRun *> *)selections
+                                          candidates:(NSArray<NSArray<NSNumber *> *> *)candidates
                                             vertical:(BOOL)vertical
                                 featureSettings:(NSArray<NSDictionary *> *)featureSettings
                             baseWritingDirection:(NSInteger)direction
