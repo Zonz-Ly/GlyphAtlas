@@ -26,11 +26,13 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong, readonly, nullable) GAGlyphNavigationStep *restoredStep;
 /// Start a new navigation, optionally omitting the departing location.
 - (void)recordStep:(nullable GAGlyphNavigationStep *)step;
+/// Copy the restored departure, preserving a filter event not paired with a single-glyph visit.
+- (nullable GAGlyphNavigationStep *)restoredOrigin;
 /// Complete a view change without leaving the same destination in Back.
 - (void)finishAtStep:(GAGlyphNavigationStep *)step;
-/// A returned browsing position can be updated beside a matching glyph view.
+/// A returned grid position can be updated beside a matching glyph view.
 /// An unlocated ordinary grid is superseded by the selected glyph's grid origin.
-- (BOOL)canReplaceBrowsingOrigin:(GAGlyphNavigationStep *)origin;
+- (BOOL)canReplaceGridOrigin:(GAGlyphNavigationStep *)origin;
 - (BOOL)moveToStep:(GAGlyphNavigationStep *)step leavingStep:(GAGlyphNavigationStep *)current;
 - (void)clear;
 @end

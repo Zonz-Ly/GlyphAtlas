@@ -697,8 +697,8 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 #pragma mark - Glyph navigation
 
 - (GAGlyphNavigationStep *)currentNavigationStep {
-    GAGlyphNavigationStep *step = [self.navigation.restoredStep copy] ?: [self sidebarNavigationStep];
-    step.filterChange = self.navigationFilterChange;
+    GAGlyphNavigationStep *step = [self.navigation restoredOrigin] ?: [self sidebarNavigationStep];
+    step.filterChange = step.filterChange || self.navigationFilterChange;
     return step;
 }
 
@@ -1140,7 +1140,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         pending.opensSingleGlyph = YES;
         pending.previousStep = origin.filterChange ||
             (![origin.glyphIDs isEqualToArray:@[entry.glyphID]] &&
-             ![self.navigation canReplaceBrowsingOrigin:origin]) ? origin : nil;
+             ![self.navigation canReplaceGridOrigin:origin]) ? origin : nil;
         pending.selectionBeforeInput = nil;
     }
 }

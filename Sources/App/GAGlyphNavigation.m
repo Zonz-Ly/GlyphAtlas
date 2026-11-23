@@ -73,12 +73,23 @@ static BOOL GAPairedGlyphViews(GAGlyphNavigationStep *first, GAGlyphNavigationSt
     return self;
 }
 
+- (GAGlyphNavigationStep *)pairedForwardSingle {
+    GAGlyphNavigationStep *visit = self.forwardSteps.lastObject;
+    return visit.mode == GAViewModeSingleGlyph && GAPairedGlyphViews(self.restoredStep, visit) ? visit : nil;
+}
+
+- (GAGlyphNavigationStep *)restoredOrigin {
+    GAGlyphNavigationStep *origin = [self.restoredStep copy];
+    // A paired filter already belongs to the completed visit; the returned grid is ordinary.
+    if ([self pairedForwardSingle]) origin.filterChange = NO;
+    return origin;
+}
+
 - (void)recordStep:(GAGlyphNavigationStep *)step {
     BOOL replaceOrigin = self.restoredStep && step.glyphIDs.count && [step matchesLocation:self.restoredStep] &&
-        [self canReplaceBrowsingOrigin:step];
-    GAGlyphNavigationStep *visit = self.forwardSteps.lastObject;
-    // Keep the completed single-glyph visit, without repeating the returned browsing position.
-    if (visit.mode == GAViewModeSingleGlyph && GAPairedGlyphViews(self.restoredStep, visit)) {
+        [self canReplaceGridOrigin:step];
+    GAGlyphNavigationStep *visit = [self pairedForwardSingle];
+    if (visit) {
         [self appendStep:self.restoredStep];
         [self appendStep:visit];
     }
@@ -107,9 +118,9 @@ static BOOL GAPairedGlyphViews(GAGlyphNavigationStep *first, GAGlyphNavigationSt
         [_backSteps removeLastObject];
 }
 
-- (BOOL)canReplaceBrowsingOrigin:(GAGlyphNavigationStep *)origin {
-    if (origin.mode == GAViewModeSingleGlyph || origin.filterChange) return NO;
-    if (origin.mode == GAViewModeAllGlyphs && !origin.glyphIDs.count) return YES;
+- (BOOL)canReplaceGridOrigin:(GAGlyphNavigationStep *)origin {
+    if (origin.mode != GAViewModeAllGlyphs || origin.filterChange) return NO;
+    if (!origin.glyphIDs.count) return YES;
     for (NSArray<GAGlyphNavigationStep *> *steps in @[self.forwardSteps, self.backSteps]) {
         GAGlyphNavigationStep *neighbor = steps.lastObject;
         if (GAPairedGlyphViews(origin, neighbor)) return YES;
