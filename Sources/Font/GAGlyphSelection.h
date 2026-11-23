@@ -6,16 +6,22 @@ NS_ASSUME_NONNULL_BEGIN
 FOUNDATION_EXPORT NSString *const GAGlyphSelectionAttributeName;
 
 /// The persistent metadata for one selected replacement run. It deliberately
-/// stores no text offsets: the attributed-string range is the position. The
-/// exact glyph IDs are enough because the font does not change for this window.
+/// stores no text offsets: the attributed-string range is the position.
+/// Known mark components accompany the GIDs for candidate positioning only.
 @interface GAGlyphSelection : NSObject
 @property(nonatomic, copy, readonly) NSString *sourceText;
 @property(nonatomic, copy, readonly) NSArray<NSNumber *> *glyphIDs;
+@property(nonatomic, copy, readonly) NSArray<NSNumber *> *markComponents;
 /// Feature labels for the glyph list, not a shaping recipe.
 @property(nonatomic, copy, readonly) NSArray<NSString *> *featureSources;
 @property(nonatomic, readonly, getter=isLigature) BOOL ligature;
 - (instancetype)initWithSourceText:(NSString *)sourceText
                           glyphIDs:(NSArray<NSNumber *> *)glyphIDs
+                    featureSources:(NSArray<NSString *> *)featureSources
+                          ligature:(BOOL)ligature;
+- (instancetype)initWithSourceText:(NSString *)sourceText
+                          glyphIDs:(NSArray<NSNumber *> *)glyphIDs
+                    markComponents:(NSArray<NSNumber *> *)components
                     featureSources:(NSArray<NSString *> *)featureSources
                           ligature:(BOOL)ligature NS_DESIGNATED_INITIALIZER;
 - (instancetype)init NS_UNAVAILABLE;
@@ -26,7 +32,7 @@ FOUNDATION_EXPORT NSString *const GAGlyphSelectionAttributeName;
 @property(nonatomic, strong) GAGlyphSelection *selection;
 @end
 
-/// Immutable query identity: text plus ranges and literal GIDs, without labels.
+/// Immutable query identity: text, ranges, literal GIDs and known components, without labels.
 @interface GAGlyphQueryIdentity : NSObject <NSCopying>
 @end
 FOUNDATION_EXPORT GAGlyphQueryIdentity *GAGlyphQueryKey(NSString *text,

@@ -270,11 +270,15 @@ std::vector<TextRun> prepareText(NSString *text, const Cmap &cmap,
             if (!(covered == span))
                 throw InvalidTable("glyph selection does not cover nominal components");
             TextRun replacement{{}, span, prefix.script, prefix.level};
+            NSUInteger componentIndex = 0;
             for (NSNumber *identifier in selection.selection.glyphIDs) {
                 Item item;
                 item.glyph = identifier.unsignedShortValue;
                 item.source = span;
                 item.identity = identity++;
+                if (selection.selection.markComponents.count)
+                    item.component = selection.selection.markComponents[componentIndex].intValue;
+                ++componentIndex;
                 replacement.glyphs.push_back(item);
             }
             if (!prefix.glyphs.empty()) selected.push_back(std::move(prefix));

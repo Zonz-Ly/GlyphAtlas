@@ -1972,6 +1972,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     GAGlyphSelection *selection = [[GAGlyphSelection alloc]
         initWithSourceText:sourceText
                   glyphIDs:variant.glyphIDs
+            markComponents:variant.markComponents
             featureSources:variant.featureSources
                   ligature:variant.isLigature || sourceText.length > 1];
     *outSelection = selection;

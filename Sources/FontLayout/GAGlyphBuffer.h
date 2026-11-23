@@ -43,6 +43,8 @@ inline bool sameGlyphAndSource(const Item &a, const Item &b) {
 struct Cluster {
     Span source;
     std::vector<Glyph> glyphs;
+    // Aligned with glyphs when at least one mark has a known ligature component.
+    std::vector<int> markComponents{};
 };
 std::vector<Cluster> clusters(const Buffer &buffer);
 struct Change {
@@ -52,6 +54,7 @@ struct Change {
     std::vector<Cluster> inputs;
     bool vertical = false;
     bool inherited = false;
+    std::vector<int> markComponents{};
     std::vector<uint64_t> inputKey() const;
 };
 struct TraceStep {

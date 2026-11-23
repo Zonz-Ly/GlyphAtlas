@@ -185,8 +185,9 @@ std::vector<Glyph> replacingGlyph(const std::vector<Glyph> &glyphs, size_t index
 struct MatchKey {
     Span source;
     std::vector<Glyph> glyphs;
+    std::vector<int> components;
     bool operator==(const MatchKey &other) const {
-        return source == other.source && glyphs == other.glyphs;
+        return source == other.source && glyphs == other.glyphs && components == other.components;
     }
 };
 
@@ -195,20 +196,42 @@ struct MatchKeyHash {
         size_t hash = size_t(key.source.start) * 1000003 + key.source.end;
         for (Glyph glyph : key.glyphs)
             hash = hash * 1000003 + glyph;
+        for (int component : key.components)
+            hash = hash * 1000003 + size_t(component);
         return hash;
     }
 };
 
 using MatchIndex = std::unordered_map<MatchKey, GASubstitutionMatch *, MatchKeyHash>;
 
+NSArray<NSNumber *> *componentArray(const std::vector<int> &components) {
+    if (components.empty()) return @[];
+    NSMutableArray *result = [NSMutableArray arrayWithCapacity:components.size()];
+    for (int component : components) [result addObject:@(component)];
+    return result;
+}
+
+std::vector<int> replacingComponents(NSArray<NSNumber *> *components, size_t index, size_t count) {
+    if (!components.count) return {};
+    std::vector<int> result;
+    for (NSNumber *component in components) result.push_back(component.intValue);
+    int component = result.at(index);
+    result.erase(result.begin() + index);
+    result.insert(result.begin() + index, count, component);
+    if (std::none_of(result.begin(), result.end(), [](int c) { return c >= 0; })) result.clear();
+    return result;
+}
+
 bool merge(MatchIndex &seen, NSMutableArray<GASubstitutionMatch *> *matches, Span span,
-           const std::vector<Glyph> &glyphs, NSString *source, BOOL base) {
+           const std::vector<Glyph> &glyphs, NSString *source, BOOL base,
+           const std::vector<int> &components = {}) {
     if (span.empty())
         return false;
-    auto [entry, inserted] = seen.try_emplace(MatchKey{span, glyphs}, nil);
+    auto [entry, inserted] = seen.try_emplace(MatchKey{span, glyphs, components}, nil);
     if (inserted) {
         GASubstitutionMatch *candidate = [[GASubstitutionMatch alloc] init];
         candidate.glyphIDs = glyphArray(glyphs);
+        candidate.markComponents = componentArray(components);
         candidate.sourceRange = NSMakeRange(span.start, span.end - span.start);
         candidate.sources = @[];
         entry->second = candidate;
@@ -228,6 +251,7 @@ struct ParagraphMatch {
     Span source;
     std::vector<Glyph> glyphs;
     NSString *label;
+    std::vector<int> components;
 };
 struct ParagraphOutput {
     std::map<size_t, std::vector<ParagraphMatch>> domains;
@@ -244,11 +268,12 @@ struct QueryParagraph {
     std::shared_ptr<ParagraphOutput> output;
 
     void remember(size_t domain, Span span, const std::vector<Glyph> &glyphs, NSString *label,
+                  const std::vector<int> &components,
                   size_t &remaining) {
         if (!output) return;
         // Count backing storage as well as the record, with room for vector growth.
         const size_t cost = 2 * sizeof(ParagraphMatch) + 2 * glyphs.size() * sizeof(Glyph) +
-                            2 * label.length + 64;
+                            2 * label.length + 2 * components.size() * sizeof(int) + 64;
         if (cost > remaining || span.start < source.start || span.end > source.end) {
             output.reset();
             return;
@@ -256,7 +281,7 @@ struct QueryParagraph {
         remaining -= cost;
         output->cost += cost;
         output->domains[domain].push_back(
-            {{span.start - source.start, span.end - source.start}, glyphs, label});
+            {{span.start - source.start, span.end - source.start}, glyphs, label, components});
     }
 };
 
@@ -299,7 +324,7 @@ void prepareParagraphCache(std::vector<QueryParagraph> &paragraphs, const std::v
         constexpr size_t overhead = 128;
         size_t words = 1;
         for (size_t i = paragraph.firstRun; i < paragraph.endRun; ++i)
-            words += 6 + 6 * runs[i].glyphs.size();
+            words += 6 + 7 * runs[i].glyphs.size();
         size_t cost = overhead + words * sizeof(uint32_t);
         if (cost > remaining) continue;
         const uint32_t base = paragraph.source.start;
@@ -315,7 +340,7 @@ void prepareParagraphCache(std::vector<QueryParagraph> &paragraphs, const std::v
             // correspondence to slots matters, so absolute IDs are omitted.
             for (const auto &item : run.glyphs)
                 key.insert(key.end(), {item.glyph, item.source.start - base, item.source.end - base,
-                                       item.scalar, item.form, uint32_t(item.ignorable)});
+                                       item.scalar, item.form, uint32_t(item.ignorable), uint32_t(item.component)});
         }
         if (previous) {
             auto hit = previous->find(key);
@@ -366,6 +391,15 @@ std::optional<std::vector<Glyph>> sequenceAt(const Buffer &buffer, Span span, bo
         std::reverse(result.begin(), result.end());
     return result;
 }
+std::vector<int> componentsAt(const Buffer &buffer, Span span, bool rtl) {
+    std::vector<int> result;
+    for (const auto &item : buffer)
+        if (item.glyph != 0xffff && item.source.start < span.end && span.start < item.source.end)
+            result.push_back(item.component);
+    if (std::none_of(result.begin(), result.end(), [](int c) { return c >= 0; })) result.clear();
+    if (rtl) std::reverse(result.begin(), result.end());
+    return result;
+}
 bool verticalSource(const std::string &source) {
     auto feature = source.substr(0, source.find(' '));
     return feature == "vert" || feature == "vrt2" ||
@@ -376,9 +410,11 @@ struct OriginEdge {
     std::string feature;
     bool vertical;
 };
-GASubstitutionOrigin *origin(NSUInteger index, const std::vector<std::string> &features) {
+GASubstitutionOrigin *origin(NSUInteger index, const std::vector<std::string> &features,
+                             const std::vector<int> &components = {}) {
     GASubstitutionOrigin *result = [[GASubstitutionOrigin alloc] init];
     result.sourceIndex = index;
+    result.markComponents = componentArray(components);
     NSMutableArray *labels = [NSMutableArray array];
     for (const auto &feature : features) {
         NSString *label = @(feature.c_str());
@@ -563,7 +599,7 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
     for (const auto &roots : runRoots)
         for (const auto &cluster : roots) {
             checkCancellation(cancellation);
-            merge(seen, matches, cluster.source, cluster.glyphs, nil, YES);
+            merge(seen, matches, cluster.source, cluster.glyphs, nil, YES, cluster.markComponents);
             inputSpans.insert(cluster.source);
         }
     // Catalogue order comes first; text matches below merge into these rows.
@@ -574,7 +610,8 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
                 for (NSDictionary *output in [self relatedOutputs:cluster.glyphs[i] cancellation:cancellation]) {
                     checkCancellation(cancellation);
                     auto sequence = replacingGlyph(cluster.glyphs, i, output);
-                    merge(seen, matches, cluster.source, sequence, output[@"source"], NO);
+                    merge(seen, matches, cluster.source, sequence, output[@"source"], NO,
+                          replacingComponents(componentArray(cluster.markComponents), i, [output[@"glyphs"] count]));
                 }
     std::vector<std::map<size_t, Trace>> appleResults(runs.size());
     for (size_t domainIndex = 0; domainIndex < r.domains.size(); ++domainIndex) {
@@ -595,7 +632,7 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
                                 checkCancellation(cancellation);
                                 const uint32_t base = paragraph->source.start;
                                 merge(seen, matches, {match.source.start + base, match.source.end + base},
-                                      match.glyphs, match.label, NO);
+                                      match.glyphs, match.label, NO, match.components);
                             }
                     }
                     continue;
@@ -662,12 +699,15 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
                             if (!primaryChange(change, roots))
                                 continue;
                             auto glyphs = change.glyphs;
-                            if (settings.rtl)
+                            auto components = change.markComponents;
+                            if (settings.rtl) {
                                 std::reverse(glyphs.begin(), glyphs.end());
+                                std::reverse(components.begin(), components.end());
+                            }
                             const auto &label = domain.apple ? appleLabel : change.feature;
                             NSString *source = @(label.c_str());
-                            if (merge(seen, matches, change.source, glyphs, source, NO) && paragraph)
-                                paragraph->remember(domainIndex, change.source, glyphs, source, remaining);
+                            if (merge(seen, matches, change.source, glyphs, source, NO, components) && paragraph)
+                                paragraph->remember(domainIndex, change.source, glyphs, source, components, remaining);
                         }
                         if (domain.lastUseOfSchedule) {
                             if (previous != shared.end())
@@ -692,7 +732,8 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
             for (NSDictionary *output in [self relatedOutputs:original[i] cancellation:cancellation])
                 merge(seen, matches,
                       {uint32_t(match.sourceRange.location), uint32_t(NSMaxRange(match.sourceRange))},
-                      replacingGlyph(original, i, output), output[@"source"], NO);
+                      replacingGlyph(original, i, output), output[@"source"], NO,
+                      replacingComponents(match.markComponents, i, [output[@"glyphs"] count]));
     }
     // Report these code points as missing without adding them to the shaping input.
     for (Span span : unpairedSelectors) {
@@ -902,7 +943,8 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
                 if (*before == current) continue;
                 labels.insert(labels.begin(), step->feature);
                 for (size_t i = 0; i < sources.size(); i++)
-                    if (*before == sources[i]) return origin(i, labels);
+                    if (*before == sources[i])
+                        return origin(i, labels, componentsAt(items, span, settings.rtl));
                 current = std::move(*before);
             }
         }
@@ -1146,6 +1188,11 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
 }
 - (NSArray<NSValue *> *)positionsForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
                                      content:(NSString *)content {
+    return [self positionsForGlyphIDs:glyphIDs markComponents:@[] content:content];
+}
+- (NSArray<NSValue *> *)positionsForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
+                            markComponents:(NSArray<NSNumber *> *)components
+                                   content:(NSString *)content {
     try {
         const auto &r = *self.program->resource;
         Settings settings;
@@ -1178,6 +1225,9 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
             return zeroOrigin;
         }
         Buffer items = literalBuffer(glyphVector(glyphIDs));
+        if (components.count)
+            for (size_t i = 0; i < items.size(); ++i)
+                items[i].component = components[i].intValue;
         if (settings.rtl)
             std::reverse(items.begin(), items.end());
         [self position:items settings:settings];

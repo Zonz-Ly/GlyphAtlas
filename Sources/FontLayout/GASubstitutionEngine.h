@@ -7,6 +7,8 @@ NS_ASSUME_NONNULL_BEGIN
 /// A discovered literal glyph sequence. Ranges use UTF-16 in the supplied text.
 @interface GASubstitutionMatch : NSObject
 @property(nonatomic, copy) NSArray<NSNumber *> *glyphIDs;
+/// Empty for unknown association; otherwise one component index per GID (-1 for unknown).
+@property(nonatomic, copy) NSArray<NSNumber *> *markComponents;
 @property(nonatomic, copy) NSArray<NSString *> *sources;
 @property(nonatomic) NSRange sourceRange;
 @property(nonatomic) BOOL base;
@@ -16,6 +18,7 @@ NS_ASSUME_NONNULL_BEGIN
 @interface GASubstitutionOrigin : NSObject
 @property(nonatomic) NSUInteger sourceIndex;
 @property(nonatomic, copy) NSArray<NSString *> *sources;
+@property(nonatomic, copy) NSArray<NSNumber *> *markComponents;
 @end
 
 /// GSUB and AAT morx/mort discovery using the application's own table programs.
@@ -52,6 +55,9 @@ NS_ASSUME_NONNULL_BEGIN
                                            cancelled:(BOOL (^)(void))cancelled;
 - (NSArray<NSValue *> *)positionsForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
                                      content:(NSString *)content;
+- (NSArray<NSValue *> *)positionsForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
+                            markComponents:(NSArray<NSNumber *> *)components
+                                   content:(NSString *)content;
 
 - (nullable NSNumber *)verticalGlyph:(uint16_t)glyph;
 /// OS/2 sTypo ascender/descender in font units for this coordinate instance,

@@ -19,8 +19,14 @@ std::vector<Cluster> clusters(const Buffer &buffer) {
         auto found = std::upper_bound(
             result.begin(), result.end(), item.source.start,
             [](uint32_t start, const Cluster &cluster) { return start < cluster.source.start; });
-        if (item.glyph != 0xffff)
-            (found - 1)->glyphs.push_back(item.glyph);
+        if (item.glyph != 0xffff) {
+            auto &cluster = *(found - 1);
+            if (!cluster.markComponents.empty() || item.component >= 0) {
+                cluster.markComponents.resize(cluster.glyphs.size(), -1);
+                cluster.markComponents.push_back(item.component);
+            }
+            cluster.glyphs.push_back(item.glyph);
+        }
     }
     return result;
 }
@@ -79,8 +85,10 @@ void Trace::changed(const Buffer &before, const Buffer &after, const std::string
     bool window = !oldWindow.empty() || !newWindow.empty();
     auto old = clusters(window ? oldWindow : before), next = clusters(window ? newWindow : after);
     size_t firstChange = changes.size();
-    auto append = [&](Span source, const std::vector<Glyph> &glyphs) {
+    auto append = [&](Span source, const std::vector<Glyph> &glyphs,
+                      const std::vector<int> &components = std::vector<int>{}) {
         Change change{source, glyphs, feature, {}};
+        change.markComponents = components;
         auto first = std::lower_bound(old.begin(), old.end(), source.start,
             [](const Cluster &input, uint32_t start) { return input.source.end <= start; });
         for (auto input = first; input != old.end() && input->source.start < source.end; ++input)
@@ -93,7 +101,7 @@ void Trace::changed(const Buffer &before, const Buffer &after, const std::string
             old.begin(), old.end(), cluster.source,
             [](const Cluster &item, Span source) { return item.source < source; });
         if (found == old.end() || !(found->source == cluster.source) || found->glyphs != cluster.glyphs)
-            append(cluster.source, cluster.glyphs);
+            append(cluster.source, cluster.glyphs, cluster.markComponents);
     }
     // Prefix maxima allow each old interval to be tested independently, even
     // when source scopes overlap or nest after a rearrangement or insertion.

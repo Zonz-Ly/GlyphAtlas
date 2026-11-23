@@ -26,6 +26,7 @@ static NSString *GAFeatureSourceTag(NSString *source) {
     self = [super init];
     if (self) {
         _glyphIDs = @[];
+        _markComponents = @[];
         _positions = @[];
         _featureSources = @[];
         _unicodeScalars = @[];
@@ -57,6 +58,7 @@ static NSString *GAFeatureSourceTag(NSString *source) {
     GAGlyphVariant *copy = [[GAGlyphVariant allocWithZone:zone] init];
     copy.fontBox = self.fontBox;
     copy.glyphIDs = self.glyphIDs;
+    copy.markComponents = self.markComponents;
     copy.positions = self.positions;
     copy->_featureSources = _featureSources;
     copy.base = self.base;
@@ -146,6 +148,11 @@ void GADrawGlyphVariant(GAGlyphVariant *variant, CGContextRef context) {
 #pragma mark - GAFontDocument
 
 @implementation GAScanCandidate
+- (instancetype)init {
+    self = [super init];
+    if (self) _markComponents = @[];
+    return self;
+}
 @end
 
 @implementation GARawScanResult
@@ -265,10 +272,12 @@ NSArray<GACharacterGroup *> *GAGroupsForScanResult(NSString *text, GARawScanResu
             return nil;
         GAScanCandidate *c = [[GAScanCandidate alloc] init];
         c.glyphIDs = old.glyphIDs;
+        c.markComponents = old.markComponents;
         NSString *source = NSMaxRange(old.sourceRange) <= content.length
                                ? [content substringWithRange:old.sourceRange]
                                : content;
-        c.positions = [_substitutionEngine positionsForGlyphIDs:c.glyphIDs content:source];
+        c.positions = [_substitutionEngine positionsForGlyphIDs:c.glyphIDs
+            markComponents:c.markComponents content:source];
         c.sources = old.sources;
         c.base = old.base;
         c.ligature = old.ligature;
@@ -286,7 +295,8 @@ NSArray<GACharacterGroup *> *GAGroupsForScanResult(NSString *text, GARawScanResu
 - (GAGlyphVariant *)rebindVariant:(GAGlyphVariant *)old content:(NSString *)content {
     GAGlyphVariant *v = [old copy];
     v.fontBox = _fontBox;
-    v.positions = [_substitutionEngine positionsForGlyphIDs:v.glyphIDs content:content];
+    v.positions = [_substitutionEngine positionsForGlyphIDs:v.glyphIDs
+        markComponents:v.markComponents content:content];
     return v;
 }
 
@@ -413,7 +423,9 @@ static NSString *GADisplayLabelForGlyph(GAGlyphLabels *labels, NSNumber *number)
     GAGlyphVariant *variant = [[GAGlyphVariant alloc] init];
     variant.fontBox = _fontBox;
     variant.glyphIDs = glyphIDs;
+    variant.markComponents = source.markComponents;
     variant.positions = [_substitutionEngine positionsForGlyphIDs:glyphIDs
+        markComponents:variant.markComponents
         content:[text substringWithRange:range]];
     [variant addFeatureSources:source.sources];
     variant.sourceTextRange = range;
@@ -494,8 +506,10 @@ static NSString *GADisplayLabelForGlyph(GAGlyphLabels *labels, NSNumber *number)
             continue;
         GAScanCandidate *c = [[GAScanCandidate alloc] init];
         c.glyphIDs = match.glyphIDs;
+        c.markComponents = match.markComponents;
         c.positions = [_substitutionEngine
             positionsForGlyphIDs:c.glyphIDs
+                  markComponents:c.markComponents
                          content:[content substringWithRange:match.sourceRange]];
         c.sources = match.sources;
         c.sourceRange = match.sourceRange;
@@ -577,6 +591,7 @@ static void GAPublishVariantBuilders(NSMapTable *builders) {
         // A bucket narrows the search; full identity still decides equality.
         for (GAGlyphVariant *variant in indexed ? buckets[key] : variants) {
             if (![variant.glyphIDs isEqualToArray:candidate.glyphIDs] ||
+                ![variant.markComponents isEqualToArray:candidate.markComponents] ||
                 variant.isLigature != candidate.isLigature)
                 continue;
             if (candidate.isLigature && !NSEqualRanges(variant.sourceTextRange, candidate.sourceRange))
@@ -595,6 +610,7 @@ static void GAPublishVariantBuilders(NSMapTable *builders) {
         GAGlyphVariant *variant = [[GAGlyphVariant alloc] init];
         variant.fontBox = _fontBox;
         variant.glyphIDs = candidate.glyphIDs;
+        variant.markComponents = candidate.markComponents;
         variant.positions = candidate.positions;
         [variant addFeatureSources:candidate.sources];
         variant.base = candidate.isBase;

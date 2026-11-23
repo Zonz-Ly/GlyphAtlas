@@ -26,6 +26,8 @@ FOUNDATION_EXPORT NSUInteger GAGlyphSequenceHash(NSArray<NSNumber *> *glyphIDs);
 @interface GAGlyphVariant : NSObject <NSCopying>
 @property (nonatomic, strong) GAFontBox *fontBox;
 @property (nonatomic, copy) NSArray<NSNumber *> *glyphIDs;
+/// Known GSUB mark-to-ligature associations, aligned with glyphIDs; empty if unknown.
+@property (nonatomic, copy) NSArray<NSNumber *> *markComponents;
 /// Optional shaping origins for drawing. May be empty; drawing consumers treat
 /// missing entries as CGPointZero.
 @property (nonatomic, copy) NSArray<NSValue *> *positions;
@@ -77,6 +79,7 @@ typedef struct {
 /// indices refer to that input; applying the result needs no substring offset.
 @interface GAScanCandidate : NSObject
 @property (nonatomic, copy) NSArray<NSNumber *> *glyphIDs;
+@property (nonatomic, copy) NSArray<NSNumber *> *markComponents;
 @property (nonatomic, copy) NSArray<NSValue *> *positions;
 @property (nonatomic, copy) NSArray<NSString *> *sources;
 @property (nonatomic, getter=isBase) BOOL base;
