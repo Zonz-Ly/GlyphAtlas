@@ -1,0 +1,9 @@
+mkmk, adjacent mark not covered: current=10, expected=none
+mkmk, adjacent mark filtered out: current=11, expected=10
+ligature membership: 1000 randomized ordered-index cases match
+8192 components, equality comparisons: current=33558528, cursor=8192
+plan enumeration: 200 synthetic cases preserve values and order
+256 features x 32768 values: entries=8388609, element_bytes=67108872, vector_capacity_bytes=134217728, compact_spec_bytes=2048
+RTL pen model, 4096 glyphs / 2048 attachments: suffix visits=8386560
+floating sum order example: forward=0.60000000000000009, reverse=0.59999999999999998
+Focused checks passed. No macOS app or production-linked suite was executed.
