@@ -562,7 +562,27 @@ const std::vector<Feature> &OpenType::features(size_t branch) const {
     return branches_[branch < branches_.size() ? branch : 0];
 }
 static const Script *selectScript(const std::vector<Script> &scripts, Tag wanted) {
-    for (Tag name : {wanted, tag('D', 'F', 'L', 'T'), tag('l', 'a', 't', 'n')})
+    // Keep an existing exact match. Try the other registered shaping tag for
+    // this Unicode script before falling back to an unrelated default script.
+    static constexpr Tag pairs[][2] = {
+        {tag('d', 'e', 'v', 'a'), tag('d', 'e', 'v', '2')},
+        {tag('b', 'e', 'n', 'g'), tag('b', 'n', 'g', '2')},
+        {tag('g', 'u', 'r', 'u'), tag('g', 'u', 'r', '2')},
+        {tag('g', 'u', 'j', 'r'), tag('g', 'j', 'r', '2')},
+        {tag('o', 'r', 'y', 'a'), tag('o', 'r', 'y', '2')},
+        {tag('t', 'a', 'm', 'l'), tag('t', 'm', 'l', '2')},
+        {tag('t', 'e', 'l', 'u'), tag('t', 'e', 'l', '2')},
+        {tag('k', 'n', 'd', 'a'), tag('k', 'n', 'd', '2')},
+        {tag('m', 'l', 'y', 'm'), tag('m', 'l', 'm', '2')},
+        {tag('m', 'y', 'm', 'r'), tag('m', 'y', 'm', '2')},
+    };
+    Tag alternate = wanted;
+    for (const auto &pair : pairs)
+        if (wanted == pair[0] || wanted == pair[1]) {
+            alternate = wanted == pair[0] ? pair[1] : pair[0];
+            break;
+        }
+    for (Tag name : {wanted, alternate, tag('D', 'F', 'L', 'T'), tag('l', 'a', 't', 'n')})
         for (const auto &s : scripts)
             if (s.name == name)
                 return &s;
