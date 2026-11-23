@@ -88,6 +88,45 @@ static void checkMarkFilters() {
 static Bytes singlePosition(Glyph glyph, int x, int y) {
     return lookup(1,words({1,10,3,unsigned(x),unsigned(y),1,1,glyph}));
 }
+struct CursiveAnchor { Glyph glyph; int entryX, entryY, exitX, exitY; };
+static Bytes cursivePosition(unsigned flags, const std::vector<CursiveAnchor> &anchors) {
+    Bytes sub(6+4*anchors.size()); put16(sub,0,1); put16(sub,4,anchors.size());
+    Bytes coverage=words({1,unsigned(anchors.size())});
+    for (auto a:anchors) word(coverage,a.glyph);
+    put16(sub,2,append(sub,coverage));
+    for (size_t i=0;i<anchors.size();++i) {
+        const auto &a=anchors[i];
+        put16(sub,6+4*i,append(sub,words({1,unsigned(a.entryX),unsigned(a.entryY)})));
+        put16(sub,8+4*i,append(sub,words({1,unsigned(a.exitX),unsigned(a.exitY)})));
+    }
+    Bytes result=lookup(3,sub); put16(result,2,flags); return result;
+}
+static void checkCursiveChains() {
+    const std::vector<CursiveAnchor> c1={{1,0,0,500,100},{2,10,20,450,80},{3,20,40,400,60}};
+    const std::vector<CursiveAnchor> c2={{1,0,0,500,200},{2,10,30,450,160},{3,20,50,400,100}};
+    struct Test { std::vector<unsigned> flags; std::vector<double> y; };
+    for (const auto &t:std::vector<Test>{{{0},{0,80,120}},{{1},{-120,-40,0}},
+            {{0,0},{0,170,280}},{{1,1},{-280,-110,0}},
+            {{0,1},{-280,-110,0}},{{1,0},{0,170,280}}}) {
+        std::vector<Bytes> lookups;
+        for (size_t i=0;i<t.flags.size();++i) lookups.push_back(cursivePosition(t.flags[i],i ? c2:c1));
+        OpenType ot{View(positioningTable(lookups)),true};
+        Buffer b=items({1,2,3}); Metrics m=metrics(); m.horizontalAdvance=[](Glyph){ return 600.0; };
+        ot.position(b,GDEF{},Settings{},m);
+        for (size_t i=0;i<b.size();++i) assert(b[i].yOffset==t.y[i]);
+        assert(b[0].xAdvance==500 && b[1].xAdvance==440 && b[2].xAdvance==580);
+        assert(b[0].xOffset==0 && b[1].xOffset==-10 && b[2].xOffset==-20);
+    }
+    // Reattach only B/C, retaining the old A/B connection in either direction.
+    for (unsigned first:{0u,1u}) {
+        std::vector<CursiveAnchor> bc(c2.begin()+1,c2.end());
+        OpenType ot{View(positioningTable({cursivePosition(first,c1),cursivePosition(1-first,bc)})),true};
+        Buffer b=items({1,2,3}); ot.position(b,GDEF{},Settings{},metrics());
+        if (first==0) assert(b[0].yOffset==-190 && b[1].yOffset==-110 && b[2].yOffset==0);
+        else assert(b[0].yOffset==-80 && b[1].yOffset==0 && b[2].yOffset==110);
+    }
+    std::cout << "Cursive chain direction, major-axis and partial reattachment controls PASS\n";
+}
 static Bytes pairPosition(bool placement) {
     Bytes sub=words({1,0,placement ? 0u : 4u,placement ? 3u : 0u,1,0});
     put16(sub,2,append(sub,words({1,1,1})));
@@ -265,6 +304,7 @@ int main() {
     try { checkVariations(); }
     catch (const std::exception &e) { std::cout << "FV ERROR: " << e.what() << '\n'; ++failures; }
     checkMarkFilters();
+    checkCursiveChains();
     checkPlacementOrder();
     checkKernOwnership();
     return failures ? 1 : 0;

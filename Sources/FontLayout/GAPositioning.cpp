@@ -70,6 +70,35 @@ class Positioning {
     std::map<size_t, Attachment> attachments_;
     std::vector<Point> pens_;
     std::set<std::pair<unsigned, size_t>> active_;
+    double &minorOffset(size_t index) {
+        return settings_.vertical ? buffer_[index].xOffset : buffer_[index].yOffset;
+    }
+    void attachCursive(size_t child, size_t parent, Point delta) {
+        // Reverse the child's old cursive chain before choosing its new root.
+        // Clear edges while walking so even a malformed cycle terminates.
+        std::vector<std::pair<size_t, Attachment>> chain;
+        size_t current = child;
+        for (;;) {
+            auto old = attachments_.find(current);
+            if (old == attachments_.end() || !old->second.cursive) break;
+            Attachment attachment = old->second;
+            attachments_.erase(old);
+            if (attachment.parent == parent) break;
+            chain.emplace_back(current, attachment);
+            current = attachment.parent;
+        }
+        for (auto i = chain.rbegin(); i != chain.rend(); ++i) {
+            const auto &old = i->second;
+            minorOffset(old.parent) = -minorOffset(i->first);
+            attachments_[old.parent] = {i->first, {-old.delta.x, -old.delta.y}, true, {}};
+        }
+        attachments_[child] = {parent, delta, true, {}};
+        auto back = attachments_.find(parent);
+        if (back != attachments_.end() && back->second.parent == child) {
+            attachments_.erase(back);
+            minorOffset(parent) = 0;
+        }
+    }
     void adjustValue(size_t index, View parent, size_t at, unsigned format) {
         Point delta = valueRecord(buffer_[index], parent, at, format, gdef_, metrics_);
         auto attachment = attachments_.find(index);
@@ -171,9 +200,9 @@ class Positioning {
             last.xAdvance = entry->x + last.xOffset;
         }
         if (lookup.flags & 1)
-            attachments_[at] = {*second, {entry->x - exit->x, entry->y - exit->y}, true, {}};
+            attachCursive(at, *second, {entry->x - exit->x, entry->y - exit->y});
         else
-            attachments_[*second] = {at, {exit->x - entry->x, exit->y - entry->y}, true, {}};
+            attachCursive(*second, at, {exit->x - entry->x, exit->y - entry->y});
         return {true, at + 1};
     }
     PositionResult mark(const Subtable &sub, const Lookup &lookup, size_t at) {
