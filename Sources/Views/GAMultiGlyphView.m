@@ -993,6 +993,31 @@ static NSIndexSet *GAForeignCharactersToOmit(NSAttributedString *display, NSInde
     return *retryControls ? controls : characters;
 }
 
+- (CGFloat)lineStride {
+    if (self.textView.hidden) return 0;
+    __block BOOL hasFirst = NO;
+    __block CGFloat first = 0, stride = 0, height = 0;
+    NSTextLayoutManager *layout = self.textView.textLayoutManager;
+    [layout enumerateTextLayoutFragmentsFromLocation:layout.documentRange.location options:0
+        usingBlock:^BOOL(NSTextLayoutFragment *fragment) {
+            for (NSTextLineFragment *line in fragment.textLineFragments) {
+                if (!line.characterRange.length) continue;
+                CGFloat baseline = NSMinY(fragment.layoutFragmentFrame) +
+                    NSMinY(line.typographicBounds) + line.glyphOrigin.y;
+                if (hasFirst) {
+                    stride = fabs(baseline - first);
+                    if (stride > 0) return NO;
+                } else {
+                    first = baseline;
+                    height = NSHeight(line.typographicBounds);
+                    hasFirst = YES;
+                }
+            }
+            return YES;
+        }];
+    return stride > 0 ? stride : height;
+}
+
 - (void)updateFirstBaselineOffsetForFont:(NSFont *)font {
     GAFirstBaselineMetrics metrics = self.naturalBaselineMetrics;
     if (!self.hasNaturalFirstBaseline || self.baselineMetricsFont != font)

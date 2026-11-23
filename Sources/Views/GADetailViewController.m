@@ -186,7 +186,8 @@
     else {
         NSRect bounds = scrollView.contentView.bounds;
         CGFloat line = self.viewMode == GAViewModeAllGlyphs
-            ? self.allGlyphsView.rowStride : scrollView.verticalLineScroll;
+            ? self.allGlyphsView.rowStride : self.multiView.lineStride;
+        if (line <= 0) line = scrollView.verticalLineScroll;
         CGFloat vertical = line * (scrollView.contentView.flipped ? 1 : -1);
         if (command == @selector(moveUp:) || command == @selector(scrollLineUp:)) bounds.origin.y -= vertical;
         else if (command == @selector(moveDown:) || command == @selector(scrollLineDown:)) bounds.origin.y += vertical;

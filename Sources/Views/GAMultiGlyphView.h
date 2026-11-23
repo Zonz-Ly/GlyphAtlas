@@ -13,6 +13,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, strong) GAPreviewColors *previewColors;
 /// Native paragraph line-height multiplier; 1.0 uses the natural line height.
 @property(nonatomic) CGFloat lineHeightMultiple;
+/// Distance between the first two laid-out baselines, including paragraph spacing.
+@property(nonatomic, readonly) CGFloat lineStride;
 @property(nonatomic) CGFloat textScale;
 /// Inactive previews retain state and lay out once before becoming visible.
 @property(nonatomic) BOOL layoutActive;
