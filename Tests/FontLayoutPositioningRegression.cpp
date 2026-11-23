@@ -26,6 +26,65 @@ static Metrics metrics() {
     m.verticalAdvance=[](Glyph) { return 1000.0; };
     return m;
 }
+static Bytes lookup(unsigned type, const Bytes &sub) {
+    Bytes b=words({type,0,1,8}); append(b,sub); return b;
+}
+static Bytes positioningTable(const std::vector<Bytes> &lookups) {
+    Bytes b=words({1,0,10,0,0});
+    append(b,words({1,0x6c61,0x746e,8,4,0,0,0xffff,1,0}));
+    put16(b,6,b.size()); append(b,words({1,0x6d61,0x726b,8,0,unsigned(lookups.size())}));
+    for (unsigned i=0;i<lookups.size();++i) word(b,i);
+    size_t list=b.size(); put16(b,8,list);
+    word(b,lookups.size()); b.resize(b.size()+2*lookups.size());
+    for (unsigned i=0;i<lookups.size();++i) put16(b,list+2+2*i,append(b,lookups[i])-list);
+    return b;
+}
+static Bytes markLookup(unsigned type, Glyph mark, Glyph target, const std::vector<unsigned> &heights) {
+    Bytes b(12); put16(b,0,1); put16(b,6,1);
+    put16(b,2,append(b,words({1,1,mark})));
+    put16(b,4,append(b,words({1,1,target})));
+    put16(b,8,append(b,words({1,0,6,1,0,0})));
+    size_t array=b.size(); put16(b,10,array);
+    if (type==5) {
+        append(b,words({1,4}));
+        size_t lig=b.size(); word(b,heights.size()); b.resize(b.size()+2*heights.size());
+        for (unsigned i=0;i<heights.size();++i)
+            put16(b,lig+2+2*i,append(b,words({1,0,heights[i]}))-lig);
+    } else
+        append(b,words({1,4,1,0,heights.front()}));
+    return lookup(type,b);
+}
+static void checkMarkFilters() {
+    for (auto test : reviewCases()) {
+        if (test.name=="mkmk_filtering_set") {
+            size_t at=View(test.gpos).offset16(8).offset16(2).tableOffset();
+            put16(test.gpos,at+2,0x110); // Both filters: filtering set wins.
+            put16(test.gdef,10,test.gdef.size());
+            append(test.gdef,words({1,2,3,0,1,0})); // Attachment type alone excludes A/C.
+            OpenType ot{View(test.gpos),true}; Buffer b=items(test.glyphs);
+            ot.position(b,GDEF{View(test.gdef)},Settings{},metrics());
+            assert(b.back().yOffset==500);
+        }
+        if (test.name=="mkmk_base_barrier") {
+            size_t at=View(test.gpos).offset16(8).offset16(2).tableOffset();
+            put16(test.gpos,at+2,4); // IgnoreLigatures cannot cross a ligature boundary.
+            size_t classes=View(test.gdef).offset16(4).tableOffset();
+            put16(test.gdef,classes+6,2);
+            OpenType ot{View(test.gpos),true}; Buffer b=items(test.glyphs);
+            ot.position(b,GDEF{View(test.gdef)},Settings{},metrics());
+            assert(b.back().yOffset==0);
+        }
+    }
+    // Type 5 retains its independent component selection and anchor lookup.
+    GDEF gdef; gdef.glyphClasses=ClassDef(View(words({1,1,4,0,2,0,3})));
+    OpenType lig{View(positioningTable({markLookup(5,4,2,{500,900})})),true};
+    for (int component : {-1,0,1,9}) {
+        Buffer b=items({2,4}); b.back().component=component;
+        lig.position(b,gdef,Settings{},metrics());
+        assert(b.back().yOffset==(component==0 ? 500 : 900));
+    }
+    std::cout << "Mark filters, boundaries and type 5 controls PASS\n";
+}
 static Bytes variationTable(bool positioning, bool universalFirst) {
     Bytes b(14); put32(b,0,0x10001); put16(b,4,14);
     append(b,words({1,0x6c61,0x746e,8,4,0,0,0xffff,1,0}));
@@ -83,7 +142,8 @@ int main() {
     unsigned failures=0;
     // Add confirmed regressions with each separately committed correction.
     const std::set<std::string> covered={"null_feature_substitution", "mkmk_direct",
-        "mkmk_base_barrier", "single_then_attachment"};
+        "mkmk_base_barrier", "single_then_attachment", "mkmk_uncovered_adjacent",
+        "mkmk_filtering_set", "mkmk_attachment_type"};
     for (const auto &test : reviewCases()) {
         if (!covered.count(test.name)) continue;
         std::cout << test.name << ": ";
@@ -101,5 +161,6 @@ int main() {
     }
     try { checkVariations(); }
     catch (const std::exception &e) { std::cout << "FV ERROR: " << e.what() << '\n'; ++failures; }
+    checkMarkFilters();
     return failures ? 1 : 0;
 }

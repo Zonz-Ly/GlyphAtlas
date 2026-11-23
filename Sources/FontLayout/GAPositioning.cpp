@@ -166,7 +166,7 @@ class Positioning {
             attachments_[*second] = {at, {exit->x - entry->x, exit->y - entry->y}, true};
         return {true, at + 1};
     }
-    PositionResult mark(const Subtable &sub, size_t at) {
+    PositionResult mark(const Subtable &sub, const Lookup &lookup, size_t at) {
         View d = sub.data;
         if (d.u16(0) != 1)
             throw InvalidTable("unknown mark positioning format");
@@ -188,16 +188,18 @@ class Positioning {
         for (size_t p = at; p > 0;) {
             p--;
             unsigned glyphClass = gdef_.glyphClasses.get(buffer_[p].glyph);
-            if (sub.type != 6 && glyphClass == 3)
+            if (sub.type == 6) {
+                if (glyphClass != 3)
+                    break;
+                // Parent search keeps mark filtering, but never crosses a
+                // non-mark boundary because of IgnoreBase/IgnoreLigatures.
+                if (!gdef_.included(buffer_[p].glyph, lookup.flags & ~0x000eu, lookup.markSet))
+                    continue;
+            } else if (glyphClass == 3)
                 continue;
-            if (sub.type == 6 && glyphClass != 3)
-                break;
-            if (targets.contains(buffer_[p].glyph)) {
+            if (targets.contains(buffer_[p].glyph))
                 parent = p;
-                break;
-            }
-            if (sub.type != 6)
-                break;
+            break;
         }
         if (!parent)
             return {};
@@ -246,7 +248,7 @@ class Positioning {
         if (sub.type == 3)
             return cursive(sub, lookup, at);
         if (sub.type >= 4 && sub.type <= 6)
-            return mark(sub, at);
+            return mark(sub, lookup, at);
         auto candidates = sub.starts.find(buffer_[at].glyph);
         if (candidates == sub.starts.end())
             return {};
