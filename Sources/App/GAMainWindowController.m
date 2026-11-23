@@ -313,8 +313,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 @property (nonatomic, strong) NSImage *backEnabledImage;
 @property (nonatomic, strong) NSImage *backDisabledImage;
 @property (nonatomic, strong) NSImage *forwardEnabledImage;
-@property (nonatomic, strong) NSTrackingArea *navigationTrackingArea;
-@property (nonatomic) BOOL navigationButtonHovered;
 @property (nonatomic) BOOL suppressNavigationRecording;
 @property (nonatomic, strong, nullable) GAPendingNavigation *pendingNavigation;
 @property (nonatomic) BOOL navigationInputReplay;
@@ -809,8 +807,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     BOOL canGoBack = self.canNavigateBack;
     BOOL hasHistory = self.navigation.backSteps.count || self.navigation.forwardSteps.count;
     NSImage *image = canGoBack || !hasHistory ? self.backEnabledImage : self.backDisabledImage;
-    if (!canGoBack && self.navigationButtonHovered && self.navigation.forwardSteps.count)
-        image = self.forwardEnabledImage;
     if (item.image != image) item.image = image;
     // Reapplying enabled during an action can interrupt native press feedback.
     if (item.enabled != hasHistory) item.enabled = hasHistory;
@@ -824,23 +820,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     } @finally {
         [self updateNavigationButton];
     }
-}
-
-- (void)mouseMoved:(NSEvent *)event {
-    BOOL hovered = [(GADropWindow *)self.window navigationItemForEvent:event hitView:NULL] != nil;
-    if (_navigationButtonHovered == hovered) return;
-    _navigationButtonHovered = hovered;
-    [self updateNavigationButton];
-}
-
-- (void)mouseEntered:(NSEvent *)event {
-    [self mouseMoved:event];
-}
-
-- (void)mouseExited:(NSEvent *)event {
-    (void)event;
-    self.navigationButtonHovered = NO;
-    [self updateNavigationButton];
 }
 
 - (void)navigateBack:(id)sender {
@@ -973,17 +952,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     if (_glyphNavigationEnabled == enabled) return;
     _glyphNavigationEnabled = enabled;
     [self clearNavigationHistory];
-    NSView *frameView = self.window.contentView.superview;
-    if (self.navigationTrackingArea) [frameView removeTrackingArea:self.navigationTrackingArea];
-    self.navigationTrackingArea = nil;
-    self.navigationButtonHovered = NO;
-    if (enabled) {
-        self.navigationTrackingArea = [[NSTrackingArea alloc] initWithRect:NSZeroRect
-            options:NSTrackingMouseEnteredAndExited | NSTrackingMouseMoved |
-                NSTrackingActiveInKeyWindow | NSTrackingInVisibleRect | NSTrackingEnabledDuringMouseDrag
-            owner:self userInfo:nil];
-        [frameView addTrackingArea:self.navigationTrackingArea];
-    }
     NSToolbar *toolbar = self.window.toolbar;
     if (enabled) {
         [toolbar insertItemWithItemIdentifier:GABackItem atIndex:self.sidebarHidden ? 0 : 2];
@@ -1264,8 +1232,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 
 - (void)windowDidResignKey:(NSNotification *)notification {
     if (notification.object != self.window) return;
-    self.navigationButtonHovered = NO;
-    [self updateNavigationButton];
     [self.sidebarViewController setGlyphListDimmed:YES];
 }
 
@@ -1707,9 +1673,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 - (void)windowWillClose:(NSNotification *)notification {
     [self cancelLayoutNavigation];
     if (notification.object == self.window) {
-        if (self.navigationTrackingArea)
-            [self.window.contentView.superview removeTrackingArea:self.navigationTrackingArea];
-        self.navigationTrackingArea = nil;
         self.sidebarTransitionInProgress = NO;
         [self cancelGlyphFilterRequest];
         @synchronized (self) {
