@@ -193,7 +193,7 @@ static std::vector<Pattern> readContexts(View sub, unsigned type, DecodeBudget &
 }
 template <typename Sequence>
 static std::optional<std::vector<size_t>> matchSequence(const Pattern &pattern, const Sequence &buffer, size_t start,
-                                         const GDEF &gdef, LookupFlags flags, Span *scope) {
+                                         const GDEF &gdef, LookupFlags flags, Span *scope, Budget *budget) {
     if (start >= buffer.size() || pattern.input.empty() || !accepts(gdef, flags, buffer[start]))
         return {};
     if (pattern.firstCoverage && !pattern.firstCoverage.contains(buffer[start].glyph))
@@ -206,6 +206,7 @@ static std::optional<std::vector<size_t>> matchSequence(const Pattern &pattern, 
     for (const auto &predicate : pattern.backtrack) {
         bool found = false;
         while (cursor > 0) {
+            if (budget) budget->poll();
             --cursor;
             if (accepts(gdef, flags, buffer[cursor])) {
                 found = true;
@@ -219,6 +220,7 @@ static std::optional<std::vector<size_t>> matchSequence(const Pattern &pattern, 
     cursor = start;
     auto advance = [&](const Predicate &predicate) {
         do {
+            if (budget) budget->poll();
             ++cursor;
         } while (cursor < buffer.size() && !accepts(gdef, flags, buffer[cursor]));
         if (cursor >= buffer.size() || !predicate.matches(buffer[cursor].glyph))
@@ -239,12 +241,12 @@ static std::optional<std::vector<size_t>> matchSequence(const Pattern &pattern, 
     return input;
 }
 std::optional<std::vector<size_t>> match(const Pattern &pattern, const Buffer &buffer, size_t start,
-                                         const GDEF &gdef, LookupFlags flags, Span *scope) {
-    return matchSequence(pattern, buffer, start, gdef, flags, scope);
+                                         const GDEF &gdef, LookupFlags flags, Span *scope, Budget *budget) {
+    return matchSequence(pattern, buffer, start, gdef, flags, scope, budget);
 }
 std::optional<std::vector<size_t>> match(const Pattern &pattern, const SubstitutionBuffer &buffer,
-                                         size_t start, const GDEF &gdef, LookupFlags flags, Span *scope) {
-    return matchSequence(pattern, buffer, start, gdef, flags, scope);
+                                         size_t start, const GDEF &gdef, LookupFlags flags, Span *scope, Budget *budget) {
+    return matchSequence(pattern, buffer, start, gdef, flags, scope, budget);
 }
 
 

@@ -136,8 +136,11 @@ struct Metrics {
     /// Optional instance-local evaluator for GPOS device/variation records.
     std::function<double(const View &)> deviceDelta;
 };
-inline void setNominalPositions(Buffer &buffer, const Metrics &metrics, bool vertical) {
+inline void setNominalPositions(Buffer &buffer, const Metrics &metrics, bool vertical,
+                                const Cancellation *cancellation = nullptr) {
+    Budget polling(buffer.size(), cancellation);
     for (auto &item : buffer) {
+        polling.poll();
         item.xOffset = item.yOffset = 0;
         item.xAdvance = vertical ? 0 : metrics.horizontalAdvance(item.glyph);
         item.yAdvance = vertical ? -metrics.verticalAdvance(item.glyph) : 0;

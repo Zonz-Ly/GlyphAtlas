@@ -83,6 +83,11 @@ NS_ASSUME_NONNULL_BEGIN
                             markComponents:(NSArray<NSNumber *> *)components
                              markLigatures:(NSArray<NSNumber *> *)ligatures
                                    content:(NSString *)content;
+- (nullable NSArray<NSValue *> *)positionsForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
+                                     markComponents:(NSArray<NSNumber *> *)components
+                                      markLigatures:(NSArray<NSNumber *> *)ligatures
+                                            content:(NSString *)content
+                                          cancelled:(BOOL (^ _Nullable)(void))cancelled;
 
 - (nullable NSNumber *)verticalGlyph:(uint16_t)glyph;
 /// OS/2 sTypo ascender/descender in font units for this coordinate instance,

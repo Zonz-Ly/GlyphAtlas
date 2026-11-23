@@ -154,18 +154,20 @@ static BOOL IntersectsSelection(NSRange range, NSArray<GAGlyphSelectionRun *> *r
     return NO;
 }
 
-static void GAMergeSelectionCandidate(GAGlyphVariant *candidate, NSMutableArray *variants,
-                                       GAFontDocument *document, NSString *text) {
+static BOOL GAMergeSelectionCandidate(GAGlyphVariant *candidate, NSMutableArray *variants,
+                                       GAFontDocument *document, NSString *text, BOOL (^cancelled)(void)) {
     for (GAGlyphVariant *existing in variants)
         if ([existing.glyphIDs isEqual:candidate.glyphIDs] &&
             [existing.markComponents isEqualToArray:candidate.markComponents] &&
             [existing.markLigatures isEqualToArray:candidate.markLigatures]) {
             [existing addFeatureSources:candidate.featureSources];
-            return;
+            return YES;
         }
-    GAGlyphVariant *copy = [document rebindVariant:candidate content:text];
+    GAGlyphVariant *copy = [document rebindVariant:candidate content:text cancelled:cancelled];
+    if (!copy) return NO;
     copy.base = NO;
     [variants addObject:copy];
+    return YES;
 }
 
 /// Inserts browsing-only combinations after the projected source and selection rows.
@@ -352,7 +354,8 @@ NSArray<GACharacterGroup *> *GABuildDisplayGroups(NSArray<GACharacterGroup *> *g
             if (indexSelections) {
                 for (GAGlyphVariant *candidate in seedCandidates[[NSValue valueWithRange:run.range]]) {
                     if (cancelled && cancelled()) return nil;
-                    GAMergeSelectionCandidate(candidate, variants, document, selectionGroup.text);
+                    if (!GAMergeSelectionCandidate(candidate, variants, document, selectionGroup.text, cancelled))
+                        return nil;
                 }
             } else for (GACharacterGroup *source in groups) {
                 if (cancelled && cancelled()) return nil;
@@ -360,8 +363,9 @@ NSArray<GACharacterGroup *> *GABuildDisplayGroups(NSArray<GACharacterGroup *> *g
                 for (GAGlyphVariant *candidate in source.variants) {
                     if (cancelled && cancelled()) return nil;
                     if (candidate.fromGlyphSeed && !candidate.isLigature &&
-                        NSEqualRanges(candidate.sourceTextRange, run.range))
-                        GAMergeSelectionCandidate(candidate, variants, document, selectionGroup.text);
+                        NSEqualRanges(candidate.sourceTextRange, run.range) &&
+                        !GAMergeSelectionCandidate(candidate, variants, document, selectionGroup.text, cancelled))
+                        return nil;
                 }
             }
             selectionGroup.variants = variants;
@@ -427,7 +431,8 @@ NSArray<GACharacterGroup *> *GABuildDisplayGroups(NSArray<GACharacterGroup *> *g
                 GAGlyphVariant *copy = variant.fontBox == document.fontBox
                     ? [variant copy]
                     : [document rebindVariant:variant
-                                     content:[text substringWithRange:variant.sourceTextRange]];
+                                     content:[text substringWithRange:variant.sourceTextRange] cancelled:cancelled];
+                if (!copy) return nil;
                 [ligatureVariants addObject:copy];
             }
         }

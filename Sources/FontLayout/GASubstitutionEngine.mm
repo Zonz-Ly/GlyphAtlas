@@ -168,10 +168,13 @@ NSArray<NSNumber *> *glyphArray(const std::vector<Glyph> &glyphs) {
         [array addObject:@(glyph)];
     return array;
 }
-std::vector<Glyph> glyphVector(NSArray<NSNumber *> *glyphs) {
+std::vector<Glyph> glyphVector(NSArray<NSNumber *> *glyphs, const Cancellation *cancellation = nullptr) {
     std::vector<Glyph> result;
-    for (NSNumber *glyph in glyphs)
+    Budget polling(glyphs.count, cancellation);
+    for (NSNumber *glyph in glyphs) {
+        polling.poll();
         result.push_back(glyph.unsignedShortValue);
+    }
     return result;
 }
 std::vector<Glyph> replacingGlyph(const std::vector<Glyph> &glyphs, size_t index,
@@ -394,9 +397,12 @@ void prepareParagraphCache(std::vector<QueryParagraph> &paragraphs, const std::v
     }
 }
 
-Buffer literalBuffer(const std::vector<Glyph> &glyphs, NSArray<NSNumber *> *components = @[], NSArray<NSNumber *> *owners = @[]) {
+Buffer literalBuffer(const std::vector<Glyph> &glyphs, NSArray<NSNumber *> *components = @[],
+                     NSArray<NSNumber *> *owners = @[], const Cancellation *cancellation = nullptr) {
     Buffer buffer;
+    Budget polling(glyphs.size(), cancellation);
     for (size_t i = 0; i < glyphs.size(); i++) {
+        polling.poll();
         Item item;
         item.glyph = glyphs[i];
         item.source = {uint32_t(i), uint32_t(i + 1)};
@@ -1253,29 +1259,30 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
         };
     return metrics;
 }
-- (void)position:(Buffer &)buffer settings:(const Settings &)settings {
+- (void)position:(Buffer &)buffer settings:(const Settings &)settings
+    cancellation:(const Cancellation *)cancellation {
     const auto &r = *self.program->resource;
     Metrics metrics = [self metrics];
     Buffer nominal = buffer;
-    bool hasKerning = false;
     try {
         size_t branch = metrics.variationCoordinatesValid ? r.gpos.variationBranch(metrics.normalized) : 0;
-        hasKerning = r.gpos.position(buffer, r.gdef, settings, metrics, branch);
+        r.gpos.position(buffer, r.gdef, settings, metrics, branch, &r.kerning, cancellation);
     } catch (const InvalidTable &) {
         buffer = std::move(nominal);
-        setNominalPositions(buffer, metrics, settings.vertical);
-    }
-    if (!hasKerning) {
+        setNominalPositions(buffer, metrics, settings.vertical, cancellation);
         Buffer before = buffer;
         try {
-            r.kerning.position(buffer, settings, r.gdef);
+            r.kerning.position(buffer, settings, r.gdef, cancellation);
         } catch (const InvalidTable &) {
             buffer = std::move(before);
         }
     }
-    for (auto &item : buffer)
+    Budget polling(buffer.size(), cancellation);
+    for (auto &item : buffer) {
+        polling.poll();
         if (item.ignorable)
             item.xAdvance = item.yAdvance = 0;
+    }
 }
 - (NSArray<NSValue *> *)positionsForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
                                      content:(NSString *)content {
@@ -1290,7 +1297,18 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
                             markComponents:(NSArray<NSNumber *> *)components
                              markLigatures:(NSArray<NSNumber *> *)ligatures
                                    content:(NSString *)content {
+    return [self positionsForGlyphIDs:glyphIDs markComponents:components markLigatures:ligatures
+                             content:content cancelled:nil];
+}
+- (NSArray<NSValue *> *)positionsForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
+                            markComponents:(NSArray<NSNumber *> *)components
+                             markLigatures:(NSArray<NSNumber *> *)ligatures
+                                   content:(NSString *)content
+                                 cancelled:(BOOL (^)(void))cancelled {
+    Cancellation cancellation{[cancelled] { return cancelled() != NO; }};
+    const Cancellation *check = cancelled ? &cancellation : nullptr;
     try {
+        checkCancellation(check);
         const auto &r = *self.program->resource;
         Settings settings;
         if (content.length) {
@@ -1300,6 +1318,7 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
                 settings.rtl = context[1].boolValue;
             } else {
                 auto runs = prepareText(content, r.cmap);
+                checkCancellation(check);
                 if (!runs.empty()) {
                     settings.script = runs.front().script;
                     settings.rtl = runs.front().level & 1;
@@ -1321,23 +1340,28 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
             dispatch_once(&once, ^{ zeroOrigin = @[[NSValue valueWithPoint:NSZeroPoint]]; });
             return zeroOrigin;
         }
-        Buffer items = literalBuffer(glyphVector(glyphIDs),components,ligatures);
+        Buffer items = literalBuffer(glyphVector(glyphIDs, check), components, ligatures, check);
         if (settings.rtl)
             std::reverse(items.begin(), items.end());
-        [self position:items settings:settings];
+        [self position:items settings:settings cancellation:check];
         if (settings.rtl)
             std::reverse(items.begin(), items.end());
         double scale = CTFontGetSize(_font) / r.unitsPerEm;
         ga::layout::Point pen;
         NSMutableArray *positions = [NSMutableArray array];
+        Budget polling(items.size(), check);
         for (const auto &item : items) {
+            polling.poll();
             [positions
                 addObject:[NSValue valueWithPoint:NSMakePoint((pen.x + item.xOffset) * scale,
                                                               (pen.y + item.yOffset) * scale)]];
             pen.x += item.xAdvance;
             pen.y += item.yAdvance;
         }
+        checkCancellation(check);
         return positions;
+    } catch (const QueryCancelled &) {
+        return nil;
     } catch (const std::exception &) {
         // Failed positioning yields no explicit origins.
     }

@@ -299,7 +299,8 @@ NSArray<GACharacterGroup *> *GAGroupsForScanResult(NSString *text, GARawScanResu
                                ? [content substringWithRange:old.sourceRange]
                                : content;
         c.positions = [_substitutionEngine positionsForGlyphIDs:c.glyphIDs
-            markComponents:c.markComponents markLigatures:c.markLigatures content:source];
+            markComponents:c.markComponents markLigatures:c.markLigatures content:source cancelled:cancelled];
+        if (!c.positions) return nil;
         c.sources = old.sources;
         c.base = old.base;
         c.ligature = old.ligature;
@@ -315,10 +316,15 @@ NSArray<GACharacterGroup *> *GAGroupsForScanResult(NSString *text, GARawScanResu
     return cancelled && cancelled() ? nil : rebound;
 }
 - (GAGlyphVariant *)rebindVariant:(GAGlyphVariant *)old content:(NSString *)content {
+    return [self rebindVariant:old content:content cancelled:nil];
+}
+- (GAGlyphVariant *)rebindVariant:(GAGlyphVariant *)old content:(NSString *)content
+                      cancelled:(BOOL (^)(void))cancelled {
     GAGlyphVariant *v = [old copy];
     v.fontBox = _fontBox;
     v.positions = [_substitutionEngine positionsForGlyphIDs:v.glyphIDs
-        markComponents:v.markComponents markLigatures:v.markLigatures content:content];
+        markComponents:v.markComponents markLigatures:v.markLigatures content:content cancelled:cancelled];
+    if (!v.positions) return nil;
     return v;
 }
 
@@ -455,7 +461,8 @@ static NSString *GADisplayLabelForGlyph(GAGlyphLabels *labels, NSNumber *number)
     variant.markLigatures = source.markLigatures;
     variant.positions = [_substitutionEngine positionsForGlyphIDs:glyphIDs
         markComponents:variant.markComponents markLigatures:variant.markLigatures
-        content:[text substringWithRange:range]];
+        content:[text substringWithRange:range] cancelled:cancelled];
+    if (!variant.positions) return nil;
     [variant addFeatureSources:source.sources];
     variant.sourceTextRange = range;
     variant.ligature = parent.isLigature;
@@ -540,7 +547,8 @@ static NSString *GADisplayLabelForGlyph(GAGlyphLabels *labels, NSNumber *number)
         c.positions = [_substitutionEngine
             positionsForGlyphIDs:c.glyphIDs
                   markComponents:c.markComponents markLigatures:c.markLigatures
-                         content:[content substringWithRange:match.sourceRange]];
+                         content:[content substringWithRange:match.sourceRange] cancelled:cancelled];
+        if (!c.positions) return nil;
         c.sources = match.sources;
         c.sourceRange = match.sourceRange;
         c.fromGlyphSeed = selections.count > 0;
@@ -729,7 +737,8 @@ static void GAPublishVariantBuilders(NSMapTable *builders) {
         v.markComponents = match.markComponents;
         v.markLigatures = match.markLigatures;
         v.positions = [_substitutionEngine positionsForGlyphIDs:v.glyphIDs
-            markComponents:v.markComponents markLigatures:v.markLigatures content:content];
+            markComponents:v.markComponents markLigatures:v.markLigatures content:content cancelled:cancelled];
+        if (!v.positions) return nil;
         [v addFeatureSources:match.sources];
         v.base = match.base;
         [self decorateVariant:v];

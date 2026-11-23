@@ -137,6 +137,8 @@ FOUNDATION_EXPORT NSArray<GACharacterGroup *> *GAGroupsForScanResult(NSString *t
 - (nullable GARawScanResult *)rebindResult:(GARawScanResult *)result content:(NSString *)content
                                cancelled:(BOOL (^_Nullable)(void))cancelled;
 - (GAGlyphVariant *)rebindVariant:(GAGlyphVariant *)variant content:(NSString *)content;
+- (nullable GAGlyphVariant *)rebindVariant:(GAGlyphVariant *)variant content:(NSString *)content
+                               cancelled:(BOOL (^ _Nullable)(void))cancelled;
 
 /// All GIDs in the font, including glyphs without Unicode mappings.
 - (NSArray<GAAllGlyphEntry *> *)allGlyphEntries;

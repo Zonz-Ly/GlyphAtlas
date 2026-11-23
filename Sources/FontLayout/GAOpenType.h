@@ -86,6 +86,7 @@ struct LookupStep {
     bool explicitValue = false;
 };
 std::string featureLabel(Tag feature, unsigned value);
+class Kerning;
 class OpenType {
     bool positioning_;
     View data_;
@@ -124,7 +125,8 @@ class OpenType {
     }
     /// Returns whether the successfully executed plan owns the kern feature.
     bool position(Buffer &buffer, const GDEF &gdef, const Settings &settings,
-                  const Metrics &metrics, size_t branch = 0) const;
+                  const Metrics &metrics, size_t branch = 0, const Kerning *fallback = nullptr,
+                  const Cancellation *cancellation = nullptr) const;
 };
 // Legacy pair/class kerning supplements positioning only when GPOS/kerx does
 // not own the relevant kern feature. Table offsets include the subtable header.
@@ -133,7 +135,8 @@ class Kerning {
 
   public:
     explicit Kerning(View kern = {}, View kerx = {}) : kern_(kern), kerx_(kerx) {}
-    void position(Buffer &buffer, const Settings &settings, const GDEF &gdef) const;
+    void position(Buffer &buffer, const Settings &settings, const GDEF &gdef,
+                  const Cancellation *cancellation = nullptr) const;
 };
 
 class SubstitutionBuffer;
@@ -141,10 +144,10 @@ class SubstitutionBuffer;
 // Shared context matching for substitution and positioning lookup formats.
 std::optional<std::vector<size_t>> match(const Pattern &pattern, const Buffer &buffer, size_t start,
                                          const GDEF &gdef, LookupFlags flags,
-                                         Span *scope = nullptr);
+                                         Span *scope = nullptr, Budget *budget = nullptr);
 std::optional<std::vector<size_t>> match(const Pattern &pattern, const SubstitutionBuffer &buffer,
                                          size_t start, const GDEF &gdef, LookupFlags flags,
-                                         Span *scope = nullptr);
+                                         Span *scope = nullptr, Budget *budget = nullptr);
 std::vector<Glyph> substitutionOutputs(const Subtable &subtable, Glyph glyph);
 // Type 2/3 sequence payload; validates the complete array before returning it.
 View substitutionSequence(const Subtable &subtable, unsigned coverageIndex);

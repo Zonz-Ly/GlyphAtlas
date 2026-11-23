@@ -1,6 +1,7 @@
 #include "GAOpenType.h"
 #include "GAAAT.h"
 #include "GAVariation.h"
+#include <array>
 
 // OpenType positioning.
 
@@ -79,6 +80,7 @@ class Positioning {
         std::vector<std::pair<size_t, Attachment>> chain;
         size_t current = child;
         for (;;) {
+            budget_.poll();
             auto old = attachments_.find(current);
             if (old == attachments_.end() || !old->second.cursive) break;
             Attachment attachment = old->second;
@@ -88,6 +90,7 @@ class Positioning {
             current = attachment.parent;
         }
         for (auto i = chain.rbegin(); i != chain.rend(); ++i) {
+            budget_.poll();
             const auto &old = i->second;
             minorOffset(old.parent) = -minorOffset(i->first);
             attachments_[old.parent] = {i->first, {-old.delta.x, -old.delta.y}, true, {}};
@@ -110,10 +113,12 @@ class Positioning {
             attachment->second.placementAfter.y += delta.y;
         }
     }
-    std::optional<size_t> next(size_t at, const Lookup &lookup) const {
-        for (size_t i = at + 1; i < buffer_.size(); i++)
+    std::optional<size_t> next(size_t at, const Lookup &lookup) {
+        for (size_t i = at + 1; i < buffer_.size(); i++) {
+            budget_.poll();
             if (accepts(gdef_, lookup, buffer_[i]))
                 return i;
+        }
         return {};
     }
     PositionResult pair(const Subtable &sub, const Lookup &lookup, size_t at) {
@@ -228,6 +233,7 @@ class Positioning {
             return {};
         std::optional<size_t> parent;
         for (size_t p = at; p > 0;) {
+            budget_.poll();
             p--;
             unsigned glyphClass = gdef_.glyphClasses.get(buffer_[p].glyph);
             if (sub.type == 6) {
@@ -304,16 +310,18 @@ class Positioning {
         for (unsigned pi : candidates->second) {
             budget_.step();
             const auto &pattern = sub.patterns[pi];
-            auto positions = match(pattern, buffer_, at, gdef_, lookup);
+            auto positions = match(pattern, buffer_, at, gdef_, lookup, nullptr, &budget_);
             if (!positions)
                 continue;
             size_t end = positions->back() + 1;
-            for (auto record : pattern.actions)
+            for (auto record : pattern.actions) {
+                budget_.poll();
                 if (record.sequence < positions->size()) {
                     auto nested = apply(record.lookup, (*positions)[record.sequence]);
                     if (nested.matched)
                         end = std::max(end, nested.next);
                 }
+            }
             return {true, end};
         }
         return {};
@@ -327,6 +335,7 @@ class Positioning {
         PositionResult result;
         if (accepts(gdef_, lookup, buffer_[at]))
             for (const auto &sub : lookup.subtables) {
+                budget_.poll();
                 result = subtable(sub, lookup, at);
                 if (result.matched)
                     break;
@@ -334,19 +343,21 @@ class Positioning {
         active_.erase({index, at});
         return result;
     }
-    Point pen(size_t index) const {
+    Point pen(size_t index) {
         if (!settings_.rtl)
             return pens_[index];
         Point p;
         // Each RTL suffix originally sums forwards. Retain that order rather
         // than changing floating-point results with a backwards suffix sum.
         for (size_t i = index + 1; i < buffer_.size(); i++) {
+            budget_.poll();
             p.x += buffer_[i].xAdvance;
             p.y += buffer_[i].yAdvance;
         }
         return p;
     }
     void resolve(size_t index, std::set<size_t> &path, std::set<size_t> &done) {
+        budget_.poll();
         if (done.count(index))
             return;
         auto found = attachments_.find(index);
@@ -380,16 +391,23 @@ class Positioning {
 
   public:
     Positioning(const std::vector<Lookup> &lookups, const GDEF &gdef, const Settings &settings,
-                const Metrics &metrics, Buffer &buffer)
+                const Metrics &metrics, Buffer &buffer, const Cancellation *cancellation)
         : lookups_(lookups), gdef_(gdef), metrics_(metrics), settings_(settings), buffer_(buffer),
-          budget_(buffer.size()) {}
-    void run(const std::vector<LookupStep> &plan) {
-        setNominalPositions(buffer_, metrics_, settings_.vertical);
-        for (auto &item : buffer_)
+          budget_(buffer.size(), cancellation) {}
+    void run(const std::vector<LookupStep> &plan, const Kerning *fallback) {
+        setNominalPositions(buffer_, metrics_, settings_.vertical, budget_.cancellation);
+        for (auto &item : buffer_) {
+            budget_.poll();
             if (gdef_.glyphClasses.get(item.glyph) == 3) {
                 item.xAdvance = 0;
                 item.yAdvance = 0;
             }
+        }
+        if (fallback) {
+            Buffer before = buffer_;
+            try { fallback->position(buffer_, settings_, gdef_, budget_.cancellation); }
+            catch (const InvalidTable &) { buffer_ = std::move(before); }
+        }
         for (auto step : plan)
             for (size_t i = 0; i < buffer_.size();) {
                 auto result = apply(step.lookup, i);
@@ -399,6 +417,7 @@ class Positioning {
         std::vector<size_t> keys;
         size_t penCount = 0;
         for (const auto &entry : attachments_) {
+            budget_.poll();
             keys.push_back(entry.first);
             if (!entry.second.cursive)
                 penCount = std::max(penCount, std::max(entry.first, entry.second.parent) + 1);
@@ -409,6 +428,7 @@ class Positioning {
             pens_.reserve(penCount);
             Point p;
             for (size_t i = 0; i < penCount; i++) {
+                budget_.poll();
                 pens_.push_back(p);
                 p.x += buffer_[i].xAdvance;
                 p.y += buffer_[i].yAdvance;
@@ -420,12 +440,16 @@ class Positioning {
 };
 } // namespace
 bool OpenType::position(Buffer &buffer, const GDEF &gdef, const Settings &settings,
-                        const Metrics &metrics, size_t branch) const {
+                        const Metrics &metrics, size_t branch, const Kerning *fallback,
+                        const Cancellation *cancellation) const {
+    checkCancellation(cancellation);
     if (!positioning_)
         throw InvalidTable("substitution program used for positioning");
     bool ownsKerning;
     auto steps = buildPlan(settings, branch, &ownsKerning);
-    Positioning(lookups_, gdef, settings, metrics, buffer).run(steps);
+    Positioning(lookups_, gdef, settings, metrics, buffer, cancellation)
+        .run(steps, ownsKerning ? nullptr : fallback);
+    checkCancellation(cancellation);
     return ownsKerning;
 }
 } // namespace ga::layout
@@ -458,30 +482,38 @@ unsigned classicClass(View table, size_t offset, Glyph glyph, unsigned fallback 
                ? table.u16(offset + 4 + size_t(glyph - first) * 2)
                : fallback;
 }
-void adjust(Buffer &buffer, size_t first, size_t second, double value, bool vertical, bool cross,
+using KerningDeltas = std::vector<std::array<double, 4>>;
+void adjust(Buffer &buffer, KerningDeltas &deltas, size_t first, size_t second, double value, bool vertical, bool cross,
             bool overrideValue) {
     auto &a = buffer[first];
     auto &b = buffer[second];
     double &target =
         cross ? (vertical ? b.xOffset : b.yOffset) : (vertical ? a.yAdvance : a.xAdvance);
+    double &previous = deltas[cross ? second : first][cross ? (vertical ? 2 : 3) : (vertical ? 1 : 0)];
     if (cross && value == -32768) {
-        target = 0;
+        target -= previous;
+        previous = 0;
         return;
     }
     if (vertical && !cross)
         value = -value;
-    if (overrideValue)
-        target = value;
-    else
+    if (overrideValue) {
+        target += value - previous;
+        previous = value;
+    } else {
         target += value;
+        previous += value;
+    }
 }
-void table(View table, bool extended, Buffer &buffer, const Settings &settings, const GDEF &gdef) {
+void table(View table, bool extended, Buffer &buffer, const Settings &settings, const GDEF &gdef,
+           KerningDeltas &deltas, Budget &budget) {
     if (!table)
         return;
     bool apple = extended || table.u16(0) != 0;
     unsigned count = apple ? table.u32(4) : table.u16(2);
     size_t at = apple ? 8 : 4;
     for (unsigned si = 0; si < count; si++) {
+        budget.poll();
         View rest = table.at(at);
         unsigned header = extended ? 12 : apple ? 8 : 6;
         size_t size = extended || apple ? rest.u32(0) : rest.u16(2);
@@ -505,11 +537,14 @@ void table(View table, bool extended, Buffer &buffer, const Settings &settings, 
         if ((extended && (coverage & 0x20000000)) || (apple && !extended && (coverage & 0x2000)))
             throw InvalidTable("variation kerning requires tuple data");
         for (size_t i = 0; i < buffer.size(); i++) {
+            budget.poll();
             if (gdef.glyphClasses.get(buffer[i].glyph) == 3)
                 continue;
             size_t j = i + 1;
-            while (j < buffer.size() && gdef.glyphClasses.get(buffer[j].glyph) == 3)
+            while (j < buffer.size() && gdef.glyphClasses.get(buffer[j].glyph) == 3) {
+                budget.poll();
                 j++;
+            }
             if (j >= buffer.size())
                 break;
             std::optional<double> value;
@@ -547,18 +582,24 @@ void table(View table, bool extended, Buffer &buffer, const Settings &settings, 
             } else
                 throw InvalidTable("unsupported kerning subtable format");
             if (value)
-                adjust(buffer, i, j, *value, vertical, cross, overrideValue);
+                adjust(buffer, deltas, i, j, *value, vertical, cross, overrideValue);
         }
     }
 }
 } // namespace
-void Kerning::position(Buffer &buffer, const Settings &settings, const GDEF &gdef) const {
+void Kerning::position(Buffer &buffer, const Settings &settings, const GDEF &gdef,
+                       const Cancellation *cancellation) const {
+    checkCancellation(cancellation);
+    if (!kern_ && !kerx_) return;
     auto kern = settings.features.find(tag('k', 'e', 'r', 'n'));
     if (kern != settings.features.end() && !kern->second)
         return;
+    KerningDeltas deltas(buffer.size());
+    Budget budget(buffer.size(), cancellation);
     if (kerx_)
-        table(kerx_, true, buffer, settings, gdef);
+        table(kerx_, true, buffer, settings, gdef, deltas, budget);
     else
-        table(kern_, false, buffer, settings, gdef);
+        table(kern_, false, buffer, settings, gdef, deltas, budget);
+    checkCancellation(cancellation);
 }
 } // namespace ga::layout
