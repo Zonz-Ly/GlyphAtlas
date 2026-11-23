@@ -470,19 +470,23 @@ OpenType::OpenType(View table, bool positioning) : positioning_(positioning), da
             variations.array(8, n, 8);
             for (unsigned i = 0; i < n; i++) {
                 auto features = branches_.front();
-                View replacement = variations.offset32(12 + i * 8);
-                unsigned replacements = replacement.u16(4);
-                replacement.array(6, replacements, 6);
-                for (unsigned j = 0; j < replacements; j++) {
-                    unsigned fi = replacement.u16(6 + j * 6);
-                    if (fi >= features.size())
-                        throw InvalidTable("variation feature index outside list");
-                    View alt = replacement.offset32(8 + j * 6);
-                    unsigned k = alt.u16(2);
-                    alt.array(4, k, 2);
-                    features[fi].lookups.clear();
-                    for (unsigned q = 0; q < k; q++)
-                        features[fi].lookups.push_back(alt.u16(4 + q * 2));
+                // Only zero means no substitution; nonzero truncated data is invalid.
+                uint32_t offset = variations.u32(12 + i * 8);
+                if (offset) {
+                    View replacement = variations.at(offset);
+                    unsigned replacements = replacement.u16(4);
+                    replacement.array(6, replacements, 6);
+                    for (unsigned j = 0; j < replacements; j++) {
+                        unsigned fi = replacement.u16(6 + j * 6);
+                        if (fi >= features.size())
+                            throw InvalidTable("variation feature index outside list");
+                        View alt = replacement.offset32(8 + j * 6);
+                        unsigned k = alt.u16(2);
+                        alt.array(4, k, 2);
+                        features[fi].lookups.clear();
+                        for (unsigned q = 0; q < k; q++)
+                            features[fi].lookups.push_back(alt.u16(4 + q * 2));
+                    }
                 }
                 branches_.push_back(std::move(features));
             }
