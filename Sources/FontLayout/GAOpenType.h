@@ -13,7 +13,7 @@ struct Predicate {
     ClassDef classes;
     static Predicate exact(Glyph value);
     static Predicate covered(View table);
-    static Predicate classified(View table, unsigned value);
+    static Predicate classified(const ClassDef &classes, unsigned value);
     bool matches(Glyph glyph) const;
 };
 struct LookupRecord {

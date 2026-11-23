@@ -20,10 +20,10 @@ Predicate Predicate::covered(View table) {
     p.coverage = Coverage(table);
     return p;
 }
-Predicate Predicate::classified(View table, unsigned value) {
+Predicate Predicate::classified(const ClassDef &classes, unsigned value) {
     Predicate p;
     p.kind = Kind::Class;
-    p.classes = ClassDef(table);
+    p.classes = classes;
     p.value = value;
     return p;
 }
@@ -45,14 +45,28 @@ static std::vector<LookupRecord> records(View table, size_t at, unsigned count) 
         result.push_back({table.u16(at + i * 4), table.u16(at + i * 4 + 2)});
     return result;
 }
+// Validate at the first predicate that uses this class definition. Unused
+// backtrack/lookahead tables must retain their original lazy validation.
+class ContextClasses {
+    View data_;
+    std::optional<ClassDef> classes_;
+
+  public:
+    explicit ContextClasses(View data = {}) : data_(data) {}
+    const ClassDef &get() {
+        if (!classes_)
+            classes_.emplace(data_);
+        return *classes_;
+    }
+};
 static void predicates(std::vector<Predicate> &result, View table, size_t at, unsigned count,
-                       unsigned format, View classes = {}) {
+                       unsigned format, ContextClasses *classes = nullptr) {
     table.array(at, count, 2);
     for (unsigned i = 0; i < count; i++) {
         if (format == 1)
             result.push_back(Predicate::exact(table.u16(at + i * 2)));
         else if (format == 2)
-            result.push_back(Predicate::classified(classes, table.u16(at + i * 2)));
+            result.push_back(Predicate::classified(classes->get(), table.u16(at + i * 2)));
         else
             result.push_back(Predicate::covered(table.offset16(at + i * 2)));
     }
@@ -97,16 +111,16 @@ static std::vector<Pattern> readContexts(View sub, unsigned type) {
         throw InvalidTable("unknown contextual lookup format");
     Coverage coverage(sub.offset16(2));
     auto firstGlyphs = format == 1 ? coverage.glyphs() : std::vector<Glyph>{};
-    View backClasses, inputClasses, lookClasses;
+    ContextClasses backClasses, inputClasses, lookClasses;
     size_t countAt = 4;
     if (format == 2) {
         if (chained) {
-            backClasses = sub.offset16(4);
-            inputClasses = sub.offset16(6);
-            lookClasses = sub.offset16(8);
+            backClasses = ContextClasses(sub.offset16(4));
+            inputClasses = ContextClasses(sub.offset16(6));
+            lookClasses = ContextClasses(sub.offset16(8));
             countAt = 10;
         } else {
-            inputClasses = sub.offset16(4);
+            inputClasses = ContextClasses(sub.offset16(4));
             countAt = 6;
         }
     }
@@ -132,7 +146,7 @@ static std::vector<Pattern> readContexts(View sub, unsigned type) {
             if (chained) {
                 unsigned back = rule.u16(cursor);
                 cursor += 2;
-                predicates(p.backtrack, rule, cursor, back, format, backClasses);
+                predicates(p.backtrack, rule, cursor, back, format, &backClasses);
                 cursor += back * 2;
             }
             unsigned input = rule.u16(cursor);
@@ -145,13 +159,13 @@ static std::vector<Pattern> readContexts(View sub, unsigned type) {
                 cursor += 2;
             }
             p.input.push_back(format == 1 ? Predicate::exact(firstGlyphs[si])
-                                          : Predicate::classified(inputClasses, si));
-            predicates(p.input, rule, cursor, input - 1, format, inputClasses);
+                                          : Predicate::classified(inputClasses.get(), si));
+            predicates(p.input, rule, cursor, input - 1, format, &inputClasses);
             cursor += (input - 1) * 2;
             if (chained) {
                 unsigned look = rule.u16(cursor);
                 cursor += 2;
-                predicates(p.lookahead, rule, cursor, look, format, lookClasses);
+                predicates(p.lookahead, rule, cursor, look, format, &lookClasses);
                 cursor += look * 2;
                 actionCount = rule.u16(cursor);
                 cursor += 2;
@@ -269,15 +283,26 @@ static std::vector<Script> readScripts(View list) {
     return result;
 }
 static void indexPatterns(Subtable &s) {
+    std::optional<std::vector<Glyph>> classGlyphs;
     for (unsigned i = 0; i < s.patterns.size(); i++) {
         const auto &p = s.patterns[i];
         const auto &first = p.input.front();
-        auto glyphs = first.kind == Predicate::Kind::Exact ? std::vector<Glyph>{Glyph(first.value)}
-                      : first.kind == Predicate::Kind::Coverage ? first.coverage.glyphs()
-                                                                : p.firstCoverage.glyphs();
-        for (Glyph g : glyphs)
+        auto add = [&](Glyph g) {
             if (first.matches(g))
                 s.starts[g].push_back(i);
+        };
+        if (first.kind == Predicate::Kind::Exact)
+            add(Glyph(first.value));
+        else if (first.kind == Predicate::Kind::Coverage) {
+            for (Glyph g : first.coverage.glyphs())
+                add(g);
+        } else {
+            // All class rules read from one contextual subtable share coverage.
+            if (!classGlyphs)
+                classGlyphs = p.firstCoverage.glyphs();
+            for (Glyph g : *classGlyphs)
+                add(g);
+        }
     }
 }
 void PositioningTables::read() const {
