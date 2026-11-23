@@ -116,11 +116,16 @@ class Substitution {
         ligature.ligatureIdentity = nextIdentity_++;
         ligature.glyph = pattern.replacement.front();
         ligature.components.clear();
-        std::map<uint64_t, unsigned> oldOwners;
+        struct ConsumedLigature {
+            unsigned componentStart;
+            Span source;
+        };
+        std::map<uint64_t, ConsumedLigature> oldOwners;
         for (size_t pos : *positions) {
             const auto &component = buffer_[pos];
             if (component.ligatureIdentity)
-                oldOwners.emplace(component.ligatureIdentity, unsigned(ligature.components.size()));
+                oldOwners.emplace(component.ligatureIdentity,
+                    ConsumedLigature{unsigned(ligature.components.size()), component.source});
             if (component.components.empty())
                 ligature.components.push_back(component.source);
             else
@@ -157,8 +162,11 @@ class Substitution {
             if (buffer_[pos].ligatureIdentity && owner == oldOwners.end()) continue;
             auto &item = buffer_.edit(pos);
             if (owner != oldOwners.end() && item.component >= 0) {
-                item.component += int(owner->second);
-                item.source = merged;
+                item.component += int(owner->second.componentStart);
+                // Only an already atomic source follows the consumed ligature.
+                // Association alone does not consume an independent tail mark.
+                if (item.source == owner->second.source)
+                    item.source = merged;
             } else
                 item.component = int(ligature.components.size() - 1);
             item.ligatureIdentity = ligature.ligatureIdentity;

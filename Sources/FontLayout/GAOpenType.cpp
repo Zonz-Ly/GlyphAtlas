@@ -41,6 +41,7 @@ bool Predicate::matches(Glyph glyph) const {
 // Charge decoded objects before allocating them. Small offset arrays may alias
 // large rule sets, so file length alone does not bound the decoded program.
 struct DecodeBudget {
+    // Rules and retained script/language/feature/branch objects share this limit.
     size_t rules = 1000000, elements = 2000000, references = 2000000;
     static void take(size_t &remaining, size_t count) {
         if (count > remaining)
@@ -250,11 +251,12 @@ std::optional<std::vector<size_t>> match(const Pattern &pattern, const Substitut
 }
 
 
-static std::vector<Feature> readFeatures(View list) {
+static std::vector<Feature> readFeatures(View list, DecodeBudget &budget) {
     if (!list)
         return {};
     unsigned count = list.u16(0);
     list.array(2, count, 6);
+    DecodeBudget::take(budget.rules, count);
     std::vector<Feature> result;
     for (unsigned i = 0; i < count; i++) {
         Feature f;
@@ -262,39 +264,43 @@ static std::vector<Feature> readFeatures(View list) {
         View table = list.offset16(6 + i * 6);
         unsigned n = table.u16(2);
         table.array(4, n, 2);
+        DecodeBudget::take(budget.references, n);
         for (unsigned j = 0; j < n; j++)
             f.lookups.push_back(table.u16(4 + j * 2));
         result.push_back(std::move(f));
     }
     return result;
 }
-static Language readLanguage(Tag name, View table) {
+static Language readLanguage(Tag name, View table, DecodeBudget &budget) {
     Language lang;
     lang.name = name;
     lang.required = table.u16(2);
     unsigned count = table.u16(4);
     table.array(6, count, 2);
+    DecodeBudget::take(budget.rules, 1);
+    DecodeBudget::take(budget.references, count);
     for (unsigned i = 0; i < count; i++)
         lang.features.push_back(table.u16(6 + i * 2));
     return lang;
 }
-static std::vector<Script> readScripts(View list) {
+static std::vector<Script> readScripts(View list, DecodeBudget &budget) {
     if (!list)
         return {};
     unsigned count = list.u16(0);
     list.array(2, count, 6);
+    DecodeBudget::take(budget.rules, count);
     std::vector<Script> result;
     for (unsigned i = 0; i < count; i++) {
         Script script;
         script.name = list.u32(2 + i * 6);
         View table = list.offset16(6 + i * 6);
         if (View def = table.offset16(0))
-            script.languages.push_back(readLanguage(0, def));
+            script.languages.push_back(readLanguage(0, def, budget));
         unsigned n = table.u16(2);
         table.array(4, n, 6);
         for (unsigned j = 0; j < n; j++)
             script.languages.push_back(
-                readLanguage(table.u32(4 + j * 6), table.offset16(8 + j * 6)));
+                readLanguage(table.u32(4 + j * 6), table.offset16(8 + j * 6), budget));
         result.push_back(std::move(script));
     }
     return result;
@@ -455,17 +461,17 @@ static Subtable readSubtable(View data, unsigned type, bool positioning, DecodeB
     return s;
 }
 OpenType::OpenType(View table, bool positioning) : positioning_(positioning), data_(table) {
+    DecodeBudget budget;
+    DecodeBudget::take(budget.rules, 1);
     branches_.push_back({});
     if (!table)
         return;
     table.require(0, 10);
-    scripts_ = readScripts(table.offset16(4));
-    branches_[0] = readFeatures(table.offset16(6));
+    scripts_ = readScripts(table.offset16(4), budget);
+    branches_[0] = readFeatures(table.offset16(6), budget);
     View list = table.offset16(8);
     unsigned count = list.u16(0);
     list.array(2, count, 2);
-    size_t familyEntries = 0;
-    DecodeBudget budget;
     for (unsigned i = 0; i < count; i++) {
         DecodeBudget::take(budget.rules, 1);
         View data = list.offset16(2 + i * 2);
@@ -480,7 +486,10 @@ OpenType::OpenType(View table, bool positioning) : positioning_(positioning), da
             auto sub = readSubtable(data.offset16(6 + j * 2), type, positioning, budget);
             for (const auto &pattern : sub.patterns)
                 for (auto action : pattern.actions)
-                    lookup.references.insert(action.lookup);
+                    if (!lookup.references.count(action.lookup)) {
+                        DecodeBudget::take(budget.references, 1);
+                        lookup.references.insert(action.lookup);
+                    }
             if (!positioning && sub.type == 3) {
                 unsigned sets = sub.data.u16(4);
                 sub.data.array(6, sets, 2);
@@ -498,15 +507,15 @@ OpenType::OpenType(View table, bool positioning) : positioning_(positioning), da
                             continue;
                         auto &inputs = sub.alternateInputs[output];
                         if (inputs.empty() || inputs.back() != input) {
-                            if (++familyEntries > 2000000)
-                                throw InvalidTable(
-                                    "alternate family index exceeds resource budget");
+                            DecodeBudget::take(budget.references, 1);
                             inputs.push_back(input);
                         }
                     }
             }
-            if (positioning && sub.type == 1 && sub.coverage)
+            if (positioning && sub.type == 1 && sub.coverage) {
+                DecodeBudget::take(budget.references, 1);
                 singlePositioningCoverages_.push_back(sub.coverage);
+            }
             lookup.reverse |= !positioning && sub.type == 8;
             lookup.subtables.push_back(std::move(sub));
         }
@@ -517,7 +526,11 @@ OpenType::OpenType(View table, bool positioning) : positioning_(positioning), da
         if (variations) {
             unsigned n = variations.u32(4);
             variations.array(8, n, 8);
+            DecodeBudget::take(budget.rules, n);
             for (unsigned i = 0; i < n; i++) {
+                DecodeBudget::take(budget.rules, branches_.front().size());
+                for (const auto &feature : branches_.front())
+                    DecodeBudget::take(budget.references, feature.lookups.size());
                 auto features = branches_.front();
                 // Only zero means no substitution; nonzero truncated data is invalid.
                 uint32_t offset = variations.u32(12 + i * 8);
@@ -525,6 +538,7 @@ OpenType::OpenType(View table, bool positioning) : positioning_(positioning), da
                     View replacement = variations.at(offset);
                     unsigned replacements = replacement.u16(4);
                     replacement.array(6, replacements, 6);
+                    DecodeBudget::take(budget.references, replacements);
                     for (unsigned j = 0; j < replacements; j++) {
                         unsigned fi = replacement.u16(6 + j * 6);
                         if (fi >= features.size())
@@ -532,6 +546,7 @@ OpenType::OpenType(View table, bool positioning) : positioning_(positioning), da
                         View alt = replacement.offset32(8 + j * 6);
                         unsigned k = alt.u16(2);
                         alt.array(4, k, 2);
+                        DecodeBudget::take(budget.references, k);
                         features[fi].lookups.clear();
                         for (unsigned q = 0; q < k; q++)
                             features[fi].lookups.push_back(alt.u16(4 + q * 2));
