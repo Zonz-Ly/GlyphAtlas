@@ -106,6 +106,33 @@ static void checkSelections(GAFontDocument *doc) {
         require([v.markComponents isEqual:components] && [points(v.positions,doc) isEqual:expected],@"Selection projection lost component");
     }
 }
+static void checkGlyphEntryPoints(NSString *dir) {
+    GAFontDocument *doc=document([dir stringByAppendingPathComponent:@"v6-entry.ttf"]);
+    BOOL ligature=NO;
+    for (GAGlyphVariant *v in [doc variantsForGlyphIDs:@[@1,@4,@2] cancelled:nil])
+        if ([v.glyphIDs isEqual:target()]) {
+            ligature=YES; require([v.markComponents isEqual:@[@-1,@0]],@"GID executor lost new component");
+            require([points(v.positions,doc) isEqual:@[@[@0,@0],@[@100,@500]]],@"GID ligature wrong anchor");
+        }
+    require(ligature,@"GID ligature absent");
+    for (NSArray *input in @[@[@-1,@0],@[@-1,@1],@[]]) {
+        NSArray *variants=[doc variantsForGlyphIDs:target() markComponents:input content:@"f\u0301i" cancelled:nil];
+        NSArray *cached=[doc variantsForGlyphIDs:target() markComponents:input content:@"f\u0301i" cancelled:nil];
+        require(variants.count==cached.count,@"Seed cache changed count");
+        BOOL single=NO,multiple=NO,deletion=NO;
+        for (GAGlyphVariant *v in variants) {
+            if ([v.glyphIDs isEqual:@[@3,@5]]) {
+                single=YES; require([v.markComponents isEqual:input],@"Single substitution lost seed component");
+            }
+            if ([v.glyphIDs isEqual:@[@3,@5,@4]]) {
+                multiple=YES; NSArray *wanted=input.count ? @[@-1,input.lastObject,input.lastObject]:@[];
+                require([v.markComponents isEqual:wanted],@"Multiple substitution misaligned components");
+            }
+            if ([v.glyphIDs isEqual:@[@3]]) { deletion=YES; require(!v.markComponents.count,@"Deletion left stale component"); }
+        }
+        require(single && multiple && deletion,@"Seed derivation fixture incomplete");
+    }
+}
 int main(int argc,const char *argv[]) {
     @autoreleasepool {
         require(argc==2,@"Expected fixture directory");
@@ -143,6 +170,7 @@ int main(int argc,const char *argv[]) {
             require(!v.markComponents.count && [points(v.positions,doc) isEqual:@[@[@0,@0],@[@900,@500]]],@"Unknown GID fallback changed");
         checkDeduplication(doc,raw);
         checkSelections(doc);
+        checkGlyphEntryPoints(dir);
         GASubstitutionEngine *engine=[[GASubstitutionEngine alloc] initWithFont:doc.fontBox.font coordinates:nil sharing:nil];
         GASubstitutionOrigin *origin=[engine originForGlyphIDs:target() sourceRange:NSMakeRange(0,3)
             text:text selections:@[] candidates:@[@[@1,@4,@2]] vertical:NO featureSettings:@[]

@@ -99,18 +99,11 @@ static GACharacterGroup *DisplayCopy(GACharacterGroup *group) {
 static GACharacterGroup *SelectionGroup(GAGlyphSelectionRun *run, GAFontDocument *document,
                                         BOOL (^cancelled)(void)) {
     GAGlyphSelection *selection = run.selection;
-    NSArray<GAGlyphVariant *> *variants = [document variantsForGlyphIDs:selection.glyphIDs cancelled:cancelled];
+    NSArray<GAGlyphVariant *> *variants = [document variantsForGlyphIDs:selection.glyphIDs
+        markComponents:selection.markComponents content:selection.sourceText cancelled:cancelled];
     GAGlyphVariant *base = variants.firstObject;
     if (base == nil) {
         return nil;
-    }
-
-    if (selection.markComponents.count) {
-        base.markComponents = selection.markComponents;
-        base = [document rebindVariant:base content:selection.sourceText];
-        NSMutableArray *positioned = [variants mutableCopy];
-        positioned[0] = base;
-        variants = positioned;
     }
 
     [base addFeatureSources:selection.featureSources];

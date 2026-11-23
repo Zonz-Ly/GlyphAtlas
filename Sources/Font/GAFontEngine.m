@@ -666,9 +666,16 @@ static void GAPublishVariantBuilders(NSMapTable *builders) {
 }
 - (NSArray<GAGlyphVariant *> *)variantsForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
                                         cancelled:(BOOL (^)(void))cancelled {
+    return [self variantsForGlyphIDs:glyphIDs markComponents:@[] content:@"" cancelled:cancelled];
+}
+- (NSArray<GAGlyphVariant *> *)variantsForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
+                                 markComponents:(NSArray<NSNumber *> *)components
+                                        content:(NSString *)content
+                                      cancelled:(BOOL (^)(void))cancelled {
     if (!glyphIDs.count)
         return @[];
     NSArray<GASubstitutionMatch *> *matches = [_substitutionEngine discoverGlyphIDs:glyphIDs
+                                                                  markComponents:components
                                                                              cancelled:cancelled];
     if (!matches)
         return nil;
@@ -679,7 +686,9 @@ static void GAPublishVariantBuilders(NSMapTable *builders) {
         GAGlyphVariant *v = [[GAGlyphVariant alloc] init];
         v.fontBox = _fontBox;
         v.glyphIDs = match.glyphIDs;
-        v.positions = [_substitutionEngine positionsForGlyphIDs:v.glyphIDs content:@""];
+        v.markComponents = match.markComponents;
+        v.positions = [_substitutionEngine positionsForGlyphIDs:v.glyphIDs
+            markComponents:v.markComponents content:content];
         [v addFeatureSources:match.sources];
         v.base = match.base;
         [self decorateVariant:v];

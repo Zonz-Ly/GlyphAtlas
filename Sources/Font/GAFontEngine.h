@@ -147,6 +147,10 @@ FOUNDATION_EXPORT NSArray<GACharacterGroup *> *GAGroupsForScanResult(NSString *t
 
 - (nullable NSArray<GAGlyphVariant *> *)variantsForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
                                                   cancelled:(BOOL (^_Nullable)(void))cancelled;
+- (nullable NSArray<GAGlyphVariant *> *)variantsForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
+                                           markComponents:(NSArray<NSNumber *> *)components
+                                                  content:(NSString *)content
+                                                cancelled:(BOOL (^_Nullable)(void))cancelled;
 
 /// Resolves a missing native glyph against existing rows at the same source
 /// range. Returns a decorated temporary row and its existing parent.

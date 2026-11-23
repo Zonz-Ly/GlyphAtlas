@@ -37,6 +37,9 @@ NS_ASSUME_NONNULL_BEGIN
                                                  cancelled:(BOOL (^_Nullable)(void))cancelled;
 - (nullable NSArray<GASubstitutionMatch *> *)discoverGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
                                                         cancelled:(BOOL (^_Nullable)(void))cancelled;
+- (nullable NSArray<GASubstitutionMatch *> *)discoverGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
+                                            markComponents:(NSArray<NSNumber *> *)components
+                                                 cancelled:(BOOL (^_Nullable)(void))cancelled;
 - (NSArray<NSString *> *)languageTags;
 - (NSArray<NSString *> *)glyphFeatureTags;
 - (nullable NSIndexSet *)glyphOutputsForFeatureTag:(NSString *)tag

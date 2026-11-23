@@ -356,13 +356,14 @@ void prepareParagraphCache(std::vector<QueryParagraph> &paragraphs, const std::v
     }
 }
 
-Buffer literalBuffer(const std::vector<Glyph> &glyphs) {
+Buffer literalBuffer(const std::vector<Glyph> &glyphs, NSArray<NSNumber *> *components = @[]) {
     Buffer buffer;
     for (size_t i = 0; i < glyphs.size(); i++) {
         Item item;
         item.glyph = glyphs[i];
         item.source = {uint32_t(i), uint32_t(i + 1)};
         item.identity = i + 1;
+        if (components.count) item.component = components[i].intValue;
         buffer.push_back(item);
     }
     return buffer;
@@ -1251,11 +1252,16 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
 }
 - (NSArray<GASubstitutionMatch *> *)discoverGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
                                cancelled:(BOOL (^)(void))cancelled {
+    return [self discoverGlyphIDs:glyphIDs markComponents:@[] cancelled:cancelled];
+}
+- (NSArray<GASubstitutionMatch *> *)discoverGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
+                                  markComponents:(NSArray<NSNumber *> *)components
+                                       cancelled:(BOOL (^)(void))cancelled {
     if (cancelled && cancelled())
         return nil;
     if (!glyphIDs.count)
         return @[];
-    NSArray *key = @[ @"glyphs", [glyphIDs copy] ];
+    NSArray *key = @[ @"glyphs", [glyphIDs copy], [components copy] ];
     NSArray<GASubstitutionMatch *> *cached = [self.program.cache objectForKey:key];
     if (cached)
         return cached;
@@ -1264,12 +1270,14 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
     try {
         const auto &r = *self.program->resource;
         auto original = glyphVector(glyphIDs);
-        const auto roots = clusters(literalBuffer(original));
+        const auto roots = clusters(literalBuffer(original, components));
         Span whole{0, uint32_t(original.size())};
         NSMutableArray *matches = [NSMutableArray array];
         MatchIndex seen;
         bool complete = true;
-        merge(seen, matches, whole, original, nil, YES);
+        std::vector<int> inputComponents;
+        for (NSNumber *component in components) inputComponents.push_back(component.intValue);
+        merge(seen, matches, whole, original, nil, YES, inputComponents);
         for (const auto &domain : r.domains) {
             std::vector<Tag> scripts;
             if (domain.apple)
@@ -1285,7 +1293,7 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
                         settings.language = language;
                         if (plan.first)
                             settings.features[plan.first] = plan.second;
-                        Buffer items = literalBuffer(original);
+                        Buffer items = literalBuffer(original, components);
                         Trace trace;
                         trace.inventory = true;
                         r.substitute(items, domain, settings, &trace, check);
@@ -1300,7 +1308,14 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
                                            sequence.begin() + change.source.end);
                             sequence.insert(sequence.begin() + change.source.start,
                                             change.glyphs.begin(), change.glyphs.end());
-                            merge(seen, matches, whole, sequence, @(change.feature.c_str()), NO);
+                            auto mapped = inputComponents;
+                            mapped.resize(original.size(), -1);
+                            auto replacement = change.markComponents;
+                            replacement.resize(change.glyphs.size(), -1);
+                            mapped.erase(mapped.begin()+change.source.start, mapped.begin()+change.source.end);
+                            mapped.insert(mapped.begin()+change.source.start, replacement.begin(), replacement.end());
+                            if (std::none_of(mapped.begin(),mapped.end(),[](int c){ return c>=0; })) mapped.clear();
+                            merge(seen, matches, whole, sequence, @(change.feature.c_str()), NO, mapped);
                         }
                     });
         }
@@ -1308,7 +1323,8 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
             for (NSDictionary *output in [self relatedOutputs:original[i] cancellation:check]) {
                 checkCancellation(check);
                 auto sequence = replacingGlyph(original, i, output);
-                merge(seen, matches, whole, sequence, output[@"source"], NO);
+                merge(seen, matches, whole, sequence, output[@"source"], NO,
+                      replacingComponents(components,i,[output[@"glyphs"] count]));
             }
         checkCancellation(check);
         if (complete)
