@@ -72,6 +72,10 @@ static NSNumber *GAInputScalarForGlyph(NSArray<NSNumber *> *scalars) {
 
 #pragma mark - Drop window
 
+@interface GAMainWindowController (NavigationButtonTracking)
+- (void)performNavigationButtonTracking:(dispatch_block_t)tracking;
+@end
+
 @interface GADropWindow : NSWindow
 @property (nonatomic, copy, nullable) void (^onFontDrop)(NSURL *url);
 @property (nonatomic, copy, nullable) void (^onPrimaryClick)(NSView *hitView);
@@ -99,26 +103,40 @@ static NSNumber *GAInputScalarForGlyph(NSArray<NSNumber *> *scalars) {
             NSView *hit = [self viewAtWindowPoint:event.locationInWindow];
             if (hit) handleClick(hit);
         }
+        NSMenuToolbarItem *back = [self navigationItemForEvent:event hitView:NULL];
+        GAMainWindowController *controller = (GAMainWindowController *)self.windowController;
+        if (back.enabled && !controller.canNavigateBack) {
+            [controller performNavigationButtonTracking:^{ [super sendEvent:event]; }];
+            return;
+        }
     } else if (event.type == NSEventTypeRightMouseDown && [self popUpNavigationMenuForEvent:event]) return;
     [super sendEvent:event];
 }
 
-- (BOOL)popUpNavigationMenuForEvent:(NSEvent *)event {
-    if (!event || event.window != self) return NO;
+- (NSMenuToolbarItem *)navigationItemForEvent:(NSEvent *)event hitView:(NSView **)hitView {
+    if (!event || event.window != self) return nil;
     NSUInteger index = GAIndexOfToolbarItem(self.toolbar, GABackItem);
-    if (index == NSNotFound) return NO;
+    if (index == NSNotFound) return nil;
     NSMenuToolbarItem *back = (NSMenuToolbarItem *)self.toolbar.items[index];
     NSView *hit = [self viewAtWindowPoint:event.locationInWindow];
     for (NSView *view = hit; view; view = view.superview) {
         if ([view isKindOfClass:NSControl.class] && ((NSControl *)view).target == back) {
             // The generated button is not exposed through the item's view.
-            [back.menu.delegate menuNeedsUpdate:back.menu];
-            if (back.menu.numberOfItems)
-                [NSMenu popUpContextMenu:back.menu withEvent:event forView:view];
-            return YES;
+            if (hitView) *hitView = view;
+            return back;
         }
     }
-    return NO;
+    return nil;
+}
+
+- (BOOL)popUpNavigationMenuForEvent:(NSEvent *)event {
+    NSView *view = nil;
+    NSMenuToolbarItem *back = [self navigationItemForEvent:event hitView:&view];
+    if (!back) return NO;
+    [back.menu.delegate menuNeedsUpdate:back.menu];
+    if (back.menu.numberOfItems)
+        [NSMenu popUpContextMenu:back.menu withEvent:event forView:view];
+    return YES;
 }
 
 - (instancetype)initWithContentRect:(NSRect)contentRect
@@ -793,6 +811,15 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     if (item.enabled != hasHistory) item.enabled = hasHistory;
 }
 
+- (void)performNavigationButtonTracking:(dispatch_block_t)tracking {
+    self.backToolbarItem.image = self.backEnabledImage;
+    @try {
+        tracking();
+    } @finally {
+        [self updateNavigationButton];
+    }
+}
+
 - (void)navigateBack:(id)sender {
     if (!self.canNavigateBack) {
         if (sender == self.backToolbarItem && self.backToolbarItem.enabled) {
@@ -1444,11 +1471,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         self.backEnabledImage = image;
         self.backDisabledImage = [NSImage imageWithSize:image.size flipped:NO drawingHandler:^BOOL(NSRect rect) {
             [image drawInRect:rect];
-            NSColor *foreground = [NSColor.disabledControlTextColor colorUsingColorSpace:NSColorSpace.sRGBColorSpace];
-            NSColor *background = [NSColor.windowBackgroundColor colorUsingColorSpace:NSColorSpace.sRGBColorSpace];
-            NSColor *gray = [[background colorWithAlphaComponent:1]
-                blendedColorWithFraction:foreground.alphaComponent ofColor:[foreground colorWithAlphaComponent:1]];
-            [gray setFill];
+            [NSColor.disabledControlTextColor setFill];
             NSRectFillUsingOperation(rect, NSCompositingOperationSourceIn);
             return YES;
         }];
