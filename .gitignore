@@ -4,6 +4,6 @@ README/
 diagnostics/
 outputs/
 Review/
-Test/
+Tests/
 .DS_Store
 .gitignore
