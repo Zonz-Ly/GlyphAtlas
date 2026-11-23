@@ -72,16 +72,11 @@ static NSNumber *GAInputScalarForGlyph(NSArray<NSNumber *> *scalars) {
 
 #pragma mark - Drop window
 
-@interface GAMainWindowController (NavigationButtonTracking)
-- (void)performNavigationButtonTracking:(dispatch_block_t)tracking;
-@end
-
 @interface GADropWindow : NSWindow
 @property (nonatomic, copy, nullable) void (^onFontDrop)(NSURL *url);
 @property (nonatomic, copy, nullable) void (^onPrimaryClick)(NSView *hitView);
 @property (nonatomic, copy, nullable) BOOL (^glyphDoubleClickHitTest)(NSPoint point);
 @property (nonatomic, readonly) BOOL lastMouseDownWasGlyphDoubleClick;
-- (BOOL)popUpNavigationMenuForEvent:(NSEvent *)event;
 @end
 
 @implementation GADropWindow
@@ -103,40 +98,24 @@ static NSNumber *GAInputScalarForGlyph(NSArray<NSNumber *> *scalars) {
             NSView *hit = [self viewAtWindowPoint:event.locationInWindow];
             if (hit) handleClick(hit);
         }
-        NSMenuToolbarItem *back = [self navigationItemForEvent:event hitView:NULL];
-        GAMainWindowController *controller = (GAMainWindowController *)self.windowController;
-        if (back.enabled && !controller.canNavigateBack) {
-            [controller performNavigationButtonTracking:^{ [super sendEvent:event]; }];
-            return;
-        }
-    } else if (event.type == NSEventTypeRightMouseDown && [self popUpNavigationMenuForEvent:event]) return;
-    [super sendEvent:event];
-}
-
-- (NSMenuToolbarItem *)navigationItemForEvent:(NSEvent *)event hitView:(NSView **)hitView {
-    if (!event || event.window != self) return nil;
-    NSUInteger index = GAIndexOfToolbarItem(self.toolbar, GABackItem);
-    if (index == NSNotFound) return nil;
-    NSMenuToolbarItem *back = (NSMenuToolbarItem *)self.toolbar.items[index];
-    NSView *hit = [self viewAtWindowPoint:event.locationInWindow];
-    for (NSView *view = hit; view; view = view.superview) {
-        if ([view isKindOfClass:NSControl.class] && ((NSControl *)view).target == back) {
-            // The generated button is not exposed through the item's view.
-            if (hitView) *hitView = view;
-            return back;
+    } else if (event.type == NSEventTypeRightMouseDown) {
+        NSToolbar *toolbar = self.toolbar;
+        NSUInteger index = GAIndexOfToolbarItem(toolbar, GABackItem);
+        if (index != NSNotFound) {
+            NSMenuToolbarItem *back = (NSMenuToolbarItem *)toolbar.items[index];
+            NSView *hit = [self viewAtWindowPoint:event.locationInWindow];
+            for (NSView *view = hit; view; view = view.superview) {
+                if ([view isKindOfClass:NSControl.class] && ((NSControl *)view).target == back) {
+                    // The generated button is not exposed through the item's view.
+                    [back.menu.delegate menuNeedsUpdate:back.menu];
+                    if (back.menu.numberOfItems)
+                        [NSMenu popUpContextMenu:back.menu withEvent:event forView:view];
+                    return;
+                }
+            }
         }
     }
-    return nil;
-}
-
-- (BOOL)popUpNavigationMenuForEvent:(NSEvent *)event {
-    NSView *view = nil;
-    NSMenuToolbarItem *back = [self navigationItemForEvent:event hitView:&view];
-    if (!back) return NO;
-    [back.menu.delegate menuNeedsUpdate:back.menu];
-    if (back.menu.numberOfItems)
-        [NSMenu popUpContextMenu:back.menu withEvent:event forView:view];
-    return YES;
+    [super sendEvent:event];
 }
 
 - (instancetype)initWithContentRect:(NSRect)contentRect
@@ -310,9 +289,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 /// A fresh filter action awaiting its navigation record, not a restored history item.
 @property (nonatomic) BOOL navigationFilterChange;
 @property (nonatomic, strong, nullable) NSMenuToolbarItem *backToolbarItem;
-@property (nonatomic, strong) NSImage *backEnabledImage;
-@property (nonatomic, strong) NSImage *backDisabledImage;
-@property (nonatomic, strong) NSImage *forwardEnabledImage;
 @property (nonatomic) BOOL suppressNavigationRecording;
 @property (nonatomic, strong, nullable) GAPendingNavigation *pendingNavigation;
 @property (nonatomic) BOOL navigationInputReplay;
@@ -803,32 +779,11 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 }
 
 - (void)updateNavigationButton {
-    NSMenuToolbarItem *item = self.backToolbarItem;
-    BOOL canGoBack = self.canNavigateBack;
-    BOOL hasHistory = self.navigation.backSteps.count || self.navigation.forwardSteps.count;
-    NSImage *image = canGoBack || !hasHistory ? self.backEnabledImage : self.backDisabledImage;
-    if (item.image != image) item.image = image;
-    // Reapplying enabled during an action can interrupt native press feedback.
-    if (item.enabled != hasHistory) item.enabled = hasHistory;
-}
-
-- (void)performNavigationButtonTracking:(dispatch_block_t)tracking {
-    self.backToolbarItem.image = self.navigation.forwardSteps.count
-        ? self.forwardEnabledImage : self.backEnabledImage;
-    @try {
-        tracking();
-    } @finally {
-        [self updateNavigationButton];
-    }
+    self.backToolbarItem.enabled = self.canNavigateBack;
 }
 
 - (void)navigateBack:(id)sender {
-    if (!self.canNavigateBack) {
-        if (sender == self.backToolbarItem && self.backToolbarItem.enabled) {
-            [(GADropWindow *)self.window popUpNavigationMenuForEvent:NSApp.currentEvent];
-        }
-        return;
-    }
+    (void)sender;
     __weak typeof(self) weakSelf = self;
     [self performHistoryNavigation:^{
         [weakSelf navigateToStep:[weakSelf nextNavigationStepForward:NO]];
@@ -1431,8 +1386,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     if ([itemIdentifier isEqualToString:GABackItem]) {
         // The toolbar is rebuilt before the sidebar's collapsed state changes.
         BOOL hasToolbarInput = GAIndexOfToolbarItem(toolbar, GATextInputItem) != NSNotFound;
-        BOOL usesLegacyCanvas = hasToolbarInput &&
-            NSProcessInfo.processInfo.operatingSystemVersion.majorVersion <= 15;
 
         NSMenuToolbarItem *item = [[NSMenuToolbarItem alloc] initWithItemIdentifier:itemIdentifier];
         item.label = NSLocalizedString(@"Back", @"Return to the previous glyph or view");
@@ -1455,7 +1408,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 
         if (@available(macOS 26.0, *)) {
             item.navigational = hasToolbarInput && self.fontResource.axes.count > 0;
-        } else if (usesLegacyCanvas) {
+        } else if (hasToolbarInput && NSProcessInfo.processInfo.operatingSystemVersion.majorVersion <= 15) {
             NSImage *symbol = [image imageWithSymbolConfiguration:
                 [NSImageSymbolConfiguration configurationWithPointSize:NSFont.systemFontSize
                     weight:NSFontWeightMedium scale:NSImageSymbolScaleLarge]];
@@ -1472,37 +1425,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
                                              15, NSHeight(symbol.alignmentRect));
             image.accessibilityDescription = item.label;
         }
-        self.backEnabledImage = image;
-        NSString *forwardLabel = NSLocalizedString(@"Forward", @"Move to the next navigation location");
-        if (!usesLegacyCanvas) {
-            NSImage *forward = [NSImage imageWithSystemSymbolName:@"chevron.forward"
-                accessibilityDescription:forwardLabel];
-            self.forwardEnabledImage = [forward imageWithSymbolConfiguration:image.symbolConfiguration];
-        } else {
-            // Mirror the existing legacy canvas to preserve its size and padding.
-            self.forwardEnabledImage = [NSImage imageWithSize:image.size flipped:NO drawingHandler:^BOOL(NSRect rect) {
-                [NSGraphicsContext saveGraphicsState];
-                NSAffineTransform *mirror = [NSAffineTransform transform];
-                [mirror translateXBy:NSWidth(rect) yBy:0];
-                [mirror scaleXBy:-1 yBy:1];
-                [mirror concat];
-                [image drawInRect:rect];
-                [NSGraphicsContext restoreGraphicsState];
-                return YES;
-            }];
-            self.forwardEnabledImage.template = image.isTemplate;
-            self.forwardEnabledImage.alignmentRect = image.alignmentRect;
-            self.forwardEnabledImage.accessibilityDescription = forwardLabel;
-        }
-        self.backDisabledImage = [NSImage imageWithSize:image.size flipped:NO drawingHandler:^BOOL(NSRect rect) {
-            [image drawInRect:rect];
-            [NSColor.disabledControlTextColor setFill];
-            NSRectFillUsingOperation(rect, NSCompositingOperationSourceIn);
-            return YES;
-        }];
-        self.backDisabledImage.alignmentRect = image.alignmentRect;
-        self.backDisabledImage.template = NO;
-        self.backDisabledImage.accessibilityDescription = image.accessibilityDescription;
         item.image = image;
         item.autovalidates = NO;
         self.backToolbarItem = item;
