@@ -77,6 +77,7 @@ static NSNumber *GAInputScalarForGlyph(NSArray<NSNumber *> *scalars) {
 @property (nonatomic, copy, nullable) void (^onPrimaryClick)(NSView *hitView);
 @property (nonatomic, copy, nullable) BOOL (^glyphDoubleClickHitTest)(NSPoint point);
 @property (nonatomic, readonly) BOOL lastMouseDownWasGlyphDoubleClick;
+- (BOOL)popUpNavigationMenuForEvent:(NSEvent *)event;
 @end
 
 @implementation GADropWindow
@@ -98,24 +99,26 @@ static NSNumber *GAInputScalarForGlyph(NSArray<NSNumber *> *scalars) {
             NSView *hit = [self viewAtWindowPoint:event.locationInWindow];
             if (hit) handleClick(hit);
         }
-    } else if (event.type == NSEventTypeRightMouseDown) {
-        NSToolbar *toolbar = self.toolbar;
-        NSUInteger index = GAIndexOfToolbarItem(toolbar, GABackItem);
-        if (index != NSNotFound) {
-            NSMenuToolbarItem *back = (NSMenuToolbarItem *)toolbar.items[index];
-            NSView *hit = [self viewAtWindowPoint:event.locationInWindow];
-            for (NSView *view = hit; view; view = view.superview) {
-                if ([view isKindOfClass:NSControl.class] && ((NSControl *)view).target == back) {
-                    // The generated button is not exposed through the item's view.
-                    [back.menu.delegate menuNeedsUpdate:back.menu];
-                    if (back.menu.numberOfItems)
-                        [NSMenu popUpContextMenu:back.menu withEvent:event forView:view];
-                    return;
-                }
-            }
+    } else if (event.type == NSEventTypeRightMouseDown && [self popUpNavigationMenuForEvent:event]) return;
+    [super sendEvent:event];
+}
+
+- (BOOL)popUpNavigationMenuForEvent:(NSEvent *)event {
+    if (!event || event.window != self) return NO;
+    NSUInteger index = GAIndexOfToolbarItem(self.toolbar, GABackItem);
+    if (index == NSNotFound) return NO;
+    NSMenuToolbarItem *back = (NSMenuToolbarItem *)self.toolbar.items[index];
+    NSView *hit = [self viewAtWindowPoint:event.locationInWindow];
+    for (NSView *view = hit; view; view = view.superview) {
+        if ([view isKindOfClass:NSControl.class] && ((NSControl *)view).target == back) {
+            // The generated button is not exposed through the item's view.
+            [back.menu.delegate menuNeedsUpdate:back.menu];
+            if (back.menu.numberOfItems)
+                [NSMenu popUpContextMenu:back.menu withEvent:event forView:view];
+            return YES;
         }
     }
-    [super sendEvent:event];
+    return NO;
 }
 
 - (instancetype)initWithContentRect:(NSRect)contentRect
@@ -793,11 +796,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 - (void)navigateBack:(id)sender {
     if (!self.canNavigateBack) {
         if (sender == self.backToolbarItem && self.backToolbarItem.enabled) {
-            NSMenu *menu = self.backToolbarItem.menu;
-            [self menuNeedsUpdate:menu];
-            NSView *view = self.window.contentView;
-            NSPoint point = [view convertPoint:self.window.mouseLocationOutsideOfEventStream fromView:nil];
-            [menu popUpMenuPositioningItem:nil atLocation:point inView:view];
+            [(GADropWindow *)self.window popUpNavigationMenuForEvent:NSApp.currentEvent];
         }
         return;
     }
@@ -1445,7 +1444,11 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         self.backEnabledImage = image;
         self.backDisabledImage = [NSImage imageWithSize:image.size flipped:NO drawingHandler:^BOOL(NSRect rect) {
             [image drawInRect:rect];
-            [NSColor.disabledControlTextColor setFill];
+            NSColor *foreground = [NSColor.disabledControlTextColor colorUsingColorSpace:NSColorSpace.sRGBColorSpace];
+            NSColor *background = [NSColor.windowBackgroundColor colorUsingColorSpace:NSColorSpace.sRGBColorSpace];
+            NSColor *gray = [[background colorWithAlphaComponent:1]
+                blendedColorWithFraction:foreground.alphaComponent ofColor:[foreground colorWithAlphaComponent:1]];
+            [gray setFill];
             NSRectFillUsingOperation(rect, NSCompositingOperationSourceIn);
             return YES;
         }];
