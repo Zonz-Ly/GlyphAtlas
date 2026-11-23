@@ -47,7 +47,8 @@ struct Resource {
     bool verticalAAT;
     double unitsPerEm;
     std::vector<Domain> domains;
-    std::vector<std::pair<Tag, unsigned>> featureSpecs;
+    const std::vector<std::pair<Tag, unsigned>> defaultPlans{{0, 0}};
+    std::vector<std::pair<Tag, unsigned>> featurePlans;
     std::map<std::string, AATSelector, std::less<>> outputSelectors;
     Resource(CTFontRef font)
         : unitsPerEm(CTFontGetUnitsPerEm(font)) {
@@ -94,7 +95,10 @@ struct Resource {
         if (aat.empty() || !gsub.features().empty())
             for (size_t i = 0; i < gsub.branchCount(); i++)
                 domains.push_back({false, i, {}});
-        featureSpecs = collectFeatures();
+        featurePlans = defaultPlans;
+        for (const auto &[feature, maximum] : collectFeatures())
+            for (unsigned value = 1; value <= maximum; value++)
+                featurePlans.emplace_back(feature, value);
         for (auto selector : aat.outputSelectors())
             outputSelectors.emplace(aat.featureLabel(selector), selector);
         verticalAAT = aat.hasVerticalSubstitutions();
@@ -402,13 +406,8 @@ bool primaryChange(const Change &change, const std::vector<Cluster> &roots) {
     // A ligature can be formed from already localized/joined input glyphs.
     return change.inputs.size() > 1;
 }
-std::vector<std::pair<Tag, unsigned>> plans(const Resource &resource, const Domain &domain) {
-    std::vector<std::pair<Tag, unsigned>> result{{0, 0}};
-    if (!domain.apple)
-        for (const auto &[feature, maximum] : resource.featureSpecs)
-            for (unsigned value = 1; value <= maximum; value++)
-                result.emplace_back(feature, value);
-    return result;
+const std::vector<std::pair<Tag, unsigned>> &plans(const Resource &resource, const Domain &domain) {
+    return domain.apple ? resource.defaultPlans : resource.featurePlans;
 }
 } // namespace
 

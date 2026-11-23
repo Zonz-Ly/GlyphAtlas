@@ -144,5 +144,7 @@ std::optional<std::vector<size_t>> match(const Pattern &pattern, const Substitut
                                          size_t start, const GDEF &gdef, LookupFlags flags,
                                          Span *scope = nullptr);
 std::vector<Glyph> substitutionOutputs(const Subtable &subtable, Glyph glyph);
+// Type 2/3 sequence payload; validates the complete array before returning it.
+View substitutionSequence(const Subtable &subtable, unsigned coverageIndex);
 Glyph reverseSubstitutionOutput(const Subtable &subtable, unsigned coverageIndex);
 } // namespace ga::layout

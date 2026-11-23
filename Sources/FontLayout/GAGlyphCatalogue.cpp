@@ -57,7 +57,7 @@ class Catalogue {
                 continue;
             if (sub.type != 2)
                 return;
-            size_t count = substitutionOutputs(sub, glyph).size();
+            size_t count = substitutionSequence(sub, unsigned(sub.coverage.index(glyph))).size() / 2;
             budget_.growth(slots.size() - 1 + count);
             slots.erase(slots.begin() + at);
             slots.insert(slots.begin() + at, count, owner);

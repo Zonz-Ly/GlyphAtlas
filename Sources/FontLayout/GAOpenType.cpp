@@ -283,7 +283,7 @@ static std::vector<Script> readScripts(View list) {
     return result;
 }
 static void indexPatterns(Subtable &s) {
-    std::optional<std::vector<Glyph>> classGlyphs;
+    std::optional<std::unordered_map<unsigned, std::vector<Glyph>>> classGlyphs;
     for (unsigned i = 0; i < s.patterns.size(); i++) {
         const auto &p = s.patterns[i];
         const auto &first = p.input.front();
@@ -297,11 +297,16 @@ static void indexPatterns(Subtable &s) {
             for (Glyph g : first.coverage.glyphs())
                 add(g);
         } else {
-            // All class rules read from one contextual subtable share coverage.
-            if (!classGlyphs)
-                classGlyphs = p.firstCoverage.glyphs();
-            for (Glyph g : *classGlyphs)
-                add(g);
+            // Class rules in one contextual subtable share coverage and ClassDef.
+            if (!classGlyphs) {
+                classGlyphs.emplace();
+                for (Glyph g : p.firstCoverage.glyphs())
+                    (*classGlyphs)[first.classes.get(g)].push_back(g);
+            }
+            auto group = classGlyphs->find(first.value);
+            if (group != classGlyphs->end())
+                for (Glyph g : group->second)
+                    s.starts[g].push_back(i);
         }
     }
 }
@@ -628,6 +633,17 @@ size_t OpenType::variationBranch(const std::vector<double> &normalized) const {
     }
     return 0;
 }
+View substitutionSequence(const Subtable &s, unsigned coverageIndex) {
+    View d = s.data;
+    if (d.u16(0) != 1)
+        throw InvalidTable("unknown sequence format");
+    if (coverageIndex >= d.u16(4))
+        throw InvalidTable("sequence exceeds coverage");
+    View seq = d.offset16(6 + coverageIndex * 2);
+    unsigned n = seq.u16(0);
+    seq.array(2, n, 2);
+    return seq.slice(2, n * 2);
+}
 std::vector<Glyph> substitutionOutputs(const Subtable &s, Glyph glyph) {
     int index = s.coverage.index(glyph);
     if (index < 0)
@@ -644,16 +660,10 @@ std::vector<Glyph> substitutionOutputs(const Subtable &s, Glyph glyph) {
         }
     }
     if (s.type == 2 || s.type == 3) {
-        if (d.u16(0) != 1)
-            throw InvalidTable("unknown sequence format");
-        if (unsigned(index) >= d.u16(4))
-            throw InvalidTable("sequence exceeds coverage");
-        View seq = d.offset16(6 + index * 2);
-        unsigned n = seq.u16(0);
-        seq.array(2, n, 2);
+        View seq = substitutionSequence(s, unsigned(index));
         std::vector<Glyph> result;
-        for (unsigned i = 0; i < n; i++)
-            result.push_back(seq.u16(2 + i * 2));
+        for (size_t at = 0; at < seq.size(); at += 2)
+            result.push_back(seq.u16(at));
         return result;
     }
     return {};

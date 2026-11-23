@@ -145,28 +145,52 @@ class Substitution {
         splice(at, {ligature});
         return {true, at + 1};
     }
+    Applied replaceGlyph(size_t at, Glyph glyph) {
+        budget_.growth(buffer_.size());
+        if (buffer_[at].glyph != glyph)
+            buffer_.edit(at).glyph = glyph;
+        return {true, at + 1};
+    }
+    Applied applyPattern(const Subtable &sub, unsigned pi, const Lookup &lookup,
+                         size_t at, const LookupStep &step) {
+        budget_.step();
+        const auto &pattern = sub.patterns[pi];
+        if (sub.type == 4)
+            return ligate(pattern, lookup, at);
+        if (sub.type == 5 || sub.type == 6)
+            return contextual(pattern, lookup, at, step);
+        if (sub.type == 8) {
+            if (!match(pattern, buffer_, at, gdef_, lookup))
+                return {};
+            int ci = sub.coverage.index(buffer_[at].glyph);
+            if (ci < 0)
+                throw InvalidTable("reverse substitute exceeds coverage");
+            const Glyph glyph = reverseSubstitutionOutput(sub, unsigned(ci));
+            if (buffer_[at].glyph != glyph) buffer_.edit(at).glyph = glyph;
+            return {true, at + 1};
+        }
+        return {};
+    }
     Applied subtable(const Subtable &sub, const Lookup &lookup, size_t at, const LookupStep &step,
                      std::optional<unsigned> onlyPattern = {}) {
         budget_.step();
         if (at >= buffer_.size())
             return {};
         if (sub.type <= 3) {
-            if (sub.coverage.index(buffer_[at].glyph) < 0)
+            int ci = sub.coverage.index(buffer_[at].glyph);
+            if (ci < 0)
                 return {};
-            auto outputs = substitutionOutputs(sub, buffer_[at].glyph);
             if (sub.type == 3) {
-                if (!step.value || step.value > outputs.size())
+                View sequence = substitutionSequence(sub, unsigned(ci));
+                if (!step.value || step.value > sequence.size() / 2)
                     return {};
-                outputs = {outputs[step.value - 1]};
+                return replaceGlyph(at, sequence.u16((step.value - 1) * 2));
             }
+            auto outputs = substitutionOutputs(sub, buffer_[at].glyph);
             if (sub.type == 1 && outputs.empty())
                 throw InvalidTable("invalid single substitution");
-            if (outputs.size() == 1) {
-                budget_.growth(buffer_.size());
-                if (buffer_[at].glyph != outputs.front())
-                    buffer_.edit(at).glyph = outputs.front();
-                return {true, at + 1};
-            }
+            if (outputs.size() == 1)
+                return replaceGlyph(at, outputs.front());
             Buffer inserted;
             for (size_t i = 0; i < outputs.size(); i++) {
                 Item item = buffer_[at];
@@ -182,28 +206,13 @@ class Substitution {
         auto candidates = sub.starts.find(buffer_[at].glyph);
         if (candidates == sub.starts.end())
             return {};
+        // A selected rule came from rules() for this same, unmodified state.
+        if (onlyPattern)
+            return applyPattern(sub, *onlyPattern, lookup, at, step);
         for (unsigned pi : candidates->second) {
-            if (onlyPattern && pi != *onlyPattern) continue;
-            budget_.step();
-            const auto &pattern = sub.patterns[pi];
-            if (sub.type == 4) {
-                auto result = ligate(pattern, lookup, at);
-                if (result.matched)
-                    return result;
-            } else if (sub.type == 5 || sub.type == 6) {
-                auto result = contextual(pattern, lookup, at, step);
-                if (result.matched)
-                    return result;
-            } else if (sub.type == 8) {
-                if (!match(pattern, buffer_, at, gdef_, lookup))
-                    continue;
-                int ci = sub.coverage.index(buffer_[at].glyph);
-                if (ci < 0)
-                    throw InvalidTable("reverse substitute exceeds coverage");
-                const Glyph glyph = reverseSubstitutionOutput(sub, unsigned(ci));
-                if (buffer_[at].glyph != glyph) buffer_.edit(at).glyph = glyph;
-                return {true, at + 1};
-            }
+            auto result = applyPattern(sub, pi, lookup, at, step);
+            if (result.matched)
+                return result;
         }
         return {};
     }
@@ -272,9 +281,10 @@ class Substitution {
             !accepts(gdef_, lookup, buffer_[at])) return result;
         for (const auto &sub : lookup.subtables) {
             if (sub.type <= 3) {
-                if (!sub.coverage.contains(buffer_[at].glyph)) continue;
+                int ci = sub.coverage.index(buffer_[at].glyph);
+                if (ci < 0) continue;
                 if (sub.type == 3 && (!step.value ||
-                    step.value > substitutionOutputs(sub, buffer_[at].glyph).size())) continue;
+                    step.value > substitutionSequence(sub, unsigned(ci)).size() / 2)) continue;
                 result.push_back({&sub, {}, buffer_[at].source});
                 continue;
             }
