@@ -786,15 +786,21 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     BOOL hasHistory = self.navigation.backSteps.count || self.navigation.forwardSteps.count;
     NSImage *image = canGoBack || !hasHistory ? self.backEnabledImage : self.backDisabledImage;
     if (item.image != image) item.image = image;
-    SEL action = canGoBack ? @selector(navigateBack:) : NULL;
-    if (item.action != action) item.action = action;
     // Reapplying enabled during an action can interrupt native press feedback.
     if (item.enabled != hasHistory) item.enabled = hasHistory;
 }
 
 - (void)navigateBack:(id)sender {
-    (void)sender;
-    if (!self.canNavigateBack) return;
+    if (!self.canNavigateBack) {
+        if (sender == self.backToolbarItem && self.backToolbarItem.enabled) {
+            NSMenu *menu = self.backToolbarItem.menu;
+            [self menuNeedsUpdate:menu];
+            NSView *view = self.window.contentView;
+            NSPoint point = [view convertPoint:self.window.mouseLocationOutsideOfEventStream fromView:nil];
+            [menu popUpMenuPositioningItem:nil atLocation:point inView:view];
+        }
+        return;
+    }
     __weak typeof(self) weakSelf = self;
     [self performHistoryNavigation:^{
         [weakSelf navigateToStep:[weakSelf nextNavigationStepForward:NO]];
