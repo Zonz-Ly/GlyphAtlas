@@ -163,6 +163,7 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
 @property (nonatomic, strong) NSMutableArray<NSURL *> *pendingFontURLs;
 @property (nonatomic, strong, nullable) NSOpenPanel *openPanel;
 @property (nonatomic, strong, nullable) NSURL *pendingOpenPanelDirectory;
+@property (nonatomic, strong, nullable) NSValue *pendingOpenPanelFrame;
 @property (nonatomic, strong, nullable) NSMenu *recentMenu;
 @property(nonatomic, strong) NSMenu *editMenu;
 @property(nonatomic, strong) NSMenu *viewMenu;
@@ -299,12 +300,17 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
 }
 
 - (void)showFontOpenPanelAtDirectory:(NSURL *)directory {
+    [self showFontOpenPanelAtDirectory:directory restoringFrame:nil];
+}
+
+- (void)showFontOpenPanelAtDirectory:(NSURL *)directory restoringFrame:(NSValue *)frame {
     if (self.openPanel != nil) {
         [NSApp activateIgnoringOtherApps:YES];
         [self.openPanel makeKeyAndOrderFront:nil];
         return;
     }
     NSOpenPanel *panel = [NSOpenPanel openPanel];
+    if (@available(macOS 26.0, *)) panel.animationBehavior = NSWindowAnimationBehaviorNone;
     panel.allowsMultipleSelection = YES;
     panel.allowedContentTypes = GAFontContentTypes();
     if (directory) panel.directoryURL = directory;
@@ -329,16 +335,19 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
     panel.accessoryView = folders;
     panel.accessoryViewDisclosed = YES;
     self.openPanel = panel;
+    if (frame) [panel setFrame:frame.rectValue display:NO];
 
     [NSApp activateIgnoringOtherApps:YES];
     __weak typeof(self) weakSelf = self;
     [panel beginWithCompletionHandler:^(NSModalResponse result) {
         __strong typeof(weakSelf) self = weakSelf;
         NSURL *nextDirectory = self.pendingOpenPanelDirectory;
+        NSValue *nextFrame = self.pendingOpenPanelFrame;
         self.pendingOpenPanelDirectory = nil;
+        self.pendingOpenPanelFrame = nil;
         self.openPanel = nil;
         if (nextDirectory) {
-            [self showFontOpenPanelAtDirectory:nextDirectory];
+            [self showFontOpenPanelAtDirectory:nextDirectory restoringFrame:nextFrame];
             return;
         }
         if (result != NSModalResponseOK) return;
@@ -350,6 +359,7 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
 
 - (void)selectFontFolder:(NSButton *)sender {
     self.pendingOpenPanelDirectory = GAFontFolderURL(sender.tag);
+    self.pendingOpenPanelFrame = [NSValue valueWithRect:self.openPanel.frame];
     [self.openPanel cancel:nil];
 }
 

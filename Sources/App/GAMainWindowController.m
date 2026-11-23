@@ -289,6 +289,8 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 /// A fresh filter action awaiting its navigation record, not a restored history item.
 @property (nonatomic) BOOL navigationFilterChange;
 @property (nonatomic, strong, nullable) NSMenuToolbarItem *backToolbarItem;
+@property (nonatomic, strong) NSImage *backEnabledImage;
+@property (nonatomic, strong) NSImage *backDisabledImage;
 @property (nonatomic) BOOL suppressNavigationRecording;
 @property (nonatomic, strong, nullable) GAPendingNavigation *pendingNavigation;
 @property (nonatomic) BOOL navigationInputReplay;
@@ -779,11 +781,18 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 }
 
 - (void)updateNavigationButton {
-    self.backToolbarItem.enabled = self.canNavigateBack;
+    NSMenuToolbarItem *item = self.backToolbarItem;
+    BOOL canGoBack = self.canNavigateBack;
+    BOOL hasHistory = self.navigation.backSteps.count || self.navigation.forwardSteps.count;
+    NSImage *image = canGoBack || !hasHistory ? self.backEnabledImage : self.backDisabledImage;
+    if (item.image != image) item.image = image;
+    // Reapplying enabled during an action can interrupt native press feedback.
+    if (item.enabled != hasHistory) item.enabled = hasHistory;
 }
 
 - (void)navigateBack:(id)sender {
     (void)sender;
+    if (!self.canNavigateBack) return;
     __weak typeof(self) weakSelf = self;
     [self performHistoryNavigation:^{
         [weakSelf navigateToStep:[weakSelf nextNavigationStepForward:NO]];
@@ -1148,12 +1157,11 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 #pragma mark - Window and input focus
 
 - (void)keyDown:(NSEvent *)event {
-    if (self.sidebarHidden && GAModifiersAre(event.modifierFlags, NSEventModifierFlagCommand)) {
+    if (self.sidebarHidden) {
         GAPreviewKeyBinding *binding = [GAPreviewKeyBinding new];
         [binding interpretKeyEvents:@[event]];
         SEL command = binding.command;
-        if ((command == @selector(moveToBeginningOfDocument:) || command == @selector(moveToEndOfDocument:)) &&
-            [self.detailViewController scrollFocusedPreviewToEdge:command == @selector(moveToEndOfDocument:)]) return;
+        if ([self.detailViewController performFocusedPreviewScrollCommand:command]) return;
     }
     [super keyDown:event];
 }
@@ -1426,6 +1434,21 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
                                              15, NSHeight(symbol.alignmentRect));
             image.accessibilityDescription = item.label;
         }
+        self.backEnabledImage = image;
+        if (image.symbolConfiguration) {
+            self.backDisabledImage = [image imageWithSymbolConfiguration:
+                [NSImageSymbolConfiguration configurationWithPaletteColors:@[NSColor.disabledControlTextColor]]];
+        } else {
+            self.backDisabledImage = [NSImage imageWithSize:image.size flipped:NO drawingHandler:^BOOL(NSRect rect) {
+                [image drawInRect:rect];
+                [NSColor.disabledControlTextColor setFill];
+                NSRectFillUsingOperation(rect, NSCompositingOperationSourceIn);
+                return YES;
+            }];
+            self.backDisabledImage.alignmentRect = image.alignmentRect;
+        }
+        self.backDisabledImage.template = NO;
+        self.backDisabledImage.accessibilityDescription = image.accessibilityDescription;
         item.image = image;
         item.autovalidates = NO;
         self.backToolbarItem = item;

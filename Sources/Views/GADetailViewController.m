@@ -168,14 +168,31 @@
     return nil;
 }
 
-- (BOOL)scrollFocusedPreviewToEdge:(BOOL)bottom {
+- (BOOL)performFocusedPreviewScrollCommand:(SEL)command {
     NSScrollView *scrollView = [self activePreviewScrollView];
     if (!scrollView) return NO;
 
     NSWindow *window = self.view.window;
     if (window.firstResponder != window && window.firstResponder != scrollView) return NO;
     [scrollView layoutSubtreeIfNeeded];
-    GAScrollToVerticalEdge(scrollView, bottom);
+    if (command == @selector(moveToBeginningOfDocument:) || command == @selector(scrollToBeginningOfDocument:))
+        GAScrollToVerticalEdge(scrollView, NO);
+    else if (command == @selector(moveToEndOfDocument:) || command == @selector(scrollToEndOfDocument:))
+        GAScrollToVerticalEdge(scrollView, YES);
+    else if (command == @selector(pageUp:) || command == @selector(scrollPageUp:))
+        [scrollView pageUp:nil];
+    else if (command == @selector(pageDown:) || command == @selector(scrollPageDown:))
+        [scrollView pageDown:nil];
+    else {
+        NSRect bounds = scrollView.contentView.bounds;
+        CGFloat vertical = scrollView.verticalLineScroll * (scrollView.contentView.flipped ? 1 : -1);
+        if (command == @selector(moveUp:) || command == @selector(scrollLineUp:)) bounds.origin.y -= vertical;
+        else if (command == @selector(moveDown:) || command == @selector(scrollLineDown:)) bounds.origin.y += vertical;
+        else if (command == @selector(moveLeft:) || command == @selector(moveBackward:)) bounds.origin.x -= scrollView.horizontalLineScroll;
+        else if (command == @selector(moveRight:) || command == @selector(moveForward:)) bounds.origin.x += scrollView.horizontalLineScroll;
+        else return NO;
+        GAScrollToProposedBounds(scrollView, bounds);
+    }
     return YES;
 }
 
