@@ -47,8 +47,7 @@ struct Resource {
     bool verticalAAT;
     double unitsPerEm;
     std::vector<Domain> domains;
-    const std::vector<std::pair<Tag, unsigned>> defaultPlans{{0, 0}};
-    std::vector<std::pair<Tag, unsigned>> featurePlans;
+    std::vector<std::pair<Tag, unsigned>> featureSpecs;
     std::map<std::string, AATSelector, std::less<>> outputSelectors;
     Resource(CTFontRef font)
         : unitsPerEm(CTFontGetUnitsPerEm(font)) {
@@ -95,10 +94,7 @@ struct Resource {
         if (aat.empty() || !gsub.features().empty())
             for (size_t i = 0; i < gsub.branchCount(); i++)
                 domains.push_back({false, i, {}});
-        featurePlans = defaultPlans;
-        for (const auto &[feature, maximum] : collectFeatures())
-            for (unsigned value = 1; value <= maximum; value++)
-                featurePlans.emplace_back(feature, value);
+        featureSpecs = collectFeatures();
         for (auto selector : aat.outputSelectors())
             outputSelectors.emplace(aat.featureLabel(selector), selector);
         verticalAAT = aat.hasVerticalSubstitutions();
@@ -406,8 +402,13 @@ bool primaryChange(const Change &change, const std::vector<Cluster> &roots) {
     // A ligature can be formed from already localized/joined input glyphs.
     return change.inputs.size() > 1;
 }
-const std::vector<std::pair<Tag, unsigned>> &plans(const Resource &resource, const Domain &domain) {
-    return domain.apple ? resource.defaultPlans : resource.featurePlans;
+template <typename Visitor>
+void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit) {
+    visit(std::pair<Tag, unsigned>{0, 0});
+    if (!domain.apple)
+        for (const auto &[feature, maximum] : resource.featureSpecs)
+            for (unsigned value = 1; value <= maximum; value++)
+                visit(std::pair<Tag, unsigned>{feature, value});
 }
 } // namespace
 
@@ -612,7 +613,7 @@ const std::vector<std::pair<Tag, unsigned>> &plans(const Resource &resource, con
             for (Tag script : scripts) {
                 auto languages = domain.apple ? std::vector<Tag>{0} : r.gsub.languages(script);
                 for (Tag language : languages)
-                    for (auto plan : plans(r, domain)) {
+                    forEachPlan(r, domain, [&](auto plan) {
                         checkCancellation(cancellation);
                         Settings settings;
                         settings.script = script;
@@ -639,7 +640,7 @@ const std::vector<std::pair<Tag, unsigned>> &plans(const Resource &resource, con
                                         key.emplace_back(step.lookup, step.value, step.feature,
                                                          step.explicitValue);
                                     if (!executed.insert(std::move(key)).second)
-                                        continue;
+                                        return;
                                     r.gsub.substituteLookups(items, r.gdef, steps, &found, cancellation);
                                 }
                             } catch (const InvalidTable &) {
@@ -673,7 +674,7 @@ const std::vector<std::pair<Tag, unsigned>> &plans(const Resource &resource, con
                                 shared.erase(previous);
                         } else if (domain.sharedSchedule && previous == shared.end())
                             shared.emplace(domain.sharedSchedule, std::move(found));
-                    }
+                    });
             }
         }
     }
@@ -976,7 +977,7 @@ const std::vector<std::pair<Tag, unsigned>> &plans(const Resource &resource, con
                     for (const auto &domain : r.domains)
                         for (Tag language : domain.apple ? std::vector<Tag>{0}
                                                        : r.gsub.languages(run.script))
-                            for (auto plan : plans(r, domain))
+                            forEachPlan(r, domain, [&](auto plan) {
                                 for (bool orientation : domain.apple && r.verticalAAT
                                                             ? std::vector<bool>{false, true}
                                                             : std::vector<bool>{false}) {
@@ -1012,6 +1013,7 @@ const std::vector<std::pair<Tag, unsigned>> &plans(const Resource &resource, con
                                                 verticalSource(change.feature) || change.vertical});
                                     }
                                 }
+                            });
                 }
             }
             for (const auto &output : outputs) {
@@ -1227,7 +1229,7 @@ const std::vector<std::pair<Tag, unsigned>> &plans(const Resource &resource, con
                     scripts.push_back(script.name);
             for (Tag script : scripts)
                 for (Tag language : domain.apple ? std::vector<Tag>{0} : r.gsub.languages(script))
-                    for (auto plan : plans(r, domain)) {
+                    forEachPlan(r, domain, [&](auto plan) {
                         Settings settings;
                         settings.script = script;
                         settings.language = language;
@@ -1250,7 +1252,7 @@ const std::vector<std::pair<Tag, unsigned>> &plans(const Resource &resource, con
                                             change.glyphs.begin(), change.glyphs.end());
                             merge(seen, matches, whole, sequence, @(change.feature.c_str()), NO);
                         }
-                    }
+                    });
         }
         for (size_t i = 0; i < original.size(); i++)
             for (NSDictionary *output in [self relatedOutputs:original[i] cancellation:check]) {

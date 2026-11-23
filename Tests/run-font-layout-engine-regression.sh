@@ -10,4 +10,8 @@ clang -fobjc-arc -Wall -Wextra -O2 -I "$ROOT/Sources" \
   "$OUT/layout/"*.o -framework Foundation -framework CoreText -licucore -lc++ \
   -o "$OUT/font-layout-engine-regression"
 "$OUT/font-layout-engine-regression" > "$OUT/results.json"
-echo "Native font-engine regression passed: $OUT/results.json"
+if [[ -n "${2:-}" ]]; then
+  cmp "$2" "$OUT/results.json"
+  echo "Native font-engine transcript matches: $2"
+fi
+echo "Native font-engine assertions passed; transcript: $OUT/results.json"

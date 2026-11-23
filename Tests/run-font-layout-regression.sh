@@ -14,4 +14,8 @@ clang++ "${FLAGS[@]}" -I "$CORE" "$TESTS/FontLayoutRegression.cpp" \
   "$CORE/GAGlyphCatalogue.cpp" "$CORE/GAPositioning.cpp" \
   "$CORE/GAVariation.cpp" "$CORE/GAAAT.cpp" -o "$OUT/font-layout-regression"
 "$OUT/font-layout-regression" > "$OUT/results.txt"
-echo "Font-layout regression passed: $OUT/results.txt"
+if [[ -n "${2:-}" ]]; then
+  cmp "$2" "$OUT/results.txt"
+  echo "Font-layout transcript matches: $2"
+fi
+echo "Font-layout assertions passed; transcript: $OUT/results.txt"

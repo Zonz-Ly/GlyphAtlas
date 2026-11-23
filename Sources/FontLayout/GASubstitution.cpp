@@ -127,8 +127,12 @@ class Substitution {
         for (size_t pos : *positions)
             merged = unite(merged, buffer_[pos].source);
         ligature.source = merged;
+        // match() returns component positions in increasing buffer order.
+        size_t componentIndex = 0;
         for (size_t pos = positions->front(); pos <= positions->back(); pos++) {
-            if (std::find(positions->begin(), positions->end(), pos) == positions->end()) {
+            if (pos == (*positions)[componentIndex])
+                ++componentIndex;
+            else {
                 auto original = buffer_[pos].source;
                 unsigned component = 0;
                 for (unsigned i = 0; i < ligature.components.size(); i++)

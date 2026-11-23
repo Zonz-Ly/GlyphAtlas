@@ -80,7 +80,7 @@ static Bytes reverse() {
     put(b, 10, append(b, coverage(11, 11)));
     return b;
 }
-struct LookupBytes { unsigned type; Bytes subtable; };
+struct LookupBytes { unsigned type; Bytes subtable; unsigned flags = 0; };
 static Bytes table(const std::vector<LookupBytes> &lookups) {
     // One DFLT default language and one liga feature. Nested lookup 1 is
     // reached by contextual actions rather than independently in the plan.
@@ -92,7 +92,7 @@ static Bytes table(const std::vector<LookupBytes> &lookups) {
     word(b, unsigned(lookups.size())); b.resize(b.size() + lookups.size() * 2);
     for (size_t i = 0; i < lookups.size(); ++i) {
         put(b, list + 2 + i * 2, b.size() - list);
-        append(b, words({lookups[i].type, 0, 1, 8}));
+        append(b, words({lookups[i].type, lookups[i].flags, 1, 8}));
         append(b, lookups[i].subtable);
     }
     return b;
@@ -145,7 +145,7 @@ static void print(const Trace &trace) {
 }
 static void run(const std::string &label, const Bytes &bytes,
                 const std::vector<Glyph> &glyphs, unsigned value, unsigned mode,
-                unsigned cancelAt = 0) {
+                unsigned cancelAt = 0, const GDEF &gdef = GDEF{}) {
     std::cout << label << '/' << value << '/' << mode << '/' << cancelAt;
     unsigned polls = 0;
     Trace trace;
@@ -156,7 +156,7 @@ static void run(const std::string &label, const Bytes &bytes,
         trace.inventory = mode == 1;
         trace.provenance = mode == 2;
         Cancellation cancel{[&] { return ++polls >= cancelAt; }};
-        ot.substituteLookups(items, GDEF{}, {{0, value, tag('l','i','g','a'), true}},
+        ot.substituteLookups(items, gdef, {{0, value, tag('l','i','g','a'), true}},
                              &trace, cancelAt ? &cancel : nullptr);
         std::cout << " OK";
     } catch (const InvalidTable &e) { std::cout << " ERROR " << e.what(); }
@@ -220,6 +220,42 @@ int main() {
         try { ot.substituteLookups(items, GDEF{}, {{0, 1, tag('l','i','g','a'), true}}, &trace, &cancel); }
         catch (const QueryCancelled &) { cancelled = true; }
         assert(cancelled && !trace.incomplete && trace.changes.empty());
+    }
+    uint32_t state = 0x175ba912;
+    for (unsigned test = 0; test < 120; ++test) {
+        state = state * 1664525u + 1013904223u;
+        unsigned count = 1 + state % 32;
+        Bytes sub(8);
+        put(sub, 0, 1); put(sub, 4, 1);
+        put(sub, 2, append(sub, coverage(100, 100)));
+        put(sub, 6, sub.size());
+        append(sub, words({1, 4, 500, count}));
+        for (unsigned c = 1; c < count; ++c) word(sub, 100 + c);
+        Bytes bytes = table({{4, sub, 8}}); // IgnoreMarks.
+        GDEF gdef;
+        gdef.glyphClasses = ClassDef(View(words({1, 65000, 1, 3})));
+        std::vector<Glyph> glyphs;
+        std::vector<unsigned> markOwners;
+        for (unsigned c = 0; c < count; ++c) {
+            glyphs.push_back(Glyph(100 + c));
+            state = state * 1664525u + 1013904223u;
+            if (c + 1 < count)
+                for (unsigned m = 0; m < state % 4; ++m) {
+                    glyphs.push_back(65000); markOwners.push_back(c);
+                }
+        }
+        Buffer items = buffer(glyphs);
+        OpenType ot{View(bytes)};
+        ot.substituteLookups(items, gdef, {{0, 1, tag('l','i','g','a'), true}});
+        assert(items.size() == 1 + markOwners.size() && items[0].glyph == 500);
+        assert(items[0].components.size() == count);
+        for (size_t m = 0; m < markOwners.size(); ++m) {
+            assert(items[m + 1].glyph == 65000 && items[m + 1].component == int(markOwners[m]));
+            assert((items[m + 1].source == Span{0, uint32_t(glyphs.size())}));
+        }
+        for (unsigned mode = 0; mode < 3; ++mode)
+            for (unsigned limit : {0u, 1u, 5u})
+                run("gapped-ligature-" + std::to_string(test), bytes, glyphs, 1, mode, limit, gdef);
     }
     struct Case { std::string label; std::vector<LookupBytes> lookups; };
     std::vector<Case> cases{
