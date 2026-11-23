@@ -85,6 +85,51 @@ static void checkMarkFilters() {
     }
     std::cout << "Mark filters, boundaries and type 5 controls PASS\n";
 }
+static Bytes singlePosition(Glyph glyph, int x, int y) {
+    return lookup(1,words({1,10,3,unsigned(x),unsigned(y),1,1,glyph}));
+}
+static Bytes pairPosition(bool placement) {
+    Bytes sub=words({1,0,placement ? 0u : 4u,placement ? 3u : 0u,1,0});
+    put16(sub,2,append(sub,words({1,1,1})));
+    put16(sub,10,sub.size());
+    append(sub,placement ? words({1,4,10,40}) : words({1,4,unsigned(-50)}));
+    return lookup(2,sub);
+}
+static void checkPlacementOrder() {
+    GDEF gdef; gdef.glyphClasses=ClassDef(View(words({1,1,4,1,3,3,3})));
+    auto run=[&](const std::vector<Bytes> &lookups) {
+        OpenType ot{View(positioningTable(lookups)),true}; Buffer b=items({1,4});
+        ot.position(b,gdef,Settings{},metrics()); return b;
+    };
+    Bytes mark=markLookup(4,4,1,{500}), shift=singlePosition(4,10,40);
+    auto after=run({mark,shift});
+    assert(after[1].xOffset==-590 && after[1].yOffset==540);
+    auto before=run({shift,mark});
+    assert(before[1].xOffset==-600 && before[1].yOffset==500);
+    auto multiple=run({mark,shift,singlePosition(4,-3,5)});
+    assert(multiple[1].xOffset==-593 && multiple[1].yOffset==545);
+    auto replaced=run({mark,shift,markLookup(4,4,1,{700}),singlePosition(4,0,20)});
+    assert(replaced[1].xOffset==-600 && replaced[1].yOffset==720);
+    auto pairAfter=run({mark,pairPosition(true)});
+    assert(pairAfter[1].xOffset==-590 && pairAfter[1].yOffset==540);
+    auto pairBefore=run({pairPosition(true),mark});
+    assert(pairBefore[1].xOffset==-600 && pairBefore[1].yOffset==500);
+    auto advance=run({mark,pairPosition(false)});
+    assert(advance[0].xAdvance==550 && advance[1].xOffset==-550 && advance[1].yOffset==500);
+    {
+        GDEF ligdef; ligdef.glyphClasses=ClassDef(View(words({1,1,4,0,2,0,3})));
+        OpenType ot{View(positioningTable({markLookup(5,4,2,{500,900}),shift})),true};
+        Buffer b=items({2,4}); ot.position(b,ligdef,Settings{},metrics());
+        assert(b[1].xOffset==-590 && b[1].yOffset==940);
+    }
+    {
+        OpenType ot{View(positioningTable({markLookup(4,2,1,{500}),markLookup(6,4,2,{100}),
+                    singlePosition(2,0,20),singlePosition(4,0,30)})),true};
+        Buffer b=items({1,2,4}); ot.position(b,gdef,Settings{},metrics());
+        assert(b[1].yOffset==520 && b[2].yOffset==650);
+    }
+    std::cout << "Placement order, replacement, pair, ligature and parent-chain controls PASS\n";
+}
 static Bytes variationTable(bool positioning, bool universalFirst) {
     Bytes b(14); put32(b,0,0x10001); put16(b,4,14);
     append(b,words({1,0x6c61,0x746e,8,4,0,0,0xffff,1,0}));
@@ -143,7 +188,7 @@ int main() {
     // Add confirmed regressions with each separately committed correction.
     const std::set<std::string> covered={"null_feature_substitution", "mkmk_direct",
         "mkmk_base_barrier", "single_then_attachment", "mkmk_uncovered_adjacent",
-        "mkmk_filtering_set", "mkmk_attachment_type"};
+        "mkmk_filtering_set", "mkmk_attachment_type", "attachment_then_single"};
     for (const auto &test : reviewCases()) {
         if (!covered.count(test.name)) continue;
         std::cout << test.name << ": ";
@@ -162,5 +207,6 @@ int main() {
     try { checkVariations(); }
     catch (const std::exception &e) { std::cout << "FV ERROR: " << e.what() << '\n'; ++failures; }
     checkMarkFilters();
+    checkPlacementOrder();
     return failures ? 1 : 0;
 }

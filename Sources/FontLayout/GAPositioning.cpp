@@ -16,7 +16,7 @@ size_t valueSize(unsigned format) {
         throw InvalidTable("reserved positioning value bits");
     return size_t(__builtin_popcount(format)) * 2;
 }
-void valueRecord(Item &item, View parent, size_t at, unsigned format, const GDEF &gdef,
+Point valueRecord(Item &item, View parent, size_t at, unsigned format, const GDEF &gdef,
                  const Metrics &metrics) {
     double value[4] = {};
     parent.require(at, valueSize(format));
@@ -33,6 +33,7 @@ void valueRecord(Item &item, View parent, size_t at, unsigned format, const GDEF
     item.yOffset += value[1];
     item.xAdvance += value[2];
     item.yAdvance += value[3];
+    return {value[0], value[1]};
 }
 std::optional<Point> anchor(View table, const GDEF &gdef, const Metrics &metrics) {
     if (!table)
@@ -53,6 +54,7 @@ struct Attachment {
     size_t parent;
     Point delta;
     bool cursive;
+    Point placementAfter;
 };
 struct PositionResult {
     bool matched = false;
@@ -68,6 +70,14 @@ class Positioning {
     std::map<size_t, Attachment> attachments_;
     std::vector<Point> pens_;
     std::set<std::pair<unsigned, size_t>> active_;
+    void adjustValue(size_t index, View parent, size_t at, unsigned format) {
+        Point delta = valueRecord(buffer_[index], parent, at, format, gdef_, metrics_);
+        auto attachment = attachments_.find(index);
+        if (attachment != attachments_.end() && !attachment->second.cursive) {
+            attachment->second.placementAfter.x += delta.x;
+            attachment->second.placementAfter.y += delta.y;
+        }
+    }
     std::optional<size_t> next(size_t at, const Lookup &lookup) const {
         for (size_t i = at + 1; i < buffer_.size(); i++)
             if (accepts(gdef_, lookup, buffer_[i]))
@@ -105,8 +115,8 @@ class Positioning {
             if (lo >= count || set.u16(2 + lo * stride) != wanted)
                 return {};
             size_t p = 4 + lo * stride;
-            valueRecord(buffer_[at], set, p, f1, gdef_, metrics_);
-            valueRecord(buffer_[*second], set, p + size1, f2, gdef_, metrics_);
+            adjustValue(at, set, p, f1);
+            adjustValue(*second, set, p + size1, f2);
         } else if (format == 2) {
             auto classes = sub.positioningTables->classes();
             unsigned c1 = classes.first.get(buffer_[at].glyph),
@@ -115,8 +125,8 @@ class Positioning {
             if (c1 >= n1 || c2 >= n2)
                 return {};
             size_t p = 16 + (size_t(c1) * n2 + c2) * (size1 + size2);
-            valueRecord(buffer_[at], d, p, f1, gdef_, metrics_);
-            valueRecord(buffer_[*second], d, p + size1, f2, gdef_, metrics_);
+            adjustValue(at, d, p, f1);
+            adjustValue(*second, d, p + size1, f2);
         } else
             throw InvalidTable("unknown pair positioning format");
         return {true, f2 ? *second + 1 : at + 1};
@@ -161,9 +171,9 @@ class Positioning {
             last.xAdvance = entry->x + last.xOffset;
         }
         if (lookup.flags & 1)
-            attachments_[at] = {*second, {entry->x - exit->x, entry->y - exit->y}, true};
+            attachments_[at] = {*second, {entry->x - exit->x, entry->y - exit->y}, true, {}};
         else
-            attachments_[*second] = {at, {exit->x - entry->x, exit->y - entry->y}, true};
+            attachments_[*second] = {at, {exit->x - entry->x, exit->y - entry->y}, true, {}};
         return {true, at + 1};
     }
     PositionResult mark(const Subtable &sub, const Lookup &lookup, size_t at) {
@@ -223,7 +233,7 @@ class Positioning {
                           gdef_, metrics_);
         if (!base)
             return {};
-        attachments_[at] = {*parent, {base->x - markAnchor->x, base->y - markAnchor->y}, false};
+        attachments_[at] = {*parent, {base->x - markAnchor->x, base->y - markAnchor->y}, false, {}};
         return {true, at + 1};
     }
     PositionResult subtable(const Subtable &sub, const Lookup &lookup, size_t at) {
@@ -240,7 +250,7 @@ class Positioning {
                 p = 8 + size_t(ci) * valueSize(valueFormat);
             } else if (format != 1)
                 throw InvalidTable("unknown single positioning format");
-            valueRecord(buffer_[at], d, p, valueFormat, gdef_, metrics_);
+            adjustValue(at, d, p, valueFormat);
             return {true, at + 1};
         }
         if (sub.type == 2)
@@ -320,6 +330,10 @@ class Positioning {
             auto p = pen(index), base = pen(attachment.parent);
             item.xOffset = base.x + parent.xOffset + attachment.delta.x - p.x;
             item.yOffset = base.y + parent.yOffset + attachment.delta.y - p.y;
+            // A new attachment discards earlier placement. Only adjustments
+            // recorded after this attachment survive the deferred resolution.
+            if (attachment.placementAfter.x) item.xOffset += attachment.placementAfter.x;
+            if (attachment.placementAfter.y) item.yOffset += attachment.placementAfter.y;
         }
         path.erase(index);
         done.insert(index);
