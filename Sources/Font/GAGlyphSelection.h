@@ -7,12 +7,15 @@ FOUNDATION_EXPORT NSString *const GAGlyphSelectionAttributeName;
 
 /// The persistent metadata for one selected replacement run. It deliberately
 /// stores no text offsets: the attributed-string range is the position.
-/// Known mark components accompany the GIDs for candidate positioning only.
+/// Known ligature provenance accompanies the GIDs for positioning and later substitutions.
 @interface GAGlyphSelection : NSObject
 @property(nonatomic, copy, readonly) NSString *sourceText;
 @property(nonatomic, copy, readonly) NSArray<NSNumber *> *glyphIDs;
 @property(nonatomic, copy, readonly) NSArray<NSNumber *> *markComponents;
 @property(nonatomic, copy, readonly) NSArray<NSNumber *> *markLigatures;
+/// Aligned [known component count, owner] pairs; empty means unknown structure.
+/// Restored components use the new run's atomic source, never old text offsets.
+@property(nonatomic, copy, readonly) NSArray<NSArray<NSNumber *> *> *ligatureStructures;
 /// Feature labels for the glyph list, not a shaping recipe.
 @property(nonatomic, copy, readonly) NSArray<NSString *> *featureSources;
 @property(nonatomic, readonly, getter=isLigature) BOOL ligature;
@@ -29,6 +32,13 @@ FOUNDATION_EXPORT NSString *const GAGlyphSelectionAttributeName;
                           glyphIDs:(NSArray<NSNumber *> *)glyphIDs
                     markComponents:(NSArray<NSNumber *> *)components
                      markLigatures:(NSArray<NSNumber *> *)ligatures
+                    featureSources:(NSArray<NSString *> *)featureSources
+                          ligature:(BOOL)ligature;
+- (instancetype)initWithSourceText:(NSString *)sourceText
+                          glyphIDs:(NSArray<NSNumber *> *)glyphIDs
+                    markComponents:(NSArray<NSNumber *> *)components
+                     markLigatures:(NSArray<NSNumber *> *)ligatures
+                ligatureStructures:(NSArray<NSArray<NSNumber *> *> *)structures
                     featureSources:(NSArray<NSString *> *)featureSources
                           ligature:(BOOL)ligature NS_DESIGNATED_INITIALIZER;
 - (instancetype)init NS_UNAVAILABLE;

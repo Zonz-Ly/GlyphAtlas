@@ -10,6 +10,7 @@ NS_ASSUME_NONNULL_BEGIN
 /// Empty for unknown association; otherwise one component index per GID (-1 for unknown).
 @property(nonatomic, copy) NSArray<NSNumber *> *markComponents;
 @property(nonatomic, copy) NSArray<NSNumber *> *markLigatures;
+@property(nonatomic, copy) NSArray<NSArray<NSNumber *> *> *ligatureStructures;
 @property(nonatomic, copy) NSArray<NSString *> *sources;
 @property(nonatomic) NSRange sourceRange;
 @property(nonatomic) BOOL base;
@@ -21,6 +22,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, copy) NSArray<NSString *> *sources;
 @property(nonatomic, copy) NSArray<NSNumber *> *markComponents;
 @property(nonatomic, copy) NSArray<NSNumber *> *markLigatures;
+@property(nonatomic, copy) NSArray<NSArray<NSNumber *> *> *ligatureStructures;
 @end
 
 /// GSUB and AAT morx/mort discovery using the application's own table programs.
@@ -46,12 +48,30 @@ NS_ASSUME_NONNULL_BEGIN
                                             markComponents:(NSArray<NSNumber *> *)components
                                              markLigatures:(NSArray<NSNumber *> *)ligatures
                                                  cancelled:(BOOL (^_Nullable)(void))cancelled;
+- (nullable NSArray<GASubstitutionMatch *> *)discoverGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
+                                            markComponents:(NSArray<NSNumber *> *)components
+                                             markLigatures:(NSArray<NSNumber *> *)ligatures
+                                        ligatureStructures:(NSArray<NSArray<NSNumber *> *> *)structures
+                                                 cancelled:(BOOL (^_Nullable)(void))cancelled;
 - (NSArray<NSString *> *)languageTags;
 - (NSArray<NSString *> *)glyphFeatureTags;
 - (nullable NSIndexSet *)glyphOutputsForFeatureTag:(NSString *)tag
                                           cancelled:(BOOL (^_Nullable)(void))cancelled;
 /// Lazy reverse lookup for a missing native layout GID/sequence. Candidate
 /// rows all belong to sourceRange, in their existing sidebar order.
+- (nullable GASubstitutionOrigin *)originForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
+                                         sourceRange:(NSRange)sourceRange
+                                                text:(NSString *)text
+                                          selections:(NSArray<GAGlyphSelectionRun *> *)selections
+                                          candidates:(NSArray<NSArray<NSNumber *> *> *)candidates
+                                 candidateComponents:(nullable NSArray<NSArray<NSNumber *> *> *)components
+                                  candidateLigatures:(nullable NSArray<NSArray<NSNumber *> *> *)ligatures
+                                 candidateStructures:(nullable NSArray<NSArray<NSArray<NSNumber *> *> *> *)structures
+                                            vertical:(BOOL)vertical
+                                     featureSettings:(NSArray<NSDictionary *> *)featureSettings
+                                baseWritingDirection:(NSInteger)direction
+                                         languageTag:(NSString *)languageTag
+                                           cancelled:(BOOL (^)(void))cancelled;
 - (nullable GASubstitutionOrigin *)originForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
                                          sourceRange:(NSRange)sourceRange
                                                 text:(NSString *)text

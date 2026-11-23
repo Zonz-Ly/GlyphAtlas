@@ -6,6 +6,9 @@
 
 namespace ga::layout {
 class Cmap;
+void restoreLigatureStructures(Buffer &buffer, NSArray<NSNumber *> *components,
+    NSArray<NSNumber *> *owners, NSArray<NSArray<NSNumber *> *> *structures, uint64_t &identity,
+    const Cancellation *cancellation = nullptr);
 struct TextRun {
     Buffer glyphs;
     Span source;

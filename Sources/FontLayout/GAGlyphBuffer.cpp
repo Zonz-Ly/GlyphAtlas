@@ -1,5 +1,21 @@
 #include "GAGlyphBuffer.h"
 namespace ga::layout {
+LigatureStructures canonicalLigatureStructures(const std::vector<int> &components,
+    const std::vector<uint64_t> &owners, LigatureStructures structures) {
+    if (std::none_of(structures.begin(), structures.end(), [](auto s) { return s.first != 0; })) return {};
+    std::map<uint64_t, uint64_t> labels;
+    // Use the existing mark-first labels, including the implicit single owner.
+    for (size_t i = 0; i < components.size(); ++i) if (components[i] >= 0) {
+        uint64_t owner = owners.empty() ? 1 : owners.at(i);
+        if (owner) labels.try_emplace(owner, labels.size() + 1);
+    }
+    for (auto &structure : structures) {
+        if (!structure.first) structure.second = 0;
+        else if (structure.second)
+            structure.second = labels.try_emplace(structure.second, labels.size() + 1).first->second;
+    }
+    return structures;
+}
 std::vector<Cluster> clusters(const Buffer &buffer) {
     std::vector<Span> spans;
     for (const auto &item : buffer)
@@ -21,6 +37,11 @@ std::vector<Cluster> clusters(const Buffer &buffer) {
             [](uint32_t start, const Cluster &cluster) { return start < cluster.source.start; });
         if (item.glyph != 0xffff) {
             auto &cluster = *(found - 1);
+            if (!cluster.ligatureStructures.empty() || !item.components.empty()) {
+                cluster.ligatureStructures.resize(cluster.glyphs.size());
+                cluster.ligatureStructures.emplace_back(item.components.size(),
+                    item.components.empty() ? 0 : item.ligatureIdentity);
+            }
             if (!cluster.markComponents.empty() || item.component >= 0) {
                 cluster.markComponents.resize(cluster.glyphs.size(), -1);
                 cluster.markComponents.push_back(item.component);
@@ -37,6 +58,11 @@ std::vector<uint64_t> Change::inputKey() const {
     for (const auto &input : inputs) {
         key.insert(key.end(), {input.source.start, input.source.end, input.glyphs.size()});
         key.insert(key.end(), input.glyphs.begin(), input.glyphs.end());
+        if (!input.ligatureStructures.empty()) {
+            key.push_back(UINT64_MAX - 1);
+            for (auto structure : canonicalLigatureStructures(input.markComponents, input.markLigatures, input.ligatureStructures))
+                key.insert(key.end(), {structure.first, structure.second});
+        }
     }
     if (!surroundingMarks.empty()) {
         key.push_back(UINT64_MAX);
@@ -109,10 +135,12 @@ void Trace::changed(const Buffer &before, const Buffer &after, const std::string
     size_t firstChange = changes.size();
     auto append = [&](Span source, const std::vector<Glyph> &glyphs,
                       const std::vector<int> &components = std::vector<int>{},
-                      const std::vector<uint64_t> &ligatures = std::vector<uint64_t>{}) {
+                      const std::vector<uint64_t> &ligatures = std::vector<uint64_t>{},
+                      const LigatureStructures &structures = {}) {
         Change change{source, glyphs, feature, {}};
         change.markComponents = components;
         change.markLigatures = ligatures;
+        change.ligatureStructures = structures;
         for (const auto &mark : associationChanges)
             if (mark.source.end <= source.start || mark.source.start >= source.end)
                 change.surroundingMarks.push_back(mark);
@@ -128,7 +156,8 @@ void Trace::changed(const Buffer &before, const Buffer &after, const std::string
             old.begin(), old.end(), cluster.source,
             [](const Cluster &item, Span source) { return item.source < source; });
         if (found == old.end() || !(found->source == cluster.source) || found->glyphs != cluster.glyphs)
-            append(cluster.source, cluster.glyphs, cluster.markComponents, cluster.markLigatures);
+            append(cluster.source, cluster.glyphs, cluster.markComponents, cluster.markLigatures,
+                   cluster.ligatureStructures);
     }
     // Prefix maxima allow each old interval to be tested independently, even
     // when source scopes overlap or nest after a rearrangement or insertion.

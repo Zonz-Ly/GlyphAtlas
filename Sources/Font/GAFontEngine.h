@@ -30,8 +30,12 @@ FOUNDATION_EXPORT NSUInteger GAGlyphSequenceHash(NSArray<NSNumber *> *glyphIDs);
 /// Empty retains the single-owner component representation; otherwise aligned
 /// canonical owner labels distinguish different ligatures (zero means unknown).
 @property(nonatomic, copy, readonly) NSArray<NSNumber *> *markLigatures;
+@property(nonatomic, copy, readonly) NSArray<NSArray<NSNumber *> *> *ligatureStructures;
 - (instancetype)initWithGlyphIDs:(NSArray<NSNumber *> *)glyphIDs markComponents:(NSArray<NSNumber *> *)components
                   markLigatures:(NSArray<NSNumber *> *)ligatures;
+- (instancetype)initWithGlyphIDs:(NSArray<NSNumber *> *)glyphIDs markComponents:(NSArray<NSNumber *> *)components
+                  markLigatures:(NSArray<NSNumber *> *)ligatures
+             ligatureStructures:(NSArray<NSArray<NSNumber *> *> *)structures;
 @end
 
 @interface GAGlyphVariant : NSObject <NSCopying>
@@ -40,6 +44,7 @@ FOUNDATION_EXPORT NSUInteger GAGlyphSequenceHash(NSArray<NSNumber *> *glyphIDs);
 /// Known GSUB mark-to-ligature associations, aligned with glyphIDs; empty if unknown.
 @property (nonatomic, copy) NSArray<NSNumber *> *markComponents;
 @property (nonatomic, copy) NSArray<NSNumber *> *markLigatures;
+@property (nonatomic, copy) NSArray<NSArray<NSNumber *> *> *ligatureStructures;
 @property (nonatomic, readonly) GAGlyphIdentity *glyphIdentity;
 /// Optional shaping origins for drawing. May be empty; drawing consumers treat
 /// missing entries as CGPointZero.
@@ -94,6 +99,7 @@ typedef struct {
 @property (nonatomic, copy) NSArray<NSNumber *> *glyphIDs;
 @property (nonatomic, copy) NSArray<NSNumber *> *markComponents;
 @property (nonatomic, copy) NSArray<NSNumber *> *markLigatures;
+@property (nonatomic, copy) NSArray<NSArray<NSNumber *> *> *ligatureStructures;
 @property (nonatomic, copy) NSArray<NSValue *> *positions;
 @property (nonatomic, copy) NSArray<NSString *> *sources;
 @property (nonatomic, getter=isBase) BOOL base;
@@ -170,6 +176,12 @@ FOUNDATION_EXPORT NSArray<GACharacterGroup *> *GAGroupsForScanResult(NSString *t
 - (nullable NSArray<GAGlyphVariant *> *)variantsForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
                                            markComponents:(NSArray<NSNumber *> *)components
                                             markLigatures:(NSArray<NSNumber *> *)ligatures
+                                                  content:(NSString *)content
+                                                cancelled:(BOOL (^_Nullable)(void))cancelled;
+- (nullable NSArray<GAGlyphVariant *> *)variantsForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
+                                           markComponents:(NSArray<NSNumber *> *)components
+                                            markLigatures:(NSArray<NSNumber *> *)ligatures
+                                       ligatureStructures:(NSArray<NSArray<NSNumber *> *> *)structures
                                                   content:(NSString *)content
                                                 cancelled:(BOOL (^_Nullable)(void))cancelled;
 

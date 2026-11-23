@@ -41,14 +41,20 @@ using Buffer = std::vector<Item>;
 inline bool sameGlyphAndSource(const Item &a, const Item &b) {
     return a.glyph == b.glyph && a.source == b.source;
 }
+using LigatureStructures = std::vector<std::pair<unsigned, uint64_t>>;
 struct Cluster {
     Span source;
     std::vector<Glyph> glyphs;
     // Aligned with glyphs when at least one mark has a known ligature component.
     std::vector<int> markComponents{};
     std::vector<uint64_t> markLigatures{};
+    // Aligned [component count, owner] records; no absolute source positions.
+    LigatureStructures ligatureStructures{};
 };
 std::vector<Cluster> clusters(const Buffer &buffer);
+LigatureStructures canonicalLigatureStructures(
+    const std::vector<int> &components, const std::vector<uint64_t> &owners,
+    LigatureStructures structures);
 struct MarkAssociation {
     Span source;
     Glyph glyph;
@@ -64,6 +70,7 @@ struct Change {
     bool inherited = false;
     std::vector<int> markComponents{};
     std::vector<uint64_t> markLigatures{};
+    LigatureStructures ligatureStructures{};
     // Unchanged surrounding GIDs whose association was established by this operation.
     std::vector<MarkAssociation> surroundingMarks{};
     std::vector<uint64_t> inputKey() const;

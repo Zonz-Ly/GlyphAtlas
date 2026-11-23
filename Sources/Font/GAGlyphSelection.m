@@ -26,12 +26,23 @@ NSString *const GAGlyphSelectionAttributeName = @"com.zonz.GlyphAtlas.glyphSelec
                      markLigatures:(NSArray<NSNumber *> *)ligatures
                     featureSources:(NSArray<NSString *> *)featureSources
                           ligature:(BOOL)ligature {
+    return [self initWithSourceText:sourceText glyphIDs:glyphIDs markComponents:components
+        markLigatures:ligatures ligatureStructures:@[] featureSources:featureSources ligature:ligature];
+}
+- (instancetype)initWithSourceText:(NSString *)sourceText
+                          glyphIDs:(NSArray<NSNumber *> *)glyphIDs
+                    markComponents:(NSArray<NSNumber *> *)components
+                     markLigatures:(NSArray<NSNumber *> *)ligatures
+                ligatureStructures:(NSArray<NSArray<NSNumber *> *> *)structures
+                    featureSources:(NSArray<NSString *> *)featureSources
+                          ligature:(BOOL)ligature {
     self = [super init];
     if (self) {
         _sourceText = [sourceText copy];
         _glyphIDs = [glyphIDs copy];
         _markComponents = [components copy];
         _markLigatures = [ligatures copy];
+        _ligatureStructures = [structures copy];
         _featureSources = [featureSources copy];
         _ligature = ligature;
     }
@@ -78,6 +89,11 @@ GAGlyphQueryIdentity *GAGlyphQueryKey(NSString *text, NSArray<GAGlyphSelectionRu
             for (NSNumber *component in run.selection.markComponents)
                 hash = (hash * 31) ^ component.unsignedIntegerValue;
             for (NSNumber *owner in run.selection.markLigatures) hash=(hash*31)^owner.unsignedIntegerValue;
+        }
+        if (run.selection.ligatureStructures.count) {
+            [components addObject:run.selection.ligatureStructures];
+            for (NSArray<NSNumber *> *structure in run.selection.ligatureStructures)
+                for (NSNumber *value in structure) hash = (hash * 31) ^ value.unsignedIntegerValue;
         }
     }
     GAGlyphQueryIdentity *key = [[GAGlyphQueryIdentity alloc] init];

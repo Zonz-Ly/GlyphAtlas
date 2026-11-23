@@ -103,6 +103,27 @@ static Tag scalarScript(uint32_t scalar) {
     const char *shortName = error > 0 ? nullptr : uscript_getShortName(script);
     return shortName ? scriptTag(shortName) : tag('D', 'F', 'L', 'T');
 }
+void restoreLigatureStructures(Buffer &buffer, NSArray<NSNumber *> *components,
+    NSArray<NSNumber *> *owners, NSArray<NSArray<NSNumber *> *> *structures, uint64_t &identity,
+    const Cancellation *cancellation) {
+    std::map<uint64_t, uint64_t> remapped;
+    Budget polling(buffer.size(), cancellation);
+    for (size_t i = 0; i < buffer.size(); ++i) {
+        polling.poll();
+        auto &item = buffer[i];
+        if (components.count) item.component = components[i].intValue;
+        uint64_t owner = item.component >= 0 ? (owners.count ? owners[i].unsignedLongLongValue : 1) : 0;
+        if (structures.count && structures[i][0].unsignedIntegerValue) {
+            item.components.assign(structures[i][0].unsignedIntegerValue, item.source);
+            owner = structures[i][1].unsignedLongLongValue;
+        }
+        if (owner) {
+            auto entry = remapped.try_emplace(owner, identity);
+            if (entry.second) ++identity;
+            item.ligatureIdentity = entry.first->second;
+        }
+    }
+}
 std::vector<TextRun> prepareText(NSString *text, const Cmap &cmap,
                                  NSArray<GAGlyphSelectionRun *> *selections, int baseDirection,
                                  std::vector<Span> *unpairedSelectors) {
@@ -270,19 +291,15 @@ std::vector<TextRun> prepareText(NSString *text, const Cmap &cmap,
             if (!(covered == span))
                 throw InvalidTable("glyph selection does not cover nominal components");
             TextRun replacement{{}, span, prefix.script, prefix.level};
-            NSUInteger componentIndex = 0;
             for (NSNumber *identifier in selection.selection.glyphIDs) {
                 Item item;
                 item.glyph = identifier.unsignedShortValue;
                 item.source = span;
                 item.identity = identity++;
-                if (selection.selection.markComponents.count)
-                    item.component = selection.selection.markComponents[componentIndex].intValue;
-                if (item.component>=0) item.ligatureIdentity=selection.selection.markLigatures.count
-                    ? selection.selection.markLigatures[componentIndex].unsignedLongLongValue:1;
-                ++componentIndex;
                 replacement.glyphs.push_back(item);
             }
+            restoreLigatureStructures(replacement.glyphs, selection.selection.markComponents,
+                selection.selection.markLigatures, selection.selection.ligatureStructures, identity);
             if (!prefix.glyphs.empty()) selected.push_back(std::move(prefix));
             selected.push_back(std::move(replacement));
             if (!suffix.glyphs.empty()) tail = std::move(suffix);

@@ -13,16 +13,27 @@ const CGFloat GAFontShapingSize = 200.0;
 @implementation GAGlyphIdentity
 - (instancetype)initWithGlyphIDs:(NSArray<NSNumber *> *)glyphIDs markComponents:(NSArray<NSNumber *> *)components
                   markLigatures:(NSArray<NSNumber *> *)ligatures {
-    if ((self=[super init])) { _glyphIDs=[glyphIDs copy]; _markComponents=[components copy]; _markLigatures=[ligatures copy]; }
+    return [self initWithGlyphIDs:glyphIDs markComponents:components markLigatures:ligatures ligatureStructures:@[]];
+}
+- (instancetype)initWithGlyphIDs:(NSArray<NSNumber *> *)glyphIDs markComponents:(NSArray<NSNumber *> *)components
+                  markLigatures:(NSArray<NSNumber *> *)ligatures
+             ligatureStructures:(NSArray<NSArray<NSNumber *> *> *)structures {
+    if ((self=[super init])) { _glyphIDs=[glyphIDs copy]; _markComponents=[components copy]; _markLigatures=[ligatures copy]; _ligatureStructures=[structures copy]; }
     return self;
 }
 - (id)copyWithZone:(NSZone *)zone { return self; }
-- (NSUInteger)hash { return ((GAGlyphSequenceHash(self.glyphIDs)*31)^GAGlyphSequenceHash(self.markComponents))*31^GAGlyphSequenceHash(self.markLigatures); }
+- (NSUInteger)hash {
+    NSUInteger hash = ((GAGlyphSequenceHash(self.glyphIDs)*31)^GAGlyphSequenceHash(self.markComponents))*31^GAGlyphSequenceHash(self.markLigatures);
+    for (NSArray<NSNumber *> *structure in self.ligatureStructures)
+        hash = (hash * 31) ^ GAGlyphSequenceHash(structure);
+    return hash;
+}
 - (BOOL)isEqual:(id)object {
     return self==object || ([object isKindOfClass:GAGlyphIdentity.class] &&
         [self.glyphIDs isEqual:((GAGlyphIdentity *)object).glyphIDs] &&
         [self.markComponents isEqual:((GAGlyphIdentity *)object).markComponents] &&
-        [self.markLigatures isEqual:((GAGlyphIdentity *)object).markLigatures]);
+        [self.markLigatures isEqual:((GAGlyphIdentity *)object).markLigatures] &&
+        [self.ligatureStructures isEqual:((GAGlyphIdentity *)object).ligatureStructures]);
 }
 @end
 
@@ -38,7 +49,7 @@ static NSString *GAFeatureSourceTag(NSString *source) {
 
 @implementation GAGlyphVariant
 - (GAGlyphIdentity *)glyphIdentity {
-    return [[GAGlyphIdentity alloc] initWithGlyphIDs:self.glyphIDs markComponents:self.markComponents markLigatures:self.markLigatures];
+    return [[GAGlyphIdentity alloc] initWithGlyphIDs:self.glyphIDs markComponents:self.markComponents markLigatures:self.markLigatures ligatureStructures:self.ligatureStructures];
 }
 
 - (instancetype)init {
@@ -47,6 +58,7 @@ static NSString *GAFeatureSourceTag(NSString *source) {
         _glyphIDs = @[];
         _markComponents = @[];
         _markLigatures = @[];
+        _ligatureStructures = @[];
         _positions = @[];
         _featureSources = @[];
         _unicodeScalars = @[];
@@ -80,6 +92,7 @@ static NSString *GAFeatureSourceTag(NSString *source) {
     copy.glyphIDs = self.glyphIDs;
     copy.markComponents = self.markComponents;
     copy.markLigatures = self.markLigatures;
+    copy.ligatureStructures = self.ligatureStructures;
     copy.positions = self.positions;
     copy->_featureSources = _featureSources;
     copy.base = self.base;
@@ -171,7 +184,8 @@ void GADrawGlyphVariant(GAGlyphVariant *variant, CGContextRef context) {
 @implementation GAScanCandidate
 - (instancetype)init {
     self = [super init];
-    if (self) { _markComponents = @[]; _markLigatures = @[]; }
+    if (self) { _markComponents = @[]; _markLigatures = @[];
+        _ligatureStructures = @[]; }
     return self;
 }
 @end
@@ -295,6 +309,7 @@ NSArray<GACharacterGroup *> *GAGroupsForScanResult(NSString *text, GARawScanResu
         c.glyphIDs = old.glyphIDs;
         c.markComponents = old.markComponents;
         c.markLigatures = old.markLigatures;
+        c.ligatureStructures = old.ligatureStructures;
         NSString *source = NSMaxRange(old.sourceRange) <= content.length
                                ? [content substringWithRange:old.sourceRange]
                                : content;
@@ -435,6 +450,7 @@ static NSString *GADisplayLabelForGlyph(GAGlyphLabels *labels, NSNumber *number)
     NSMutableArray *sequences = [NSMutableArray array];
     NSMutableArray *components = [NSMutableArray array];
     NSMutableArray *ligatures = [NSMutableArray array];
+    NSMutableArray *structures = [NSMutableArray array];
     for (GACharacterGroup *group in groups) {
         if (!NSEqualRanges(group.textRange, range)) continue;
         for (GAGlyphVariant *variant in group.variants) {
@@ -442,12 +458,13 @@ static NSString *GADisplayLabelForGlyph(GAGlyphLabels *labels, NSNumber *number)
             [sequences addObject:variant.glyphIDs];
             [components addObject:variant.markComponents];
             [ligatures addObject:variant.markLigatures];
+            [structures addObject:variant.ligatureStructures];
         }
     }
     GASubstitutionOrigin *source = [_substitutionEngine originForGlyphIDs:glyphIDs
         sourceRange:range text:text selections:selections candidates:sequences
         candidateComponents:components
-        candidateLigatures:ligatures
+        candidateLigatures:ligatures candidateStructures:structures
         vertical:vertical featureSettings:featureSettings
         baseWritingDirection:direction
         languageTag:languageTag
@@ -459,6 +476,7 @@ static NSString *GADisplayLabelForGlyph(GAGlyphLabels *labels, NSNumber *number)
     variant.glyphIDs = glyphIDs;
     variant.markComponents = source.markComponents;
     variant.markLigatures = source.markLigatures;
+    variant.ligatureStructures = source.ligatureStructures;
     variant.positions = [_substitutionEngine positionsForGlyphIDs:glyphIDs
         markComponents:variant.markComponents markLigatures:variant.markLigatures
         content:[text substringWithRange:range] cancelled:cancelled];
@@ -544,6 +562,7 @@ static NSString *GADisplayLabelForGlyph(GAGlyphLabels *labels, NSNumber *number)
         c.glyphIDs = match.glyphIDs;
         c.markComponents = match.markComponents;
         c.markLigatures = match.markLigatures;
+        c.ligatureStructures = match.ligatureStructures;
         c.positions = [_substitutionEngine
             positionsForGlyphIDs:c.glyphIDs
                   markComponents:c.markComponents markLigatures:c.markLigatures
@@ -631,6 +650,7 @@ static void GAPublishVariantBuilders(NSMapTable *builders) {
             if (![variant.glyphIDs isEqualToArray:candidate.glyphIDs] ||
                 ![variant.markComponents isEqualToArray:candidate.markComponents] ||
                 ![variant.markLigatures isEqualToArray:candidate.markLigatures] ||
+                ![variant.ligatureStructures isEqualToArray:candidate.ligatureStructures] ||
                 variant.isLigature != candidate.isLigature)
                 continue;
             if (candidate.isLigature && !NSEqualRanges(variant.sourceTextRange, candidate.sourceRange))
@@ -651,6 +671,7 @@ static void GAPublishVariantBuilders(NSMapTable *builders) {
         variant.glyphIDs = candidate.glyphIDs;
         variant.markComponents = candidate.markComponents;
         variant.markLigatures = candidate.markLigatures;
+        variant.ligatureStructures = candidate.ligatureStructures;
         variant.positions = candidate.positions;
         [variant addFeatureSources:candidate.sources];
         variant.base = candidate.isBase;
@@ -719,11 +740,20 @@ static void GAPublishVariantBuilders(NSMapTable *builders) {
                                   markLigatures:(NSArray<NSNumber *> *)ligatures
                                         content:(NSString *)content
                                       cancelled:(BOOL (^)(void))cancelled {
+    return [self variantsForGlyphIDs:glyphIDs markComponents:components markLigatures:ligatures
+        ligatureStructures:@[] content:content cancelled:cancelled];
+}
+- (NSArray<GAGlyphVariant *> *)variantsForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
+                                 markComponents:(NSArray<NSNumber *> *)components
+                                  markLigatures:(NSArray<NSNumber *> *)ligatures
+                             ligatureStructures:(NSArray<NSArray<NSNumber *> *> *)structures
+                                        content:(NSString *)content
+                                      cancelled:(BOOL (^)(void))cancelled {
     if (!glyphIDs.count)
         return @[];
     NSArray<GASubstitutionMatch *> *matches = [_substitutionEngine discoverGlyphIDs:glyphIDs
                                                                   markComponents:components
-                                                                   markLigatures:ligatures
+                                                                   markLigatures:ligatures ligatureStructures:structures
                                                                              cancelled:cancelled];
     if (!matches)
         return nil;
@@ -736,6 +766,7 @@ static void GAPublishVariantBuilders(NSMapTable *builders) {
         v.glyphIDs = match.glyphIDs;
         v.markComponents = match.markComponents;
         v.markLigatures = match.markLigatures;
+        v.ligatureStructures = match.ligatureStructures;
         v.positions = [_substitutionEngine positionsForGlyphIDs:v.glyphIDs
             markComponents:v.markComponents markLigatures:v.markLigatures content:content cancelled:cancelled];
         if (!v.positions) return nil;

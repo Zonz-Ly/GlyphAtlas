@@ -23,7 +23,7 @@
         ![self.filterTag isEqualToString:other.filterTag]) return NO;
     if (self.glyphIdentity && other.glyphIdentity) return [self.glyphIdentity isEqual:other.glyphIdentity];
     GAGlyphIdentity *known=self.glyphIdentity ?: other.glyphIdentity;
-    if (known.markComponents.count || known.markLigatures.count) return NO;
+    if (known.markComponents.count || known.markLigatures.count || known.ligatureStructures.count) return NO;
     return self.glyphIDs == other.glyphIDs || [self.glyphIDs isEqualToArray:other.glyphIDs];
 }
 

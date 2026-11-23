@@ -472,12 +472,14 @@ void discover(const std::vector<Lookup> &lookups, const GDEF &gdef, Buffer &buff
     Budget budget(buffer.size(), cancellation, true);
     SubstitutionBuffer appliedBuffer(buffer);
     std::vector<CandidateState> states{{appliedBuffer, {}, {}}};
-    std::map<std::tuple<Span, std::vector<Glyph>, std::vector<int>, std::vector<uint64_t>, std::vector<uint64_t>>,
+    std::map<std::tuple<Span, std::vector<Glyph>, std::vector<int>, std::vector<uint64_t>,
+                        LigatureStructures, std::vector<uint64_t>>,
              std::set<std::string>> recorded;
     auto record = [&](const Trace &found, const Origins &origins) {
         for (const auto &change : found.changes) {
             if (cancellation) budget.poll();
-            auto &labels = recorded[{change.source, change.glyphs, change.markComponents, change.markLigatures, change.inputKey()}];
+            auto &labels = recorded[{change.source, change.glyphs, change.markComponents,
+                                      change.markLigatures, canonicalLigatureStructures(change.markComponents, change.markLigatures, change.ligatureStructures), change.inputKey()}];
             if (labels.insert(change.feature).second)
                 trace.changes.push_back(change);
             origins.overlapping(change.source, [&](const std::string &feature) {
