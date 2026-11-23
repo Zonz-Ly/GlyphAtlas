@@ -38,6 +38,12 @@ std::vector<uint64_t> Change::inputKey() const {
         key.insert(key.end(), {input.source.start, input.source.end, input.glyphs.size()});
         key.insert(key.end(), input.glyphs.begin(), input.glyphs.end());
     }
+    if (!surroundingMarks.empty()) {
+        key.push_back(UINT64_MAX);
+        for (const auto &mark : surroundingMarks)
+            key.insert(key.end(), {mark.source.start, mark.source.end, mark.glyph,
+                                   uint64_t(mark.component), mark.ligatureIdentity});
+    }
     return key;
 }
 void Trace::changed(const Buffer &before, const Buffer &after, const std::string &feature) {
@@ -48,6 +54,20 @@ void Trace::changed(const Buffer &before, const Buffer &after, const std::string
                                   [](const Item &item) { return item.source.empty(); }))
         return;
     Buffer oldWindow, newWindow;
+    std::vector<MarkAssociation> associationChanges;
+    auto noteAssociation = [&](const Item &old, const Item &next) {
+        if (old.component != next.component || old.ligatureIdentity != next.ligatureIdentity)
+            associationChanges.push_back({next.source, next.glyph, next.component, next.ligatureIdentity});
+    };
+    auto prefix = after.begin();
+    for (auto old = before.begin(); old != firstOld; ++old, ++prefix) noteAssociation(*old,*prefix);
+    auto oldTail = before.rbegin(), newTail = after.rbegin();
+    while (oldTail != std::make_reverse_iterator(firstOld) &&
+           newTail != std::make_reverse_iterator(firstNew) && sameGlyphAndSource(*oldTail,*newTail)) {
+        noteAssociation(*oldTail, *newTail);
+        ++oldTail;
+        ++newTail;
+    }
     if (!provenance && !sameBuffer) {
         auto [lastOldReversed, lastNewReversed] = std::mismatch(
             before.rbegin(), std::make_reverse_iterator(firstOld),
@@ -93,6 +113,9 @@ void Trace::changed(const Buffer &before, const Buffer &after, const std::string
         Change change{source, glyphs, feature, {}};
         change.markComponents = components;
         change.markLigatures = ligatures;
+        for (const auto &mark : associationChanges)
+            if (mark.source.end <= source.start || mark.source.start >= source.end)
+                change.surroundingMarks.push_back(mark);
         auto first = std::lower_bound(old.begin(), old.end(), source.start,
             [](const Cluster &input, uint32_t start) { return input.source.end <= start; });
         for (auto input = first; input != old.end() && input->source.start < source.end; ++input)

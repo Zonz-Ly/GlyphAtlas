@@ -49,6 +49,12 @@ struct Cluster {
     std::vector<uint64_t> markLigatures{};
 };
 std::vector<Cluster> clusters(const Buffer &buffer);
+struct MarkAssociation {
+    Span source;
+    Glyph glyph;
+    int component;
+    uint64_t ligatureIdentity;
+};
 struct Change {
     Span source;
     std::vector<Glyph> glyphs;
@@ -58,6 +64,8 @@ struct Change {
     bool inherited = false;
     std::vector<int> markComponents{};
     std::vector<uint64_t> markLigatures{};
+    // Unchanged surrounding GIDs whose association was established by this operation.
+    std::vector<MarkAssociation> surroundingMarks{};
     std::vector<uint64_t> inputKey() const;
 };
 struct TraceStep {

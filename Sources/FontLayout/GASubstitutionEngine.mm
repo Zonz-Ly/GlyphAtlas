@@ -1414,11 +1414,21 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
                             replacement.resize(change.glyphs.size(), -1);
                             mapped.erase(mapped.begin()+change.source.start, mapped.begin()+change.source.end);
                             mapped.insert(mapped.begin()+change.source.start, replacement.begin(), replacement.end());
-                            if (std::none_of(mapped.begin(),mapped.end(),[](int c){ return c>=0; })) mapped.clear();
                             auto owners=inputOwners; owners.resize(original.size());
                             auto newOwners=change.markLigatures; newOwners.resize(change.glyphs.size());
                             owners.erase(owners.begin()+change.source.start,owners.begin()+change.source.end);
                             owners.insert(owners.begin()+change.source.start,newOwners.begin(),newOwners.end());
+                            for (const auto &mark : change.surroundingMarks) {
+                                size_t index = mark.source.start;
+                                if (mark.source.end != index + 1 || index >= original.size() ||
+                                    original[index] != mark.glyph) continue;
+                                if (index >= change.source.end)
+                                    index = index - (change.source.end - change.source.start) + change.glyphs.size();
+                                else if (index >= change.source.start) continue;
+                                mapped[index] = mark.component;
+                                owners[index] = mark.ligatureIdentity;
+                            }
+                            if (std::none_of(mapped.begin(),mapped.end(),[](int c){ return c>=0; })) mapped.clear();
                             merge(seen, matches, whole, sequence, @(change.feature.c_str()), NO, mapped,owners);
                         }
                     });

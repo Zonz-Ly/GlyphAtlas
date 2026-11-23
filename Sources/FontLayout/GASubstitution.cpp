@@ -116,8 +116,11 @@ class Substitution {
         ligature.ligatureIdentity = nextIdentity_++;
         ligature.glyph = pattern.replacement.front();
         ligature.components.clear();
+        std::map<uint64_t, unsigned> oldOwners;
         for (size_t pos : *positions) {
             const auto &component = buffer_[pos];
+            if (component.ligatureIdentity)
+                oldOwners.emplace(component.ligatureIdentity, unsigned(ligature.components.size()));
             if (component.components.empty())
                 ligature.components.push_back(component.source);
             else
@@ -144,6 +147,21 @@ class Substitution {
                 item.ligatureIdentity = ligature.ligatureIdentity;
                 item.source = merged;
             }
+        }
+        // Update trailing marks owned by consumed input without stealing a
+        // foreign owner. Newly associated tails retain their independent source.
+        for (size_t pos = positions->back() + 1; pos < buffer_.size() &&
+             gdef_.glyphClasses.get(buffer_[pos].glyph) == 3; ++pos) {
+            budget_.poll();
+            auto owner = oldOwners.find(buffer_[pos].ligatureIdentity);
+            if (buffer_[pos].ligatureIdentity && owner == oldOwners.end()) continue;
+            auto &item = buffer_.edit(pos);
+            if (owner != oldOwners.end() && item.component >= 0) {
+                item.component += int(owner->second);
+                item.source = merged;
+            } else
+                item.component = int(ligature.components.size() - 1);
+            item.ligatureIdentity = ligature.ligatureIdentity;
         }
         // Delete from the right so remaining positions keep their meaning.
         for (size_t i = positions->size(); i > 1; i--)
@@ -769,13 +787,17 @@ void SubstitutionBuffer::recordChanges(const SubstitutionBuffer &after, Trace &t
         trace.changed(materialize(), after.materialize(), feature);
         return;
     }
+    auto unchanged = [](const Item &a, const Item &b) {
+        return sameGlyphAndSource(a, b) && a.component == b.component &&
+               a.ligatureIdentity == b.ligatureIdentity;
+    };
     size_t first = 0, oldEnd = size_, newEnd = after.size_;
     while (first < std::min(oldEnd, newEnd)) {
         const auto &a = pieces_[slotAt(first)];
         const auto &b = after.pieces_[after.slotAt(first)];
         if (a.start == b.start && a.piece == b.piece) {
             first = a.start + a.piece->items.size();
-        } else if (sameGlyphAndSource(a.piece->items[first - a.start], b.piece->items[first - b.start])) {
+        } else if (unchanged(a.piece->items[first - a.start], b.piece->items[first - b.start])) {
             ++first;
         } else {
             break;
@@ -798,7 +820,7 @@ void SubstitutionBuffer::recordChanges(const SubstitutionBuffer &after, Trace &t
         if (offA == offB && a.piece == b.piece && a.start >= first && b.start >= first) {
             oldEnd = a.start;
             newEnd = b.start;
-        } else if (sameGlyphAndSource(a.piece->items[offA - 1], b.piece->items[offB - 1])) {
+        } else if (unchanged(a.piece->items[offA - 1], b.piece->items[offB - 1])) {
             --oldEnd;
             --newEnd;
         } else {
