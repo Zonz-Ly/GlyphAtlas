@@ -127,6 +127,39 @@ static void checkCursiveChains() {
     }
     std::cout << "Cursive chain direction, major-axis and partial reattachment controls PASS\n";
 }
+static void checkCursivePlacement() {
+    const std::vector<CursiveAnchor> c={{1,0,0,500,100},{2,10,20,450,80}};
+    for (bool vertical:{false,true}) for (unsigned flags:{0u,1u}) {
+        auto anchors=c;
+        if (vertical) for (auto &a:anchors) { std::swap(a.entryX,a.entryY); std::swap(a.exitX,a.exitY); }
+        Glyph child=flags ? 1:2, parent=flags ? 2:1;
+        Bytes cursive=cursivePosition(flags,anchors);
+        auto run=[&](std::vector<Bytes> lookups) {
+            OpenType ot{View(positioningTable(lookups)),true}; Buffer b=items({1,2});
+            Settings settings; settings.vertical=vertical;
+            ot.position(b,GDEF{},settings,metrics()); return b;
+        };
+        auto shift=[&](Glyph glyph) { return singlePosition(glyph,vertical ? 40:0,vertical ? 0:40); };
+        auto minor=[&](const Item &i) { return vertical ? i.xOffset:i.yOffset; };
+        double delta=flags ? -80:80;
+        auto before=run({shift(child),cursive}), after=run({cursive,shift(child)});
+        assert(minor(before[child-1])==delta && minor(after[child-1])==delta+40);
+        auto parentBefore=run({shift(parent),cursive}), parentAfter=run({cursive,shift(parent)});
+        assert(minor(parentBefore[child-1])==delta+40 && minor(parentAfter[child-1])==delta+40);
+        auto repeat=run({cursive,shift(child),cursive});
+        assert(minor(repeat[child-1])==delta);
+        // The major axis keeps the original arithmetic rather than clearing both offsets.
+        auto major=run({singlePosition(child,vertical ? 0:27,vertical ? 27:0),cursive});
+        assert(minor(major[child-1])==delta);
+        if (!vertical && !flags) assert(major[1].xOffset==-10 && major[1].xAdvance==563);
+    }
+    const std::vector<CursiveAnchor> full={{1,0,0,500,100},{2,10,20,450,80},{3,20,40,400,60}};
+    const std::vector<CursiveAnchor> bc={{2,10,30,450,160},{3,20,50,400,100}};
+    OpenType ot{View(positioningTable({cursivePosition(0,full),singlePosition(2,0,40),cursivePosition(1,bc)})),true};
+    Buffer b=items({1,2,3}); ot.position(b,GDEF{},Settings{},metrics());
+    assert(b[0].yOffset==-230 && b[1].yOffset==-110 && b[2].yOffset==0);
+    std::cout << "Cursive placement order, parent, reattachment and both axes PASS\n";
+}
 static Bytes pairPosition(bool placement) {
     Bytes sub=words({1,0,placement ? 0u : 4u,placement ? 3u : 0u,1,0});
     put16(sub,2,append(sub,words({1,1,1})));
@@ -305,6 +338,7 @@ int main() {
     catch (const std::exception &e) { std::cout << "FV ERROR: " << e.what() << '\n'; ++failures; }
     checkMarkFilters();
     checkCursiveChains();
+    checkCursivePlacement();
     checkPlacementOrder();
     checkKernOwnership();
     return failures ? 1 : 0;

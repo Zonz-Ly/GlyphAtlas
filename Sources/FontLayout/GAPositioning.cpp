@@ -92,6 +92,9 @@ class Positioning {
             minorOffset(old.parent) = -minorOffset(i->first);
             attachments_[old.parent] = {i->first, {-old.delta.x, -old.delta.y}, true, {}};
         }
+        // Anchor alignment replaces earlier placement on the cross-stream axis.
+        // Later ValueRecords continue to accumulate in this offset as before.
+        minorOffset(child) = 0;
         attachments_[child] = {parent, delta, true, {}};
         auto back = attachments_.find(parent);
         if (back != attachments_.end() && back->second.parent == child) {
