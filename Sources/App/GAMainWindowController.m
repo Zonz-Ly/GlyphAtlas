@@ -1465,6 +1465,8 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     if ([itemIdentifier isEqualToString:GABackItem]) {
         // The toolbar is rebuilt before the sidebar's collapsed state changes.
         BOOL hasToolbarInput = GAIndexOfToolbarItem(toolbar, GATextInputItem) != NSNotFound;
+        BOOL usesLegacyCanvas = hasToolbarInput &&
+            NSProcessInfo.processInfo.operatingSystemVersion.majorVersion <= 15;
 
         NSMenuToolbarItem *item = [[NSMenuToolbarItem alloc] initWithItemIdentifier:itemIdentifier];
         item.label = NSLocalizedString(@"Back", @"Return to the previous glyph or view");
@@ -1487,7 +1489,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 
         if (@available(macOS 26.0, *)) {
             item.navigational = hasToolbarInput && self.fontResource.axes.count > 0;
-        } else if (hasToolbarInput && NSProcessInfo.processInfo.operatingSystemVersion.majorVersion <= 15) {
+        } else if (usesLegacyCanvas) {
             NSImage *symbol = [image imageWithSymbolConfiguration:
                 [NSImageSymbolConfiguration configurationWithPointSize:NSFont.systemFontSize
                     weight:NSFontWeightMedium scale:NSImageSymbolScaleLarge]];
@@ -1506,7 +1508,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         }
         self.backEnabledImage = image;
         NSString *forwardLabel = NSLocalizedString(@"Forward", @"Move to the next navigation location");
-        if (image.symbolConfiguration) {
+        if (!usesLegacyCanvas) {
             NSImage *forward = [NSImage imageWithSystemSymbolName:@"chevron.forward"
                 accessibilityDescription:forwardLabel];
             self.forwardEnabledImage = [forward imageWithSymbolConfiguration:image.symbolConfiguration];
