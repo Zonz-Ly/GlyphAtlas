@@ -38,8 +38,19 @@ bool Predicate::matches(Glyph glyph) const {
     }
     return false;
 }
-static std::vector<LookupRecord> records(View table, size_t at, unsigned count) {
+// Charge decoded objects before allocating them. Small offset arrays may alias
+// large rule sets, so file length alone does not bound the decoded program.
+struct DecodeBudget {
+    size_t rules = 1000000, elements = 2000000, references = 2000000;
+    static void take(size_t &remaining, size_t count) {
+        if (count > remaining)
+            throw InvalidTable("layout decoding exceeds resource budget");
+        remaining -= count;
+    }
+};
+static std::vector<LookupRecord> records(View table, size_t at, unsigned count, DecodeBudget &budget) {
     table.array(at, count, 4);
+    DecodeBudget::take(budget.elements, count);
     std::vector<LookupRecord> result;
     for (unsigned i = 0; i < count; i++)
         result.push_back({table.u16(at + i * 4), table.u16(at + i * 4 + 2)});
@@ -60,8 +71,9 @@ class ContextClasses {
     }
 };
 static void predicates(std::vector<Predicate> &result, View table, size_t at, unsigned count,
-                       unsigned format, ContextClasses *classes = nullptr) {
+                       unsigned format, DecodeBudget &budget, ContextClasses *classes = nullptr) {
     table.array(at, count, 2);
+    DecodeBudget::take(budget.elements, count);
     for (unsigned i = 0; i < count; i++) {
         if (format == 1)
             result.push_back(Predicate::exact(table.u16(at + i * 2)));
@@ -71,17 +83,18 @@ static void predicates(std::vector<Predicate> &result, View table, size_t at, un
             result.push_back(Predicate::covered(table.offset16(at + i * 2)));
     }
 }
-static std::vector<Pattern> readContexts(View sub, unsigned type) {
+static std::vector<Pattern> readContexts(View sub, unsigned type, DecodeBudget &budget) {
     const bool chained = type == 6;
     unsigned format = sub.u16(0);
     std::vector<Pattern> result;
     if (format == 3) {
+        DecodeBudget::take(budget.rules, 1);
         Pattern p;
         size_t cursor = 2;
         if (chained) {
             unsigned back = sub.u16(cursor);
             cursor += 2;
-            predicates(p.backtrack, sub, cursor, back, 3);
+            predicates(p.backtrack, sub, cursor, back, 3, budget);
             cursor += back * 2;
         }
         unsigned input = sub.u16(cursor);
@@ -93,17 +106,17 @@ static std::vector<Pattern> readContexts(View sub, unsigned type) {
             actionCount = sub.u16(cursor);
             cursor += 2;
         }
-        predicates(p.input, sub, cursor, input, 3);
+        predicates(p.input, sub, cursor, input, 3, budget);
         cursor += input * 2;
         if (chained) {
             unsigned look = sub.u16(cursor);
             cursor += 2;
-            predicates(p.lookahead, sub, cursor, look, 3);
+            predicates(p.lookahead, sub, cursor, look, 3, budget);
             cursor += look * 2;
             actionCount = sub.u16(cursor);
             cursor += 2;
         }
-        p.actions = records(sub, cursor, actionCount);
+        p.actions = records(sub, cursor, actionCount, budget);
         result.push_back(std::move(p));
         return result;
     }
@@ -128,15 +141,16 @@ static std::vector<Pattern> readContexts(View sub, unsigned type) {
     sub.array(countAt + 2, sets, 2);
     if (format == 1)
         sets = std::min(sets, unsigned(firstGlyphs.size()));
+    DecodeBudget::take(budget.references, sets);
     for (unsigned si = 0; si < sets; si++) {
         View set = sub.offset16(countAt + 2 + si * 2);
         if (!set)
             continue;
         unsigned count = set.u16(0);
         set.array(2, count, 2);
+        DecodeBudget::take(budget.references, count);
         for (unsigned ri = 0; ri < count; ri++) {
-            if (result.size() >= 1000000)
-                throw InvalidTable("too many contextual rules");
+            DecodeBudget::take(budget.rules, 1);
             View rule = set.offset16(2 + ri * 2);
             if (!rule)
                 throw InvalidTable("null contextual rule");
@@ -146,7 +160,7 @@ static std::vector<Pattern> readContexts(View sub, unsigned type) {
             if (chained) {
                 unsigned back = rule.u16(cursor);
                 cursor += 2;
-                predicates(p.backtrack, rule, cursor, back, format, &backClasses);
+                predicates(p.backtrack, rule, cursor, back, format, budget, &backClasses);
                 cursor += back * 2;
             }
             unsigned input = rule.u16(cursor);
@@ -158,19 +172,20 @@ static std::vector<Pattern> readContexts(View sub, unsigned type) {
                 actionCount = rule.u16(cursor);
                 cursor += 2;
             }
+            DecodeBudget::take(budget.elements, 1);
             p.input.push_back(format == 1 ? Predicate::exact(firstGlyphs[si])
                                           : Predicate::classified(inputClasses.get(), si));
-            predicates(p.input, rule, cursor, input - 1, format, &inputClasses);
+            predicates(p.input, rule, cursor, input - 1, format, budget, &inputClasses);
             cursor += (input - 1) * 2;
             if (chained) {
                 unsigned look = rule.u16(cursor);
                 cursor += 2;
-                predicates(p.lookahead, rule, cursor, look, format, &lookClasses);
+                predicates(p.lookahead, rule, cursor, look, format, budget, &lookClasses);
                 cursor += look * 2;
                 actionCount = rule.u16(cursor);
                 cursor += 2;
             }
-            p.actions = records(rule, cursor, actionCount);
+            p.actions = records(rule, cursor, actionCount, budget);
             result.push_back(std::move(p));
         }
     }
@@ -282,14 +297,16 @@ static std::vector<Script> readScripts(View list) {
     }
     return result;
 }
-static void indexPatterns(Subtable &s) {
+static void indexPatterns(Subtable &s, DecodeBudget &budget) {
     std::optional<std::unordered_map<unsigned, std::vector<Glyph>>> classGlyphs;
     for (unsigned i = 0; i < s.patterns.size(); i++) {
         const auto &p = s.patterns[i];
         const auto &first = p.input.front();
         auto add = [&](Glyph g) {
-            if (first.matches(g))
+            if (first.matches(g)) {
+                DecodeBudget::take(budget.references, 1);
                 s.starts[g].push_back(i);
+            }
         };
         if (first.kind == Predicate::Kind::Exact)
             add(Glyph(first.value));
@@ -300,13 +317,17 @@ static void indexPatterns(Subtable &s) {
             // Class rules in one contextual subtable share coverage and ClassDef.
             if (!classGlyphs) {
                 classGlyphs.emplace();
-                for (Glyph g : p.firstCoverage.glyphs())
+                for (Glyph g : p.firstCoverage.glyphs()) {
+                    DecodeBudget::take(budget.references, 1);
                     (*classGlyphs)[first.classes.get(g)].push_back(g);
+                }
             }
             auto group = classGlyphs->find(first.value);
             if (group != classGlyphs->end())
-                for (Glyph g : group->second)
+                for (Glyph g : group->second) {
+                    DecodeBudget::take(budget.references, 1);
                     s.starts[g].push_back(i);
+                }
         }
     }
 }
@@ -333,31 +354,33 @@ const Coverage &PositioningTables::coverage() const {
     read();
     return targets_;
 }
-static Subtable readSubtable(View data, unsigned type, bool positioning, unsigned depth = 0) {
+static Subtable readSubtable(View data, unsigned type, bool positioning, DecodeBudget &budget,
+                            unsigned depth = 0) {
+    DecodeBudget::take(budget.rules, 1);
     if (depth > 0 && (type == (positioning ? 9 : 7)))
         throw InvalidTable("nested extension lookup");
     if (type == (positioning ? 9 : 7)) {
         if (data.u16(0) != 1)
             throw InvalidTable("unknown extension format");
-        return readSubtable(data.offset32(4), data.u16(2), positioning, depth + 1);
+        return readSubtable(data.offset32(4), data.u16(2), positioning, budget, depth + 1);
     }
     Subtable s;
     s.type = type;
     s.data = data;
     if (positioning) {
         if (type == 7 || type == 8)
-            s.patterns = readContexts(data, type == 7 ? 5 : 6);
+            s.patterns = readContexts(data, type == 7 ? 5 : 6, budget);
         else if (type >= 1 && type <= 6)
             s.coverage = Coverage(data.offset16(2));
         else
             throw InvalidTable("unknown positioning lookup");
         if ((type == 2 && data.u16(0) == 2) || (type >= 4 && type <= 6))
             s.positioningTables = std::make_shared<PositioningTables>(data, type == 2);
-        indexPatterns(s);
+        indexPatterns(s, budget);
         return s;
     }
     if (type == 5 || type == 6)
-        s.patterns = readContexts(data, type);
+        s.patterns = readContexts(data, type, budget);
     else if ((type >= 1 && type <= 4) || type == 8)
         s.coverage = Coverage(data.offset16(2));
     else
@@ -370,20 +393,40 @@ static Subtable readSubtable(View data, unsigned type, bool positioning, unsigne
         data.array(6, count, 2);
         if (count > glyphs.size())
             throw InvalidTable("ligature set exceeds coverage");
+        DecodeBudget::take(budget.references, count);
+        std::map<size_t, std::vector<View>> sets;
         for (unsigned i = 0; i < count; i++) {
             View set = data.offset16(6 + i * 2);
             if (!set)
                 continue;
-            unsigned n = set.u16(0);
-            set.array(2, n, 2);
-            for (unsigned j = 0; j < n; j++) {
-                View lig = set.offset16(2 + j * 2);
+            auto entry = sets.try_emplace(set.tableOffset());
+            if (entry.second) {
+                unsigned n = set.u16(0);
+                set.array(2, n, 2);
+                DecodeBudget::take(budget.references, n);
+                std::set<size_t> seen;
+                for (unsigned j = 0; j < n; j++) {
+                    View lig = set.offset16(2 + j * 2);
+                    if (seen.insert(lig.tableOffset()).second) {
+                        // Preserve validation in record order before reading
+                        // the next offset, including for truncated tables.
+                        unsigned length = lig.u16(2);
+                        if (!length)
+                            throw InvalidTable("empty ligature");
+                        lig.array(4, length - 1, 2);
+                        entry.first->second.push_back(lig);
+                    }
+                }
+            }
+            for (View lig : entry.first->second) {
+                DecodeBudget::take(budget.rules, 1);
+                DecodeBudget::take(budget.elements, 1);
                 Pattern p;
                 p.input.push_back(Predicate::exact(glyphs[i]));
                 unsigned length = lig.u16(2);
                 if (!length)
                     throw InvalidTable("empty ligature");
-                predicates(p.input, lig, 4, length - 1, 1);
+                predicates(p.input, lig, 4, length - 1, 1, budget);
                 p.replacement = {lig.u16(0)};
                 s.patterns.push_back(std::move(p));
             }
@@ -393,18 +436,20 @@ static Subtable readSubtable(View data, unsigned type, bool positioning, unsigne
         if (data.u16(0) != 1)
             throw InvalidTable("unknown reverse chaining format");
         Pattern p;
+        DecodeBudget::take(budget.rules, 1);
+        DecodeBudget::take(budget.elements, 1);
         p.input.push_back(Predicate::covered(data.offset16(2)));
         size_t at = 4;
         unsigned back = data.u16(at);
         at += 2;
-        predicates(p.backtrack, data, at, back, 3);
+        predicates(p.backtrack, data, at, back, 3, budget);
         at += back * 2;
         unsigned look = data.u16(at);
         at += 2;
-        predicates(p.lookahead, data, at, look, 3);
+        predicates(p.lookahead, data, at, look, 3, budget);
         s.patterns.push_back(std::move(p));
     }
-    indexPatterns(s);
+    indexPatterns(s, budget);
     return s;
 }
 OpenType::OpenType(View table, bool positioning) : positioning_(positioning), data_(table) {
@@ -418,7 +463,9 @@ OpenType::OpenType(View table, bool positioning) : positioning_(positioning), da
     unsigned count = list.u16(0);
     list.array(2, count, 2);
     size_t familyEntries = 0;
+    DecodeBudget budget;
     for (unsigned i = 0; i < count; i++) {
+        DecodeBudget::take(budget.rules, 1);
         View data = list.offset16(2 + i * 2);
         Lookup lookup;
         unsigned type = data.u16(0);
@@ -428,7 +475,7 @@ OpenType::OpenType(View table, bool positioning) : positioning_(positioning), da
         if (lookup.flags & 16)
             lookup.markSet = data.u16(6 + n * 2);
         for (unsigned j = 0; j < n; j++) {
-            auto sub = readSubtable(data.offset16(6 + j * 2), type, positioning);
+            auto sub = readSubtable(data.offset16(6 + j * 2), type, positioning, budget);
             for (const auto &pattern : sub.patterns)
                 for (auto action : pattern.actions)
                     lookup.references.insert(action.lookup);
