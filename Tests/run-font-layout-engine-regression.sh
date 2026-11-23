@@ -7,7 +7,9 @@ mkdir -p "$OUT"
 bash "$ROOT/Sources/FontLayout/compile-font-layout.sh" "$(uname -m)" "$OUT/layout"
 clang -fobjc-arc -Wall -Wextra -O2 -I "$ROOT/Sources" \
   "$TESTS/FontLayoutEngineRegression.m" "$ROOT/Sources/Font/GAGlyphSelection.m" \
-  "$OUT/layout/"*.o -framework Foundation -framework CoreText -licucore -lc++ \
+  "$ROOT/Sources/Font/GAFontEngine.m" "$ROOT/Sources/Font/GATextQueryModel.m" \
+  "$ROOT/Sources/Font/GAUnicode.m" \
+  "$OUT/layout/"*.o -framework Foundation -framework CoreText -framework AppKit -licucore -lc++ \
   -o "$OUT/font-layout-engine-regression"
 "$OUT/font-layout-engine-regression" > "$OUT/results.json"
 if [[ -n "${2:-}" ]]; then

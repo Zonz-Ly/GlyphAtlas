@@ -509,10 +509,15 @@ static NSString *GADisplayLabelForGlyph(GAGlyphLabels *labels, NSNumber *number)
     return cancelled && cancelled() ? nil : result;
 }
 
-static NSNumber *GAVariantBucket(NSArray<NSNumber *> *glyphs, BOOL ligature, NSRange range) {
+NSUInteger GAGlyphSequenceHash(NSArray<NSNumber *> *glyphs) {
     NSUInteger hash = glyphs.count;
     for (NSNumber *glyph in glyphs)
         hash = (hash * 31) ^ glyph.hash;
+    return hash;
+}
+
+static NSNumber *GAVariantBucket(NSArray<NSNumber *> *glyphs, BOOL ligature, NSRange range) {
+    NSUInteger hash = GAGlyphSequenceHash(glyphs);
     hash = (hash * 31) ^ ligature;
     if (ligature) {
         hash = (hash * 31) ^ range.location;

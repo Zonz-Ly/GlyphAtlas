@@ -246,14 +246,26 @@ static NSArray<GACharacterGroup *> *GAInsertCombinationGroups(
         NSRange range = rangeValue.rangeValue;
         NSMutableArray<GAGlyphVariant *> *variants = byRange[rangeValue];
         NSMutableArray<GAGlyphVariant *> *unique = [NSMutableArray array];
-        NSMutableSet *glyphKeys = [NSMutableSet set];
+        NSMutableDictionary<NSNumber *, NSMutableArray<GAGlyphVariant *> *> *glyphBuckets =
+            [NSMutableDictionary dictionary];
         for (GAGlyphVariant *variant in variants) {
             NSArray<NSNumber *> *glyphIDs = variant.glyphIDs;
-            id key = glyphIDs.count < 2 ? ((id)glyphIDs.firstObject ?: @"∅")
-                : [glyphIDs componentsJoinedByString:@","];
-            if ([glyphKeys containsObject:key])
+            NSNumber *key = @(GAGlyphSequenceHash(glyphIDs));
+            NSMutableArray<GAGlyphVariant *> *bucket = glyphBuckets[key];
+            BOOL duplicate = NO;
+            for (GAGlyphVariant *existing in bucket) {
+                if ([existing.glyphIDs isEqualToArray:glyphIDs]) {
+                    duplicate = YES;
+                    break;
+                }
+            }
+            if (duplicate)
                 continue;
-            [glyphKeys addObject:key];
+            if (!bucket) {
+                bucket = [NSMutableArray array];
+                glyphBuckets[key] = bucket;
+            }
+            [bucket addObject:variant];
             [unique addObject:variant];
         }
         GAGlyphVariant *base = unique.firstObject;

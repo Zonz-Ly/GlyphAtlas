@@ -9,6 +9,9 @@ NS_ASSUME_NONNULL_BEGIN
 /// The point size at which variants are shaped.
 FOUNDATION_EXPORT const CGFloat GAFontShapingSize;
 
+/// Hash for ordered GID arrays; callers must still compare the complete array.
+FOUNDATION_EXPORT NSUInteger GAGlyphSequenceHash(NSArray<NSNumber *> *glyphIDs);
+
 /// A small ARC-friendly owner for a CoreText font.
 @interface GAFontBox : NSObject
 @property (nonatomic, readonly) CTFontRef font;
