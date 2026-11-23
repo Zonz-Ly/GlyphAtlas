@@ -384,11 +384,10 @@ bool OpenType::position(Buffer &buffer, const GDEF &gdef, const Settings &settin
                         const Metrics &metrics, size_t branch) const {
     if (!positioning_)
         throw InvalidTable("substitution program used for positioning");
-    auto steps = plan(settings, branch);
+    bool ownsKerning;
+    auto steps = buildPlan(settings, branch, &ownsKerning);
     Positioning(lookups_, gdef, settings, metrics, buffer).run(steps);
-    return std::any_of(steps.begin(), steps.end(), [](const LookupStep &step) {
-        return step.feature == tag('k', 'e', 'r', 'n');
-    });
+    return ownsKerning;
 }
 } // namespace ga::layout
 

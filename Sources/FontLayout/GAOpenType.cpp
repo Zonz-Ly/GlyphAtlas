@@ -551,6 +551,11 @@ static bool defaultFeature(Tag value, bool positioning) {
     return names.count(value);
 }
 std::vector<LookupStep> OpenType::plan(const Settings &settings, size_t branch) const {
+    return buildPlan(settings, branch);
+}
+std::vector<LookupStep> OpenType::buildPlan(const Settings &settings, size_t branch,
+                                         bool *ownsKerning) const {
+    if (ownsKerning) *ownsKerning = false;
     std::vector<LookupStep> result;
     auto script = selectScript(scripts_, settings.script);
     if (!script)
@@ -586,6 +591,8 @@ std::vector<LookupStep> OpenType::plan(const Settings &settings, size_t branch) 
         for (unsigned li : f.lookups) {
             if (li >= lookups_.size())
                 throw InvalidTable("feature lookup index outside list");
+            if (ownsKerning && f.name == tag('k', 'e', 'r', 'n'))
+                *ownsKerning = true;
             auto item = enabled.find(li);
             LookupStep step{li, value, f.name, explicitValue != settings.features.end()};
             if (item == enabled.end() || step.explicitValue)

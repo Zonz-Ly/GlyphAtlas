@@ -130,6 +130,69 @@ static void checkPlacementOrder() {
     }
     std::cout << "Placement order, replacement, pair, ligature and parent-chain controls PASS\n";
 }
+static void checkKernOwnership() {
+    ReviewCase shared;
+    for (const auto &test : reviewCases()) if (test.name=="shared_kern_owner") shared=test;
+    const Tag kern=tag('k','e','r','n'), dist=tag('d','i','s','t');
+    auto check=[&](const Bytes &bytes, const Settings &settings, bool owns, Tag label, bool explicitValue) {
+        OpenType ot{View(bytes),true};
+        auto plan=ot.plan(settings);
+        assert(plan.size()==1 && plan.front().lookup==0 && plan.front().feature==label &&
+               plan.front().explicitValue==explicitValue);
+        Buffer b=items(shared.glyphs);
+        GDEF gdef{View(shared.gdef)};
+        assert(ot.position(b,gdef,settings,metrics())==owns && b.front().xAdvance==550);
+        if (!owns) {
+            Kerning legacy{View(words({0,1,0,20,1,1,6,0,0,1,2,unsigned(-50)}))};
+            legacy.position(b,settings,gdef);
+        }
+        bool disabled=settings.features.count(kern) && !settings.features.at(kern);
+        assert(b.front().xAdvance==(owns || disabled ? 550 : 500));
+    };
+    Settings normal;
+    check(shared.gpos,normal,true,dist,false);
+    Settings off; off.features[kern]=0;
+    check(shared.gpos,off,false,dist,false);
+    Settings onlyKern; onlyKern.features[dist]=0;
+    check(shared.gpos,onlyKern,true,kern,false);
+    Settings both; both.features[dist]=1; both.features[kern]=1;
+    check(shared.gpos,both,true,kern,true);
+
+    size_t lang=View(shared.gpos).offset16(4).offset16(6).offset16(0).tableOffset();
+    Bytes reverse=shared.gpos;
+    put16(reverse,lang+6,1); put16(reverse,lang+8,0);
+    check(reverse,both,true,dist,true); // Keep the original winning label.
+    Bytes noKern=shared.gpos; put16(noKern,lang+4,1);
+    check(noKern,normal,false,dist,false); // This language only enables dist.
+
+    Bytes varied=shared.gpos;
+    for (size_t field : {4u,6u,8u}) put16(varied,field,View(shared.gpos).u16(field)+4);
+    varied.insert(varied.begin()+10,4,0); put32(varied,0,0x10001);
+    size_t fv=varied.size(); put32(varied,10,fv);
+    append(varied,words({1,0,0,1,0,0,0,16,1,0,1,1,0,12,0,0})); // kern becomes empty.
+    OpenType variation{View(varied),true};
+    assert(variation.branchCount()==2 && variation.variationBranch({0})==1);
+    for (size_t branch : {0u,1u}) {
+        Buffer b=items(shared.glyphs);
+        assert(variation.position(b,GDEF{View(shared.gdef)},normal,metrics(),branch)==(branch==0));
+        assert(b.front().xAdvance==550);
+    }
+    Bytes invalid=shared.gpos;
+    View features=View(invalid).offset16(6);
+    size_t feature=features.offset16(6).tableOffset(); // Shared dist/kern feature table.
+    put16(invalid,feature+4,0xffff);
+    OpenType empty{View(invalid),true}; Buffer b=items(shared.glyphs);
+    assert(empty.plan(normal).empty());
+    assert(!empty.position(b,GDEF{View(shared.gdef)},normal,metrics()) && b.front().xAdvance==600);
+
+    Bytes truncated=shared.gpos; truncated.pop_back();
+    OpenType bad{View(truncated),true}; b=items(shared.glyphs);
+    bool returned=false, rejected=false;
+    try { returned=bad.position(b,GDEF{View(shared.gdef)},normal,metrics()); }
+    catch (const InvalidTable &) { rejected=true; }
+    assert(rejected && !returned);
+    std::cout << "Kern ownership, labels, disable, language, FV and failure controls PASS\n";
+}
 static Bytes variationTable(bool positioning, bool universalFirst) {
     Bytes b(14); put32(b,0,0x10001); put16(b,4,14);
     append(b,words({1,0x6c61,0x746e,8,4,0,0,0xffff,1,0}));
@@ -185,12 +248,7 @@ static void checkVariations() {
 }
 int main() {
     unsigned failures=0;
-    // Add confirmed regressions with each separately committed correction.
-    const std::set<std::string> covered={"null_feature_substitution", "mkmk_direct",
-        "mkmk_base_barrier", "single_then_attachment", "mkmk_uncovered_adjacent",
-        "mkmk_filtering_set", "mkmk_attachment_type", "attachment_then_single"};
     for (const auto &test : reviewCases()) {
-        if (!covered.count(test.name)) continue;
         std::cout << test.name << ": ";
         bool good=false;
         try {
@@ -208,5 +266,6 @@ int main() {
     catch (const std::exception &e) { std::cout << "FV ERROR: " << e.what() << '\n'; ++failures; }
     checkMarkFilters();
     checkPlacementOrder();
+    checkKernOwnership();
     return failures ? 1 : 0;
 }

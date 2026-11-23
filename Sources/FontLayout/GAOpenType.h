@@ -93,6 +93,8 @@ class OpenType {
     std::vector<Coverage> singlePositioningCoverages_;
     std::vector<std::vector<Feature>> branches_;
     std::vector<Script> scripts_;
+    std::vector<LookupStep> buildPlan(const Settings &settings, size_t branch,
+                                      bool *ownsKerning = nullptr) const;
 
   public:
     explicit OpenType(View table = {}, bool positioning = false);
