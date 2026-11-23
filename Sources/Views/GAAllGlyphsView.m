@@ -570,6 +570,10 @@ static const NSTimeInterval GAHighlightTick = 1.0 / 30.0;
     }
 }
 
+- (CGFloat)rowStride {
+    return self.grid.cellSide + GAAllGlyphsVerticalGap;
+}
+
 - (void)setCellScale:(CGFloat)cellScale {
     CGFloat clamped = GAAllGlyphsClampScale(cellScale);
     if (fabs(clamped - _cellScale) < 1e-9) return;

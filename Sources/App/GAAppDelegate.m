@@ -335,11 +335,25 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
     panel.accessoryView = folders;
     panel.accessoryViewDisclosed = YES;
     self.openPanel = panel;
-    if (frame) [panel setFrame:frame.rectValue display:NO];
+    __block id positionObserver = nil;
+    if (frame) {
+        positionObserver = [NSNotificationCenter.defaultCenter
+            addObserverForName:NSWindowDidBecomeKeyNotification object:panel queue:nil
+            usingBlock:^(NSNotification *notification) {
+                [NSNotificationCenter.defaultCenter removeObserver:positionObserver];
+                positionObserver = nil;
+                // Presentation chooses the initial position; restore only after that.
+                [(NSWindow *)notification.object setFrameOrigin:frame.rectValue.origin];
+            }];
+    }
 
     [NSApp activateIgnoringOtherApps:YES];
     __weak typeof(self) weakSelf = self;
     [panel beginWithCompletionHandler:^(NSModalResponse result) {
+        if (positionObserver) {
+            [NSNotificationCenter.defaultCenter removeObserver:positionObserver];
+            positionObserver = nil;
+        }
         __strong typeof(weakSelf) self = weakSelf;
         NSURL *nextDirectory = self.pendingOpenPanelDirectory;
         NSValue *nextFrame = self.pendingOpenPanelFrame;
