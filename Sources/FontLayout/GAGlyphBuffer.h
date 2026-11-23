@@ -34,6 +34,7 @@ struct Item {
     bool ignorable = false;
     std::vector<Span> components;
     int component = -1;
+    uint64_t ligatureIdentity = 0; // Buffer-local owner token, not a GID; zero is unknown.
     double xAdvance = 0, yAdvance = 0, xOffset = 0, yOffset = 0;
 };
 using Buffer = std::vector<Item>;
@@ -45,6 +46,7 @@ struct Cluster {
     std::vector<Glyph> glyphs;
     // Aligned with glyphs when at least one mark has a known ligature component.
     std::vector<int> markComponents{};
+    std::vector<uint64_t> markLigatures{};
 };
 std::vector<Cluster> clusters(const Buffer &buffer);
 struct Change {
@@ -55,6 +57,7 @@ struct Change {
     bool vertical = false;
     bool inherited = false;
     std::vector<int> markComponents{};
+    std::vector<uint64_t> markLigatures{};
     std::vector<uint64_t> inputKey() const;
 };
 struct TraceStep {

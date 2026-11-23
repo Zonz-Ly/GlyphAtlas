@@ -245,6 +245,13 @@ class Positioning {
         }
         if (!parent)
             return {};
+        if (sub.type == 6) {
+            const auto &mark = buffer_[at], &base = buffer_[*parent];
+            if (mark.component >= 0 && base.component >= 0 &&
+                (mark.component != base.component ||
+                 (mark.ligatureIdentity && base.ligatureIdentity &&
+                  mark.ligatureIdentity != base.ligatureIdentity))) return {};
+        }
         int targetIndex = targets.index(buffer_[*parent].glyph);
         View array = d.offset16(10);
         std::optional<Point> base;

@@ -24,6 +24,8 @@ std::vector<Cluster> clusters(const Buffer &buffer) {
             if (!cluster.markComponents.empty() || item.component >= 0) {
                 cluster.markComponents.resize(cluster.glyphs.size(), -1);
                 cluster.markComponents.push_back(item.component);
+                cluster.markLigatures.resize(cluster.glyphs.size(), 0);
+                cluster.markLigatures.push_back(item.ligatureIdentity);
             }
             cluster.glyphs.push_back(item.glyph);
         }
@@ -86,9 +88,11 @@ void Trace::changed(const Buffer &before, const Buffer &after, const std::string
     auto old = clusters(window ? oldWindow : before), next = clusters(window ? newWindow : after);
     size_t firstChange = changes.size();
     auto append = [&](Span source, const std::vector<Glyph> &glyphs,
-                      const std::vector<int> &components = std::vector<int>{}) {
+                      const std::vector<int> &components = std::vector<int>{},
+                      const std::vector<uint64_t> &ligatures = std::vector<uint64_t>{}) {
         Change change{source, glyphs, feature, {}};
         change.markComponents = components;
+        change.markLigatures = ligatures;
         auto first = std::lower_bound(old.begin(), old.end(), source.start,
             [](const Cluster &input, uint32_t start) { return input.source.end <= start; });
         for (auto input = first; input != old.end() && input->source.start < source.end; ++input)
@@ -101,7 +105,7 @@ void Trace::changed(const Buffer &before, const Buffer &after, const std::string
             old.begin(), old.end(), cluster.source,
             [](const Cluster &item, Span source) { return item.source < source; });
         if (found == old.end() || !(found->source == cluster.source) || found->glyphs != cluster.glyphs)
-            append(cluster.source, cluster.glyphs, cluster.markComponents);
+            append(cluster.source, cluster.glyphs, cluster.markComponents, cluster.markLigatures);
     }
     // Prefix maxima allow each old interval to be tested independently, even
     // when source scopes overlap or nest after a rearrangement or insertion.

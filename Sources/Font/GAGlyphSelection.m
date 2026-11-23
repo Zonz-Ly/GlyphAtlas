@@ -17,11 +17,21 @@ NSString *const GAGlyphSelectionAttributeName = @"com.zonz.GlyphAtlas.glyphSelec
                     markComponents:(NSArray<NSNumber *> *)components
                     featureSources:(NSArray<NSString *> *)featureSources
                           ligature:(BOOL)ligature {
+    return [self initWithSourceText:sourceText glyphIDs:glyphIDs markComponents:components markLigatures:@[]
+        featureSources:featureSources ligature:ligature];
+}
+- (instancetype)initWithSourceText:(NSString *)sourceText
+                          glyphIDs:(NSArray<NSNumber *> *)glyphIDs
+                    markComponents:(NSArray<NSNumber *> *)components
+                     markLigatures:(NSArray<NSNumber *> *)ligatures
+                    featureSources:(NSArray<NSString *> *)featureSources
+                          ligature:(BOOL)ligature {
     self = [super init];
     if (self) {
         _sourceText = [sourceText copy];
         _glyphIDs = [glyphIDs copy];
         _markComponents = [components copy];
+        _markLigatures = [ligatures copy];
         _featureSources = [featureSources copy];
         _ligature = ligature;
     }
@@ -64,8 +74,10 @@ GAGlyphQueryIdentity *GAGlyphQueryKey(NSString *text, NSArray<GAGlyphSelectionRu
         hash = (hash * 31) ^ run.selection.glyphIDs.count;
         if (run.selection.markComponents.count) {
             [components addObject:run.selection.markComponents];
+            [components addObject:run.selection.markLigatures];
             for (NSNumber *component in run.selection.markComponents)
                 hash = (hash * 31) ^ component.unsignedIntegerValue;
+            for (NSNumber *owner in run.selection.markLigatures) hash=(hash*31)^owner.unsignedIntegerValue;
         }
     }
     GAGlyphQueryIdentity *key = [[GAGlyphQueryIdentity alloc] init];

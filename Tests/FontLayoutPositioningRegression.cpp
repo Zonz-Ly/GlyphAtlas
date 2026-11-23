@@ -160,6 +160,19 @@ static void checkCursivePlacement() {
     assert(b[0].yOffset==-230 && b[1].yOffset==-110 && b[2].yOffset==0);
     std::cout << "Cursive placement order, parent, reattachment and both axes PASS\n";
 }
+static void checkMarkComponentBoundaries() {
+    GDEF gdef; gdef.glyphClasses=ClassDef(View(words({1,1,4,1,2,3,3})));
+    OpenType ot{View(positioningTable({markLookup(5,3,2,{500,900}),markLookup(5,4,2,{500,900}),
+                                      markLookup(6,4,3,{200})})),true};
+    struct Test { int first,second; uint64_t a,b; double y; };
+    for (auto t:std::vector<Test>{{0,0,1,1,700},{0,1,1,1,900},{1,1,1,1,1100},
+                                  {0,0,1,2,500},{-1,-1,0,0,1100}}) {
+        Buffer b=items({2,3,4}); b[1].component=t.first; b[2].component=t.second;
+        b[1].ligatureIdentity=t.a; b[2].ligatureIdentity=t.b;
+        ot.position(b,gdef,Settings{},metrics()); assert(b[2].yOffset==t.y);
+    }
+    std::cout << "Mark component/ligature boundaries and unknown fallback PASS\n";
+}
 static Bytes pairPosition(bool placement) {
     Bytes sub=words({1,0,placement ? 0u : 4u,placement ? 3u : 0u,1,0});
     put16(sub,2,append(sub,words({1,1,1})));
@@ -339,6 +352,7 @@ int main() {
     checkMarkFilters();
     checkCursiveChains();
     checkCursivePlacement();
+    checkMarkComponentBoundaries();
     checkPlacementOrder();
     checkKernOwnership();
     return failures ? 1 : 0;

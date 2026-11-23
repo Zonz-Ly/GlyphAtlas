@@ -2,12 +2,14 @@
 #import "Views/GAAppKit.h"
 
 NS_ASSUME_NONNULL_BEGIN
+@class GAGlyphIdentity;
 
 @interface GAGlyphNavigationStep : NSObject <NSCopying>
 @property (nonatomic) GAViewMode mode;
 @property (nonatomic, copy, nullable) NSString *filterTag;
 @property (nonatomic) BOOL filterChange;
 @property (nonatomic, copy, nullable) NSArray<NSNumber *> *glyphIDs;
+@property (nonatomic, copy, nullable) GAGlyphIdentity *glyphIdentity;
 @property (nonatomic) NSRange range;
 @property (nonatomic, copy, nullable) NSString *sourceText;
 @property (nonatomic, copy, nullable) NSString *glyphLabel;

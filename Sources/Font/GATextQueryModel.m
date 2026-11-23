@@ -100,7 +100,7 @@ static GACharacterGroup *SelectionGroup(GAGlyphSelectionRun *run, GAFontDocument
                                         BOOL (^cancelled)(void)) {
     GAGlyphSelection *selection = run.selection;
     NSArray<GAGlyphVariant *> *variants = [document variantsForGlyphIDs:selection.glyphIDs
-        markComponents:selection.markComponents content:selection.sourceText cancelled:cancelled];
+        markComponents:selection.markComponents markLigatures:selection.markLigatures content:selection.sourceText cancelled:cancelled];
     GAGlyphVariant *base = variants.firstObject;
     if (base == nil) {
         return nil;
@@ -158,7 +158,8 @@ static void GAMergeSelectionCandidate(GAGlyphVariant *candidate, NSMutableArray 
                                        GAFontDocument *document, NSString *text) {
     for (GAGlyphVariant *existing in variants)
         if ([existing.glyphIDs isEqual:candidate.glyphIDs] &&
-            [existing.markComponents isEqualToArray:candidate.markComponents]) {
+            [existing.markComponents isEqualToArray:candidate.markComponents] &&
+            [existing.markLigatures isEqualToArray:candidate.markLigatures]) {
             [existing addFeatureSources:candidate.featureSources];
             return;
         }
@@ -257,7 +258,8 @@ static NSArray<GACharacterGroup *> *GAInsertCombinationGroups(
             BOOL duplicate = NO;
             for (GAGlyphVariant *existing in bucket) {
                 if ([existing.glyphIDs isEqualToArray:glyphIDs] &&
-                    [existing.markComponents isEqualToArray:variant.markComponents]) {
+                    [existing.markComponents isEqualToArray:variant.markComponents] &&
+                    [existing.markLigatures isEqualToArray:variant.markLigatures]) {
                     duplicate = YES;
                     break;
                 }
@@ -413,7 +415,8 @@ NSArray<GACharacterGroup *> *GABuildDisplayGroups(NSArray<GACharacterGroup *> *g
                 for (GAGlyphSelectionRun *run in matchingSelections)
                     if (NSEqualRanges(run.range, variant.sourceTextRange) &&
                         [run.selection.glyphIDs isEqual:variant.glyphIDs] &&
-                        [run.selection.markComponents isEqualToArray:variant.markComponents]) {
+                        [run.selection.markComponents isEqualToArray:variant.markComponents] &&
+                        [run.selection.markLigatures isEqualToArray:variant.markLigatures]) {
                         sameAsInput = YES;
                         break;
                     }

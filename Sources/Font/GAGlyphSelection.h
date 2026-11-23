@@ -12,6 +12,7 @@ FOUNDATION_EXPORT NSString *const GAGlyphSelectionAttributeName;
 @property(nonatomic, copy, readonly) NSString *sourceText;
 @property(nonatomic, copy, readonly) NSArray<NSNumber *> *glyphIDs;
 @property(nonatomic, copy, readonly) NSArray<NSNumber *> *markComponents;
+@property(nonatomic, copy, readonly) NSArray<NSNumber *> *markLigatures;
 /// Feature labels for the glyph list, not a shaping recipe.
 @property(nonatomic, copy, readonly) NSArray<NSString *> *featureSources;
 @property(nonatomic, readonly, getter=isLigature) BOOL ligature;
@@ -22,6 +23,12 @@ FOUNDATION_EXPORT NSString *const GAGlyphSelectionAttributeName;
 - (instancetype)initWithSourceText:(NSString *)sourceText
                           glyphIDs:(NSArray<NSNumber *> *)glyphIDs
                     markComponents:(NSArray<NSNumber *> *)components
+                    featureSources:(NSArray<NSString *> *)featureSources
+                          ligature:(BOOL)ligature;
+- (instancetype)initWithSourceText:(NSString *)sourceText
+                          glyphIDs:(NSArray<NSNumber *> *)glyphIDs
+                    markComponents:(NSArray<NSNumber *> *)components
+                     markLigatures:(NSArray<NSNumber *> *)ligatures
                     featureSources:(NSArray<NSString *> *)featureSources
                           ligature:(BOOL)ligature NS_DESIGNATED_INITIALIZER;
 - (instancetype)init NS_UNAVAILABLE;

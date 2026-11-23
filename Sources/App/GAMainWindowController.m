@@ -709,6 +709,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     step.mode = self.viewMode;
     if (self.viewMode == GAViewModeAllGlyphs) step.filterTag = self.allGlyphFeatureTag;
     step.glyphIDs = self.lastSelectedVariant.glyphIDs;
+    step.glyphIdentity = self.lastSelectedVariant.glyphIdentity;
     NSNumber *scalar = GAInputScalarForGlyph([self.fontDocument unicodeScalarsForGlyphIDs:step.glyphIDs]);
     step.glyphLabel = scalar ? GAStringFromUnicodeScalars(@[scalar]) : self.lastSelectedVariant.glyphName;
     step.range = self.sidebarViewController.selectedGlyphTextRange;
@@ -741,7 +742,8 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     if (step.allowsViewOnly) return GANavigationReady;
     if ([self navigationAnalysisPending]) return GANavigationPending;
     return [self navigationSelectionMatchesCurrentText:step] &&
-        [self.sidebarViewController containsGlyphIDs:step.glyphIDs textRange:step.range]
+        (step.glyphIdentity ? [self.sidebarViewController containsGlyphIdentity:step.glyphIdentity textRange:step.range]
+                           : [self.sidebarViewController containsGlyphIDs:step.glyphIDs textRange:step.range])
         ? GANavigationReady : GANavigationUnavailable;
 }
 
@@ -836,8 +838,10 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     [self cancelPendingNavigation];
     if (step.mode == GAViewModeAllGlyphs && ![self glyphFilterMatchesTag:step.filterTag])
         [self applyGlyphFilter:step.filterTag outputs:outputs];
-    if ([self navigationSelectionMatchesCurrentText:step])
-        [self.sidebarViewController selectGlyphIDs:step.glyphIDs textRange:step.range];
+    if ([self navigationSelectionMatchesCurrentText:step]) {
+        if (step.glyphIdentity) [self.sidebarViewController selectGlyphIdentity:step.glyphIdentity textRange:step.range];
+        else [self.sidebarViewController selectGlyphIDs:step.glyphIDs textRange:step.range];
+    }
     [self setViewMode:step.mode];
     self.navigationFilterChange = NO;
     self.suppressNavigationRecording = NO;
@@ -888,7 +892,9 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         ? [self.sidebarViewController glyphSequencesForTextRanges:ranges] : nil;
     for (NSMenuItem *item in glyphItems) {
         GAGlyphNavigationStep *step = item.representedObject;
-        item.enabled = sequences
+        item.enabled = step.glyphIdentity
+            ? [self.sidebarViewController containsGlyphIdentity:step.glyphIdentity textRange:step.range]
+            : sequences
             ? [sequences[[NSValue valueWithRange:step.range]] containsObject:step.glyphIDs]
             : [self.sidebarViewController containsGlyphIDs:step.glyphIDs textRange:step.range];
     }
@@ -1859,7 +1865,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     GAGlyphSelection *selection = [[GAGlyphSelection alloc]
         initWithSourceText:sourceText
                   glyphIDs:variant.glyphIDs
-            markComponents:variant.markComponents
+            markComponents:variant.markComponents markLigatures:variant.markLigatures
             featureSources:variant.featureSources
                   ligature:variant.isLigature || sourceText.length > 1];
     *outSelection = selection;
@@ -1910,7 +1916,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         for (GAGlyphVariant *variant in group.variants) {
             if (variant.isLigature != edit.variant.isLigature ||
                 !NSEqualRanges(GAExactGlyphSourceRange(variant, group), mapped) ||
-                ![variant.glyphIDs isEqualToArray:edit.variant.glyphIDs]) continue;
+                ![variant.glyphIdentity isEqual:edit.variant.glyphIdentity]) continue;
             if (match) return nil;
             match = [[GAPendingGlyphEdit alloc] init];
             match.group = group;
@@ -1969,7 +1975,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         : NSLocalizedString(@"Replace Glyph", @"Undo action for replacing a glyph");
     if (![self.sidebarViewController commitGlyphInput:attributedText replacingRange:replacedRange actionName:actionName]) return;
     if (!insert) {
-        [self.sidebarViewController selectGlyphIDsAfterNextReload:variant.glyphIDs textRange:range
+        [self.sidebarViewController selectGlyphIdentityAfterNextReload:variant.glyphIdentity textRange:range
             scroll:GAPendingSelectionScrollSelectedToTopIfNeeded];
     }
     [self scheduleAnalysisForReason:GAAnalysisInput];

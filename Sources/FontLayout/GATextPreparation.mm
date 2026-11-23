@@ -278,6 +278,8 @@ std::vector<TextRun> prepareText(NSString *text, const Cmap &cmap,
                 item.identity = identity++;
                 if (selection.selection.markComponents.count)
                     item.component = selection.selection.markComponents[componentIndex].intValue;
+                if (item.component>=0) item.ligatureIdentity=selection.selection.markLigatures.count
+                    ? selection.selection.markLigatures[componentIndex].unsignedLongLongValue:1;
                 ++componentIndex;
                 replacement.glyphs.push_back(item);
             }

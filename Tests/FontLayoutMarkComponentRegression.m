@@ -123,6 +123,8 @@ static void checkGlyphEntryPoints(NSString *dir) {
         for (GAGlyphVariant *v in variants) {
             if ([v.glyphIDs isEqual:@[@3,@5]]) {
                 single=YES; require([v.markComponents isEqual:input],@"Single substitution lost seed component");
+                NSArray *expected=@[@(input.count && [input.lastObject intValue]==0 ? 100:900),@500];
+                require([[points(v.positions,doc) lastObject] isEqual:expected],@"Derived seed candidate used fallback positioning");
             }
             if ([v.glyphIDs isEqual:@[@3,@5,@4]]) {
                 multiple=YES; NSArray *wanted=input.count ? @[@-1,input.lastObject,input.lastObject]:@[];
@@ -132,6 +134,16 @@ static void checkGlyphEntryPoints(NSString *dir) {
         }
         require(single && multiple && deletion,@"Seed derivation fixture incomplete");
     }
+    GAGlyphSelectionRun *run=[GAGlyphSelectionRun new]; run.range=NSMakeRange(0,3);
+    run.selection=[[GAGlyphSelection alloc] initWithSourceText:@"f\u0301i" glyphIDs:target()
+        markComponents:@[@-1,@0] featureSources:@[] ligature:YES];
+    GATextQueryModel *model=[[GATextQueryModel alloc] initWithFontDocument:doc];
+    require([model analyzeText:@"f\u0301i" selections:@[run] cancelled:nil],@"Derived selection query failed");
+    NSArray *display=GABuildDisplayGroups(model.groups,@"f\u0301i",@[run],doc,nil);
+    NSUInteger derived=0;
+    for (GACharacterGroup *g in display) if (g.seeded) for (GAGlyphVariant *v in g.variants)
+        if ([v.glyphIDs isEqual:@[@3,@5]]) { derived++; require([v.markComponents isEqual:@[@-1,@0]],@"Selection retained an unknown derived duplicate"); }
+    require(derived==1,@"Selection duplicated or lost a derived candidate");
 }
 static void checkFallback(GAFontDocument *doc, GAFontDocument *varied) {
     NSArray *disabled=@[@{(__bridge NSString *)kCTFontOpenTypeFeatureTag:@"liga",(__bridge NSString *)kCTFontOpenTypeFeatureValue:@0}];
@@ -150,6 +162,29 @@ static void checkFallback(GAFontDocument *doc, GAFontDocument *varied) {
     o=[engine originForGlyphIDs:target() sourceRange:group.textRange text:group.text selections:@[] candidates:@[target()]
         vertical:NO featureSettings:disabled baseWritingDirection:-1 languageTag:@"" cancelled:^BOOL { return NO; }];
     require(o && !o.markComponents.count,@"Unknown BFS source gained guessed components");
+}
+static void checkMarkBoundaries(NSString *dir) {
+    GAFontDocument *doc=document([dir stringByAppendingPathComponent:@"v6-boundary.ttf"]);
+    NSArray *texts=@[@"f\u0301\u0300if",@"f\u0301i\u0300f",@"fi\u0301\u0300f"];
+    NSArray *expected=@[@[@100,@700],@[@500,@500],@[@500,@700]];
+    for (NSUInteger i=0;i<texts.count;i++) {
+        GARawScanResult *raw=[doc rawScanContent:texts[i] selections:@[] cancelled:nil];
+        BOOL found=NO;
+        for (GAScanCandidate *c in raw.candidates) if ([c.glyphIDs isEqual:@[@3,@4,@5]]) {
+            found=YES; require([[points(c.positions,doc) lastObject] isEqual:expected[i]],@"Native mkmk crossed components");
+        }
+        require(found,@"Boundary candidate absent");
+    }
+    GASubstitutionEngine *engine=[[GASubstitutionEngine alloc] initWithFont:doc.fontBox.font coordinates:nil sharing:nil];
+    NSArray *ids=@[@3,@4,@5], *components=@[@-1,@0,@0], *owners=@[@0,@1,@2];
+    NSArray *origins=[engine positionsForGlyphIDs:ids markComponents:components markLigatures:owners content:@""];
+    require([[points(origins,doc) lastObject] isEqual:@[@100,@500]],@"Equal component numbers from different owners attached");
+    NSArray *variants=[doc variantsForGlyphIDs:ids markComponents:components markLigatures:owners content:@"" cancelled:nil];
+    require(variants.count==1,@"Owner seed fixture changed candidate count");
+    GAGlyphVariant *v=variants.firstObject;
+    require([v.markLigatures isEqual:owners] && [[points(v.positions,doc) lastObject] isEqual:@[@100,@500]],@"Owner seed lost its relationship");
+    v=[doc rebindVariant:v content:@""];
+    require([v.markLigatures isEqual:owners],@"Owner context lost during rebind");
 }
 int main(int argc,const char *argv[]) {
     @autoreleasepool {
@@ -190,6 +225,7 @@ int main(int argc,const char *argv[]) {
         checkSelections(doc);
         checkGlyphEntryPoints(dir);
         checkFallback(doc,varied);
+        checkMarkBoundaries(dir);
         GASubstitutionEngine *engine=[[GASubstitutionEngine alloc] initWithFont:doc.fontBox.font coordinates:nil sharing:nil];
         GASubstitutionOrigin *origin=[engine originForGlyphIDs:target() sourceRange:NSMakeRange(0,3)
             text:text selections:@[] candidates:@[@[@1,@4,@2]] vertical:NO featureSettings:@[]

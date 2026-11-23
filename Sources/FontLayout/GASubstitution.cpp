@@ -113,6 +113,7 @@ class Substitution {
         if (!positions)
             return {};
         Item ligature = buffer_[at];
+        ligature.ligatureIdentity = nextIdentity_++;
         ligature.glyph = pattern.replacement.front();
         ligature.components.clear();
         for (size_t pos : *positions) {
@@ -140,6 +141,7 @@ class Substitution {
                 unsigned relative = item.component >= 0 ? unsigned(item.component)
                                                        : componentEnd - componentStart - 1;
                 item.component = int(componentStart + std::min(relative,componentEnd-componentStart-1));
+                item.ligatureIdentity = ligature.ligatureIdentity;
                 item.source = merged;
             }
         }
@@ -444,12 +446,12 @@ void discover(const std::vector<Lookup> &lookups, const GDEF &gdef, Buffer &buff
     Budget budget(buffer.size(), cancellation, true);
     SubstitutionBuffer appliedBuffer(buffer);
     std::vector<CandidateState> states{{appliedBuffer, {}, {}}};
-    std::map<std::tuple<Span, std::vector<Glyph>, std::vector<int>, std::vector<uint64_t>>,
+    std::map<std::tuple<Span, std::vector<Glyph>, std::vector<int>, std::vector<uint64_t>, std::vector<uint64_t>>,
              std::set<std::string>> recorded;
     auto record = [&](const Trace &found, const Origins &origins) {
         for (const auto &change : found.changes) {
             if (cancellation) budget.poll();
-            auto &labels = recorded[{change.source, change.glyphs, change.markComponents, change.inputKey()}];
+            auto &labels = recorded[{change.source, change.glyphs, change.markComponents, change.markLigatures, change.inputKey()}];
             if (labels.insert(change.feature).second)
                 trace.changes.push_back(change);
             origins.overlapping(change.source, [&](const std::string &feature) {
@@ -573,7 +575,7 @@ namespace {
 bool equivalentItem(const Item &a, const Item &b) {
     return sameGlyphAndSource(a, b) && a.scalar == b.scalar &&
            a.form == b.form && a.ignorable == b.ignorable && a.component == b.component &&
-           a.components == b.components;
+           a.components == b.components && a.ligatureIdentity == b.ligatureIdentity;
 }
 
 size_t itemHash(const Item &item) {
@@ -585,6 +587,7 @@ size_t itemHash(const Item &item) {
     add(item.form);
     add(item.ignorable);
     add(size_t(item.component));
+    add(item.ligatureIdentity);
     for (const auto span : item.components) {
         add(span.start);
         add(span.end);
@@ -604,7 +607,7 @@ void SubstitutionBuffer::Piece::summarize() const {
     lastIdentity = 0;
     for (const auto &item : items) {
         hash = hash * factor + itemHash(item);
-        lastIdentity = std::max(lastIdentity, item.identity);
+        lastIdentity = std::max({lastIdentity, item.identity, item.ligatureIdentity});
         power *= factor;
         source = unite(source, item.source);
         hasEmptySource |= item.source.empty();

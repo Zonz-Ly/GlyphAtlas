@@ -9,6 +9,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic, copy) NSArray<NSNumber *> *glyphIDs;
 /// Empty for unknown association; otherwise one component index per GID (-1 for unknown).
 @property(nonatomic, copy) NSArray<NSNumber *> *markComponents;
+@property(nonatomic, copy) NSArray<NSNumber *> *markLigatures;
 @property(nonatomic, copy) NSArray<NSString *> *sources;
 @property(nonatomic) NSRange sourceRange;
 @property(nonatomic) BOOL base;
@@ -19,6 +20,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property(nonatomic) NSUInteger sourceIndex;
 @property(nonatomic, copy) NSArray<NSString *> *sources;
 @property(nonatomic, copy) NSArray<NSNumber *> *markComponents;
+@property(nonatomic, copy) NSArray<NSNumber *> *markLigatures;
 @end
 
 /// GSUB and AAT morx/mort discovery using the application's own table programs.
@@ -40,6 +42,10 @@ NS_ASSUME_NONNULL_BEGIN
 - (nullable NSArray<GASubstitutionMatch *> *)discoverGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
                                             markComponents:(NSArray<NSNumber *> *)components
                                                  cancelled:(BOOL (^_Nullable)(void))cancelled;
+- (nullable NSArray<GASubstitutionMatch *> *)discoverGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
+                                            markComponents:(NSArray<NSNumber *> *)components
+                                             markLigatures:(NSArray<NSNumber *> *)ligatures
+                                                 cancelled:(BOOL (^_Nullable)(void))cancelled;
 - (NSArray<NSString *> *)languageTags;
 - (NSArray<NSString *> *)glyphFeatureTags;
 - (nullable NSIndexSet *)glyphOutputsForFeatureTag:(NSString *)tag
@@ -52,6 +58,7 @@ NS_ASSUME_NONNULL_BEGIN
                                           selections:(NSArray<GAGlyphSelectionRun *> *)selections
                                           candidates:(NSArray<NSArray<NSNumber *> *> *)candidates
                                  candidateComponents:(nullable NSArray<NSArray<NSNumber *> *> *)components
+                                  candidateLigatures:(nullable NSArray<NSArray<NSNumber *> *> *)ligatures
                                             vertical:(BOOL)vertical
                                      featureSettings:(NSArray<NSDictionary *> *)featureSettings
                                 baseWritingDirection:(NSInteger)direction
@@ -71,6 +78,10 @@ NS_ASSUME_NONNULL_BEGIN
                                      content:(NSString *)content;
 - (NSArray<NSValue *> *)positionsForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
                             markComponents:(NSArray<NSNumber *> *)components
+                                   content:(NSString *)content;
+- (NSArray<NSValue *> *)positionsForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
+                            markComponents:(NSArray<NSNumber *> *)components
+                             markLigatures:(NSArray<NSNumber *> *)ligatures
                                    content:(NSString *)content;
 
 - (nullable NSNumber *)verticalGlyph:(uint16_t)glyph;

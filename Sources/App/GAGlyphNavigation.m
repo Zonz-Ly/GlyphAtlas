@@ -1,4 +1,5 @@
 #import "GAGlyphNavigation.h"
+#import "Font/GAFontEngine.h"
 
 @implementation GAGlyphNavigationStep
 
@@ -8,6 +9,7 @@
     step.filterTag = self.filterTag;
     step.filterChange = self.filterChange;
     step.glyphIDs = self.glyphIDs;
+    step.glyphIdentity = self.glyphIdentity;
     step.range = self.range;
     step.sourceText = self.sourceText;
     step.glyphLabel = self.glyphLabel;
@@ -19,6 +21,9 @@
     if (!other || self.mode != other.mode) return NO;
     if (self.mode == GAViewModeAllGlyphs && self.filterTag != other.filterTag &&
         ![self.filterTag isEqualToString:other.filterTag]) return NO;
+    if (self.glyphIdentity && other.glyphIdentity) return [self.glyphIdentity isEqual:other.glyphIdentity];
+    GAGlyphIdentity *known=self.glyphIdentity ?: other.glyphIdentity;
+    if (known.markComponents.count || known.markLigatures.count) return NO;
     return self.glyphIDs == other.glyphIDs || [self.glyphIDs isEqualToArray:other.glyphIDs];
 }
 
@@ -54,7 +59,8 @@
 
 static BOOL GAPairedGlyphViews(GAGlyphNavigationStep *first, GAGlyphNavigationStep *second) {
     return first && second && first.mode != second.mode && first.glyphIDs.count &&
-        [first.glyphIDs isEqualToArray:second.glyphIDs];
+        [first.glyphIDs isEqualToArray:second.glyphIDs] &&
+        (!first.glyphIdentity || !second.glyphIdentity || [first.glyphIdentity isEqual:second.glyphIdentity]);
 }
 
 @implementation GAGlyphNavigationHistory {
