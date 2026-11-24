@@ -247,10 +247,12 @@ NSArray<NSArray<NSNumber *> *> *structureArray(const Structures &values) {
     for (auto value : values) [result addObject:@[@(value.first), @(value.second)]];
     return result;
 }
-Structures replacingStructures(NSArray<NSArray<NSNumber *> *> *values, size_t index, size_t count) {
+Structures replacingStructures(NSArray<NSArray<NSNumber *> *> *values,
+    NSArray<NSNumber *> *components, size_t index, size_t count) {
     auto result = structureVector(values);
     if (result.empty()) return result;
-    auto value = result.at(index);
+    auto value = multipleSubstitutionStructure(result.at(index),
+        components.count ? components[index].intValue : -1, count);
     result.erase(result.begin() + index);
     result.insert(result.begin() + index, count, value);
     return result;
@@ -720,7 +722,7 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
                     merge(seen, matches, cluster.source, sequence, output[@"source"], NO,
                           replacingComponents(componentArray(cluster.markComponents), i, [output[@"glyphs"] count]),
                           replacingLigatures(componentArray(cluster.markComponents),ligatureArray(cluster.markLigatures), i, [output[@"glyphs"] count]),
-                          replacingStructures(structureArray(cluster.ligatureStructures), i, [output[@"glyphs"] count]));
+                          replacingStructures(structureArray(cluster.ligatureStructures), componentArray(cluster.markComponents), i, [output[@"glyphs"] count]));
                 }
     std::vector<std::map<size_t, Trace>> appleResults(runs.size());
     for (size_t domainIndex = 0; domainIndex < r.domains.size(); ++domainIndex) {
@@ -848,7 +850,7 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
                       replacingGlyph(original, i, output), output[@"source"], NO,
                       replacingComponents(match.markComponents, i, [output[@"glyphs"] count]),
                       replacingLigatures(match.markComponents,match.markLigatures,i,[output[@"glyphs"] count]),
-                      replacingStructures(match.ligatureStructures, i, [output[@"glyphs"] count]));
+                      replacingStructures(match.ligatureStructures, match.markComponents, i, [output[@"glyphs"] count]));
     }
     // Report these code points as missing without adding them to the shaping input.
     for (Span span : unpairedSelectors) {
@@ -1165,7 +1167,7 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
                                            verticalSource(label) || [output[@"vertical"] boolValue],
                                            replacingComponents(componentArray(state.components),i,[output[@"glyphs"] count]),
                                            replacingLigatures(componentArray(state.components),ligatureArray(state.ligatures),i,[output[@"glyphs"] count]),
-                                           replacingStructures(structureArray(state.structures),i,[output[@"glyphs"] count])});
+                                           replacingStructures(structureArray(state.structures),componentArray(state.components),i,[output[@"glyphs"] count])});
                     }
                 NSMutableArray *seedRuns = [NSMutableArray array];
                 for (GAGlyphSelectionRun *selection in selections)
@@ -1565,7 +1567,7 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
                 merge(seen, matches, whole, sequence, output[@"source"], NO,
                       replacingComponents(components,i,[output[@"glyphs"] count]),
                       replacingLigatures(components,ligatures,i,[output[@"glyphs"] count]),
-                      replacingStructures(structures, i, [output[@"glyphs"] count]));
+                      replacingStructures(structures, components, i, [output[@"glyphs"] count]));
             }
         checkCancellation(check);
         if (complete)

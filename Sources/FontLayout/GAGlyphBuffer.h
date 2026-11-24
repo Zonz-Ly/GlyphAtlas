@@ -42,6 +42,8 @@ inline bool sameGlyphAndSource(const Item &a, const Item &b) {
     return a.glyph == b.glyph && a.source == b.source;
 }
 using LigatureStructures = std::vector<std::pair<unsigned, uint64_t>>;
+LigatureStructures::value_type multipleSubstitutionStructure(
+    LigatureStructures::value_type structure, int component, size_t outputCount);
 struct Cluster {
     Span source;
     std::vector<Glyph> glyphs;

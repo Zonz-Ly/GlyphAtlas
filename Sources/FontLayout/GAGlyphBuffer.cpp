@@ -1,5 +1,13 @@
 #include "GAGlyphBuffer.h"
 namespace ga::layout {
+LigatureStructures::value_type multipleSubstitutionStructure(
+    LigatureStructures::value_type structure, int component, size_t outputCount) {
+    if (outputCount == 1) return structure;
+    // A decomposed base contributes one component per output. An attached
+    // mark keeps its external association, not its own old ligature structure.
+    if (outputCount > 1 && component < 0 && structure.first) return {1, structure.second};
+    return {};
+}
 LigatureStructures canonicalLigatureStructures(const std::vector<int> &components,
     const std::vector<uint64_t> &owners, LigatureStructures structures) {
     if (std::none_of(structures.begin(), structures.end(), [](auto s) { return s.first != 0; })) return {};

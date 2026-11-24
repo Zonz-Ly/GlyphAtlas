@@ -119,13 +119,19 @@ class Substitution {
         struct ConsumedLigature {
             unsigned componentStart;
             Span source;
+            bool singleBasePiece;
         };
         std::map<uint64_t, ConsumedLigature> oldOwners;
         for (size_t pos : *positions) {
             const auto &component = buffer_[pos];
-            if (component.ligatureIdentity)
-                oldOwners.emplace(component.ligatureIdentity,
-                    ConsumedLigature{unsigned(ligature.components.size()), component.source});
+            if (component.ligatureIdentity) {
+                bool piece = component.component < 0 && component.components.size() == 1;
+                ConsumedLigature consumed{unsigned(ligature.components.size()), component.source, piece};
+                // Only split base pieces share this local one-component
+                // meaning. Mark ligatures retain their external association.
+                if (piece) oldOwners.insert_or_assign(component.ligatureIdentity, consumed);
+                else oldOwners.emplace(component.ligatureIdentity, consumed);
+            }
             if (component.components.empty())
                 ligature.components.push_back(component.source);
             else
@@ -162,7 +168,8 @@ class Substitution {
             if (buffer_[pos].ligatureIdentity && owner == oldOwners.end()) continue;
             auto &item = buffer_.edit(pos);
             if (owner != oldOwners.end() && item.component >= 0) {
-                item.component += int(owner->second.componentStart);
+                item.component = int(owner->second.componentStart +
+                    (owner->second.singleBasePiece ? 0 : unsigned(item.component)));
                 // Only an already atomic source follows the consumed ligature.
                 // Association alone does not consume an independent tail mark.
                 if (item.source == owner->second.source)
@@ -227,6 +234,10 @@ class Substitution {
             for (size_t i = 0; i < outputs.size(); i++) {
                 Item item = buffer_[at];
                 item.glyph = outputs[i];
+                auto structure = multipleSubstitutionStructure(
+                    {unsigned(item.components.size()), item.ligatureIdentity}, item.component, outputs.size());
+                item.components.assign(structure.first, item.source);
+                if (item.component < 0) item.ligatureIdentity = structure.second;
                 if (i)
                     item.identity = nextIdentity_++;
                 inserted.push_back(std::move(item));
