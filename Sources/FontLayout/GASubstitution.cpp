@@ -108,16 +108,15 @@ class Substitution {
         frames_.pop_back();
         return {true, next};
     }
-    Applied ligate(const Pattern &pattern, const Lookup &lookup, size_t at) {
-        auto positions = match(pattern, buffer_, at, gdef_, lookup);
+    std::optional<std::vector<size_t>> matchLigature(const Pattern &pattern, const Lookup &lookup,
+                                                     size_t at, Span *scope = nullptr) {
+        auto positions = match(pattern, buffer_, at, gdef_, lookup, scope);
         if (!positions)
             return {};
         const auto &first = buffer_[at];
         std::optional<bool> maySkipBase;
-        bool markLigature = gdef_.glyphClasses.get(first.glyph) == 3;
         for (size_t i = 1; i < positions->size(); ++i) {
             const auto &item = buffer_[(*positions)[i]];
-            markLigature &= gdef_.glyphClasses.get(item.glyph) == 3;
             if (first.ligatureIdentity && first.component >= 0) {
                 if (item.ligatureIdentity == first.ligatureIdentity && item.component == first.component)
                     continue;
@@ -140,13 +139,26 @@ class Substitution {
                        item.ligatureIdentity != first.ligatureIdentity)
                 return {};
         }
+        return positions;
+    }
+    Applied ligate(const Pattern &pattern, const Lookup &lookup, size_t at) {
+        auto positions = matchLigature(pattern, lookup, at);
+        if (!positions)
+            return {};
+        unsigned firstClass = gdef_.glyphClasses.get(buffer_[at].glyph);
+        bool baseLigature = firstClass == 1, markLigature = firstClass == 3;
+        for (size_t i = 1; i < positions->size(); ++i)
+            if (gdef_.glyphClasses.get(buffer_[(*positions)[i]].glyph) != 3) {
+                baseLigature = markLigature = false;
+                break;
+            }
         Item ligature = buffer_[at];
         Span merged = buffer_[positions->front()].source;
         for (size_t pos : *positions)
             merged = unite(merged, buffer_[pos].source);
-        if (markLigature) {
-            // This is still a mark attached to an external base/component,
-            // not a new base owner for the surrounding marks.
+        if (baseLigature || markLigature) {
+            // Consuming marks keeps the first base or mark's existing meaning;
+            // those marks do not introduce new base components or an owner.
             ligature.glyph = pattern.replacement.front();
             ligature.source = merged;
             for (size_t i = positions->size(); i > 1; --i)
@@ -374,7 +386,10 @@ class Substitution {
             for (unsigned pi : candidates->second) {
                 budget_.step();
                 Span scope;
-                if (match(sub.patterns[pi], buffer_, at, gdef_, lookup, &scope))
+                auto positions = sub.type == 4
+                    ? matchLigature(sub.patterns[pi], lookup, at, &scope)
+                    : match(sub.patterns[pi], buffer_, at, gdef_, lookup, &scope);
+                if (positions)
                     result.push_back({&sub, pi, scope});
             }
         }
