@@ -3,6 +3,7 @@
 
 NS_ASSUME_NONNULL_BEGIN
 @class GAGlyphIdentity;
+@class GAInputSourceAnchor;
 
 @interface GAGlyphNavigationStep : NSObject <NSCopying>
 @property (nonatomic) GAViewMode mode;
@@ -14,6 +15,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, copy, nullable) NSString *sourceText;
 @property (nonatomic, copy, nullable) NSString *glyphLabel;
 @property (nonatomic, strong, nullable) NSMutableDictionary<NSString *, NSValue *> *sourceRecoveryRanges;
+/// Live input coordinates while the displayed snapshot still has older text.
+@property (nonatomic, strong, nullable) GAInputSourceAnchor *pendingSourceAnchor;
 @property (nonatomic, readonly) BOOL allowsViewOnly;
 - (BOOL)matchesLocation:(nullable GAGlyphNavigationStep *)other;
 - (BOOL)matchesSourceInText:(nullable NSString *)text;

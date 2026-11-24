@@ -433,6 +433,7 @@ static NSString *GADisplayLabelForGlyph(GAGlyphLabels *labels, NSNumber *number)
 #pragma mark - Font substitution discovery
 
 - (GAGlyphResolution *)resolveGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
+                    matchingIdentity:(GAGlyphIdentity *)identity
                             textRange:(NSRange)range
                                  text:(NSString *)text
                            selections:(NSArray<GAGlyphSelectionRun *> *)selections
@@ -457,7 +458,14 @@ static NSString *GADisplayLabelForGlyph(GAGlyphLabels *labels, NSNumber *number)
             [structures addObject:variant.ligatureStructures];
         }
     }
-    GASubstitutionOrigin *source = [_substitutionEngine originForGlyphIDs:glyphIDs
+    BOOL (^matchesOrigin)(GASubstitutionOrigin *) = nil;
+    if (identity) matchesOrigin = ^BOOL(GASubstitutionOrigin *origin) {
+        GAGlyphIdentity *resolved = [[GAGlyphIdentity alloc] initWithGlyphIDs:glyphIDs
+            markComponents:origin.markComponents markLigatures:origin.markLigatures
+            ligatureStructures:origin.ligatureStructures];
+        return [resolved isEqual:identity];
+    };
+    GASubstitutionOrigin *source = [_substitutionEngine originForGlyphIDs:glyphIDs matchingOrigin:matchesOrigin
         sourceRange:range text:text selections:selections candidates:sequences
         candidateComponents:components
         candidateLigatures:ligatures candidateStructures:structures

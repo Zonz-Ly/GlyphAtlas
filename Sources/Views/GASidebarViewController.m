@@ -5,6 +5,12 @@
 #import "Font/GAUnicode.h"
 #import "GAAppKit.h"
 
+@interface GAInputSourceAnchor ()
+@property (nonatomic) NSRange range;
+@end
+@implementation GAInputSourceAnchor
+@end
+
 @interface GARowItem : NSObject
 @property (nonatomic, strong, nonnull) GACharacterGroup *group;
 @property (nonatomic, strong, nonnull) GAGlyphVariant *variant;
@@ -117,6 +123,7 @@ static NSArray<GARowItem *> *GARowsForGroups(NSArray<GACharacterGroup *> *groups
 @property (nonatomic, copy, nullable) NSString *displayedText;
 @property (nonatomic, copy, nullable) NSString *trackedFieldText;
 @property (nonatomic, strong, nullable) NSMutableData *displayedSourceEdits;
+@property (nonatomic, strong) NSHashTable<GAInputSourceAnchor *> *inputSourceAnchors;
 @property (nonatomic, strong, nullable) GAGlyphVariant *selectedVariant;
 @property (nonatomic) NSRange selectedVariantTextRange;
 @property (nonatomic) BOOL suppressSelectionCallback;
@@ -591,6 +598,22 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
             GANormalizedSidebarInput(text, self.toolbarInputField.font, [self inputTextColor]);
 }
 
+- (GAInputSourceAnchor *)trackInputSourceRange:(NSRange)range {
+    GAInputSourceAnchor *anchor = [GAInputSourceAnchor new];
+    anchor.range = range;
+    if (!self.inputSourceAnchors) self.inputSourceAnchors = NSHashTable.weakObjectsHashTable;
+    [self.inputSourceAnchors addObject:anchor];
+    return anchor;
+}
+
+- (void)recordSourceEdit:(GASourceEdit)edit text:(NSString *)text exact:(BOOL)exact {
+    for (GAInputSourceAnchor *anchor in self.inputSourceAnchors)
+        anchor.range = exact ? GARemapSourceRange(anchor.range, edit) : NSMakeRange(NSNotFound, 0);
+    if (exact) [self.displayedSourceEdits appendBytes:&edit length:sizeof(edit)];
+    else self.displayedSourceEdits = nil;
+    self.trackedFieldText = text;
+}
+
 - (BOOL)commitGlyphInput:(NSAttributedString *)attributedText
           replacingRange:(NSRange)range actionName:(NSString *)actionName {
     GAGlyphInputEditor *editor = self.inputEditor;
@@ -611,13 +634,9 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
                                replacementString:changesCharacters ? replacement.string : nil];
     if (applied) {
         if (changesCharacters) {
-            if ([self.trackedFieldText isEqualToString:storage.string]) {
-                GASourceEdit edit = {range, (NSInteger)replacement.length - (NSInteger)storage.length};
-                [self.displayedSourceEdits appendBytes:&edit length:sizeof(edit)];
-                self.trackedFieldText = replacement.string;
-            } else {
-                self.displayedSourceEdits = nil;
-            }
+            GASourceEdit edit = {range, (NSInteger)replacement.length - (NSInteger)storage.length};
+            [self recordSourceEdit:edit text:replacement.string
+                exact:[self.trackedFieldText isEqualToString:storage.string]];
             [storage replaceCharactersInRange:all withAttributedString:replacement];
         } else {
             GAApplyInputAttributes(storage, replacement);
@@ -836,15 +855,14 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
         self.inputAutoSelectionRange = changed.length
             ? NSMakeRange(NSMaxRange(changed) - 1, 1) : NSMakeRange(0, 0);
     }
-    if (!self.displayedSourceEdits) return;
     NSString *before = self.trackedFieldText;
     NSString *after = storage.string;
     NSInteger shift = storage.changeInLength;
     NSInteger oldLength = (NSInteger)changed.length - shift;
-    if (changed.location > before.length || NSMaxRange(changed) > after.length ||
+    if (!before || changed.location > before.length || NSMaxRange(changed) > after.length ||
         oldLength < 0 || (NSUInteger)oldLength > before.length - changed.location ||
         (NSInteger)before.length + shift != (NSInteger)after.length) {
-        self.displayedSourceEdits = nil;
+        [self recordSourceEdit:(GASourceEdit){} text:after exact:NO];
         return;
     }
     NSRange replaced = NSMakeRange(changed.location, (NSUInteger)oldLength);
@@ -852,19 +870,18 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
     // AppKit. Such a replay does not identify the source spans that survived.
     if (replaying && replaced.location == 0 && replaced.length == before.length &&
         replaced.length && changed.length) {
-        self.displayedSourceEdits = nil;
+        [self recordSourceEdit:(GASourceEdit){} text:after exact:NO];
         return;
     }
     if (![[before substringToIndex:replaced.location] isEqualToString:[after substringToIndex:changed.location]] ||
         ![[before substringFromIndex:NSMaxRange(replaced)] isEqualToString:[after substringFromIndex:NSMaxRange(changed)]]) {
-        self.displayedSourceEdits = nil;
+        [self recordSourceEdit:(GASourceEdit){} text:after exact:NO];
         return;
     }
     GASourceEdit edit = { replaced, shift };
-    if (!replaying && changed.length == 0 && replaced.length && after.length)
+    if (self.displayedSourceEdits && !replaying && changed.length == 0 && replaced.length && after.length)
         self.inputAutoSelectionRange = [self autoSelectionRangeAfterDeleting:edit];
-    [self.displayedSourceEdits appendBytes:&edit length:sizeof(edit)];
-    self.trackedFieldText = after;
+    [self recordSourceEdit:edit text:after exact:YES];
 }
 
 - (NSRange)currentInputRangeForDisplayedRange:(NSRange)range {

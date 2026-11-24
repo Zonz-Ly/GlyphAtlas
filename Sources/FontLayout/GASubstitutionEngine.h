@@ -50,7 +50,9 @@ NS_ASSUME_NONNULL_BEGIN
                                           cancelled:(BOOL (^_Nullable)(void))cancelled;
 /// Lazy reverse lookup for a missing native layout GID/sequence. Candidate
 /// rows all belong to sourceRange, in their existing sidebar order.
+/// An optional predicate rejects incompatible provenance without ending the search.
 - (nullable GASubstitutionOrigin *)originForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
+                                     matchingOrigin:(BOOL (^_Nullable)(GASubstitutionOrigin *))matchesOrigin
                                          sourceRange:(NSRange)sourceRange
                                                 text:(NSString *)text
                                           selections:(NSArray<GAGlyphSelectionRun *> *)selections

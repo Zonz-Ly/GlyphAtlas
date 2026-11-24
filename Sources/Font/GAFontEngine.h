@@ -176,7 +176,9 @@ FOUNDATION_EXPORT NSArray<GACharacterGroup *> *GAGroupsForScanResult(NSString *t
 
 /// Resolves a missing native glyph against existing rows at the same source
 /// range. Returns a decorated temporary row and its existing parent.
+/// A supplied identity constrains the search to that complete provenance.
 - (nullable GAGlyphResolution *)resolveGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
+                              matchingIdentity:(nullable GAGlyphIdentity *)identity
                                      textRange:(NSRange)range
                                           text:(NSString *)text
                                     selections:(NSArray<GAGlyphSelectionRun *> *)selections

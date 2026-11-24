@@ -518,6 +518,7 @@ struct OriginQuery {
     NSRange sourceRange{};
     Span span;
     std::vector<Glyph> target;
+    BOOL (^matchesOrigin)(GASubstitutionOrigin *) = nil;
     std::vector<std::vector<Glyph>> sources;
     std::vector<std::vector<int>> sourceComponents;
     std::vector<std::vector<uint64_t>> sourceLigatures;
@@ -1025,6 +1026,7 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
 }
 
 - (GASubstitutionOrigin *)originForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
+                             matchingOrigin:(BOOL (^)(GASubstitutionOrigin *))matchesOrigin
                                 sourceRange:(NSRange)sourceRange
                                        text:(NSString *)text
                                  selections:(NSArray<GAGlyphSelectionRun *> *)selections
@@ -1052,6 +1054,7 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
     query.direction = direction;
     query.languageTag = languageTag;
     query.target = glyphVector(glyphIDs);
+    query.matchesOrigin = matchesOrigin;
     for (NSArray *candidate in candidates)
         query.sources.push_back(glyphVector(candidate));
     query.sourceComponents.resize(query.sources.size());
@@ -1125,8 +1128,10 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
                 if (*before == query.sources[i] && (!query.matchComponents ||
                     (componentsAt(step->before,query.span,settings.rtl)==query.sourceComponents[i] &&
                      ligaturesAt(step->before,query.span,settings.rtl)==query.sourceLigatures[i])) &&
-                    (!query.matchStructures || structuresAt(step->before,query.span,settings.rtl)==query.sourceStructures[i]))
-                    return origin(i, labels, componentsAt(items, query.span, settings.rtl),ligaturesAt(items,query.span,settings.rtl),structuresAt(items,query.span,settings.rtl));
+                    (!query.matchStructures || structuresAt(step->before,query.span,settings.rtl)==query.sourceStructures[i])) {
+                    GASubstitutionOrigin *result = origin(i, labels, componentsAt(items, query.span, settings.rtl),ligaturesAt(items,query.span,settings.rtl),structuresAt(items,query.span,settings.rtl));
+                    if (!query.matchesOrigin || query.matchesOrigin(result)) return result;
+                }
             current = std::move(*before);
         }
     }
@@ -1168,9 +1173,12 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
             pending.pop_front();
             queuedGlyphs -= state.glyphs.size();
             if (state.glyphs == query.target) {
-                if (state.vertical == bool(query.vertical)) return origin(state.source, state.labels,state.components,state.ligatures,state.structures);
-                if (!otherMode) otherMode = origin(state.source, state.labels,state.components,state.ligatures,state.structures);
-                continue;
+                GASubstitutionOrigin *result = origin(state.source, state.labels,state.components,state.ligatures,state.structures);
+                if (!query.matchesOrigin || query.matchesOrigin(result)) {
+                    if (state.vertical == bool(query.vertical)) return result;
+                    if (!otherMode) otherMode = result;
+                    continue;
+                }
             }
             if (otherMode && !query.vertical && state.vertical) continue;
             auto [entry, inserted] = edges.emplace(SequenceKey{state.glyphs,state.components,state.ligatures,state.structures}, std::vector<OriginEdge>{});

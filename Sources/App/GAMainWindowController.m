@@ -231,6 +231,13 @@ typedef NS_ENUM(NSUInteger, GANavigationAvailability) {
 @implementation GAPendingGlyphEdit
 @end
 
+/// A completed lookup in the current input/layout context; nil means unavailable.
+@interface GAHistoryGlyphResolution : NSObject
+@property (nonatomic, strong, nullable) GAGlyphResolution *resolution;
+@end
+@implementation GAHistoryGlyphResolution
+@end
+
 static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup *group) {
     return variant.isLigature ? variant.sourceTextRange : group.textRange;
 }
@@ -286,6 +293,8 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 @property (nonatomic) BOOL glyphNavigationEnabled;
 @property (nonatomic, strong) GAGlyphNavigationHistory *navigation;
 @property (nonatomic, copy, nullable) dispatch_block_t pendingHistoryNavigation;
+@property (nonatomic, copy, nullable) NSArray *historyResolutionContext;
+@property (nonatomic, strong) NSMutableDictionary<NSArray *, GAHistoryGlyphResolution *> *historyResolutions;
 /// A fresh filter action awaiting its navigation record, not a restored history item.
 @property (nonatomic) BOOL navigationFilterChange;
 @property (nonatomic, strong, nullable) NSMenuToolbarItem *backToolbarItem;
@@ -664,7 +673,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     self.layoutLookup = progress;
     dispatch_async(self.analysisQueue, ^{
         if (progress.cancelled) return;
-        GAGlyphResolution *resolution = [document resolveGlyphIDs:glyphIDs textRange:source
+        GAGlyphResolution *resolution = [document resolveGlyphIDs:glyphIDs matchingIdentity:nil textRange:source
             text:snapshot.text selections:snapshot.selections groups:snapshot.display
             vertical:vertical featureSettings:features
             baseWritingDirection:direction
@@ -735,16 +744,39 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     return self.fontDocument && ![self canEditFromScanSnapshotForText:self.sidebarViewController.text];
 }
 
+- (NSArray *)currentHistoryResolutionContext {
+    if (!self.fontDocument || !self.scanSnapshot) return nil;
+    return @[self.fontDocument, self.scanSnapshot, @(self.verticalWriting),
+        self.fontFeatures.replaySettings ?: @[], @(self.baseWritingDirection), self.typesettingLanguageTag];
+}
+
+- (NSArray *)historyResolutionKeyForStep:(GAGlyphNavigationStep *)step {
+    return @[step.glyphIdentity, [NSValue valueWithRange:step.range]];
+}
+
+- (GAHistoryGlyphResolution *)historyResolutionForStep:(GAGlyphNavigationStep *)step {
+    NSArray *context = [self currentHistoryResolutionContext];
+    if (![self.historyResolutionContext isEqual:context]) {
+        self.historyResolutionContext = context;
+        self.historyResolutions = [NSMutableDictionary dictionary];
+    }
+    return self.historyResolutions[[self historyResolutionKeyForStep:step]];
+}
+
 - (GANavigationAvailability)navigationAvailabilityForStep:(GAGlyphNavigationStep *)step {
     if (!step || !self.glyphNavigationEnabled || !self.fontDocument) return GANavigationUnavailable;
     if (step.mode == GAViewModeAllGlyphs && step.filterTag.length &&
         ![self.allGlyphFeatureTags containsObject:step.filterTag]) return GANavigationUnavailable;
     if (step.allowsViewOnly) return GANavigationReady;
     if ([self navigationAnalysisPending]) return GANavigationPending;
-    return [self navigationSelectionMatchesCurrentText:step] &&
-        (step.glyphIdentity ? [self.sidebarViewController containsGlyphIdentity:step.glyphIdentity textRange:step.range]
-                           : [self.sidebarViewController containsGlyphIDs:step.glyphIDs textRange:step.range])
-        ? GANavigationReady : GANavigationUnavailable;
+    if (![self navigationSelectionMatchesCurrentText:step]) return GANavigationUnavailable;
+    if (!step.glyphIdentity)
+        return [self.sidebarViewController containsGlyphIDs:step.glyphIDs textRange:step.range]
+            ? GANavigationReady : GANavigationUnavailable;
+    if ([self.sidebarViewController containsGlyphIdentity:step.glyphIdentity textRange:step.range])
+        return GANavigationReady;
+    GAHistoryGlyphResolution *known = [self historyResolutionForStep:step];
+    return known ? (known.resolution ? GANavigationReady : GANavigationUnavailable) : GANavigationPending;
 }
 
 - (BOOL)canNavigateToStep:(GAGlyphNavigationStep *)step {
@@ -801,10 +833,18 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 }
 
 - (void)navigateToStep:(GAGlyphNavigationStep *)step {
-    if ([self navigationAvailabilityForStep:step] == GANavigationUnavailable) return;
+    GANavigationAvailability availability = [self navigationAvailabilityForStep:step];
+    if (availability == GANavigationUnavailable) {
+        [self cancelLayoutNavigation];
+        return;
+    }
     if ([self navigationAnalysisPending]) {
         __weak typeof(self) weakSelf = self;
         [self performHistoryNavigation:^{ [weakSelf navigateToStep:step]; }];
+        return;
+    }
+    if (availability == GANavigationPending) {
+        [self resolveHistoryStep:step];
         return;
     }
     [self cancelPendingNavigation];
@@ -823,12 +863,51 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 }
 
 - (void)performHistoryNavigation:(dispatch_block_t)navigation {
-    if ([self navigationAnalysisPending]) {
-        [self cancelPendingGlyphJump];
-        self.pendingHistoryNavigation = navigation;
-    } else {
-        navigation();
-    }
+    [self cancelPendingGlyphJump];
+    self.pendingHistoryNavigation = navigation;
+    if (![self navigationAnalysisPending]) navigation();
+}
+
+- (void)resolveHistoryStep:(GAGlyphNavigationStep *)step {
+    dispatch_block_t retry = self.pendingHistoryNavigation;
+    [self cancelPendingNavigation];
+    [self cancelGlyphFilterRequest];
+    NSArray *context = [self currentHistoryResolutionContext];
+    NSArray *key = [self historyResolutionKeyForStep:step];
+    GAFontDocument *document = self.fontDocument;
+    GAScanDisplaySnapshot *snapshot = self.scanSnapshot;
+    GAGlyphIdentity *identity = step.glyphIdentity;
+    NSRange range = step.range;
+    BOOL vertical = self.verticalWriting;
+    NSInteger direction = self.baseWritingDirection;
+    NSString *language = self.typesettingLanguageTag;
+    NSArray *features = self.fontFeatures.replaySettings ?: @[];
+    NSProgress *progress = [NSProgress discreteProgressWithTotalUnitCount:1];
+    self.layoutLookup = progress;
+    __weak typeof(self) weakSelf = self;
+    dispatch_async(self.analysisQueue, ^{
+        if (progress.cancelled) return;
+        GAGlyphResolution *resolution = [document resolveGlyphIDs:identity.glyphIDs matchingIdentity:identity
+            textRange:range text:snapshot.text selections:snapshot.selections groups:snapshot.display
+            vertical:vertical featureSettings:features baseWritingDirection:direction languageTag:language
+            cancelled:^BOOL { return progress.cancelled; }];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            GAMainWindowController *controller = weakSelf;
+            if (!controller || progress.cancelled || controller.layoutLookup != progress ||
+                ![context isEqual:[controller currentHistoryResolutionContext]]) return;
+            controller.layoutLookup = nil;
+            [controller historyResolutionForStep:step];
+            GAHistoryGlyphResolution *known = [GAHistoryGlyphResolution new];
+            known.resolution = resolution;
+            controller.historyResolutions[key] = known;
+            if (resolution) {
+                [controller restoreNavigationToStep:step filterOutputs:nil];
+            } else {
+                if (retry) [controller performHistoryNavigation:retry];
+                [controller updateNavigationButton];
+            }
+        });
+    });
 }
 
 - (void)restoreNavigationToStep:(GAGlyphNavigationStep *)step filterOutputs:(NSIndexSet *)outputs {
@@ -839,7 +918,12 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     if (step.mode == GAViewModeAllGlyphs && ![self glyphFilterMatchesTag:step.filterTag])
         [self applyGlyphFilter:step.filterTag outputs:outputs];
     if ([self navigationSelectionMatchesCurrentText:step]) {
-        if (step.glyphIdentity) [self.sidebarViewController selectGlyphIdentity:step.glyphIdentity textRange:step.range];
+        if (step.glyphIdentity) {
+            if (![self.sidebarViewController selectGlyphIdentity:step.glyphIdentity textRange:step.range]) {
+                GAGlyphResolution *resolution = [self historyResolutionForStep:step].resolution;
+                if (resolution) [self.sidebarViewController showGlyphResolution:resolution];
+            }
+        }
         else [self.sidebarViewController selectGlyphIDs:step.glyphIDs textRange:step.range];
     }
     [self setViewMode:step.mode];
@@ -848,7 +932,9 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 }
 
 - (void)chooseNavigationStep:(NSMenuItem *)item {
-    [self navigateToStep:item.representedObject];
+    __weak typeof(self) weakSelf = self;
+    GAGlyphNavigationStep *step = item.representedObject;
+    [self performHistoryNavigation:^{ [weakSelf navigateToStep:step]; }];
 }
 
 - (void)menuNeedsUpdate:(NSMenu *)menu {
@@ -893,7 +979,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     for (NSMenuItem *item in glyphItems) {
         GAGlyphNavigationStep *step = item.representedObject;
         item.enabled = step.glyphIdentity
-            ? [self.sidebarViewController containsGlyphIdentity:step.glyphIdentity textRange:step.range]
+            ? [self navigationAvailabilityForStep:step] != GANavigationUnavailable
             : sequences
             ? [sequences[[NSValue valueWithRange:step.range]] containsObject:step.glyphIDs]
             : [self.sidebarViewController containsGlyphIDs:step.glyphIDs textRange:step.range];
@@ -901,11 +987,11 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 }
 
 - (void)clearNavigationHistory {
-    if (self.pendingFilterNavigationStep) [self cancelGlyphFilterRequest];
+    [self cancelPendingNavigation];
     [self.navigation clear];
     self.navigationFilterChange = NO;
-    self.pendingNavigation = nil;
-    self.pendingHistoryNavigation = nil;
+    self.historyResolutionContext = nil;
+    self.historyResolutions = nil;
     self.navigationInputReplay = NO;
 }
 
@@ -926,7 +1012,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 /// Remember exact input locations while analysis is pending, then publish the mapped ranges.
 - (void)updateNavigationSourcesForText:(NSString *)text publishing:(BOOL)publishing {
     NSString *previousText = self.scanSnapshot.text;
-    if (!publishing && [text isEqualToString:previousText]) return;
     NSMutableArray<GAGlyphNavigationStep *> *steps = [self.navigation.backSteps mutableCopy];
     [steps addObjectsFromArray:self.navigation.forwardSteps];
     if (self.navigation.restoredStep) [steps addObject:self.navigation.restoredStep];
@@ -936,27 +1021,30 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     for (GAGlyphNavigationStep *step in steps) {
         if (!step.glyphIDs) continue;
         NSValue *recovered = self.navigationInputReplay ? step.sourceRecoveryRanges[text] : nil;
-        NSRange range = step.range;
+        NSRange range = step.pendingSourceAnchor ? step.pendingSourceAnchor.range : step.range;
         if (recovered) {
             range = recovered.rangeValue;
-        } else if (range.location != NSNotFound) {
+        } else if (!step.pendingSourceAnchor && range.location != NSNotFound) {
             range = [self.sidebarViewController navigationRangeForDisplayedRange:range];
-            // An edit and its undo can both finish before a new snapshot is displayed.
-            if (range.location == NSNotFound && self.navigationInputReplay && [text isEqualToString:previousText])
-                range = step.range;
         }
+        // An edit and its undo can both finish before a new snapshot is displayed.
+        if (range.location == NSNotFound && self.navigationInputReplay && [text isEqualToString:previousText])
+            range = step.range;
         if ([step matchesSourceAtRange:range inText:text]) {
             if (publishing) {
                 step.range = range;
                 step.sourceRecoveryRanges = nil;
             } else {
                 [step rememberSourceRange:range inText:text];
+                if (!step.pendingSourceAnchor || !NSEqualRanges(step.pendingSourceAnchor.range, range))
+                    step.pendingSourceAnchor = [self.sidebarViewController trackInputSourceRange:range];
             }
         } else if (publishing && step.range.location != NSNotFound) {
             if ([step matchesSourceInText:previousText])
                 [step rememberSourceRange:step.range inText:previousText];
             step.range = NSMakeRange(NSNotFound, 0);
         }
+        if (publishing) step.pendingSourceAnchor = nil;
     }
 }
 
@@ -2044,6 +2132,8 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     [self cancelLayoutNavigation];
     self.pendingGlyphEdit = nil;
     self.scanSnapshot = nil;
+    self.historyResolutionContext = nil;
+    self.historyResolutions = nil;
     [self.sidebarViewController clearGroups];
     [self.detailViewController setVariant:nil];
     [self.detailViewController setMultiText:@"" groups:@[] omissions:NSIndexSet.indexSet];
@@ -2115,6 +2205,8 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     self.navigationInputReplay = NO;
     self.scanSnapshot = snapshot;
     self.scanSnapshotGeneration = generation;
+    self.historyResolutionContext = nil;
+    self.historyResolutions = nil;
     [self.sidebarViewController updateGroups:snapshot.display sourceText:snapshot.text
                                   fontDocument:self.fontDocument];
     [self.detailViewController setMultiText:snapshot.multiText groups:snapshot.multiGroups

@@ -14,6 +14,7 @@
     step.sourceText = self.sourceText;
     step.glyphLabel = self.glyphLabel;
     step.sourceRecoveryRanges = [self.sourceRecoveryRanges mutableCopy];
+    step.pendingSourceAnchor = self.pendingSourceAnchor;
     return step;
 }
 
