@@ -1599,6 +1599,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         item.representedObject = resource;
     }
     alert.accessoryView = popup;
+    alert.window.preventsApplicationTerminationWhenModal = NO;
     __weak typeof(self) weakSelf = self;
     [alert beginSheetModalForWindow:self.window completionHandler:^(NSModalResponse response) {
         if (response != NSAlertFirstButtonReturn) {
