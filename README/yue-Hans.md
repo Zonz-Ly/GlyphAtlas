@@ -1,3 +1,7 @@
+[简体中文](zh-Hans.md) | [长沙话](hsn-Hans.md) | [潮州话](nan-Hans-teochew.md) | [闽南话](nan-Hans-hokkien.md) | [广东话](yue-Hans.md) | [上海话](wuu-Hans.md)
+
+[繁體中文](zh-Hant.md) | [長沙話](hsn-Hant.md) | [潮州話](nan-Hant-teochew.md) | [閩南話](nan-Hant-hokkien.md) | [廣東話](yue-Hant.md) | [上海話](wuu-Hant.md)
+
 - 喺菜单栏拣「开…」或者按 `⌘O`，就可以直接喺装字体嘅文件夹入边打开字体。你亦可以拖字体去 App 图标，或者拖入已经打开咗字体嘅窗口，仲可以将 Glyph Atlas 设做打开字体文件嘅默认 App。最近打开过嘅项目都可以再开。
 
 - 喺菜单栏拣「拷贝去字体册」，就可以将而家个窗口入边开咗嘅字体拷贝去自己嘅字体文件夹。按住 `⌥`，就可以改拣「拷贝去共用字体文件夹」。
