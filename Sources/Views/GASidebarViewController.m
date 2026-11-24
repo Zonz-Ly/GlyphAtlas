@@ -303,7 +303,7 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
 
 - (void)viewDidAppear {
     [super viewDidAppear];
-    [self updateSidebarTopConstraint];
+    [self prepareInputLayout];
 }
 
 - (void)enableScrollEdgeEffectForSplitViewItem:(NSSplitViewItem *)item {
@@ -342,7 +342,7 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
     [item addTopAlignedAccessoryViewController:accessory];
 }
 
-- (void)updateSidebarTopConstraint {
+- (void)prepareInputLayout {
     self.searchTopConstraint.active = NO;
     self.searchTopConstraint = nil;
     if (self.inputAccessory) return;
@@ -355,11 +355,6 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
 
 - (void)setSidebarContentTopPinned:(BOOL)pinned {
     if (pinned == (self.pinnedSidebarInputConstraints != nil)) return;
-    if (pinned && !self.inputAccessory && !self.searchTopConstraint) {
-        // Defaults can collapse the sidebar before its first viewDidAppear.
-        [self updateSidebarTopConstraint];
-        [self.view.window.contentView.superview layoutSubtreeIfNeeded];
-    }
     self.pinnedSidebarListTopConstraint.active = NO;
     self.pinnedSidebarListTopConstraint = nil;
     self.sidebarListTopConstraint.active = !pinned;
@@ -413,7 +408,7 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
             self.pinnedAccessoryHeightConstraint.active = NO;
             self.pinnedAccessoryHeightConstraint = nil;
         } else {
-            [self updateSidebarTopConstraint];
+            [self prepareInputLayout];
         }
         NSPoint origin = self.scrollView.contentView.bounds.origin;
         self.scrollView.automaticallyAdjustsContentInsets = self.sidebarAdjustsContentInsets;

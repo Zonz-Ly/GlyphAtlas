@@ -363,10 +363,8 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         windowFrame.size = settings[@"windowSize"]
             ? NSSizeFromString(settings[@"windowSize"]) : NSMakeSize(600, 400);
         [window setFrame:windowFrame display:NO];
-        [window.contentView.superview layoutSubtreeIfNeeded];
         CGFloat sidebarWidth = settings[@"sidebarWidth"] ? [settings[@"sidebarWidth"] doubleValue] : 200;
-        [self.splitViewController.splitView setPosition:sidebarWidth ofDividerAtIndex:0];
-        [window recalculateKeyViewLoop];
+        [self initializeSidebarWithWidth:sidebarWidth];
         if ([settings[@"sidebarHidden"] boolValue]) [self toggleSidebar];
         [self setGlyphNavigationEnabled:[settings[@"glyphNavigation"] boolValue]];
         [window center];
@@ -377,6 +375,15 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 - (void)dealloc {
     [NSNotificationCenter.defaultCenter removeObserver:self
                                                  name:GAInputBlankClickNotification object:nil];
+}
+
+- (void)initializeSidebarWithWidth:(CGFloat)width {
+    NSWindow *window = self.window;
+    [self.sidebarViewController prepareInputLayout];
+    [window.contentView.superview layoutSubtreeIfNeeded];
+    [self.splitViewController.splitView setPosition:width ofDividerAtIndex:0];
+    [window recalculateKeyViewLoop];
+    [window invalidateCursorRectsForView:self.titleFontNameField];
 }
 
 - (void)configureInterfaceWithWindow:(NSWindow *)window {
@@ -1381,9 +1388,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
             } else if (!hidden) {
                 [controller.sidebarViewController focusGlyphList];
             }
-        }
-        if (!hidden) {
-            [currentWindow invalidateCursorRectsForView:controller.titleFontNameField];
         }
     };
     if (animate) {

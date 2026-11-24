@@ -95,6 +95,8 @@ typedef NS_ENUM(NSInteger, GAPendingSelectionScroll) {
 - (void)useInputInToolbar:(BOOL)toolbar;
 /// Shown only while the toolbar input is empty; never becomes query text.
 - (void)setToolbarInputPlaceholder:(NSString *)placeholder;
+/// Prepares the input's window-relative constraints after attaching the sidebar.
+- (void)prepareInputLayout;
 - (void)setSidebarContentTopPinned:(BOOL)pinned;
 - (void)enableScrollEdgeEffectForSplitViewItem:(NSSplitViewItem *)item API_AVAILABLE(macos(26.0));
 - (void)restoreInputSelection:(NSRange)selection;
