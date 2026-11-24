@@ -1426,7 +1426,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     }
     if (self.glyphNavigationEnabled)
         [toolbar insertItemWithItemIdentifier:GABackItem atIndex:hidden ? 0 : 2];
-    window.initialFirstResponder = hidden ? self.sidebarViewController.toolbarInputField : nil;
+    window.initialFirstResponder = self.sidebarViewController.inputField;
 }
 
 - (void)updateSidebarAccessoryTopInsetForHiddenSidebar:(BOOL)hidden {
