@@ -77,9 +77,9 @@ typedef NS_ENUM(NSInteger, GAPendingSelectionScroll) {
                             textRange:(NSRange)textRange
                                scroll:(GAPendingSelectionScroll)scroll;
 /// Appends text with an optional selection run, prepares the requested glyph
-/// selection, requests analysis, then focuses the input. A failed edit does none
-/// of the follow-up work. Empty glyph IDs request the source group's base.
-- (void)appendInputString:(NSString *)string
+/// selection and requests analysis without changing focus. Returns NO for an
+/// empty or rejected edit. Empty glyph IDs request the source group's base.
+- (BOOL)appendInputString:(NSString *)string
                selection:(nullable GAGlyphSelection *)selection
        selectingGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
               actionName:(NSString *)actionName;

@@ -757,12 +757,12 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
                    modifiers:NSApp.currentEvent.modifierFlags];
 }
 
-- (void)appendInputString:(NSString *)string
+- (BOOL)appendInputString:(NSString *)string
                selection:(GAGlyphSelection *)selection
        selectingGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
               actionName:(NSString *)actionName {
     if (string.length == 0) {
-        return;
+        return NO;
     }
     NSMutableAttributedString *text = [self.attributedText mutableCopy];
     NSRange range = NSMakeRange(text.length, string.length);
@@ -770,9 +770,9 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
     if (selection != nil) {
         [text addAttribute:GAGlyphSelectionAttributeName value:selection range:range];
     }
-    if (![self commitGlyphInput:text replacingRange:NSMakeRange(range.location, 0) actionName:actionName]) return;
+    if (![self commitGlyphInput:text replacingRange:NSMakeRange(range.location, 0) actionName:actionName]) return NO;
     [self inputDidChangeSelectingGlyphIDs:glyphIDs textRange:range];
-    [self focusInput];
+    return YES;
 }
 
 - (void)focusInput {

@@ -1226,10 +1226,11 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
                                                         ligature:NO];
     }
     NSUInteger generation = self.workerGeneration;
-    [self.sidebarViewController appendInputString:string
+    if (![self.sidebarViewController appendInputString:string
                                        selection:selection
                                selectingGlyphIDs:@[entry.glyphID]
-                                      actionName:NSLocalizedString(@"Add Glyph", @"Undo action for adding a glyph")];
+                                      actionName:NSLocalizedString(@"Add Glyph", @"Undo action for adding a glyph")]) return;
+    if (!self.glyphNavigationEnabled) [self.sidebarViewController focusInput];
     GAPendingNavigation *pending = self.pendingNavigation;
     if (pending && self.workerGeneration != generation) {
         GAGlyphNavigationStep *origin = pending.previousStep;
@@ -1425,6 +1426,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     }
     if (self.glyphNavigationEnabled)
         [toolbar insertItemWithItemIdentifier:GABackItem atIndex:hidden ? 0 : 2];
+    window.initialFirstResponder = hidden ? self.sidebarViewController.toolbarInputField : nil;
 }
 
 - (void)updateSidebarAccessoryTopInsetForHiddenSidebar:(BOOL)hidden {
