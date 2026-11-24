@@ -35,8 +35,6 @@ typedef NS_ENUM(NSInteger, GAPendingSelectionScroll) {
 @property (nonatomic, readonly) NSString *text;
 @property (nonatomic, readonly) NSString *selectedGlyphSourceText;
 @property (nonatomic, readonly) NSAttributedString *attributedText;
-/// Active input control for the window's native key-view entry.
-@property (nonatomic, strong, readonly) NSTextField *inputField;
 /// Selected range in the field editor, or NSNotFound when the field is not
 /// being edited.
 @property (nonatomic, readonly) NSRange inputSelectionRange;

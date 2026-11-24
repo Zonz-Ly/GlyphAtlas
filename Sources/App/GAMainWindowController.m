@@ -366,6 +366,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         [window.contentView.superview layoutSubtreeIfNeeded];
         CGFloat sidebarWidth = settings[@"sidebarWidth"] ? [settings[@"sidebarWidth"] doubleValue] : 200;
         [self.splitViewController.splitView setPosition:sidebarWidth ofDividerAtIndex:0];
+        [window recalculateKeyViewLoop];
         if ([settings[@"sidebarHidden"] boolValue]) [self toggleSidebar];
         [self setGlyphNavigationEnabled:[settings[@"glyphNavigation"] boolValue]];
         [window center];
@@ -1382,7 +1383,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
             }
         }
         if (!hidden) {
-            [currentWindow recalculateKeyViewLoop];
             [currentWindow invalidateCursorRectsForView:controller.titleFontNameField];
         }
     };
@@ -1427,7 +1427,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     }
     if (self.glyphNavigationEnabled)
         [toolbar insertItemWithItemIdentifier:GABackItem atIndex:hidden ? 0 : 2];
-    window.initialFirstResponder = self.sidebarViewController.inputField;
+    window.initialFirstResponder = hidden ? self.sidebarViewController.toolbarInputField : nil;
 }
 
 - (void)updateSidebarAccessoryTopInsetForHiddenSidebar:(BOOL)hidden {
