@@ -30,7 +30,7 @@
 "Close" = "Tutup";
 "Copy to Font Book" = "Salin ke Buku Fon";
 "Copy to All Users" = "Salin untuk Semua Pengguna";
-"Font Name" = "Nama fon";
+"Font Name" = "Nama Fon";
 "Font File" = "Fail Fon";
 "Untitled Font" = "Fon Tidak Bertajuk";
 "Choose Font Style" = "Pilih Gaya Fon";
@@ -75,7 +75,7 @@
 "Replace Glyph" = "Ganti Glif";
 "Text and alternate glyph list" = "Senarai teks dan glif alternatif";
 "Filter by Feature" = "Tapis mengikut Ciri";
-"No Features to Filter" = "Tiada ciri untuk ditapis";
+"No Features to Filter" = "Tiada Ciri untuk Ditapis";
 "No Feature" = "Tiada Ciri";
 
 /* Text layout and typography. */
@@ -100,7 +100,7 @@
 "Strikethrough" = "Garis Potong";
 "Outline" = "Garis Kasar";
 "Typography" = "Tipografi";
-"No Typographic Features" = "Tiada ciri tipografi";
+"No Typographic Features" = "Tiada Ciri Tipografi";
 "Typesetting Language" = "Bahasa Pengaturan Huruf";
 "No Selectable Languages" = "Tiada bahasa untuk dipilih";
 "Other" = "Lain-lain";

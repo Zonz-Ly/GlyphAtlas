@@ -13,7 +13,7 @@
 			<key>NSStringFormatValueTypeKey</key>
 			<string>lu</string>
 			<key>other</key>
-			<string>%lu 个樣式</string>
+			<string>%lu 個樣式</string>
 		</dict>
 	</dict>
 </dict>
