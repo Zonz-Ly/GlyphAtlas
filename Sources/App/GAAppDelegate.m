@@ -919,13 +919,19 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
     NSMenu *menu = [[(includeZoom ? NSMenu.class : GAContextViewMenu.class) alloc]
         initWithTitle:NSLocalizedString(@"View", @"View")];
     // Menu order is also the shortcut order: Single ⌘1, Multi ⌘2, All ⌘3.
-    const GAViewMode modes[] = {GAViewModeSingleGlyph, GAViewModeMultiCharacter, GAViewModeAllGlyphs};
-    NSArray<NSString *> *modeKeys = @[@"1", @"2", @"3"];
-    for (NSUInteger index = 0; index < modeKeys.count; index++) {
-        GAViewMode mode = modes[index];
+    const struct {
+        GAViewMode mode;
+        NSString *key;
+    } viewItems[] = {
+        {GAViewModeSingleGlyph, @"1"},
+        {GAViewModeMultiCharacter, @"2"},
+        {GAViewModeAllGlyphs, @"3"},
+    };
+    for (NSUInteger index = 0; index < sizeof(viewItems) / sizeof(*viewItems); index++) {
+        GAViewMode mode = viewItems[index].mode;
         NSMenuItem *item = [menu addItemWithTitle:GAViewModeTitle(mode)
                                            action:@selector(switchViewMode:)
-                                    keyEquivalent:modeKeys[index]];
+                                    keyEquivalent:viewItems[index].key];
         item.target = self;
         item.tag = mode;
         if (@available(macOS 26.0, *)) GASetViewModeMenuItemImage(item, mode);
@@ -939,17 +945,23 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
                                                  action:@selector(toggleGlyphNavigation:) keyEquivalent:@"g"];
         navigation.target = self;
         navigation.keyEquivalentModifierMask = NSEventModifierFlagControl | NSEventModifierFlagCommand;
-        NSArray<NSString *> *titles = @[
-            NSLocalizedString(@"Back", @"Return to the previous navigation location"),
-            NSLocalizedString(@"Forward", @"Move to the next navigation location"),
-        ];
-        NSArray<NSString *> *keys = @[@"[", @"]"];
-        SEL actions[] = {@selector(navigateBack:), @selector(navigateForward:)};
-        unichar arrows[] = {NSLeftArrowFunctionKey, NSRightArrowFunctionKey};
-        for (NSUInteger i = 0; i < titles.count; i++) {
-            NSMenuItem *item = [menu addItemWithTitle:titles[i] action:actions[i] keyEquivalent:keys[i]];
+        const struct {
+            NSString *title;
+            NSString *key;
+            SEL action;
+            unichar arrow;
+        } navigationItems[] = {
+            {NSLocalizedString(@"Back", @"Return to the previous navigation location"),
+             @"[", @selector(navigateBack:), NSLeftArrowFunctionKey},
+            {NSLocalizedString(@"Forward", @"Move to the next navigation location"),
+             @"]", @selector(navigateForward:), NSRightArrowFunctionKey},
+        };
+        for (NSUInteger i = 0; i < sizeof(navigationItems) / sizeof(*navigationItems); i++) {
+            NSMenuItem *item = [menu addItemWithTitle:navigationItems[i].title
+                                            action:navigationItems[i].action
+                                     keyEquivalent:navigationItems[i].key];
             item.target = self;
-            GAAddHiddenShortcut(item, [NSString stringWithCharacters:&arrows[i] length:1]);
+            GAAddHiddenShortcut(item, [NSString stringWithCharacters:&navigationItems[i].arrow length:1]);
         }
         [menu addItem:NSMenuItem.separatorItem];
         NSMenuItem *sidebar = [menu addItemWithTitle:NSLocalizedString(@"Hide Sidebar", @"Hide the glyph sidebar")

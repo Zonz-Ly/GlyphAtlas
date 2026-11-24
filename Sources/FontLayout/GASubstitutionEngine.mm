@@ -193,7 +193,9 @@ struct MatchKey {
     std::vector<uint64_t> ligatures;
     Structures structures;
     bool operator==(const MatchKey &other) const {
-        return source == other.source && glyphs == other.glyphs && components == other.components && ligatures==other.ligatures && structures==other.structures;
+        return source == other.source && glyphs == other.glyphs &&
+               components == other.components && ligatures == other.ligatures &&
+               structures == other.structures;
     }
 };
 
@@ -204,8 +206,10 @@ struct MatchKeyHash {
             hash = hash * 1000003 + glyph;
         for (int component : key.components)
             hash = hash * 1000003 + size_t(component);
-        for (uint64_t owner : key.ligatures) hash=hash*1000003+owner;
-        for (auto structure : key.structures) hash = (hash * 1000003 + structure.first) * 1000003 + structure.second;
+        for (uint64_t owner : key.ligatures)
+            hash = hash * 1000003 + owner;
+        for (auto structure : key.structures)
+            hash = (hash * 1000003 + structure.first) * 1000003 + structure.second;
         return hash;
     }
 };
@@ -215,25 +219,30 @@ using MatchIndex = std::unordered_map<MatchKey, GASubstitutionMatch *, MatchKeyH
 NSArray<NSNumber *> *componentArray(const std::vector<int> &components) {
     if (components.empty()) return @[];
     NSMutableArray *result = [NSMutableArray arrayWithCapacity:components.size()];
-    for (int component : components) [result addObject:@(component)];
+    for (int component : components)
+        [result addObject:@(component)];
     return result;
 }
 NSArray<NSNumber *> *ligatureArray(const std::vector<uint64_t> &owners) {
     if (owners.empty()) return @[];
-    NSMutableArray *result=[NSMutableArray arrayWithCapacity:owners.size()];
-    for (auto owner:owners) [result addObject:@(owner)];
+    NSMutableArray *result = [NSMutableArray arrayWithCapacity:owners.size()];
+    for (auto owner : owners)
+        [result addObject:@(owner)];
     return result;
 }
-std::vector<uint64_t> normalizeLigatures(const std::vector<int> &components, const std::vector<uint64_t> &owners) {
+std::vector<uint64_t> normalizeLigatures(const std::vector<int> &components,
+                                       const std::vector<uint64_t> &owners) {
     if (components.empty()) return {};
-    std::map<uint64_t,uint64_t> labels;
+    std::map<uint64_t, uint64_t> labels;
     std::vector<uint64_t> result(components.size());
-    for (size_t i=0;i<components.size();++i) if (components[i]>=0) {
-        uint64_t owner=owners.empty() ? 1:owners.at(i);
-        if (owner) result[i]=labels.try_emplace(owner,labels.size()+1).first->second;
-    }
+    for (size_t i = 0; i < components.size(); ++i)
+        if (components[i] >= 0) {
+            uint64_t owner = owners.empty() ? 1 : owners.at(i);
+            if (owner)
+                result[i] = labels.try_emplace(owner, labels.size() + 1).first->second;
+        }
     // The existing component-only representation describes one owner.
-    if (labels.size()<=1) return {};
+    if (labels.size() <= 1) return {};
     return result;
 }
 Structures structureVector(NSArray<NSArray<NSNumber *> *> *values) {
@@ -259,15 +268,18 @@ Structures replacingStructures(NSArray<NSArray<NSNumber *> *> *values,
 }
 std::vector<uint64_t> ownerVector(NSArray<NSNumber *> *components, NSArray<NSNumber *> *owners) {
     std::vector<uint64_t> result(components.count);
-    for (NSUInteger i=0;i<components.count;++i)
-        if (components[i].intValue>=0) result[i]=owners.count ? owners[i].unsignedLongLongValue:1;
+    for (NSUInteger i = 0; i < components.count; ++i)
+        if (components[i].intValue >= 0)
+            result[i] = owners.count ? owners[i].unsignedLongLongValue : 1;
     return result;
 }
 std::vector<uint64_t> replacingLigatures(NSArray<NSNumber *> *components, NSArray<NSNumber *> *owners,
-                                         size_t index,size_t count) {
-    auto result=ownerVector(components,owners);
+                                         size_t index, size_t count) {
+    auto result = ownerVector(components, owners);
     if (result.empty()) return {};
-    auto owner=result.at(index); result.erase(result.begin()+index); result.insert(result.begin()+index,count,owner);
+    auto owner = result.at(index);
+    result.erase(result.begin() + index);
+    result.insert(result.begin() + index, count, owner);
     return result;
 }
 
@@ -288,9 +300,10 @@ bool merge(MatchIndex &seen, NSMutableArray<GASubstitutionMatch *> *matches, Spa
            const Structures &structures = {}) {
     if (span.empty())
         return false;
-    auto normalized=normalizeLigatures(components,owners);
+    auto normalized = normalizeLigatures(components, owners);
     auto normalizedStructures = canonicalLigatureStructures(components, owners, structures);
-    auto [entry, inserted] = seen.try_emplace(MatchKey{span, glyphs, components,normalized,normalizedStructures}, nil);
+    auto [entry, inserted] = seen.try_emplace(
+        MatchKey{span, glyphs, components, normalized, normalizedStructures}, nil);
     if (inserted) {
         GASubstitutionMatch *candidate = [[GASubstitutionMatch alloc] init];
         candidate.glyphIDs = glyphArray(glyphs);

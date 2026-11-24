@@ -14,18 +14,27 @@ const CGFloat GAFontShapingSize = 200.0;
 - (instancetype)initWithGlyphIDs:(NSArray<NSNumber *> *)glyphIDs markComponents:(NSArray<NSNumber *> *)components
                   markLigatures:(NSArray<NSNumber *> *)ligatures
              ligatureStructures:(NSArray<NSArray<NSNumber *> *> *)structures {
-    if ((self=[super init])) { _glyphIDs=[glyphIDs copy]; _markComponents=[components copy]; _markLigatures=[ligatures copy]; _ligatureStructures=[structures copy]; }
+    if ((self = [super init])) {
+        _glyphIDs = [glyphIDs copy];
+        _markComponents = [components copy];
+        _markLigatures = [ligatures copy];
+        _ligatureStructures = [structures copy];
+    }
     return self;
 }
-- (id)copyWithZone:(NSZone *)zone { return self; }
+- (id)copyWithZone:(NSZone *)zone {
+    return self;
+}
 - (NSUInteger)hash {
-    NSUInteger hash = ((GAGlyphSequenceHash(self.glyphIDs)*31)^GAGlyphSequenceHash(self.markComponents))*31^GAGlyphSequenceHash(self.markLigatures);
+    NSUInteger hash = ((GAGlyphSequenceHash(self.glyphIDs) * 31) ^
+                       GAGlyphSequenceHash(self.markComponents)) * 31 ^
+                       GAGlyphSequenceHash(self.markLigatures);
     for (NSArray<NSNumber *> *structure in self.ligatureStructures)
         hash = (hash * 31) ^ GAGlyphSequenceHash(structure);
     return hash;
 }
 - (BOOL)isEqual:(id)object {
-    return self==object || ([object isKindOfClass:GAGlyphIdentity.class] &&
+    return self == object || ([object isKindOfClass:GAGlyphIdentity.class] &&
         [self.glyphIDs isEqual:((GAGlyphIdentity *)object).glyphIDs] &&
         [self.markComponents isEqual:((GAGlyphIdentity *)object).markComponents] &&
         [self.markLigatures isEqual:((GAGlyphIdentity *)object).markLigatures] &&
@@ -45,7 +54,10 @@ static NSString *GAFeatureSourceTag(NSString *source) {
 
 @implementation GAGlyphVariant
 - (GAGlyphIdentity *)glyphIdentity {
-    return [[GAGlyphIdentity alloc] initWithGlyphIDs:self.glyphIDs markComponents:self.markComponents markLigatures:self.markLigatures ligatureStructures:self.ligatureStructures];
+    return [[GAGlyphIdentity alloc] initWithGlyphIDs:self.glyphIDs
+                                   markComponents:self.markComponents
+                                    markLigatures:self.markLigatures
+                               ligatureStructures:self.ligatureStructures];
 }
 
 - (instancetype)init {
@@ -180,8 +192,11 @@ void GADrawGlyphVariant(GAGlyphVariant *variant, CGContextRef context) {
 @implementation GAScanCandidate
 - (instancetype)init {
     self = [super init];
-    if (self) { _markComponents = @[]; _markLigatures = @[];
-        _ligatureStructures = @[]; }
+    if (self) {
+        _markComponents = @[];
+        _markLigatures = @[];
+        _ligatureStructures = @[];
+    }
     return self;
 }
 @end

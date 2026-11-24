@@ -154,13 +154,18 @@ static BOOL IntersectsSelection(NSRange range, NSArray<GAGlyphSelectionRun *> *r
     return NO;
 }
 
+// Keep each caller's GID comparison and share only the known provenance fields.
+static BOOL GAVariantsHaveSameProvenance(GAGlyphVariant *a, GAGlyphVariant *b) {
+    return [a.markComponents isEqualToArray:b.markComponents] &&
+           [a.markLigatures isEqualToArray:b.markLigatures] &&
+           [a.ligatureStructures isEqualToArray:b.ligatureStructures];
+}
+
 static BOOL GAMergeSelectionCandidate(GAGlyphVariant *candidate, NSMutableArray *variants,
                                        GAFontDocument *document, NSString *text, BOOL (^cancelled)(void)) {
     for (GAGlyphVariant *existing in variants)
         if ([existing.glyphIDs isEqual:candidate.glyphIDs] &&
-            [existing.markComponents isEqualToArray:candidate.markComponents] &&
-            [existing.markLigatures isEqualToArray:candidate.markLigatures] &&
-                    [existing.ligatureStructures isEqualToArray:candidate.ligatureStructures]) {
+            GAVariantsHaveSameProvenance(existing, candidate)) {
             [existing addFeatureSources:candidate.featureSources];
             return YES;
         }
@@ -261,9 +266,7 @@ static NSArray<GACharacterGroup *> *GAInsertCombinationGroups(
             BOOL duplicate = NO;
             for (GAGlyphVariant *existing in bucket) {
                 if ([existing.glyphIDs isEqualToArray:glyphIDs] &&
-                    [existing.markComponents isEqualToArray:variant.markComponents] &&
-                    [existing.markLigatures isEqualToArray:variant.markLigatures] &&
-                    [existing.ligatureStructures isEqualToArray:variant.ligatureStructures]) {
+                    GAVariantsHaveSameProvenance(existing, variant)) {
                     duplicate = YES;
                     break;
                 }
