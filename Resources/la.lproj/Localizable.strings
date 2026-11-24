@@ -62,8 +62,8 @@
 
 /* Views and glyphs. */
 "View" = "Prospectus";
-"Show Sidebar" = "Ostende tabulam lateralem";
-"Hide Sidebar" = "Cela tabulam lateralem";
+"Show Sidebar" = "Tabulam lateralem ostendere";
+"Hide Sidebar" = "Tabulam lateralem celare";
 "Navigation" = "Navigatio";
 "Back" = "Retro";
 "Forward" = "Prorsum";
@@ -107,8 +107,8 @@
 
 /* Bounding box and colors. */
 "Bounding Box" = "Rectangulum circumiacens";
-"Show Bounding Box" = "Ostende rectangulum circumiacens";
-"Hide Bounding Box" = "Cela rectangulum circumiacens";
+"Show Bounding Box" = "Rectangulum circumiacens ostendere";
+"Hide Bounding Box" = "Rectangulum circumiacens celare";
 "Expand Bounding Box" = "Rectangulum circumiacens amplificare";
 "Shrink Bounding Box" = "Rectangulum circumiacens minuere";
 "Colors" = "Colores";

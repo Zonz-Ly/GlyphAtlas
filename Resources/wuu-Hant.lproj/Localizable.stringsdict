@@ -5,7 +5,7 @@
 	<key>“%@” contains %lu styles.</key>
 	<dict>
 		<key>NSStringLocalizedFormatKey</key>
-		<string>「%1$@」里向有 %2$#@styles@。</string>
+		<string>「%1$@」裏向有 %2$#@styles@。</string>
 		<key>styles</key>
 		<dict>
 			<key>NSStringFormatSpecTypeKey</key>

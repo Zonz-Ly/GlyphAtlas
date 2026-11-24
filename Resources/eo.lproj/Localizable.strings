@@ -62,8 +62,8 @@
 
 /* Views and glyphs. */
 "View" = "Vido";
-"Show Sidebar" = "Montri flankbreton";
-"Hide Sidebar" = "Kaŝi flankbreton";
+"Show Sidebar" = "Montri flankobreton";
+"Hide Sidebar" = "Kaŝi flankobreton";
 "Navigation" = "Navigado";
 "Back" = "Reen";
 "Forward" = "Antaŭen";
@@ -141,7 +141,7 @@
 "Help.05" = "Duoble alklaku glifon, aŭ elektu ĝin kaj premu ⏎, por anstataŭigi la aprioran glifon kaj vidi ĝiajn alternativojn. Tenu ⇧ dum la ago por aldoni la glifon.";
 "Help.06" = "Uzu ↑/↓ por moviĝi inter glifoj, ⌥↑/⌥↓ por moviĝi inter bazaj glifoj kaj ⌘↑/⌘↓ por salti al la unua aŭ lasta glifo en la listo.";
 "Help.07" = "Metu la musmontrilon sur Unikodan etikedon por vidi la nomon de la signo laŭ la Unikoda normo. Premu ⌘C por kopii ĉiujn Unikodajn signojn respondajn al la elektita glifo.";
-"Help.08" = "Dekstre alklaku por ŝanĝi la vidon, aŭ premu ⌘1 por Unuopa glifo, ⌘2 por Signoj aŭ ⌘3 por Glifa krado. Premu ⌃⌘S por montri aŭ kaŝi la flankbreton.";
+"Help.08" = "Dekstre alklaku por ŝanĝi la vidon, aŭ premu ⌘1 por Unuopa glifo, ⌘2 por Signoj aŭ ⌘3 por Glifa krado. Premu ⌃⌘S por montri aŭ kaŝi la flankobreton.";
 "Help.09" = "Premu ⌃⌘G por ŝalti aŭ malŝalti navigadon. Kiam ĝi estas ŝaltita, duoble alklaku glifon en Signoj aŭ en la glifa krado por malfermi ĝian unuopan vidon. Uzu ⌘] kaj ⌘[ por iri antaŭen kaj reen, aŭ uzu la butonon Reen. Dekstre alklaku aŭ tenu tiun butonon por montri la historion.";
 "Help.10" = "En Signoj, alklaku glifon por vidi ĝiajn alternativojn. Dekstre alklaku aŭ premu ⌘5 por alterni inter horizontala kaj vertikala skribado. Ankaŭ disponeblas Vicigo de teksto kaj Tipografio. Pliaj opcioj troviĝas en la menuo «Vido».";
 "Help.11" = "En Glifa krado, duoble alklaku glifon por aldoni ĝin al la ekzistanta teksto. Kiam vi alklakas glifon en la flankobreto, ĝi ekbriletas en Glifa krado. Dekstre alklaku por trovi «Filtri laŭ tipara trajto».";
