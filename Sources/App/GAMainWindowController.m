@@ -1021,11 +1021,13 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     for (GAGlyphNavigationStep *step in steps) {
         if (!step.glyphIDs) continue;
         NSValue *recovered = self.navigationInputReplay ? step.sourceRecoveryRanges[text] : nil;
-        NSRange range = step.pendingSourceAnchor ? step.pendingSourceAnchor.range : step.range;
+        GAInputSourceAnchor *anchor = step.pendingSourceAnchor;
+        NSRange range = anchor ? anchor.range : step.range;
         if (recovered) {
             range = recovered.rangeValue;
-        } else if (!step.pendingSourceAnchor && range.location != NSNotFound) {
-            range = [self.sidebarViewController navigationRangeForDisplayedRange:range];
+        } else if ((!anchor || (anchor.needsRecovery && self.navigationInputReplay)) &&
+                   step.range.location != NSNotFound) {
+            range = [self.sidebarViewController navigationRangeForDisplayedRange:step.range];
         }
         // An edit and its undo can both finish before a new snapshot is displayed.
         if (range.location == NSNotFound && self.navigationInputReplay && [text isEqualToString:previousText])

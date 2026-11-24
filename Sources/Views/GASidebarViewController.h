@@ -11,6 +11,8 @@ typedef NS_ENUM(NSInteger, GAPendingSelectionScroll) {
 /// A source range in the current input, following exact edits until publication.
 @interface GAInputSourceAnchor : NSObject
 @property (nonatomic, readonly) NSRange range;
+/// An imprecise edit lost a tracked range; exact source edits do not enable this recovery.
+@property (nonatomic, readonly) BOOL needsRecovery;
 @end
 
 @interface GASidebarViewController : NSViewController

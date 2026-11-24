@@ -7,6 +7,7 @@
 
 @interface GAInputSourceAnchor ()
 @property (nonatomic) NSRange range;
+@property (nonatomic) BOOL needsRecovery;
 @end
 @implementation GAInputSourceAnchor
 @end
@@ -607,8 +608,12 @@ static void GAApplyInputAttributes(NSTextStorage *storage, NSAttributedString *t
 }
 
 - (void)recordSourceEdit:(GASourceEdit)edit text:(NSString *)text exact:(BOOL)exact {
-    for (GAInputSourceAnchor *anchor in self.inputSourceAnchors)
+    for (GAInputSourceAnchor *anchor in self.inputSourceAnchors) {
+        // Do not turn a known removal into an unknown mapping loss. A later
+        // exact edit cannot map an already unknown source either.
+        anchor.needsRecovery = !exact && (anchor.needsRecovery || anchor.range.location != NSNotFound);
         anchor.range = exact ? GARemapSourceRange(anchor.range, edit) : NSMakeRange(NSNotFound, 0);
+    }
     if (exact) [self.displayedSourceEdits appendBytes:&edit length:sizeof(edit)];
     else self.displayedSourceEdits = nil;
     self.trackedFieldText = text;
