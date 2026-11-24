@@ -26,17 +26,6 @@ FOUNDATION_EXPORT NSString *const GAGlyphSelectionAttributeName;
 - (instancetype)initWithSourceText:(NSString *)sourceText
                           glyphIDs:(NSArray<NSNumber *> *)glyphIDs
                     markComponents:(NSArray<NSNumber *> *)components
-                    featureSources:(NSArray<NSString *> *)featureSources
-                          ligature:(BOOL)ligature;
-- (instancetype)initWithSourceText:(NSString *)sourceText
-                          glyphIDs:(NSArray<NSNumber *> *)glyphIDs
-                    markComponents:(NSArray<NSNumber *> *)components
-                     markLigatures:(NSArray<NSNumber *> *)ligatures
-                    featureSources:(NSArray<NSString *> *)featureSources
-                          ligature:(BOOL)ligature;
-- (instancetype)initWithSourceText:(NSString *)sourceText
-                          glyphIDs:(NSArray<NSNumber *> *)glyphIDs
-                    markComponents:(NSArray<NSNumber *> *)components
                      markLigatures:(NSArray<NSNumber *> *)ligatures
                 ligatureStructures:(NSArray<NSArray<NSNumber *> *> *)structures
                     featureSources:(NSArray<NSString *> *)featureSources

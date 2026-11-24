@@ -40,15 +40,6 @@ NS_ASSUME_NONNULL_BEGIN
                                                 incomplete:(BOOL * _Nullable)incomplete
                                                  cancelled:(BOOL (^_Nullable)(void))cancelled;
 - (nullable NSArray<GASubstitutionMatch *> *)discoverGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
-                                                        cancelled:(BOOL (^_Nullable)(void))cancelled;
-- (nullable NSArray<GASubstitutionMatch *> *)discoverGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
-                                            markComponents:(NSArray<NSNumber *> *)components
-                                                 cancelled:(BOOL (^_Nullable)(void))cancelled;
-- (nullable NSArray<GASubstitutionMatch *> *)discoverGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
-                                            markComponents:(NSArray<NSNumber *> *)components
-                                             markLigatures:(NSArray<NSNumber *> *)ligatures
-                                                 cancelled:(BOOL (^_Nullable)(void))cancelled;
-- (nullable NSArray<GASubstitutionMatch *> *)discoverGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
                                             markComponents:(NSArray<NSNumber *> *)components
                                              markLigatures:(NSArray<NSNumber *> *)ligatures
                                         ligatureStructures:(NSArray<NSArray<NSNumber *> *> *)structures
@@ -72,37 +63,6 @@ NS_ASSUME_NONNULL_BEGIN
                                 baseWritingDirection:(NSInteger)direction
                                          languageTag:(NSString *)languageTag
                                            cancelled:(BOOL (^)(void))cancelled;
-- (nullable GASubstitutionOrigin *)originForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
-                                         sourceRange:(NSRange)sourceRange
-                                                text:(NSString *)text
-                                          selections:(NSArray<GAGlyphSelectionRun *> *)selections
-                                          candidates:(NSArray<NSArray<NSNumber *> *> *)candidates
-                                 candidateComponents:(nullable NSArray<NSArray<NSNumber *> *> *)components
-                                  candidateLigatures:(nullable NSArray<NSArray<NSNumber *> *> *)ligatures
-                                            vertical:(BOOL)vertical
-                                     featureSettings:(NSArray<NSDictionary *> *)featureSettings
-                                baseWritingDirection:(NSInteger)direction
-                                         languageTag:(NSString *)languageTag
-                                           cancelled:(BOOL (^)(void))cancelled;
-- (nullable GASubstitutionOrigin *)originForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
-                                         sourceRange:(NSRange)sourceRange
-                                                text:(NSString *)text
-                                          selections:(NSArray<GAGlyphSelectionRun *> *)selections
-                                          candidates:(NSArray<NSArray<NSNumber *> *> *)candidates
-                                            vertical:(BOOL)vertical
-                                featureSettings:(NSArray<NSDictionary *> *)featureSettings
-                            baseWritingDirection:(NSInteger)direction
-                                     languageTag:(NSString *)languageTag
-                                           cancelled:(BOOL (^)(void))cancelled;
-- (NSArray<NSValue *> *)positionsForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
-                                     content:(NSString *)content;
-- (NSArray<NSValue *> *)positionsForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
-                            markComponents:(NSArray<NSNumber *> *)components
-                                   content:(NSString *)content;
-- (NSArray<NSValue *> *)positionsForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
-                            markComponents:(NSArray<NSNumber *> *)components
-                             markLigatures:(NSArray<NSNumber *> *)ligatures
-                                   content:(NSString *)content;
 - (nullable NSArray<NSValue *> *)positionsForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
                                      markComponents:(NSArray<NSNumber *> *)components
                                       markLigatures:(NSArray<NSNumber *> *)ligatures

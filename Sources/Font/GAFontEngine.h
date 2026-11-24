@@ -32,8 +32,6 @@ FOUNDATION_EXPORT NSUInteger GAGlyphSequenceHash(NSArray<NSNumber *> *glyphIDs);
 @property(nonatomic, copy, readonly) NSArray<NSNumber *> *markLigatures;
 @property(nonatomic, copy, readonly) NSArray<NSArray<NSNumber *> *> *ligatureStructures;
 - (instancetype)initWithGlyphIDs:(NSArray<NSNumber *> *)glyphIDs markComponents:(NSArray<NSNumber *> *)components
-                  markLigatures:(NSArray<NSNumber *> *)ligatures;
-- (instancetype)initWithGlyphIDs:(NSArray<NSNumber *> *)glyphIDs markComponents:(NSArray<NSNumber *> *)components
                   markLigatures:(NSArray<NSNumber *> *)ligatures
              ligatureStructures:(NSArray<NSArray<NSNumber *> *> *)structures;
 @end
@@ -169,15 +167,6 @@ FOUNDATION_EXPORT NSArray<GACharacterGroup *> *GAGroupsForScanResult(NSString *t
 
 - (nullable NSArray<GAGlyphVariant *> *)variantsForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
                                                   cancelled:(BOOL (^_Nullable)(void))cancelled;
-- (nullable NSArray<GAGlyphVariant *> *)variantsForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
-                                           markComponents:(NSArray<NSNumber *> *)components
-                                                  content:(NSString *)content
-                                                cancelled:(BOOL (^_Nullable)(void))cancelled;
-- (nullable NSArray<GAGlyphVariant *> *)variantsForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
-                                           markComponents:(NSArray<NSNumber *> *)components
-                                            markLigatures:(NSArray<NSNumber *> *)ligatures
-                                                  content:(NSString *)content
-                                                cancelled:(BOOL (^_Nullable)(void))cancelled;
 - (nullable NSArray<GAGlyphVariant *> *)variantsForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
                                            markComponents:(NSArray<NSNumber *> *)components
                                             markLigatures:(NSArray<NSNumber *> *)ligatures

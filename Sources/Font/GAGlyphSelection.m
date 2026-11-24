@@ -10,24 +10,7 @@ NSString *const GAGlyphSelectionAttributeName = @"com.zonz.GlyphAtlas.glyphSelec
                     featureSources:(NSArray<NSString *> *)featureSources
                           ligature:(BOOL)ligature {
     return [self initWithSourceText:sourceText glyphIDs:glyphIDs markComponents:@[]
-                    featureSources:featureSources ligature:ligature];
-}
-- (instancetype)initWithSourceText:(NSString *)sourceText
-                          glyphIDs:(NSArray<NSNumber *> *)glyphIDs
-                    markComponents:(NSArray<NSNumber *> *)components
-                    featureSources:(NSArray<NSString *> *)featureSources
-                          ligature:(BOOL)ligature {
-    return [self initWithSourceText:sourceText glyphIDs:glyphIDs markComponents:components markLigatures:@[]
-        featureSources:featureSources ligature:ligature];
-}
-- (instancetype)initWithSourceText:(NSString *)sourceText
-                          glyphIDs:(NSArray<NSNumber *> *)glyphIDs
-                    markComponents:(NSArray<NSNumber *> *)components
-                     markLigatures:(NSArray<NSNumber *> *)ligatures
-                    featureSources:(NSArray<NSString *> *)featureSources
-                          ligature:(BOOL)ligature {
-    return [self initWithSourceText:sourceText glyphIDs:glyphIDs markComponents:components
-        markLigatures:ligatures ligatureStructures:@[] featureSources:featureSources ligature:ligature];
+        markLigatures:@[] ligatureStructures:@[] featureSources:featureSources ligature:ligature];
 }
 - (instancetype)initWithSourceText:(NSString *)sourceText
                           glyphIDs:(NSArray<NSNumber *> *)glyphIDs

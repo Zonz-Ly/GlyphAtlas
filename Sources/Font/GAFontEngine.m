@@ -12,10 +12,6 @@ const CGFloat GAFontShapingSize = 200.0;
 
 @implementation GAGlyphIdentity
 - (instancetype)initWithGlyphIDs:(NSArray<NSNumber *> *)glyphIDs markComponents:(NSArray<NSNumber *> *)components
-                  markLigatures:(NSArray<NSNumber *> *)ligatures {
-    return [self initWithGlyphIDs:glyphIDs markComponents:components markLigatures:ligatures ligatureStructures:@[]];
-}
-- (instancetype)initWithGlyphIDs:(NSArray<NSNumber *> *)glyphIDs markComponents:(NSArray<NSNumber *> *)components
                   markLigatures:(NSArray<NSNumber *> *)ligatures
              ligatureStructures:(NSArray<NSArray<NSNumber *> *> *)structures {
     if ((self=[super init])) { _glyphIDs=[glyphIDs copy]; _markComponents=[components copy]; _markLigatures=[ligatures copy]; _ligatureStructures=[structures copy]; }
@@ -727,21 +723,8 @@ static void GAPublishVariantBuilders(NSMapTable *builders) {
 }
 - (NSArray<GAGlyphVariant *> *)variantsForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
                                         cancelled:(BOOL (^)(void))cancelled {
-    return [self variantsForGlyphIDs:glyphIDs markComponents:@[] content:@"" cancelled:cancelled];
-}
-- (NSArray<GAGlyphVariant *> *)variantsForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
-                                 markComponents:(NSArray<NSNumber *> *)components
-                                        content:(NSString *)content
-                                      cancelled:(BOOL (^)(void))cancelled {
-    return [self variantsForGlyphIDs:glyphIDs markComponents:components markLigatures:@[] content:content cancelled:cancelled];
-}
-- (NSArray<GAGlyphVariant *> *)variantsForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
-                                 markComponents:(NSArray<NSNumber *> *)components
-                                  markLigatures:(NSArray<NSNumber *> *)ligatures
-                                        content:(NSString *)content
-                                      cancelled:(BOOL (^)(void))cancelled {
-    return [self variantsForGlyphIDs:glyphIDs markComponents:components markLigatures:ligatures
-        ligatureStructures:@[] content:content cancelled:cancelled];
+    return [self variantsForGlyphIDs:glyphIDs markComponents:@[] markLigatures:@[]
+        ligatureStructures:@[] content:@"" cancelled:cancelled];
 }
 - (NSArray<GAGlyphVariant *> *)variantsForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
                                  markComponents:(NSArray<NSNumber *> *)components

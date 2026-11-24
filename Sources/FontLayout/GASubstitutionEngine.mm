@@ -1001,37 +1001,6 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
                                        text:(NSString *)text
                                  selections:(NSArray<GAGlyphSelectionRun *> *)selections
                                  candidates:(NSArray<NSArray<NSNumber *> *> *)candidates
-                                   vertical:(BOOL)vertical
-                       featureSettings:(NSArray<NSDictionary *> *)featureSettings
-                   baseWritingDirection:(NSInteger)direction
-                            languageTag:(NSString *)languageTag
-                                  cancelled:(BOOL (^)(void))cancelled {
-    return [self originForGlyphIDs:glyphIDs sourceRange:sourceRange text:text selections:selections
-        candidates:candidates candidateComponents:nil candidateLigatures:nil vertical:vertical featureSettings:featureSettings
-        baseWritingDirection:direction languageTag:languageTag cancelled:cancelled];
-}
-- (GASubstitutionOrigin *)originForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
-                                sourceRange:(NSRange)sourceRange
-                                       text:(NSString *)text
-                                 selections:(NSArray<GAGlyphSelectionRun *> *)selections
-                                 candidates:(NSArray<NSArray<NSNumber *> *> *)candidates
-                        candidateComponents:(NSArray<NSArray<NSNumber *> *> *)candidateComponents
-                         candidateLigatures:(NSArray<NSArray<NSNumber *> *> *)candidateLigatures
-                                   vertical:(BOOL)vertical
-                            featureSettings:(NSArray<NSDictionary *> *)featureSettings
-                       baseWritingDirection:(NSInteger)direction
-                                languageTag:(NSString *)languageTag
-                                  cancelled:(BOOL (^)(void))cancelled {
-    return [self originForGlyphIDs:glyphIDs sourceRange:sourceRange text:text selections:selections
-        candidates:candidates candidateComponents:candidateComponents candidateLigatures:candidateLigatures
-        candidateStructures:nil vertical:vertical featureSettings:featureSettings baseWritingDirection:direction
-        languageTag:languageTag cancelled:cancelled];
-}
-- (GASubstitutionOrigin *)originForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
-                                sourceRange:(NSRange)sourceRange
-                                       text:(NSString *)text
-                                 selections:(NSArray<GAGlyphSelectionRun *> *)selections
-                                 candidates:(NSArray<NSArray<NSNumber *> *> *)candidates
                         candidateComponents:(NSArray<NSArray<NSNumber *> *> *)candidateComponents
                          candidateLigatures:(NSArray<NSArray<NSNumber *> *> *)candidateLigatures
                         candidateStructures:(NSArray<NSArray<NSArray<NSNumber *> *> *> *)candidateStructures
@@ -1368,22 +1337,6 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
     }
 }
 - (NSArray<NSValue *> *)positionsForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
-                                     content:(NSString *)content {
-    return [self positionsForGlyphIDs:glyphIDs markComponents:@[] content:content];
-}
-- (NSArray<NSValue *> *)positionsForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
-                            markComponents:(NSArray<NSNumber *> *)components
-                                   content:(NSString *)content {
-    return [self positionsForGlyphIDs:glyphIDs markComponents:components markLigatures:@[] content:content];
-}
-- (NSArray<NSValue *> *)positionsForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
-                            markComponents:(NSArray<NSNumber *> *)components
-                             markLigatures:(NSArray<NSNumber *> *)ligatures
-                                   content:(NSString *)content {
-    return [self positionsForGlyphIDs:glyphIDs markComponents:components markLigatures:ligatures
-                             content:content cancelled:nil];
-}
-- (NSArray<NSValue *> *)positionsForGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
                             markComponents:(NSArray<NSNumber *> *)components
                              markLigatures:(NSArray<NSNumber *> *)ligatures
                                    content:(NSString *)content
@@ -1449,22 +1402,6 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
         // Failed positioning yields no explicit origins.
     }
     return @[];
-}
-- (NSArray<GASubstitutionMatch *> *)discoverGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
-                               cancelled:(BOOL (^)(void))cancelled {
-    return [self discoverGlyphIDs:glyphIDs markComponents:@[] cancelled:cancelled];
-}
-- (NSArray<GASubstitutionMatch *> *)discoverGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
-                                  markComponents:(NSArray<NSNumber *> *)components
-                                       cancelled:(BOOL (^)(void))cancelled {
-    return [self discoverGlyphIDs:glyphIDs markComponents:components markLigatures:@[] cancelled:cancelled];
-}
-- (NSArray<GASubstitutionMatch *> *)discoverGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
-                                  markComponents:(NSArray<NSNumber *> *)components
-                                   markLigatures:(NSArray<NSNumber *> *)ligatures
-                                       cancelled:(BOOL (^)(void))cancelled {
-    return [self discoverGlyphIDs:glyphIDs markComponents:components markLigatures:ligatures
-        ligatureStructures:@[] cancelled:cancelled];
 }
 - (NSArray<GASubstitutionMatch *> *)discoverGlyphIDs:(NSArray<NSNumber *> *)glyphIDs
                                   markComponents:(NSArray<NSNumber *> *)components
