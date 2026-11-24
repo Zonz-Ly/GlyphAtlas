@@ -35,6 +35,7 @@ The default build uses the current machine's architecture. Use a flag to select 
 ## Opening the app
 
 - If macOS blocks the app from opening, open the built-in terminal app, drag `If Won't Open Drag this into Terminal.command` into it, and press `⏎`. Then open the app.
+- To choose the app's language, open System Settings → General → Language & Region. Under Applications, click the plus button, select Glyph Atlas and a language, then click Add.
 
 ## Usage
 
