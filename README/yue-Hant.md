@@ -1,5 +1,6 @@
-[简体中文](zh-Hans.md)｜[长沙话](hsn-Hans.md)｜[潮州话](nan-Hans-teochew.md)｜[闽南话](nan-Hans-hokkien.md)｜[广东话](yue-Hans.md)｜[上海话](wuu-Hans.md)<br>
-[繁體中文](zh-Hant.md)｜[長沙話](hsn-Hant.md)｜[潮州話](nan-Hant-teochew.md)｜[閩南話](nan-Hant-hokkien.md)｜[廣東話](yue-Hant.md)｜[上海話](wuu-Hant.md)<hr>
+[简体中文](zh-Hans.md)｜[长沙话](hsn-Hans.md)｜[潮州话](nan-Hans-teochew.md)｜[闽南话](nan-Hans-hokkien.md)｜[广东话](yue-Hans.md)｜[上海话](wuu-Hans.md)\
+[繁體中文](zh-Hant.md)｜[長沙話](hsn-Hant.md)｜[潮州話](nan-Hant-teochew.md)｜[閩南話](nan-Hant-hokkien.md)｜[廣東話](yue-Hant.md)｜[上海話](wuu-Hant.md)
+***
 - 喺選單列揀「開⋯」或者撳 `⌘O`，就可以直接喺裝字體嘅資料夾開字體。你亦可以將字體拖去 App 圖像，或者拖入已經開咗字體嘅視窗，又或者將 Glyph Atlas 設做開字體檔案嘅預設 App。最近開過嘅項目都可以再開。
 - 喺選單列揀「複製去字體簿」，就可以將而家個視窗入面開咗嘅字體複製去自己嘅字體資料夾。撳住 `⌥`，就可以改揀「複製去共用字體資料夾」。
 - 開可變字體嗰陣，紅綠燈掣隔籬會彈出個調校參數嘅面板。拖佢出嚟就可以一路開住。揀好個數值之後，可以撳 `↑`／`↓` 同 `⇧↑`／`⇧↓` 嚟調校。

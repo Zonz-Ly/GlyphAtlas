@@ -1,5 +1,6 @@
-[简体中文](zh-Hans.md)｜[长沙话](hsn-Hans.md)｜[潮州话](nan-Hans-teochew.md)｜[闽南话](nan-Hans-hokkien.md)｜[广东话](yue-Hans.md)｜[上海话](wuu-Hans.md)<br>
-[繁體中文](zh-Hant.md)｜[長沙話](hsn-Hant.md)｜[潮州話](nan-Hant-teochew.md)｜[閩南話](nan-Hant-hokkien.md)｜[廣東話](yue-Hant.md)｜[上海話](wuu-Hant.md)<hr>
+[简体中文](zh-Hans.md)｜[长沙话](hsn-Hans.md)｜[潮州话](nan-Hans-teochew.md)｜[闽南话](nan-Hans-hokkien.md)｜[广东话](yue-Hans.md)｜[上海话](wuu-Hans.md)\
+[繁體中文](zh-Hant.md)｜[長沙話](hsn-Hant.md)｜[潮州話](nan-Hant-teochew.md)｜[閩南話](nan-Hant-hokkien.md)｜[廣東話](yue-Hant.md)｜[上海話](wuu-Hant.md)
+***
 - 在菜单栏揤「开…」啊是揤 `⌘O`，就有变直接去字体文件夹许内底揣字体来开。汝也好把将字体拖到 App 图标，啊是拖入已经开有字体个窗口；也欢迎汝对 Glyph Atlas 设做平常睇字体个 App。有做「只摆开过个物件」个功能。
 - 在菜单栏揤「拷贝落字体册」，就有变对只个窗口开在块个字体拷贝落家己个字体文件夹。揤紧 `⌥`，还好改选「拷贝分大家伙共用」。
 - 啊是个字体开啰到个是好变字体，红绿灯骹头就会加出个调参数个面板，汝还好对个面板拖出来固定。好直接揤数字，也好揤 `↑`／`↓` 佮 `⇧↑`／`⇧↓` 来调。

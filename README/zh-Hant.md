@@ -1,4 +1,4 @@
-[简体中文](zh-Hans.md)｜[长沙话](hsn-Hans.md)｜[潮州话](nan-Hans-teochew.md)｜[闽南话](nan-Hans-hokkien.md)｜[广东话](yue-Hans.md)｜[上海话](wuu-Hans.md)<br>
+[简体中文](zh-Hans.md)｜[长沙话](hsn-Hans.md)｜[潮州话](nan-Hans-teochew.md)｜[闽南话](nan-Hans-hokkien.md)｜[广东话](yue-Hans.md)｜[上海话](wuu-Hans.md)\
 [繁體中文](zh-Hant.md)｜[長沙話](hsn-Hant.md)｜[潮州話](nan-Hant-teochew.md)｜[閩南話](nan-Hant-hokkien.md)｜[廣東話](yue-Hant.md)｜[上海話](wuu-Hant.md)
 
 # 字形連連看
