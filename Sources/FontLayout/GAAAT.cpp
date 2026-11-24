@@ -105,6 +105,35 @@ template <typename GlyphData> void reverseGlyphData(GlyphData &data) {
     std::reverse(data.markLigatures.begin(), data.markLigatures.end());
     std::reverse(data.ligatureStructures.begin(), data.ligatureStructures.end());
 }
+void removeDeletedGlyphs(Change &change) {
+    size_t kept = 0;
+    for (size_t i = 0; i < change.glyphs.size(); ++i) {
+        if (change.glyphs[i] == 0xffff) continue;
+        auto keep = [&](auto &values) {
+            if (!values.empty()) values[kept] = values[i];
+        };
+        keep(change.glyphs);
+        keep(change.markComponents);
+        keep(change.markLigatures);
+        keep(change.ligatureStructures);
+        ++kept;
+    }
+    auto trim = [&](auto &values) { if (!values.empty()) values.resize(kept); };
+    trim(change.glyphs);
+    trim(change.markComponents);
+    trim(change.markLigatures);
+    trim(change.ligatureStructures);
+    // Match clusters()' sparse representation when no known mark or base
+    // structure remains, rather than publishing a second, padded identity.
+    if (std::none_of(change.markComponents.begin(), change.markComponents.end(),
+                     [](int component) { return component >= 0; })) {
+        change.markComponents.clear();
+        change.markLigatures.clear();
+    }
+    if (std::none_of(change.ligatureStructures.begin(), change.ligatureStructures.end(),
+                     [](auto structure) { return structure.first != 0; }))
+        change.ligatureStructures.clear();
+}
 void addOutput(std::vector<bool> &outputs, uint64_t glyph) {
     if (glyph && glyph != 0xffff && glyph < outputs.size())
         outputs[size_t(glyph)] = true;
@@ -1040,17 +1069,20 @@ void AAT::substitute(Buffer &buffer, std::optional<AATSelector> selector, bool r
                 };
                 auto mapped = [&](const Cluster &cluster) {
                     auto output = cluster.glyphs;
+                    bool deleted = false;
                     for (auto &glyph : output) {
                         if (cancellation)
                             discoveryBudget.poll();
                         if (auto value = aatLookup(sub.data, glyph))
                             glyph = Glyph(*value);
+                        deleted |= glyph == 0xffff;
                     }
                     if (output != cluster.glyphs) {
                         Change change{cluster.source, std::move(output), label, {cluster}};
                         change.markComponents = cluster.markComponents;
                         change.markLigatures = cluster.markLigatures;
                         change.ligatureStructures = cluster.ligatureStructures;
+                        if (deleted) removeDeletedGlyphs(change);
                         append(std::move(change));
                     }
                 };
