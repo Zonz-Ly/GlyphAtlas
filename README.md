@@ -1,4 +1,6 @@
-[简体中文](README/zh-Hans.md) | [繁體中文](README/zh-Hant.md)
+[简体中文](README/zh-Hans.md) | [长沙话](README/hsn-Hans.md) | [潮州话](README/nan-Hans-teochew.md) | [闽南话](README/nan-Hans-hokkien.md) | [广东话](README/yue-Hans.md) | [上海话](README/wuu-Hans.md)
+
+[繁體中文](README/zh-Hant.md) | [長沙話](README/hsn-Hant.md) | [潮州話](README/nan-Hant-teochew.md) | [閩南話](README/nan-Hant-hokkien.md) | [廣東話](README/yue-Hant.md) | [上海話](README/wuu-Hant.md)
 
 # Glyph Atlas
 
