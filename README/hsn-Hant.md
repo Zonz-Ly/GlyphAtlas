@@ -1,5 +1,5 @@
-[繁體中文](zh-Hant.md)｜長沙話｜[潮州話](nan-Hant-teochew.md)｜[閩南話](nan-Hant-hokkien.md)｜[廣東話](yue-Hant.md)｜[上海話](wuu-Hant.md)\
-[简体中文](zh-Hans.md)｜[长沙话](hsn-Hans.md)｜[潮州话](nan-Hans-teochew.md)｜[闽南话](nan-Hans-hokkien.md)｜[广东话](yue-Hans.md)｜[上海话](wuu-Hans.md)
+[**繁體中文**](zh-Hant.md)｜長沙話｜[潮州話](nan-Hant-teochew.md)｜[閩南話](nan-Hant-hokkien.md)｜[廣東話](yue-Hant.md)｜[上海話](wuu-Hant.md)\
+[**简体中文**](zh-Hans.md)｜[长沙话](hsn-Hans.md)｜[潮州话](nan-Hans-teochew.md)｜[闽南话](nan-Hans-hokkien.md)｜[广东话](yue-Hans.md)｜[上海话](wuu-Hans.md)
 ***
 - 扗選單列選「打開⋯」或者按 `⌘O`，就可以直接去裝字軆的檔案夾裏頭開字軆。也可以把字軆拖到 App 圖示上，或者拖到已經開過著的字軆的視窗上。還可以把 Glyph Atlas 設成平常打開字軆檔案用的 App。歬一向子開過的字軆也尋得到。
 - 扗選單列可以把如今箇隻視窗裏頭的字軆拷貝到自箇的字軆檔案夾。按住 `⌥`，就改拷貝到大家共用的字軆檔案夾。

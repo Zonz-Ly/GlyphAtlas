@@ -1,5 +1,5 @@
-[繁體中文](zh-Hant.md)｜[長沙話](hsn-Hant.md)｜[潮州話](nan-Hant-teochew.md)｜閩南話｜[廣東話](yue-Hant.md)｜[上海話](wuu-Hant.md)\
-[简体中文](zh-Hans.md)｜[长沙话](hsn-Hans.md)｜[潮州话](nan-Hans-teochew.md)｜[闽南话](nan-Hans-hokkien.md)｜[广东话](yue-Hans.md)｜[上海话](wuu-Hans.md)
+[**繁體中文**](zh-Hant.md)｜[長沙話](hsn-Hant.md)｜[潮州話](nan-Hant-teochew.md)｜閩南話｜[廣東話](yue-Hant.md)｜[上海話](wuu-Hant.md)\
+[**简体中文**](zh-Hans.md)｜[长沙话](hsn-Hans.md)｜[潮州话](nan-Hans-teochew.md)｜[闽南话](nan-Hans-hokkien.md)｜[广东话](yue-Hans.md)｜[上海话](wuu-Hans.md)
 ***
 - 佇選單列揀「開⋯」抑是揤 `⌘O`，會當直接對字體資料鋏仔開字體。嘛會當共字體拖去 App 圖示，抑是已經開好字體个視窗頂懸來開字體；閣較歡迎共 Glyph Atlas 設做平常開字體檔案个預設 App。近來開過个檔案嘛會當閣開。
 - 佇選單列揀「拷貝到字體簿」，就會當共這馬視窗開个字體拷貝去家己个字體資料鋏仔。揤牢 `⌥`，會當改拷貝去逐家共用个字體資料鋏仔。
