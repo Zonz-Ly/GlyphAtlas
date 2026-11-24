@@ -76,7 +76,7 @@
 "Text and alternate glyph list" = "Liste der Zeichen und alternativen Glyphen";
 "Filter by Feature" = "Nach Funktion filtern";
 "No Features to Filter" = "Keine Funktionen zum Filtern";
-"No Feature" = "Ohne Merkmal";
+"No Feature" = "Ohne Funktion";
 
 /* Text layout and typography. */
 "Make Text Bigger" = "Schrift größer";

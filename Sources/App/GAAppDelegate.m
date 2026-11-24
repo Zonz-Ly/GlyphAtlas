@@ -821,12 +821,17 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
 
 - (NSString *)accessibilityDescriptionForPalette:(GAPreviewColors *)palette appearance:(NSAppearance *)appearance {
     NSMutableArray<NSString *> *lines = [NSMutableArray arrayWithCapacity:GAPaletteRoleCount];
-    NSCharacterSet *ellipsis = [NSCharacterSet characterSetWithCharactersInString:@"…"];
+    NSCharacterSet *whitespace = NSCharacterSet.whitespaceAndNewlineCharacterSet;
     NSString *labelFormat = NSLocalizedString(@"%@: %@", @"Accessible palette color role and value");
     [appearance performAsCurrentDrawingAppearance:^{
         for (NSUInteger i = 0; i < GAPaletteRoleCount; i++) {
             GAPreviewColorRole role = GAPaletteRoles[i];
-            NSString *title = [GAPaletteRoleTitle(role) stringByTrimmingCharactersInSet:ellipsis];
+            NSString *title = GAPaletteRoleTitle(role);
+            if ([title hasSuffix:@"…"] || [title hasSuffix:@"⋯"]) {
+                title = [title substringToIndex:title.length - 1];
+                while (title.length && [whitespace characterIsMember:[title characterAtIndex:title.length - 1]])
+                    title = [title substringToIndex:title.length - 1];
+            }
             if ([palette followsSystemForRole:role]) {
                 [lines addObject:[NSString stringWithFormat:labelFormat, title,
                     NSLocalizedString(@"Follow System", @"Restore all preview colors")]];
