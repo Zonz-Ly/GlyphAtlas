@@ -1,8 +1,5 @@
 [简体中文](zh-Hans.md)｜[长沙话](hsn-Hans.md)｜[潮州话](nan-Hans-teochew.md)｜[闽南话](nan-Hans-hokkien.md)｜[广东话](yue-Hans.md)｜[上海话](wuu-Hans.md)<br>
-[繁體中文](zh-Hant.md)｜[長沙話](hsn-Hant.md)｜[潮州話](nan-Hant-teochew.md)｜[閩南話](nan-Hant-hokkien.md)｜[廣東話](yue-Hant.md)｜[上海話](wuu-Hant.md)
-
----
-
+[繁體中文](zh-Hant.md)｜[長沙話](hsn-Hant.md)｜[潮州話](nan-Hant-teochew.md)｜[閩南話](nan-Hant-hokkien.md)｜[廣東話](yue-Hant.md)｜[上海話](wuu-Hant.md)<hr>
 - 辣選單列揀「開⋯」或者撳 `⌘O`，就好到字體檔案夾裏向直接開字體。拿字體拖到 App 圖示浪，或者拖到已經開好字體个視窗浪，儕好開。要常用 Glyph Atlas 開字體檔案，就設成預設 App。前頭開過个字體，也好辣「最近開過个字體」裏向尋著。
 - 辣選單列揀「拷貝到字體簿」，搿個視窗開辣海个字體就會拷貝到自家个字體檔案夾裏向。撳牢 `⌥`，好改揀「拷貝到大家用个字體檔案夾」。
 - 開可變字體个辰光，調參數个面板會辣紅綠燈邊頭出來。要一直開辣海，就拿面板拖出來。揀好數值，撳 `↑`／`↓` 搭 `⇧↑`／`⇧↓` 就好調。
