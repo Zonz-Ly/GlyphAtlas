@@ -1382,6 +1382,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
             }
         }
         if (!hidden) {
+            [currentWindow recalculateKeyViewLoop];
             [currentWindow invalidateCursorRectsForView:controller.titleFontNameField];
         }
     };
