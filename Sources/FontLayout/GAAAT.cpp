@@ -99,6 +99,12 @@ AAT::AAT(View table, bool extended) : extended_(extended) {
     }
 }
 namespace {
+template <typename GlyphData> void reverseGlyphData(GlyphData &data) {
+    std::reverse(data.glyphs.begin(), data.glyphs.end());
+    std::reverse(data.markComponents.begin(), data.markComponents.end());
+    std::reverse(data.markLigatures.begin(), data.markLigatures.end());
+    std::reverse(data.ligatureStructures.begin(), data.ligatureStructures.end());
+}
 void addOutput(std::vector<bool> &outputs, uint64_t glyph) {
     if (glyph && glyph != 0xffff && glyph < outputs.size())
         outputs[size_t(glyph)] = true;
@@ -1002,7 +1008,14 @@ void AAT::substitute(Buffer &buffer, std::optional<AATSelector> selector, bool r
     // Inventory explores overlapping origins, unlike the deterministic run.
     // Leave room for those origins before reporting an incomplete inventory.
     if (inventory) discoveryBudget.remaining *= 2;
-    std::set<std::tuple<Span, std::vector<Glyph>, std::string, std::vector<uint64_t>, bool>> recorded;
+    using StateKey = std::tuple<Span, std::vector<Glyph>, std::vector<int>, std::vector<uint64_t>,
+                                LigatureStructures>;
+    auto stateKey = [](const auto &data) -> StateKey {
+        return {data.source, data.glyphs, data.markComponents, data.markLigatures,
+                canonicalLigatureStructures(data.markComponents, data.markLigatures,
+                                            data.ligatureStructures)};
+    };
+    std::set<std::tuple<StateKey, std::string, std::vector<uint64_t>, bool>> recorded;
     for (const auto *selected : schedule(selector, vertical, verticalSubstitutionsOnly, overrides)) {
         checkCancellation(cancellation);
         const auto &sub = *selected;
@@ -1021,20 +1034,25 @@ void AAT::substitute(Buffer &buffer, std::optional<AATSelector> selector, bool r
                     change.vertical |= (!(sub.coverage & 0x20000000) &&
                                         (sub.coverage & 0x80000000)) ||
                                        (selector && selector->type == 4);
-                    if (recorded.emplace(change.source, change.glyphs, change.feature,
+                    if (recorded.emplace(stateKey(change), change.feature,
                                          change.inputKey(), change.vertical).second)
                         trace->changes.push_back(std::move(change));
                 };
-                auto mapped = [&](Span source, const std::vector<Glyph> &glyphs) {
-                    auto output = glyphs;
+                auto mapped = [&](const Cluster &cluster) {
+                    auto output = cluster.glyphs;
                     for (auto &glyph : output) {
                         if (cancellation)
                             discoveryBudget.poll();
                         if (auto value = aatLookup(sub.data, glyph))
                             glyph = Glyph(*value);
                     }
-                    if (output != glyphs)
-                        append({source, std::move(output), label, {{source, glyphs}}});
+                    if (output != cluster.glyphs) {
+                        Change change{cluster.source, std::move(output), label, {cluster}};
+                        change.markComponents = cluster.markComponents;
+                        change.markLigatures = cluster.markLigatures;
+                        change.ligatureStructures = cluster.ligatureStructures;
+                        append(std::move(change));
+                    }
                 };
                 auto explore = [&](Buffer candidate) {
                     Buffer input = candidate;
@@ -1042,9 +1060,9 @@ void AAT::substitute(Buffer &buffer, std::optional<AATSelector> selector, bool r
                     auto publish = [&] {
                         for (auto &change : found.changes) {
                             if (reverse) {
-                                std::reverse(change.glyphs.begin(), change.glyphs.end());
+                                reverseGlyphData(change);
                                 for (auto &input : change.inputs)
-                                    std::reverse(input.glyphs.begin(), input.glyphs.end());
+                                    reverseGlyphData(input);
                             }
                             append(std::move(change));
                         }
@@ -1063,11 +1081,11 @@ void AAT::substitute(Buffer &buffer, std::optional<AATSelector> selector, bool r
                 };
                 if (sub.type == 4) {
                     for (const auto &cluster : originalClusters)
-                        mapped(cluster.source, cluster.glyphs);
+                        mapped(cluster);
                     for (auto cluster : clusters(buffer)) {
                         if (reverse)
-                            std::reverse(cluster.glyphs.begin(), cluster.glyphs.end());
-                        mapped(cluster.source, cluster.glyphs);
+                            reverseGlyphData(cluster);
+                        mapped(cluster);
                     }
                 } else
                     explore(buffer);
@@ -1075,26 +1093,39 @@ void AAT::substitute(Buffer &buffer, std::optional<AATSelector> selector, bool r
                 if (reverse)
                     std::reverse(input.begin(), input.end());
                 bool same = std::equal(input.begin(), input.end(), buffer.begin(), buffer.end(),
-                                       sameGlyphAndSource);
+                    [](const Item &a, const Item &b) {
+                        return sameGlyphAndSource(a, b) && a.component == b.component &&
+                               a.ligatureIdentity == b.ligatureIdentity && a.components == b.components;
+                    });
                 if (!same && sub.type != 4)
                     explore(std::move(input));
-                std::set<std::pair<Span, std::vector<Glyph>>> visited;
+                std::set<StateKey> visited;
                 for (size_t i = 0; i < prior; i++) {
                     if (cancellation)
                         discoveryBudget.poll();
                     const Change previous = trace->changes[i];
                     if (previous.glyphs.empty() ||
-                        !visited.emplace(previous.source, previous.glyphs).second)
+                        !visited.insert(stateKey(previous)).second)
                         continue;
                     if (sub.type == 4) {
-                        mapped(previous.source, previous.glyphs);
+                        mapped({previous.source, previous.glyphs, previous.markComponents,
+                                previous.markLigatures, previous.ligatureStructures});
                         continue;
                     }
                     Buffer candidate;
-                    for (Glyph glyph : previous.glyphs) {
+                    for (size_t j = 0; j < previous.glyphs.size(); ++j) {
                         Item item;
-                        item.glyph = glyph;
+                        item.glyph = previous.glyphs[j];
                         item.source = previous.source;
+                        if (!previous.markComponents.empty())
+                            item.component = previous.markComponents[j];
+                        if (item.component >= 0)
+                            item.ligatureIdentity = previous.markLigatures.empty() ? 1 : previous.markLigatures[j];
+                        if (!previous.ligatureStructures.empty()) {
+                            const auto &structure = previous.ligatureStructures[j];
+                            item.components.assign(structure.first, item.source);
+                            if (structure.first) item.ligatureIdentity = structure.second;
+                        }
                         candidate.push_back(item);
                     }
                     if (reverse)

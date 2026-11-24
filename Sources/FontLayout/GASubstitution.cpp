@@ -112,7 +112,48 @@ class Substitution {
         auto positions = match(pattern, buffer_, at, gdef_, lookup);
         if (!positions)
             return {};
+        const auto &first = buffer_[at];
+        std::optional<bool> maySkipBase;
+        bool markLigature = gdef_.glyphClasses.get(first.glyph) == 3;
+        for (size_t i = 1; i < positions->size(); ++i) {
+            const auto &item = buffer_[(*positions)[i]];
+            markLigature &= gdef_.glyphClasses.get(item.glyph) == 3;
+            if (first.ligatureIdentity && first.component >= 0) {
+                if (item.ligatureIdentity == first.ligatureIdentity && item.component == first.component)
+                    continue;
+                // Marks on different components may combine only when this
+                // lookup can skip their preceding base ligature.
+                if (!maySkipBase) {
+                    maySkipBase = false;
+                    for (size_t p = at; p > 0;) {
+                        budget_.poll();
+                        const auto &base = buffer_[--p];
+                        if (base.ligatureIdentity != first.ligatureIdentity) break;
+                        if (base.component < 0) {
+                            maySkipBase = !accepts(gdef_, lookup, base);
+                            break;
+                        }
+                    }
+                }
+                if (!*maySkipBase) return {};
+            } else if (item.ligatureIdentity && item.component >= 0 &&
+                       item.ligatureIdentity != first.ligatureIdentity)
+                return {};
+        }
         Item ligature = buffer_[at];
+        Span merged = buffer_[positions->front()].source;
+        for (size_t pos : *positions)
+            merged = unite(merged, buffer_[pos].source);
+        if (markLigature) {
+            // This is still a mark attached to an external base/component,
+            // not a new base owner for the surrounding marks.
+            ligature.glyph = pattern.replacement.front();
+            ligature.source = merged;
+            for (size_t i = positions->size(); i > 1; --i)
+                splice((*positions)[i - 1], {});
+            splice(at, {ligature});
+            return {true, at + 1};
+        }
         ligature.ligatureIdentity = nextIdentity_++;
         ligature.glyph = pattern.replacement.front();
         ligature.components.clear();
@@ -138,9 +179,6 @@ class Substitution {
                 ligature.components.insert(ligature.components.end(), component.components.begin(),
                                            component.components.end());
         }
-        Span merged = buffer_[positions->front()].source;
-        for (size_t pos : *positions)
-            merged = unite(merged, buffer_[pos].source);
         ligature.source = merged;
         // match() returns component positions in increasing buffer order.
         size_t componentIndex = 0;

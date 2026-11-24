@@ -18,7 +18,7 @@ size_t valueSize(unsigned format) {
     return size_t(__builtin_popcount(format)) * 2;
 }
 Point valueRecord(Item &item, View parent, size_t at, unsigned format, const GDEF &gdef,
-                 const Metrics &metrics) {
+                 const Metrics &metrics, bool vertical) {
     double value[4] = {};
     parent.require(at, valueSize(format));
     for (unsigned bit = 0; bit < 8; bit++)
@@ -32,8 +32,10 @@ Point valueRecord(Item &item, View parent, size_t at, unsigned format, const GDE
         }
     item.xOffset += value[0];
     item.yOffset += value[1];
-    item.xAdvance += value[2];
-    item.yAdvance += value[3];
+    if (vertical)
+        item.yAdvance -= value[3];
+    else
+        item.xAdvance += value[2];
     return {value[0], value[1]};
 }
 std::optional<Point> anchor(View table, const GDEF &gdef, const Metrics &metrics) {
@@ -106,7 +108,7 @@ class Positioning {
         }
     }
     void adjustValue(size_t index, View parent, size_t at, unsigned format) {
-        Point delta = valueRecord(buffer_[index], parent, at, format, gdef_, metrics_);
+        Point delta = valueRecord(buffer_[index], parent, at, format, gdef_, metrics_, settings_.vertical);
         auto attachment = attachments_.find(index);
         if (attachment != attachments_.end() && !attachment->second.cursive) {
             attachment->second.placementAfter.x += delta.x;
