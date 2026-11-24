@@ -34,6 +34,7 @@
 ## 開啟
 
 - 如果 app 被系統攔住打不開，就打開系統自帶的終端機 app，把 `If Won't Open Drag this into Terminal.command` 拖進去，按 `⏎`，就可以打開了。
+- 在系統設定 → 一般 → 語言與地區，找到下方的應用程式，點加號，選擇 Glyph Atlas，即可設定語言。
 
 ## 使用
 
