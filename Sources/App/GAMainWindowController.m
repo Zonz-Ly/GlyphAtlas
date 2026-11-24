@@ -383,7 +383,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     [window.contentView.superview layoutSubtreeIfNeeded];
     [self.splitViewController.splitView setPosition:width ofDividerAtIndex:0];
     [window recalculateKeyViewLoop];
-    [window invalidateCursorRectsForView:self.titleFontNameField];
 }
 
 - (void)configureInterfaceWithWindow:(NSWindow *)window {
@@ -1388,6 +1387,9 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
             } else if (!hidden) {
                 [controller.sidebarViewController focusGlyphList];
             }
+        }
+        if (!hidden) {
+            [currentWindow invalidateCursorRectsForView:controller.titleFontNameField];
         }
     };
     if (animate) {
