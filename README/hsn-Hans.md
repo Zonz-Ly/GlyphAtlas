@@ -1,5 +1,5 @@
 [繁體中文](zh-Hant.md)｜[長沙話](hsn-Hant.md)｜[潮州話](nan-Hant-teochew.md)｜[閩南話](nan-Hant-hokkien.md)｜[廣東話](yue-Hant.md)｜[上海話](wuu-Hant.md)\
-[简体中文](zh-Hans.md)｜[长沙话](hsn-Hans.md)｜[潮州话](nan-Hans-teochew.md)｜[闽南话](nan-Hans-hokkien.md)｜[广东话](yue-Hans.md)｜[上海话](wuu-Hans.md)
+[简体中文](zh-Hans.md)｜长沙话｜[潮州话](nan-Hans-teochew.md)｜[闽南话](nan-Hans-hokkien.md)｜[广东话](yue-Hans.md)｜[上海话](wuu-Hans.md)
 ***
 - 在菜单栏选「打开…」或者按 `⌘O`，就可以直接去装字体的文件夹里头开字体。也可以把字体拖到 App 图标上，或者拖到已经开过著的字体的窗口上。还可以把 Glyph Atlas 设成平常打开字体文件用的 App。前一向子开过的字体也寻得到。
 - 在菜单栏可以把如今箇只窗口里头的字体拷贝到自个的字体文件夹。按住 `⌥`，就改拷贝到大家共用的字体文件夹。
