@@ -82,8 +82,8 @@
 /* Text layout and typography. */
 "Make Text Bigger" = "ghItlh tInmoH";
 "Make Text Smaller" = "ghItlh machmoH";
-"Increase Leading" = "tlhegh tInmoH";
-"Decrease Leading" = "tlhegh machmoH";
+"Increase Leading" = "tlheghmey joj tInmoH";
+"Decrease Leading" = "tlheghmey joj machmoH";
 "Default Size" = "motlh 'ab";
 "Text Alignment" = "ghItlh per";
 "Left" = "poS";
@@ -92,7 +92,7 @@
 "Justified" = "perlu'";
 "Top" = "Dung";
 "Bottom" = "bIng";
-"Vertical Layout" = "Sen per";
+"Vertical Layout" = "chongbogh ghItlh";
 "Writing Direction" = "ghItlh lurgh";
 "Left to Right" = "poSvo' nIHDaq";
 "Right to Left" = "nIHvo' poSDaq";
@@ -114,7 +114,7 @@
 "Shrink Bounding Box" = "veH 'aplo' machmoH";
 "Colors" = "rItlh";
 "Glyph…" = "Degh…";
-"Background…" = "Hur…";
+"Background…" = "'em…";
 "Bounding Box…" = "veH 'aplo'…";
 "Follow System" = "pat tlhej";
 "Save Current Palette" = "DaH rItlh tetlh pol";
@@ -138,15 +138,15 @@
 "Help.01" = "De'wI' tetlhDaq «poSmoH…» wIv pagh ⌘O yIlo', ngutlh tu'qom ngeHmey poSmoHlaH, pagh ngutlh tu'qom Degh app 'och pagh poSmoHta'bogh ngutlh tu'qom jIHHomDaq qeng 'e' laH. appvam laDlaHbogh mIw wa'DIch chenmoH 'e' tIv. qen DapoSmoHbogh ngutlh tu'qom poSmoHqa'meH «qen DapoSmoHbogh ngutlh tu'qom poSmoH» yIlo'.";
 "Help.02" = "De'wI' tetlhDaq «ngutlh tu'qom paqDaq latlh chenmoH» yIwIv. jIHHomvamDaq poSbogh ngutlh tu'qom latlh chenmoHlu'. Hoch lo'wI'pu'vaD latlh chenmoHmeH, ⌥ yI'uytaH 'ej «Hoch lo'wI'pu'vaD latlh chenmoH» yIwIv.";
 "Help.03" = "ngutlh tu'qom choHlaHbogh poSmoHDI', qul Doq 'ej qul SuD retlhDaq ngutlh tu'qom choHbogh pat tu'lu', 'ej pe'laH. mI' wIvDI', mI' choHmeH ↑/↓ pagh ⇧↑/⇧↓ yIlo'.";
-"Help.04" = "retlh tetlhDaq wa' ngutlh pagh ngutlhmey law' yIchel Hoch Degh qellu'bogh leghmeH. tlhegh chu' chenmoHmeH, ⌥⏎ yIlo', 'ej «ghItlh pollu'ta'bogh» tu'meH, nIH leQ yI'uy—DaH ghItlh pol pagh ghItlh pollu'ta'bogh yIchel. De'wI' tetlhDaq ⌥ yIlo' nom Qaw'meH. ⇥ ⇧⇥ je yIlo' qawlu'bogh ghItlhmey choHmeH.";
+"Help.04" = "retlh tetlhDaq wa' ngutlh pagh ngutlhmey law' yIchel Hoch Degh qellu'bogh leghmeH. tlhegh chu' chenmoHmeH, ⌥⏎ yIlo', 'ej «ghItlh pollu'ta'bogh» tu'meH, nIH leQ yI'uy—DaH ghItlh pol pagh ghItlh pollu'ta'bogh yIchel. De'wI' tetlhDaq ⌥ yIlo' nom Qaw'meH. ⇥ ⇧⇥ je yIlo' luqawlu'bogh ghItlhmey choHmeH.";
 "Help.05" = "DeghDaq 'eQway' leQ cha'logh yI'uy pagh Degh yIwIv 'ej ⏎ yI'uy; Degh motlh qa' Deghvam, 'ej latlh Deghmey lucha'lu'. Deghvam chelmeH, bIvangtaHvIS ⇧ yI'uytaH.";
 "Help.06" = "↑/↓ yIlo' Degh Dung/bIng wIvmeH, ⌥↑/⌥↓ yIlo' Degh motlh Dung/bIng wIvmeH, ⌘↑/⌘↓ yIlo' Degh tetlh wa'DIch 'ej Qav Degh wIvmeH.";
 "Help.07" = "UnicodeDaq 'eQway' tamDI', Unicode pat pong 'agh. ⌘C yIlo' wIvta'bogh Degh Hoch Unicode ngutlhmey latlh chenmoHmeH.";
 "Help.08" = "nIH leQ yI'uy choHmeH, pagh ⌘1 wa' Degh, ⌘2 ngutlhmey, ⌘3 Degh tetlh yIlo'. ⌃⌘S: retlh 'ang / retlh So'.";
 "Help.09" = "⌃⌘G: He ghoS yIchu' pagh yIchu'Ha'. He ghoS chu'lu'DI', ngutlhmey pagh Degh tetlhDaq Degh yI'uyqa' wa' Degh leghmeH. ⌘] ⌘[ je yIlo' tlhopDaq ghoSmeH pagh cheghmeH; chegh leQ Dalo'laH je. chegh leQDaq nIH leQ yI'uy pagh leQ yI'uytaH qawHaq leghmeH.";
-"Help.10" = "ngutlhmeyDaq Degh yIlo' wa'logh, latlh Deghmey legh. Sen per ngaS. nIH leQ yI'uy pagh ⌘5 yIlo' choHmeH. ghItlh per ngutlh tu'qom SeH je naDev tu'lu'. De'wI' tetlh «legh» latlh wIv ngaS.";
+"Help.10" = "ngutlhmeyDaq Degh yIlo' wa'logh, latlh Deghmey legh. chongbogh ghItlh ngaS. nIH leQ yI'uy pagh ⌘5 yIlo' choHmeH. ghItlh per ngutlh tu'qom SeH je naDev tu'lu'. De'wI' tetlh «legh» latlh wIv ngaS.";
 "Help.11" = "Degh tetlhDaq Degh yIlo' cha'logh, ghItlhta'bogh yIchel. retlh tetlhDaq Degh DawIvDI', Degh tetlhDaq bar Degh. «SeH wIv» tu'meH, nIH leQ yI'uy.";
-"Help.12" = "⌘+/⌘− yIlo' ghItlh tInmoH/machmoH, pagh 'eQway' tlhej. ngutlhmeyDaq ⌥⌘+/⌥⌘− pagh 'eQway' tlhej per tInmoH/machmoH, ⌃⌘+/⌃⌘− pagh 'eQway' tlhej tlhegh tInmoH/machmoH. ⌘0 motlh tIn wIv.";
+"Help.12" = "ghItlh DatInmoHmeH pagh DamachmoHmeH ⌘+/⌘− yIlo', pagh HotmeH 'echletDaq cha' nItlh tISummoH pagh tIHopmoH. ngutlhmeyDaq HeHmey DatInmoHmeH pagh DamachmoHmeH ⌥⌘+/⌥⌘− yIlo', pagh SaSbogh lurghDaq cha' nItlh tISummoH pagh tIHopmoH; tlheghmey joj DatInmoHmeH pagh DamachmoHmeH ⌃⌘+/⌃⌘− yIlo', pagh chongbogh lurghDaq cha' nItlh tISummoH pagh tIHopmoH. ⌘0 motlh tIn wIv.";
 "Help.13" = "veH 'aplo' 'ang QIb; Degh 'ab 'ej 'ab per tlhegh ngaS. veH 'aplo' So'meH, ⌘4 yIlo'.";
-"Help.14" = "Hurgh mIwmey ngaS, 'ach Degh rur qIbmey 'elDI' mIn DuQ. «rItlh» tetlhDaq Degh rItlh, veH 'aplo' QIb rItlh, Hur rItlh je DachoHlaH. rItlh choHta'bogh «DaH rItlh tetlh pol» yIlo' polmeH, ⌥ yIlo' Qaw'meH.";
+"Help.14" = "Hurgh mIwmey ngaS, 'ach Degh rur qIbmey 'elDI' mIn DuQ. «rItlh» tetlhDaq Degh rItlh, veH 'aplo' QIb rItlh, 'em rItlh je DachoHlaH. rItlh choHta'bogh «DaH rItlh tetlh pol» yIlo' polmeH, ⌥ yIlo' Qaw'meH.";
 "Help.15" = "De'wI' tetlh «motlh yIlo'» yIlo', DaH legh, rItlh, 'ab je qaw, 'ej ngutlh tu'qom De' poSmoHDI' Hoch poH yIlo'. «motlh chu'» wIvmeH, ⌥ yI'uytaH.";
