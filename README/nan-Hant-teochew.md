@@ -1,5 +1,5 @@
-[简体中文](zh-Hans.md)｜[长沙话](hsn-Hans.md)｜[潮州话](nan-Hans-teochew.md)｜[闽南话](nan-Hans-hokkien.md)｜[广东话](yue-Hans.md)｜[上海话](wuu-Hans.md)\
-[繁體中文](zh-Hant.md)｜[長沙話](hsn-Hant.md)｜[潮州話](nan-Hant-teochew.md)｜[閩南話](nan-Hant-hokkien.md)｜[廣東話](yue-Hant.md)｜[上海話](wuu-Hant.md)
+[繁體中文](zh-Hant.md)｜[長沙話](hsn-Hant.md)｜[潮州話](nan-Hant-teochew.md)｜[閩南話](nan-Hant-hokkien.md)｜[廣東話](yue-Hant.md)｜[上海話](wuu-Hant.md)\
+[简体中文](zh-Hans.md)｜[长沙话](hsn-Hans.md)｜[潮州话](nan-Hans-teochew.md)｜[闽南话](nan-Hans-hokkien.md)｜[广东话](yue-Hans.md)｜[上海话](wuu-Hans.md)
 ***
 - 在選單列揤「開⋯」啊是揤 `⌘O`，就有變直接去字體檔案夾許內底揣字體來開。汝也好把將字體拖到 App 圖示，啊是拖入已經開有字體个視窗；也歡迎汝對 Glyph Atlas 設做平常睇字體个 App。有做「只擺開過个物件」个功能。
 - 在選單列揤「拷貝落字體簿」，就有變對只個視窗開在塊个字體拷貝落家己个字體檔案夾。揤緊 `⌥`，還好改選「拷貝分大家夥共用」。
