@@ -1,4 +1,5 @@
-[中文](README.cn.md)
+[简体中文](README/zh-Hans.md) | [繁體中文](README/zh-Hant.md)
+
 # Glyph Atlas
 
 A native macOS font and alternate-glyph inspector. Type text to see every alternate glyph, contextual substitution, and ligature the font provides for it, along with the typeset result and every glyph in the font.
