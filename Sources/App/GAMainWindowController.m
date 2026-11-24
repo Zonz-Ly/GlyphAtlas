@@ -1579,8 +1579,11 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         return;
     }
     NSArray<GAFontResource *> *resources = [GAFontResource resourcesFromDescriptors:descriptors];
+    // File operations do not depend on choosing a style or constructing its model.
+    _fontFileURL = [url copy];
+    _fontFileReference = fileReference;
     if (resources.count == 1) {
-        [self loadResource:resources.firstObject url:url fileReference:fileReference];
+        [self loadResource:resources.firstObject url:url];
         return;
     }
     NSAlert *alert = [[NSAlert alloc] init];
@@ -1602,11 +1605,11 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
             [weakSelf.window close];
             return;
         }
-        [weakSelf loadResource:popup.selectedItem.representedObject url:url fileReference:fileReference];
+        [weakSelf loadResource:popup.selectedItem.representedObject url:url];
     }];
 }
 
-- (void)loadResource:(GAFontResource *)resource url:(NSURL *)url fileReference:(NSURL *)fileReference {
+- (void)loadResource:(GAFontResource *)resource url:(NSURL *)url {
     [self cancelGlyphFilterRequest];
     [self clearNavigationHistory];
     [self updateNavigationButton];
@@ -1615,7 +1618,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
     self.variationCoordinates = resource.defaultCoordinates;
     self.variationButton.hidden = resource.axes.count == 0;
     if (self.sidebarHidden) [self updateToolbarVariationItem];
-    [self loadDescriptor:resource.defaultDescriptor url:url fileReference:fileReference preservingSelection:NO];
+    [self loadDescriptor:resource.defaultDescriptor url:url preservingSelection:NO];
 }
 
 #pragma mark - Variation controls
@@ -1639,7 +1642,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
         if ([self.variationCoordinates isEqualToDictionary:coordinates]) return;
         self.variationCoordinates = coordinates;
         CTFontDescriptorRef descriptor = [self.fontResource copyDescriptorWithCoordinates:coordinates];
-        [self loadDescriptor:descriptor url:self.fontURL fileReference:self.fontFileReference preservingSelection:YES];
+        [self loadDescriptor:descriptor url:self.fontURL preservingSelection:YES];
         CFRelease(descriptor);
     };
     self.variationPopover = [[NSPopover alloc] init];
@@ -1705,7 +1708,7 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
 #pragma mark - Font loading
 
 - (void)loadDescriptor:(CTFontDescriptorRef)descriptor
-                   url:(NSURL *)url fileReference:(NSURL *)fileReference
+                   url:(NSURL *)url
    preservingSelection:(BOOL)preserve {
     [self cancelPendingNavigation];
     CTFontDescriptorRef retained = (CTFontDescriptorRef)CFRetain(descriptor);
@@ -1734,7 +1737,6 @@ static NSRange GAExactGlyphSourceRange(GAGlyphVariant *variant, GACharacterGroup
             [self cancelLayoutNavigation];
             self.pendingGlyphEdit = nil;
             self.fontDocument = document;
-            self->_fontFileReference = fileReference;
             if (!document.hasRightToLeftLanguages)
                 [self setBaseWritingDirection:NSWritingDirectionNatural];
             NSString *languageTag = self.typesettingLanguageTag;

@@ -1209,6 +1209,16 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
 
 #pragma mark - Active window
 
+- (GAMainWindowController *)fontCopyWindowController {
+    // A style chooser or a copy prompt belongs to its root font window,
+    // even when another font window is still the application's main window.
+    for (NSWindow *window = NSApp.keyWindow; window; window = window.sheetParent) {
+        if ([window.windowController isKindOfClass:GAMainWindowController.class])
+            return (GAMainWindowController *)window.windowController;
+    }
+    return self.activeMainWindowController;
+}
+
 - (GAMainWindowController *)activeMainWindowController {
     NSWindow *keyWindow = NSApp.keyWindow;
     NSWindowController *controller = keyWindow.windowController;
@@ -1440,6 +1450,9 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
         action == @selector(clearRecentFonts:) || action == @selector(restoreOpeningSettings:)) {
         return YES;
     }
+    if (action == @selector(copyToFontBook:)) {
+        return self.fontCopyWindowController.fontFileURL != nil;
+    }
     GAMainWindowController *controller = [self controllerForViewMenu:item.menu];
     if (action == @selector(toggleSidebar:)) {
         item.title = controller.isSidebarHidden
@@ -1462,9 +1475,6 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
         if (arrowShortcut && [responder isKindOfClass:NSTextView.class] &&
             [(NSTextView *)responder isFieldEditor]) return NO;
         return action == @selector(navigateBack:) ? controller.canNavigateBack : controller.canNavigateForward;
-    }
-    if (action == @selector(copyToFontBook:)) {
-        return controller.fontURL != nil;
     }
     if (action == @selector(increaseLineHeight:) || action == @selector(decreaseLineHeight:) ||
         action == @selector(zoomMetricsIn:) || action == @selector(zoomMetricsOut:))
@@ -1527,11 +1537,14 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
 #pragma mark - File and application actions
 
 - (void)copyToFontBook:(NSMenuItem *)sender {
-    GAMainWindowController *controller = self.activeMainWindowController;
-    NSURL *fontURL = controller.fontURL;
+    GAMainWindowController *controller = self.fontCopyWindowController;
+    NSURL *fontURL = controller.fontFileURL;
     if (fontURL == nil)
         return;
     NSURL *reference = controller.fontFileReference;
+    NSWindow *presentationWindow = controller.window;
+    while (presentationWindow.attachedSheet)
+        presentationWindow = presentationWindow.attachedSheet;
     NSError *error;
     NSURL *source = GAResolveFontFileReference(reference, fontURL, &error);
     if (!source) {
@@ -1556,7 +1569,7 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
             fontURL.lastPathComponent];
         if (folder == GAFontFolderAllUsers) alert.informativeText = directory.path;
         [alert addButtonWithTitle:NSLocalizedString(@"OK", @"OK")];
-        [alert beginSheetModalForWindow:controller.window completionHandler:nil];
+        [alert beginSheetModalForWindow:presentationWindow completionHandler:nil];
         return;
     }
     NSURL *destination = [directory URLByAppendingPathComponent:fontURL.lastPathComponent isDirectory:NO];
@@ -1588,7 +1601,7 @@ static NSURL *GAFontFolderURL(GAFontFolder folder) {
     stop.keyEquivalent = @"\033";
     [alert layout];
     alert.window.defaultButtonCell = stop.cell;
-    [alert beginSheetModalForWindow:controller.window completionHandler:^(NSModalResponse response) {
+    [alert beginSheetModalForWindow:presentationWindow completionHandler:^(NSModalResponse response) {
         BOOL replace = canReplace && response == NSAlertFirstButtonReturn;
         if (!replace && response != keepBothResponse)
             return;

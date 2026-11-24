@@ -7,6 +7,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface GAMainWindowController : NSWindowController
 @property (nonatomic, readonly, nullable) NSURL *fontURL;
+/// Original file available before a collection's style has been selected.
+@property (nonatomic, readonly, nullable) NSURL *fontFileURL;
 /// An in-session reference to the opened file, resolved through any symlink.
 @property (nonatomic, readonly, nullable) NSURL *fontFileReference;
 @property(nonatomic, readonly) NSString *inputText;
