@@ -23,6 +23,10 @@ std::vector<double> normalizeCoordinates(View fvar, View avar,
         result.push_back(norm);
     }
     if (avar) {
+        // Later major versions can add normalization stages. Do not expose an
+        // intermediate result as valid coordinates for layout variation data.
+        if (avar.u16(0) != 1)
+            throw InvalidTable("unsupported avar major version");
         size_t p = 8;
         unsigned axes = avar.u16(6);
         if (axes != result.size())

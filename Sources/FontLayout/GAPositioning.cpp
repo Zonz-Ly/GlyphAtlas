@@ -357,36 +357,46 @@ class Positioning {
         return p;
     }
     void resolve(size_t index, std::set<size_t> &path, std::set<size_t> &done) {
-        budget_.poll();
-        if (done.count(index))
-            return;
-        auto found = attachments_.find(index);
-        if (found == attachments_.end())
-            return;
-        if (!path.insert(index).second) {
-            attachments_.erase(index);
-            return;
+        // Save frames explicitly so valid long chains do not grow the call stack.
+        std::vector<std::pair<size_t, Attachment>> pending;
+        for (;;) {
+            budget_.poll();
+            if (done.count(index))
+                break;
+            auto found = attachments_.find(index);
+            if (found == attachments_.end())
+                break;
+            if (!path.insert(index).second) {
+                attachments_.erase(index);
+                break;
+            }
+            pending.emplace_back(index, found->second);
+            index = found->second.parent;
         }
-        auto attachment = found->second;
-        resolve(attachment.parent, path, done);
-        auto &item = buffer_[index];
-        const auto &parent = buffer_[attachment.parent];
-        if (attachment.cursive) {
-            if (settings_.vertical)
-                item.xOffset += parent.xOffset + attachment.delta.x;
-            else
-                item.yOffset += parent.yOffset + attachment.delta.y;
-        } else {
-            auto p = pen(index), base = pen(attachment.parent);
-            item.xOffset = base.x + parent.xOffset + attachment.delta.x - p.x;
-            item.yOffset = base.y + parent.yOffset + attachment.delta.y - p.y;
-            // A new attachment discards earlier placement. Only adjustments
-            // recorded after this attachment survive the deferred resolution.
-            if (attachment.placementAfter.x) item.xOffset += attachment.placementAfter.x;
-            if (attachment.placementAfter.y) item.yOffset += attachment.placementAfter.y;
+        // Retain parent-first arithmetic, including frames saved before a cycle.
+        for (auto cursor = pending.rbegin(); cursor != pending.rend(); ++cursor) {
+            budget_.poll();
+            size_t index = cursor->first;
+            const auto &attachment = cursor->second;
+            auto &item = buffer_[index];
+            const auto &parent = buffer_[attachment.parent];
+            if (attachment.cursive) {
+                if (settings_.vertical)
+                    item.xOffset += parent.xOffset + attachment.delta.x;
+                else
+                    item.yOffset += parent.yOffset + attachment.delta.y;
+            } else {
+                auto p = pen(index), base = pen(attachment.parent);
+                item.xOffset = base.x + parent.xOffset + attachment.delta.x - p.x;
+                item.yOffset = base.y + parent.yOffset + attachment.delta.y - p.y;
+                // A new attachment discards earlier placement. Only adjustments
+                // recorded after this attachment survive the deferred resolution.
+                if (attachment.placementAfter.x) item.xOffset += attachment.placementAfter.x;
+                if (attachment.placementAfter.y) item.yOffset += attachment.placementAfter.y;
+            }
+            path.erase(index);
+            done.insert(index);
         }
-        path.erase(index);
-        done.insert(index);
     }
 
   public:
