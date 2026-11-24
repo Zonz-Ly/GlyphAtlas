@@ -117,7 +117,7 @@ void Trace::changed(const Buffer &before, const Buffer &after, const std::string
         std::for_each(firstNew, lastNew, include);
         auto intersects = [&](const Item &item) {
             if (item.source.empty()) return true;
-            return item.source.start < scope.end && scope.start < item.source.end;
+            return item.source.intersects(scope);
         };
         // Include unchanged glyphs in an affected atomic source cluster.
         for (;;) {
@@ -150,7 +150,7 @@ void Trace::changed(const Buffer &before, const Buffer &after, const std::string
         change.markLigatures = ligatures;
         change.ligatureStructures = structures;
         for (const auto &mark : associationChanges)
-            if (mark.source.end <= source.start || mark.source.start >= source.end)
+            if (!mark.source.intersects(source))
                 change.surroundingMarks.push_back(mark);
         auto first = std::lower_bound(old.begin(), old.end(), source.start,
             [](const Cluster &input, uint32_t start) { return input.source.end <= start; });

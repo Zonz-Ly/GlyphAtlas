@@ -11,6 +11,13 @@ struct Span {
     bool empty() const {
         return start >= end;
     }
+    // Compare bounds only. Callers retain their own policy for empty spans.
+    bool intersects(Span other) const {
+        return start < other.end && other.start < end;
+    }
+    bool contains(Span other) const {
+        return start <= other.start && other.end <= end;
+    }
     friend bool operator==(Span a, Span b) {
         return a.start == b.start && a.end == b.end;
     }

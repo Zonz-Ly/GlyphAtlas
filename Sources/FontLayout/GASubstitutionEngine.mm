@@ -456,9 +456,9 @@ std::optional<std::vector<Glyph>> sequenceAt(const Buffer &buffer, Span span, bo
     std::vector<Glyph> result;
     Span covered{span.end, span.start};
     for (const auto &item : buffer) {
-        if (item.source.start >= span.end || item.source.end <= span.start)
+        if (!item.source.intersects(span))
             continue;
-        if (item.source.start < span.start || item.source.end > span.end)
+        if (!span.contains(item.source))
             return {};
         covered = unite(covered, item.source);
         if (item.glyph != 0xffff)
@@ -473,7 +473,7 @@ std::optional<std::vector<Glyph>> sequenceAt(const Buffer &buffer, Span span, bo
 std::vector<int> componentsAt(const Buffer &buffer, Span span, bool rtl) {
     std::vector<int> result;
     for (const auto &item : buffer)
-        if (item.glyph != 0xffff && item.source.start < span.end && span.start < item.source.end)
+        if (item.glyph != 0xffff && item.source.intersects(span))
             result.push_back(item.component);
     if (std::none_of(result.begin(), result.end(), [](int c) { return c >= 0; })) result.clear();
     if (rtl) std::reverse(result.begin(), result.end());
@@ -482,7 +482,7 @@ std::vector<int> componentsAt(const Buffer &buffer, Span span, bool rtl) {
 std::vector<uint64_t> ligaturesAt(const Buffer &buffer, Span span, bool rtl) {
     std::vector<uint64_t> owners;
     for (const auto &item:buffer)
-        if (item.glyph!=0xffff && item.source.start<span.end && span.start<item.source.end)
+        if (item.glyph!=0xffff && item.source.intersects(span))
             owners.push_back(item.ligatureIdentity);
     if (rtl) std::reverse(owners.begin(),owners.end());
     return normalizeLigatures(componentsAt(buffer,span,rtl),owners);
@@ -492,7 +492,7 @@ Structures structuresAt(const Buffer &buffer, Span span, bool rtl) {
     std::vector<int> components;
     std::vector<uint64_t> owners;
     for (const auto &item : buffer)
-        if (item.glyph != 0xffff && item.source.start < span.end && span.start < item.source.end) {
+        if (item.glyph != 0xffff && item.source.intersects(span)) {
             result.emplace_back(item.components.size(), item.ligatureIdentity);
             components.push_back(item.component);
             owners.push_back(item.ligatureIdentity);
@@ -509,6 +509,30 @@ bool verticalSource(const std::string &source) {
     return feature == "vert" || feature == "vrt2" ||
            source.rfind("morx:4:", 0) == 0 || source.rfind("mort:4:", 0) == 0;
 }
+// Inputs shared by replay and independent source discovery. This context is
+// local to one synchronous query; neither strategy owns mutable engine state.
+struct OriginQuery {
+    const Resource &resource;
+    NSString *text = nil;
+    NSArray<GAGlyphSelectionRun *> *selections = nil;
+    NSRange sourceRange{};
+    Span span;
+    std::vector<Glyph> target;
+    std::vector<std::vector<Glyph>> sources;
+    std::vector<std::vector<int>> sourceComponents;
+    std::vector<std::vector<uint64_t>> sourceLigatures;
+    std::vector<Structures> sourceStructures;
+    // Match supplied metadata, including empty values for individual candidates.
+    bool matchComponents = false;
+    bool matchStructures = false;
+    BOOL vertical = NO;
+    NSArray<NSDictionary *> *featureSettings = nil;
+    NSInteger direction = 0;
+    NSString *languageTag = nil;
+
+    explicit OriginQuery(const Resource &resource) : resource(resource) {}
+};
+
 struct OriginEdge {
     std::vector<Glyph> glyphs;
     std::string feature;
@@ -591,6 +615,10 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
 
 @interface GASubstitutionEngine ()
 @property(nonatomic, strong, readonly) GAFontProgram *program;
+- (GASubstitutionOrigin *)originByReplayingQuery:(const OriginQuery &)query
+                                  cancellation:(const Cancellation &)cancellation;
+- (GASubstitutionOrigin *)originBySearchingQuery:(const OriginQuery &)query
+                                  cancellation:(const Cancellation &)cancellation;
 - (NSArray<NSDictionary *> *)relatedOutputs:(Glyph)glyph cancellation:(const Cancellation *)cancellation;
 - (NSArray<GASubstitutionMatch *> *)discoverContent:(NSString *)text
                        selections:(NSArray<GAGlyphSelectionRun *> *)selections
@@ -1012,80 +1040,102 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
     if (!sourceRange.length || NSMaxRange(sourceRange) > text.length || !candidates.count)
         return nil;
     const auto &r = *self.program->resource;
-    Span span{uint32_t(sourceRange.location), uint32_t(NSMaxRange(sourceRange))};
-    auto target = glyphVector(glyphIDs);
-    std::vector<std::vector<Glyph>> sources;
+    OriginQuery query{r};
+    query.text = text;
+    query.selections = selections;
+    query.sourceRange = sourceRange;
+    query.span = {uint32_t(sourceRange.location), uint32_t(NSMaxRange(sourceRange))};
+    query.matchComponents = candidateComponents != nil;
+    query.matchStructures = candidateStructures != nil;
+    query.vertical = vertical;
+    query.featureSettings = featureSettings;
+    query.direction = direction;
+    query.languageTag = languageTag;
+    query.target = glyphVector(glyphIDs);
     for (NSArray *candidate in candidates)
-        sources.push_back(glyphVector(candidate));
-    std::vector<std::vector<int>> sourceComponents(sources.size());
-    for (size_t i=0;i<sourceComponents.size() && candidateComponents;++i)
-        for (NSNumber *c in candidateComponents[i]) sourceComponents[i].push_back(c.intValue);
-    std::vector<std::vector<uint64_t>> sourceLigatures(sources.size());
-    for (size_t i=0;i<sourceLigatures.size() && candidateLigatures;++i)
-        for (NSNumber *owner in candidateLigatures[i]) sourceLigatures[i].push_back(owner.unsignedLongLongValue);
-    std::vector<Structures> sourceStructures(sources.size());
-    for (size_t i = 0; i < sources.size() && candidateStructures; ++i)
-        sourceStructures[i] = structureVector(candidateStructures[i]);
+        query.sources.push_back(glyphVector(candidate));
+    query.sourceComponents.resize(query.sources.size());
+    for (size_t i=0;i<query.sourceComponents.size() && candidateComponents;++i)
+        for (NSNumber *c in candidateComponents[i]) query.sourceComponents[i].push_back(c.intValue);
+    query.sourceLigatures.resize(query.sources.size());
+    for (size_t i=0;i<query.sourceLigatures.size() && candidateLigatures;++i)
+        for (NSNumber *owner in candidateLigatures[i]) query.sourceLigatures[i].push_back(owner.unsignedLongLongValue);
+    query.sourceStructures.resize(query.sources.size());
+    for (size_t i = 0; i < query.sources.size() && candidateStructures; ++i)
+        query.sourceStructures[i] = structureVector(candidateStructures[i]);
     Cancellation cancellation{[cancelled] { return cancelled() != NO; }};
     try {
-        cancellation.check();
-        size_t branch = [self gsubBranch];
-        // This is our executor's replay, not a trace of TextKit internals.
-        // Accept it only when its final sequence and complete source agree.
-        for (const auto &run : prepareText(text, r.cmap, selections, int(direction))) {
-            cancellation.check();
-            if (run.source.start > span.start || run.source.end < span.end) continue;
-            Settings settings;
-            settings.script = run.script;
-            settings.language = tag(languageTag.UTF8String ?: "");
-            settings.rtl = run.level & 1;
-            settings.vertical = vertical;
-            if (vertical) settings.features[r.verticalFeature(branch)] = 1;
-            for (NSDictionary *feature in featureSettings) {
-                NSString *name = feature[(__bridge NSString *)kCTFontOpenTypeFeatureTag];
-                if (name.length == 4)
-                    settings.features[tag(name.UTF8String)] =
-                        [feature[(__bridge NSString *)kCTFontOpenTypeFeatureValue] unsignedIntValue];
-            }
-            Buffer items = run.glyphs;
-            Trace trace;
-            trace.provenance = true;
-            if (!r.aat.empty()) {
-                std::vector<AATSelector> overrides;
-                for (NSDictionary *feature in featureSettings) {
-                    NSNumber *type = feature[(__bridge NSString *)kCTFontFeatureTypeIdentifierKey];
-                    NSNumber *selector = feature[(__bridge NSString *)kCTFontFeatureSelectorIdentifierKey];
-                    if (type && selector) overrides.push_back({type.unsignedIntValue, selector.unsignedIntValue});
-                }
-                r.aat.substitute(items, {}, settings.rtl, vertical, &trace, false, overrides, &cancellation);
-            } else
-                r.gsub.substitute(items, r.gdef, settings, branch, &trace, &cancellation);
-            auto final = sequenceAt(items, span, settings.rtl);
-            if (!final || *final != target) continue;
-            auto current = target;
-            std::vector<std::string> labels;
-            for (auto step = trace.steps.rbegin(); step != trace.steps.rend(); ++step) {
-                cancellation.check();
-                auto after = sequenceAt(step->after, span, settings.rtl);
-                auto before = sequenceAt(step->before, span, settings.rtl);
-                if (!after || *after != current || !before) break;
-                if (*before == current) continue;
-                labels.insert(labels.begin(), step->feature);
-                for (size_t i = 0; i < sources.size(); i++)
-                    if (*before == sources[i] && (!candidateComponents ||
-                        (componentsAt(step->before,span,settings.rtl)==sourceComponents[i] &&
-                         ligaturesAt(step->before,span,settings.rtl)==sourceLigatures[i])) &&
-                        (!candidateStructures || structuresAt(step->before,span,settings.rtl)==sourceStructures[i]))
-                        return origin(i, labels, componentsAt(items, span, settings.rtl),ligaturesAt(items,span,settings.rtl),structuresAt(items,span,settings.rtl));
-                current = std::move(*before);
-            }
-        }
+        if (auto result = [self originByReplayingQuery:query cancellation:cancellation])
+            return result;
     } catch (const QueryCancelled &) {
         return nil;
     } catch (const InvalidTable &) {
         // An unavailable replay proceeds to independent source discovery.
     }
+    return [self originBySearchingQuery:query cancellation:cancellation];
+}
 
+- (GASubstitutionOrigin *)originByReplayingQuery:(const OriginQuery &)query
+                                  cancellation:(const Cancellation &)cancellation {
+    const auto &r = query.resource;
+    cancellation.check();
+    size_t branch = [self gsubBranch];
+    // This is our executor's replay, not a trace of TextKit internals.
+    // Accept it only when its final sequence and complete source agree.
+    for (const auto &run : prepareText(query.text, r.cmap, query.selections, int(query.direction))) {
+        cancellation.check();
+        if (!run.source.contains(query.span)) continue;
+        Settings settings;
+        settings.script = run.script;
+        settings.language = tag(query.languageTag.UTF8String ?: "");
+        settings.rtl = run.level & 1;
+        settings.vertical = query.vertical;
+        if (query.vertical) settings.features[r.verticalFeature(branch)] = 1;
+        for (NSDictionary *feature in query.featureSettings) {
+            NSString *name = feature[(__bridge NSString *)kCTFontOpenTypeFeatureTag];
+            if (name.length == 4)
+                settings.features[tag(name.UTF8String)] =
+                    [feature[(__bridge NSString *)kCTFontOpenTypeFeatureValue] unsignedIntValue];
+        }
+        Buffer items = run.glyphs;
+        Trace trace;
+        trace.provenance = true;
+        if (!r.aat.empty()) {
+            std::vector<AATSelector> overrides;
+            for (NSDictionary *feature in query.featureSettings) {
+                NSNumber *type = feature[(__bridge NSString *)kCTFontFeatureTypeIdentifierKey];
+                NSNumber *selector = feature[(__bridge NSString *)kCTFontFeatureSelectorIdentifierKey];
+                if (type && selector) overrides.push_back({type.unsignedIntValue, selector.unsignedIntValue});
+            }
+            r.aat.substitute(items, {}, settings.rtl, query.vertical, &trace, false, overrides, &cancellation);
+        } else
+            r.gsub.substitute(items, r.gdef, settings, branch, &trace, &cancellation);
+        auto final = sequenceAt(items, query.span, settings.rtl);
+        if (!final || *final != query.target) continue;
+        auto current = query.target;
+        std::vector<std::string> labels;
+        for (auto step = trace.steps.rbegin(); step != trace.steps.rend(); ++step) {
+            cancellation.check();
+            auto after = sequenceAt(step->after, query.span, settings.rtl);
+            auto before = sequenceAt(step->before, query.span, settings.rtl);
+            if (!after || *after != current || !before) break;
+            if (*before == current) continue;
+            labels.insert(labels.begin(), step->feature);
+            for (size_t i = 0; i < query.sources.size(); i++)
+                if (*before == query.sources[i] && (!query.matchComponents ||
+                    (componentsAt(step->before,query.span,settings.rtl)==query.sourceComponents[i] &&
+                     ligaturesAt(step->before,query.span,settings.rtl)==query.sourceLigatures[i])) &&
+                    (!query.matchStructures || structuresAt(step->before,query.span,settings.rtl)==query.sourceStructures[i]))
+                    return origin(i, labels, componentsAt(items, query.span, settings.rtl),ligaturesAt(items,query.span,settings.rtl),structuresAt(items,query.span,settings.rtl));
+            current = std::move(*before);
+        }
+    }
+    return nil;
+}
+
+- (GASubstitutionOrigin *)originBySearchingQuery:(const OriginQuery &)query
+                                  cancellation:(const Cancellation &)cancellation {
+    const auto &r = query.resource;
     // Multi-source breadth-first traversal. Two visits per sequence retain
     // paths with/without a vertical feature separately. Mode preference wins
     // over distance; BFS then resolves shortest path and sidebar order.
@@ -1103,13 +1153,13 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
     std::set<std::pair<SequenceKey, bool>> visited;
     std::map<SequenceKey, std::vector<OriginEdge>> edges;
     GASubstitutionOrigin *otherMode;
-    Budget budget(text.length, &cancellation);
+    Budget budget(query.text.length, &cancellation);
     size_t queuedGlyphs = 0;
     try {
-        for (size_t i = 0; i < sources.size(); i++)
-            if (visited.emplace(SequenceKey{sources[i],sourceComponents[i],sourceLigatures[i],sourceStructures[i]}, false).second) {
-                pending.push_back({sources[i], i, false, {},sourceComponents[i],sourceLigatures[i],sourceStructures[i]});
-                queuedGlyphs += sources[i].size();
+        for (size_t i = 0; i < query.sources.size(); i++)
+            if (visited.emplace(SequenceKey{query.sources[i],query.sourceComponents[i],query.sourceLigatures[i],query.sourceStructures[i]}, false).second) {
+                pending.push_back({query.sources[i], i, false, {},query.sourceComponents[i],query.sourceLigatures[i],query.sourceStructures[i]});
+                queuedGlyphs += query.sources[i].size();
             }
         while (!pending.empty()) {
             cancellation.check();
@@ -1117,12 +1167,12 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
             State state = std::move(pending.front());
             pending.pop_front();
             queuedGlyphs -= state.glyphs.size();
-            if (state.glyphs == target) {
-                if (state.vertical == bool(vertical)) return origin(state.source, state.labels,state.components,state.ligatures,state.structures);
+            if (state.glyphs == query.target) {
+                if (state.vertical == bool(query.vertical)) return origin(state.source, state.labels,state.components,state.ligatures,state.structures);
                 if (!otherMode) otherMode = origin(state.source, state.labels,state.components,state.ligatures,state.structures);
                 continue;
             }
-            if (otherMode && !vertical && state.vertical) continue;
+            if (otherMode && !query.vertical && state.vertical) continue;
             auto [entry, inserted] = edges.emplace(SequenceKey{state.glyphs,state.components,state.ligatures,state.structures}, std::vector<OriginEdge>{});
             auto &outputs = entry->second;
             if (inserted) {
@@ -1139,13 +1189,13 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
                                            replacingStructures(structureArray(state.structures),componentArray(state.components),i,[output[@"glyphs"] count])});
                     }
                 NSMutableArray *seedRuns = [NSMutableArray array];
-                for (GAGlyphSelectionRun *selection in selections)
-                    if (!NSIntersectionRange(selection.range, sourceRange).length)
+                for (GAGlyphSelectionRun *selection in query.selections)
+                    if (!NSIntersectionRange(selection.range, query.sourceRange).length)
                         [seedRuns addObject:selection];
                 GAGlyphSelectionRun *seed = [[GAGlyphSelectionRun alloc] init];
-                seed.range = sourceRange;
+                seed.range = query.sourceRange;
                 seed.selection = [[GAGlyphSelection alloc]
-                    initWithSourceText:[text substringWithRange:sourceRange]
+                    initWithSourceText:[query.text substringWithRange:query.sourceRange]
                     glyphIDs:glyphArray(state.glyphs) markComponents:componentArray(state.components)
                     markLigatures:ligatureArray(state.ligatures) ligatureStructures:structureArray(state.structures)
                     featureSources:@[] ligature:NO];
@@ -1155,8 +1205,8 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
                     return a.range.location < b.range.location ? NSOrderedAscending
                          : a.range.location > b.range.location ? NSOrderedDescending : NSOrderedSame;
                 }];
-                for (const auto &run : prepareText(text, r.cmap, seedRuns, int(direction))) {
-                    if (run.source.start > span.start || run.source.end < span.end) continue;
+                for (const auto &run : prepareText(query.text, r.cmap, seedRuns, int(query.direction))) {
+                    if (!run.source.contains(query.span)) continue;
                     for (const auto &domain : r.domains)
                         for (Tag language : domain.apple ? std::vector<Tag>{0}
                                                        : r.gsub.languages(run.script))
@@ -1182,7 +1232,7 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
                                     }
                                     for (const auto &change : found.changes) {
                                         budget.poll();
-                                        if (!(change.source == span) || change.inherited) continue;
+                                        if (!(change.source == query.span) || change.inherited) continue;
                                         std::vector<Glyph> input;
                                         for (const auto &cluster : change.inputs)
                                             input.insert(input.end(), cluster.glyphs.begin(), cluster.glyphs.end());

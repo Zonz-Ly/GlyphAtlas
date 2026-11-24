@@ -454,12 +454,9 @@ struct LigatureWindow {
             low = std::min(low, first);
             high = std::max(high, last - 1);
         }
-        auto overlaps = [](Span a, Span b) {
-            return a.start < b.end && b.start < a.end;
-        };
-        while (low > 0 && overlaps(buffer[low - 1].source, buffer[low].source))
+        while (low > 0 && buffer[low - 1].source.intersects(buffer[low].source))
             --low;
-        while (high + 1 < buffer.size() && overlaps(buffer[high + 1].source, buffer[high].source))
+        while (high + 1 < buffer.size() && buffer[high + 1].source.intersects(buffer[high].source))
             ++high;
         if (before.empty())
             before.assign(buffer.begin() + low, buffer.begin() + high + 1);
@@ -754,7 +751,7 @@ class Runner {
         if (!cursor || cursor >= buffer_.size())
             return;
         const auto &a = buffer_[cursor - 1].source, &b = buffer_[cursor].source;
-        if (a.start < b.end && b.start < a.end)
+        if (a.intersects(b))
             return;
         Entry ending = machine.entry(state, 0);
         if (!machine.actionable(ending))
@@ -787,8 +784,7 @@ class Runner {
             if (visitedRoots && !end && state == 0 && stack_.empty()) {
                 // With an empty stack, no action can read the old prefix.
                 // Source clusters must also be disjoint across the boundary.
-                if (!cursor || buffer_[cursor - 1].source.end <= buffer_[cursor].source.start ||
-                    buffer_[cursor].source.end <= buffer_[cursor - 1].source.start) {
+                if (!cursor || !buffer_[cursor - 1].source.intersects(buffer_[cursor].source)) {
                     if ((*visitedRoots)[cursor]) break;
                     (*visitedRoots)[cursor] = true;
                 }
