@@ -1517,7 +1517,14 @@ void forEachPlan(const Resource &resource, const Domain &domain, Visitor &&visit
                         Buffer items = initial;
                         Trace trace;
                         trace.inventory = true;
-                        r.substitute(items, domain, settings, &trace, check);
+                        try {
+                            r.substitute(items, domain, settings, &trace, check);
+                        } catch (const InvalidTable &) {
+                            // A failed plan must not discard other verified
+                            // candidates or turn a partial query into a cache hit.
+                            complete = false;
+                            return;
+                        }
                         complete &= !trace.incomplete;
                         for (const auto &change : trace.changes) {
                             checkCancellation(check);

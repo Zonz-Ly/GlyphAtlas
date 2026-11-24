@@ -522,12 +522,6 @@ class Runner {
     std::vector<size_t> stack_;
     LigatureWindow *window_ = nullptr;
     LigatureFootprint *footprint_ = nullptr;
-    size_t locate(uint64_t identity) const {
-        for (size_t i = 0; i < buffer_.size(); i++)
-            if (buffer_[i].identity == identity)
-                return i;
-        return buffer_.size();
-    }
     void rearrange(unsigned verb) {
         if (first_ >= last_ || last_ > buffer_.size())
             return;
@@ -642,6 +636,11 @@ class Runner {
             return 0;
         Item basis = buffer_[position];
         basis.source = owner;
+        // Inserted glyphs are not copies of the base's internal components.
+        // Keep an explicit external mark association when one already exists.
+        basis.components.clear();
+        if (basis.component < 0)
+            basis.ligatureIdentity = 0;
         Buffer added;
         for (Glyph glyph : glyphs) {
             Item item = basis;
@@ -663,18 +662,17 @@ class Runner {
                        buffer_[mark_].source);
             return buffer_.size();
         }
-        auto currentIdentity = buffer_[cursor].identity;
         Span currentSource = buffer_[cursor].source;
         size_t originalMark = mark_;
         bool setMark = entry.flags & 0x8000;
         unsigned markedCount = entry.flags & 31, currentCount = (entry.flags >> 5) & 31;
         if (markedCount && originalMark < buffer_.size()) {
             Span source = (entry.flags & 0x1000) ? buffer_[originalMark].source : currentSource;
-            insert(machine, entry.second, markedCount, originalMark, entry.flags & 0x400, source);
+            bool before = entry.flags & 0x400;
+            size_t count = insert(machine, entry.second, markedCount, originalMark, before, source);
+            if (originalMark + (before ? 0 : 1) <= cursor)
+                cursor += count;
         }
-        cursor = locate(currentIdentity);
-        if (cursor >= buffer_.size())
-            return cursor;
         if (setMark) {
             mark_ = cursor;
             marked_ = true;
@@ -686,12 +684,12 @@ class Runner {
             bool before = entry.flags & 0x800;
             size_t count = insert(machine, entry.first, currentCount, cursor, before, source);
             if (count) {
-                size_t now = locate(currentIdentity);
+                size_t now = cursor + (before ? count : 0);
                 return (entry.flags & 0x4000) ? (before ? cursor : now + 1)
                                               : (before ? now : now + count);
             }
         }
-        return locate(currentIdentity);
+        return cursor;
     }
 
   public:
@@ -724,8 +722,10 @@ class Runner {
     // text query. Snapshot only when EOT has an action; never cut an atomic seed.
     void terminal(const AATMachine &machine, unsigned state, size_t cursor, unsigned type,
                   bool extended, const std::string &label) {
-        if (!cursor || cursor >= buffer_.size() ||
-            buffer_[cursor - 1].source.end > buffer_[cursor].source.start)
+        if (!cursor || cursor >= buffer_.size())
+            return;
+        const auto &a = buffer_[cursor - 1].source, &b = buffer_[cursor].source;
+        if (a.start < b.end && b.start < a.end)
             return;
         Entry ending = machine.entry(state, 0);
         if (!machine.actionable(ending))
